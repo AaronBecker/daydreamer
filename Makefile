@@ -1,6 +1,6 @@
 
 CC = gcc
-CFLAGS = -Wall -g --std=c99
+CFLAGS = -Wall -Wextra -g --std=c99
 OBJFILES := $(patsubst %.c,%.o,$(wildcard *.c))
 
 .PHONY: all clean
