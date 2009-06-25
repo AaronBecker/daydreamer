@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 /**
@@ -164,8 +164,8 @@ void generate_moves(const position_t* position, move_t* move_list);
 // io.c
 void move_to_la_str(move_t move, char* str);
 void print_la_move(move_t move);
-void print_la_move_list(move_t* move);
-void print_board(position_t* pos);
+void print_la_move_list(const move_t* move);
+void print_board(const position_t* pos);
 // unimplemented
 void move_to_san_str(position_t* pos, move_t move, char* str);
 void position_to_fen_str(position_t* pos, char* str);

@@ -24,7 +24,7 @@ void print_la_move(move_t move)
     printf("%s", move_str);
 }
 
-void print_la_move_list(move_t* move)
+void print_la_move_list(const move_t* move)
 {
     while(*move) {
         print_la_move(*move++);
@@ -33,8 +33,7 @@ void print_la_move_list(move_t* move)
     printf("\n");
 }
 
-
-void print_board(position_t* pos)
+void print_board(const position_t* pos)
 {
     for (square_t sq = A8; sq != INVALID_SQUARE; ++sq) {
         if (!valid_board_index(sq)) {

@@ -2,7 +2,7 @@
 #include "grasshopper.h"
 #include <assert.h>
 
-const uint32_t piece_deltas[16][16] = {
+static const uint32_t piece_deltas[16][16] = {
     // White Pieces
     {0},                                        // Null
     {15, 17, 0},                                // Pawn
