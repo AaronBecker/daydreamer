@@ -18,5 +18,4 @@ int main()
     print_board(&pos);
     generate_moves(&pos, moves);
     print_la_move_list(moves);
-
 }
