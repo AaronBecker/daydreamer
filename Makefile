@@ -8,6 +8,7 @@ OBJFILES := $(patsubst %.c,%.o,$(wildcard *.c))
 all: grasshopper
 
 grasshopper: $(OBJFILES)
+	$(CC) $(LDFLAGS) $(OBJFILES) -o grasshopper
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
