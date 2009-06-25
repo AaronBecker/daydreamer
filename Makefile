@@ -19,4 +19,4 @@ tags: $(SRCFILES)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJFILES)
+	rm -f $(OBJFILES) tags
