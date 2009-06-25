@@ -40,7 +40,7 @@ void set_position(position_t* pos, const char* fen)
     init_position(pos);
 
     // Read piece positions.
-    for (square_t square=A8; square>=A1; ++fen, ++square) {
+    for (square_t square=A8; square!=INVALID_SQUARE; ++fen, ++square) {
         if (isdigit(*fen)) {
             if (*fen == '0' || *fen == '9') {
                 //TODO: log_warning
@@ -64,7 +64,8 @@ void set_position(position_t* pos, const char* fen)
             case 'k': place_piece(pos, BK, square); break;
             case 'K': place_piece(pos, WK, square); break;
             case '/': square -= 17 + square_file(square); break;
-            case ' ': square = A1 - 2;
+            case ' ': square = INVALID_SQUARE-1; break;
+            case '\0': return;
             default: assert(false); //TODO: log_warning
         }
     }
@@ -91,6 +92,7 @@ void set_position(position_t* pos, const char* fen)
                       // TODO: support A-Ha-h
                       if (*fen != '-') assert(false);
         }
+        ++fen;
     }
     while (isspace(*fen)) ++fen;
     if (!*fen) return;
