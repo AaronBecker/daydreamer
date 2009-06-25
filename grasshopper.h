@@ -53,6 +53,7 @@ typedef enum {
 
 #define square_rank(square)     ((square) >> 4)
 #define square_file(square)     ((square) & 0x0f)
+#define make_square(file, rank) (((rank) << 4) & (file))
 #define valid_board_index(idx)  !(idx & 0x88)
 
 /**
@@ -146,7 +147,7 @@ void set_position(position_t* position, const char* fen);
 move_t parse_move(position_t* position, const char* move_str);
 
 void place_piece(position_t* position, piece_t piece, square_t square);
-void remove_piece(position_t* position, piece_t piece, square_t square);
+void remove_piece(position_t* position, square_t square);
 void transfer_piece(position_t* position, square_t from, square_t to);
 
 void generate_moves(const position_t* position, move_t* move_list);
