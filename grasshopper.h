@@ -102,11 +102,7 @@ typedef enum {
     NO_SLIDE=0, DIAGONAL, STRAIGHT, BOTH
 } slide_t;
 
-static const int sliding_piece_types[] = {
-    0, 0, 0, DIAGONAL, STRAIGHT, BOTH, 0,
-    0, 0, 0, DIAGONAL, STRAIGHT, BOTH, 0
-};
-
+extern const int sliding_piece_types[];
 #define piece_slide_type(piece)     (sliding_piece_types[piece])
 
 /**
@@ -141,6 +137,34 @@ typedef struct {
     int fifty_move_counter;
     castle_rights_t castle_rights;
 } undo_info_t;
+
+/*
+ * Definitions for piece movement and attack directions.
+ */
+
+typedef enum {
+    SSW=-33, SSE=-31,
+    WSW=-18, SW=-17, S=-16, SE=-15, ESE=-14,
+    W=-1, STATIONARY=0, E=1,
+    WNW=14, NW=15, N=16, NE=17, ENE=18,
+    NNW=31, NNE=33
+} direction_t;
+extern const direction_t piece_deltas[16][16];
+
+typedef enum {
+    NONE_FLAG=0, WP_FLAG=1<<0, BP_FLAG=1<<1, N_FLAG=1<<2,
+    B_FLAG=1<<3, R_FLAG=1<<4, Q_FLAG=1<<5, K_FLAG=1<<6
+} piece_flag_t;
+extern const piece_flag_t piece_flags[];
+
+
+typedef struct {
+    piece_flag_t possible_attackers;
+    direction_t relative_direction;
+} attack_data_t;
+// An array indexed from -128 to 128 which stores attack data for every pair
+// of squares (to, from) at the index [from-to].
+extern const attack_data_t* board_attack_data;
 
 /**
  * External function interface

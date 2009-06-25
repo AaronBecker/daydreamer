@@ -2,35 +2,6 @@
 #include "grasshopper.h"
 #include <assert.h>
 
-typedef enum {
-    SSW=-33, SSE=-31,
-    WSW=-18, SW=-17, S=-16, SE=-15, ESE=-14,
-    W=-1, STATIONARY=0, E=1,
-    WNW=14, NW=15, N=16, NE=17, ENE=18,
-    NNW=31, NNE=33
-} direction_t;
-
-static const direction_t piece_deltas[16][16] = {
-    // White Pieces
-    {0},                                                    // Null
-    {NW, NE, 0},                                            // Pawn
-    {SSW, SSE, WSW, ESE, WNW, ENE, NNW, NNE, 0},            // Knight
-    {SW, SE, NW, NE, 0},                                    // Bishop
-    {S, W, E, N, 0},                                        // Rook
-    {SW, S, SE, W, E, NW, N, NE, 0},                        // Queen
-    {SW, S, SE, W, E, NW, N, NE, 0},                        // King
-    {0}, {0},                                               // Null
-    // Black Pieces
-    {SE, SW, 0},                                            // Pawn
-    {SSW, SSE, WSW, ESE, WNW, ENE, NNW, NNE, 0},            // Knight
-    {SW, SE, NW, NE, 0},                                    // Bishop
-    {S, W, E, N, 0},                                        // Rook
-    {SW, S, SE, W, E, NW, N, NE, 0},                        // Queen
-    {SW, S, SE, W, E, NW, N, NE, 0},                        // King
-    {0}                                                     // Null
-};
-
-
 static void generate_pawn_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
         move_t** moves);
@@ -86,7 +57,7 @@ static void generate_pawn_moves(const position_t* pos,
                 *(moves++) = make_move(from, to, piece, EMPTY);
             }
         }
-        for (const uint32_t* delta = piece_deltas[piece]; *delta; ++delta) {
+        for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             // captures
             to = from + *delta;
             if (to == pos->ep_square) {
@@ -106,7 +77,7 @@ static void generate_pawn_moves(const position_t* pos,
                 *(moves++) = make_move_promote(from, to, piece, EMPTY, promoted);
             }
         }
-        for (const uint32_t* delta = piece_deltas[piece]; *delta; ++delta) {
+        for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             // capture/promotes
             to = from + *delta;
             if (!valid_board_index(to) || !pos->board[to]) continue;
@@ -131,7 +102,7 @@ static void generate_piece_moves(const position_t* pos,
     square_t to;
     if (piece_slide_type(piece) == NONE) {
         // not a sliding piece, just iterate over dest. squares
-        for (const uint32_t* delta = piece_deltas[piece]; *delta; ++delta) {
+        for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             to = from + *delta;
             if (!valid_board_index(to)) continue;
             if (pos->board[to] == NULL) {
@@ -142,7 +113,7 @@ static void generate_piece_moves(const position_t* pos,
         }
     } else {
         // a sliding piece, keep going until we hit something
-        for (const uint32_t* delta = piece_deltas[piece]; *delta; ++delta) {
+        for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             to = from;
             do {
                 to += *delta;
