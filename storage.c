@@ -76,7 +76,7 @@ const attack_data_t* board_attack_data = board_attack_data_storage + 128;
  */
 #include <strings.h>
 #include <stdio.h>
-void generate_attack_data()
+static void generate_attack_data(void)
 {
     bzero((char*)board_attack_data_storage, sizeof(attack_data_t)*256);
     attack_data_t* mutable_attack_data = (attack_data_t*)board_attack_data;
