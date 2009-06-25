@@ -1,5 +1,6 @@
 
 #include "grasshopper.h"
+#include <assert.h>
 
 void place_piece(position_t* pos, piece_t piece, square_t square)
 {
@@ -8,7 +9,7 @@ void place_piece(position_t* pos, piece_t piece, square_t square)
     }
     color_t color = piece_color(piece);
     piece_type_t type = piece_type(piece);
-    assert(color == WHITE || color == BLACK && type != INVALID_PIECE);
+    assert((color == WHITE || color == BLACK) && type != INVALID_PIECE);
 
     piece_entry_t* entry = &pos->pieces[color][type]
         [pos->piece_count[color][type]++];
@@ -35,5 +36,5 @@ void transfer_piece(position_t* pos, square_t from, square_t to)
     }
     pos->board[to] = pos->board[from];
     pos->board[from] = NULL;
-    pos->board[to].location = to;
+    pos->board[to]->location = to;
 }
