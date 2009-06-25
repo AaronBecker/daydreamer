@@ -2,7 +2,7 @@
 #include <assert.h>
 #include "grasshopper.h"
 
-void place_piece(position_t* pos, piece_t piece, square_t square)
+void place_piece(position_t* pos, const piece_t piece, const square_t square)
 {
     if (pos->board[square]) {
         remove_piece(pos, square);
@@ -18,18 +18,19 @@ void place_piece(position_t* pos, piece_t piece, square_t square)
     pos->board[square] = entry;
 }
 
-void remove_piece(position_t* pos, square_t square)
+void remove_piece(position_t* pos, const square_t square)
 {
     piece_t piece = pos->board[square]->piece;
     color_t color = piece_color(piece);
     piece_type_t type = piece_type(piece);
+    // Swap the piece at the end of pos->pieces with the removed piece
     int end_index = pos->piece_count[color][type]--;
     pos->board[square]->piece = pos->pieces[color][type][end_index].piece;
     pos->board[square]->location = pos->pieces[color][type][end_index].location;
     pos->board[square] = NULL;
 }
 
-void transfer_piece(position_t* pos, square_t from, square_t to)
+void transfer_piece(position_t* pos, const square_t from, const square_t to)
 {
     if (pos->board[to]) {
         remove_piece(pos, to);

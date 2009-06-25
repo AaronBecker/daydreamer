@@ -156,6 +156,7 @@ typedef enum {
     B_FLAG=1<<3, R_FLAG=1<<4, Q_FLAG=1<<5, K_FLAG=1<<6
 } piece_flag_t;
 extern const piece_flag_t piece_flags[];
+#define get_piece_flag(piece)       piece_flags[(piece)]
 
 
 typedef struct {
@@ -165,6 +166,7 @@ typedef struct {
 // An array indexed from -128 to 128 which stores attack data for every pair
 // of squares (to, from) at the index [from-to].
 extern const attack_data_t* board_attack_data;
+#define get_attack_data(from, to)   board_attack_data[(from)-(to)]
 
 /**
  * External function interface
@@ -172,15 +174,15 @@ extern const attack_data_t* board_attack_data;
 
 // position.c
 void set_position(position_t* position, const char* fen);
-move_t parse_move(position_t* position, const char* move_str);
+bool is_attacked(const position_t* position, const square_t square, const color_t side);
 
 // move.c
-void place_piece(position_t* position, piece_t piece, square_t square);
-void remove_piece(position_t* position, square_t square);
-void transfer_piece(position_t* position, square_t from, square_t to);
+void place_piece(position_t* position, const piece_t piece, const square_t square);
+void remove_piece(position_t* position, const square_t square);
+void transfer_piece(position_t* position, const square_t from, const square_t to);
 // unimplemented
-void do_move(position_t* position, move_t move);
-void undo_move(position_t* position, move_t move, undo_info_t* undo);
+void do_move(position_t* position, const move_t move);
+void undo_move(position_t* position, const move_t move, undo_info_t* undo);
 
 // move_generation.c
 void generate_moves(const position_t* position, move_t* move_list);

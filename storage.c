@@ -76,7 +76,7 @@ const attack_data_t* board_attack_data = board_attack_data_storage + 128;
  */
 #include <strings.h>
 #include <stdio.h>
-static void generate_attack_data(void)
+void generate_attack_data(void)
 {
     bzero((char*)board_attack_data_storage, sizeof(attack_data_t)*256);
     attack_data_t* mutable_attack_data = (attack_data_t*)board_attack_data;
@@ -86,7 +86,7 @@ static void generate_attack_data(void)
             for (const direction_t* dir=piece_deltas[piece]; *dir; ++dir) {
                 for (square_t to=from+*dir; valid_board_index(to); to+=*dir) {
                     mutable_attack_data[from-to].possible_attackers |=
-                        piece_flags[piece];
+                        get_piece_flag(piece);
                     mutable_attack_data[from-to].relative_direction = *dir;
                     if (piece_slide_type(piece) == NO_SLIDE) break;
                 }
