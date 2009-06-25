@@ -108,3 +108,25 @@ void set_position(position_t* pos, const char* fen)
     sscanf(fen, "%d %d", &pos->fifty_move_counter, &pos->ply);
     pos->ply = pos->ply*2 + (pos->side_to_move == BLACK ? 1 : 0);
 }
+
+bool is_attacked(const position_t* pos, const square_t sq, const color_t side)
+{
+    color_t other_side = side^1;
+    // For every opposing piece, look up the attack data for its square.
+    for (piece_t p=PAWN; p<=KING; ++p) {
+        for (int i=0; i<pos->piece_count[other_side][p]; ++i) {
+            square_t from=pos->pieces[other_side][p][i].location;
+            const attack_data_t* attack_data = &get_attack_data(from, sq);
+            if (attack_data->possible_attackers | get_piece_flag(p)) {
+                if (piece_slide_type(p) == NO_SLIDE) return true;
+                while (from != sq) {
+                    from += attack_data->relative_direction;
+                    if (from == sq) return true;
+                    if (pos->board[from]) break;
+                }
+            }
+        }
+    }
+    return false;
+}
+
