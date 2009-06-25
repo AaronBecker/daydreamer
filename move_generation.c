@@ -3,18 +3,18 @@
 #include <assert.h>
 
 typedef enum {
-    KSSW=-33, KSSE=-31,
-    KWSW=-18, SW=-17, S=-16, SE=-15, KESE=-14,
+    SSW=-33, SSE=-31,
+    WSW=-18, SW=-17, S=-16, SE=-15, ESE=-14,
     W=-1, STATIONARY=0, E=1,
-    KWNW=14, NW=15, N=16, NE=17, KENE=18,
-    KNNW=31, KNNE=33
+    WNW=14, NW=15, N=16, NE=17, ENE=18,
+    NNW=31, NNE=33
 } direction_t;
 
 static const direction_t piece_deltas[16][16] = {
     // White Pieces
     {0},                                                    // Null
     {NW, NE, 0},                                            // Pawn
-    {KSSW, KSSE, KWSW, KESE, KWNW, KENE, KNNW, KNNE, 0},    // Knight
+    {SSW, SSE, WSW, ESE, WNW, ENE, NNW, NNE, 0},            // Knight
     {SW, SE, NW, NE, 0},                                    // Bishop
     {S, W, E, N, 0},                                        // Rook
     {SW, S, SE, W, E, NW, N, NE, 0},                        // Queen
@@ -22,7 +22,7 @@ static const direction_t piece_deltas[16][16] = {
     {0}, {0},                                               // Null
     // Black Pieces
     {SE, SW, 0},                                            // Pawn
-    {KSSW, KSSE, KWSW, KESE, KWNW, KENE, KNNW, KNNE, 0},    // Knight
+    {SSW, SSE, WSW, ESE, WNW, ENE, NNW, NNE, 0},            // Knight
     {SW, SE, NW, NE, 0},                                    // Bishop
     {S, W, E, N, 0},                                        // Rook
     {SW, S, SE, W, E, NW, N, NE, 0},                        // Queen
