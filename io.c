@@ -3,17 +3,17 @@
 #include <stdio.h>
 #include "grasshopper.h"
     
-static char glyphs[] = " PNBRQK  pnbrqk";
+static const char glyphs[] = " PNBRQK  pnbrqk";
 
 void move_to_la_str(move_t move, char* str)
 {
     square_t from = get_move_from(move);
     square_t to = get_move_to(move);
-    str += sprintf(str, "%c%c%c%c",
-           square_file(from) + 'a', square_rank(from) + '1',
-           square_file(to) + 'a', square_rank(to) + '1');
+    str += snprintf(str, 4, "%c%c%c%c",
+           (char)square_file(from) + 'a', (char)square_rank(from) + '1',
+           (char)square_file(to) + 'a', (char)square_rank(to) + '1');
     if (get_move_promote(move)) {
-        sprintf(str, "%c", tolower(glyphs[get_move_piece(move)]));
+        snprintf(str, 1, "%c", tolower(glyphs[get_move_piece(move)]));
     }
 }
 
