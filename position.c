@@ -80,12 +80,13 @@ void set_position(position_t* pos, const char* fen)
     while (*fen && isspace(*(++fen))) {}
 
     // Read castling rights.
+    pos->castle_rights = CASTLE_NONE;
     while (*fen && !isspace(*fen)) {
         switch (*fen) {
-            case 'q': pos->castle_rights |= BLACK_OOO; break;
-            case 'Q': pos->castle_rights |= WHITE_OOO; break;
-            case 'k': pos->castle_rights |= BLACK_OO; break;
-            case 'K': pos->castle_rights |= WHITE_OO; break;
+            case 'q': add_ooo_rights(pos, BLACK); break;
+            case 'Q': add_ooo_rights(pos, WHITE); break;
+            case 'k': add_oo_rights(pos, BLACK); break;
+            case 'K': add_oo_rights(pos, WHITE); break;
             default: 
                       // Either '-': no castle rights (do nothing), or
                       // A-Ha-h (960 castling notation).

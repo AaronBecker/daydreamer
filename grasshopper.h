@@ -116,9 +116,17 @@ typedef struct {
 
 typedef uint8_t castle_rights_t;
 #define WHITE_OO                0x01
-#define WHITE_OOO               0x01 << 1
-#define BLACK_OO                0x01 << 2
+#define BLACK_OO                0x01 << 1
+#define WHITE_OOO               0x01 << 2
 #define BLACK_OOO               0x01 << 3
+#define CASTLE_ALL              (WHITE_OO | BLACK_OO | WHITE_OOO | BLACK_OOO)
+#define CASTLE_NONE             0
+#define has_oo_rights(pos, side)        ((pos)->castle_rights & (WHITE_OO<<(side)))
+#define has_ooo_rights(pos, side)       ((pos)->castle_rights & (WHITE_OOO<<(side)))
+#define add_oo_rights(pos, side)        ((pos)->castle_rights |= (WHITE_OO<<(side)))
+#define add_ooo_rights(pos, side)       ((pos)->castle_rights |= (WHITE_OOO<<(side)))
+#define remove_oo_rights(pos, side)     ((pos)->castle_rights &= ~(WHITE_OO<<(side)))
+#define remove_ooo_rights(pos, side)    ((pos)->castle_rights &= ~(WHITE_OOO<<(side)))
 
 typedef struct {
     piece_entry_t* board[128];          // 0x88 board
