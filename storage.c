@@ -31,6 +31,8 @@ const piece_flag_t piece_flags[] = {
     0, BP_FLAG, N_FLAG, B_FLAG, R_FLAG, Q_FLAG, K_FLAG, 0, 0
 };
 
+// Precomputed data for each (from,to) pair on what pieces can attack there.
+// Originally computed in generate_attack_data().
 const attack_data_t board_attack_data_storage[256] = {
   {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
   {  0,   0}, { 40,  17}, {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
