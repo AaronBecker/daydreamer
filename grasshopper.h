@@ -1,6 +1,10 @@
 #ifndef GRASSHOPPER_H
 #define GRASSHOPPER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -48,7 +52,7 @@ typedef enum {
     A6=0x50, B6=0x51, C6=0x52, D6=0x53, E6=0x54, F6=0x55, G6=0x56, H6=0x57,
     A7=0x60, B7=0x61, C7=0x62, D7=0x63, E7=0x64, F7=0x65, G7=0x66, H7=0x67,
     A8=0x70, B8=0x71, C8=0x72, D8=0x73, E8=0x74, F8=0x75, G8=0x76, H8=0x77,
-    INVALID_SQUARE
+    INVALID_SQUARE=0xff
 } square_t;
 
 #define square_rank(square)     ((square) >> 4)
@@ -142,17 +146,33 @@ typedef struct {
  * External function interface
  */
 
-void grasshopper_init(void);
+// position.c
 void set_position(position_t* position, const char* fen);
 move_t parse_move(position_t* position, const char* move_str);
 
+// move.c
 void place_piece(position_t* position, piece_t piece, square_t square);
 void remove_piece(position_t* position, square_t square);
 void transfer_piece(position_t* position, square_t from, square_t to);
-
-void generate_moves(const position_t* position, move_t* move_list);
+// unimplemented
 void do_move(position_t* position, move_t move);
 void undo_move(position_t* position, move_t move, undo_info_t* undo);
 
+// move_generation.c
+void generate_moves(const position_t* position, move_t* move_list);
+
+// io.c
+void move_to_la_str(move_t move, char* str);
+void print_la_move(move_t move);
+void print_la_move_list(move_t* move);
+void print_board(position_t* pos);
+// unimplemented
+void move_to_san_str(position_t* pos, move_t move, char* str);
+void position_to_fen_str(position_t* pos, char* str);
+
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 #endif
 
