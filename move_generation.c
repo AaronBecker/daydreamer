@@ -25,10 +25,10 @@ const uint32_t piece_deltas[16][16] = {
 
 static void generate_pawn_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
-        move_t* moves);
+        move_t** moves);
 static void generate_piece_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
-        move_t* moves);
+        move_t** moves);
 
 void generate_moves(const position_t* pos, move_t* moves)
 {
@@ -37,13 +37,13 @@ void generate_moves(const position_t* pos, move_t* moves)
         for (int i = 0; i < pos->piece_count[side][type]; ++i) {
             const piece_entry_t* piece_entry = &pos->pieces[side][type][i];
             switch (piece_type(piece_entry->piece)) {
-                case PAWN: generate_pawn_moves(pos, piece_entry, moves);
+                case PAWN: generate_pawn_moves(pos, piece_entry, &moves);
                            break;
                 case KING:
                 case KNIGHT:
                 case BISHOP:
                 case ROOK:
-                case QUEEN: generate_piece_moves(pos, piece_entry, moves);
+                case QUEEN: generate_piece_moves(pos, piece_entry, &moves);
                             break;
                 default:    assert(false);
             }
@@ -54,7 +54,8 @@ void generate_moves(const position_t* pos, move_t* moves)
 
 static void generate_pawn_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
-        move_t* moves) {
+        move_t** moves_head)
+{
     static const int pawn_push[] = {16, -16};
     static const int relative_pawn_rank[2][8] = {
         {RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8},
@@ -65,6 +66,7 @@ static void generate_pawn_moves(const position_t* pos,
     square_t from = piece_entry->location;
     square_t to;
     rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
+    move_t* moves = *moves_head;
     if (relative_rank < RANK_7) {
         // non-promotions
         to = from + pawn_push[side];
@@ -108,14 +110,16 @@ static void generate_pawn_moves(const position_t* pos,
             }
         }
     }
+    *moves_head = moves;
 }
 
 static void generate_piece_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
-        move_t* moves)
+        move_t** moves_head)
 {
     const piece_t piece = piece_entry->piece;
     const square_t from = piece_entry->location;
+    move_t* moves = *moves_head;
     square_t to;
     if (piece_slide_type(piece) == NONE) {
         // not a sliding piece, just iterate over dest. squares
@@ -144,5 +148,6 @@ static void generate_piece_moves(const position_t* pos,
             } while (!pos->board[to]);
         }
     }
+    *moves_head = moves;
 }
 

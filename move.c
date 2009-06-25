@@ -1,6 +1,6 @@
 
-#include "grasshopper.h"
 #include <assert.h>
+#include "grasshopper.h"
 
 void place_piece(position_t* pos, piece_t piece, square_t square)
 {
@@ -38,3 +38,4 @@ void transfer_piece(position_t* pos, square_t from, square_t to)
     pos->board[from] = NULL;
     pos->board[to]->location = to;
 }
+
