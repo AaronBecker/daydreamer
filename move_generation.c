@@ -2,24 +2,32 @@
 #include "grasshopper.h"
 #include <assert.h>
 
-static const uint32_t piece_deltas[16][16] = {
+typedef enum {
+    KSSW=-33, KSSE=-31,
+    KWSW=-18, SW=-17, S=-16, SE=-15, KESE=-14,
+    W=-1, STATIONARY=0, E=1,
+    KWNW=14, NW=15, N=16, NE=17, KENE=18,
+    KNNW=31, KNNE=33
+} direction_t;
+
+static const direction_t piece_deltas[16][16] = {
     // White Pieces
-    {0},                                        // Null
-    {15, 17, 0},                                // Pawn
-    {-33, -31, -18, -14, 14, 18, 31, 33, 0},    // Knight
-    {-17, -15, 15, 17},                         // Bishop
-    {-16, -1, 1, 16, 0},                        // Rook
-    {-17, -16, -15, -1, 1, 15, 16, 17},         // Queen
-    {-17, -16, -15, -1, 1, 15, 16, 17},         // King
-    {0}, {0},                                   // Null
+    {0},                                                    // Null
+    {NW, NE, 0},                                            // Pawn
+    {KSSW, KSSE, KWSW, KESE, KWNW, KENE, KNNW, KNNE, 0},    // Knight
+    {SW, SE, NW, NE, 0},                                    // Bishop
+    {S, W, E, N, 0},                                        // Rook
+    {SW, S, SE, W, E, NW, N, NE, 0},                        // Queen
+    {SW, S, SE, W, E, NW, N, NE, 0},                        // King
+    {0}, {0},                                               // Null
     // Black Pieces
-    {-15, -17, 0},                              // Pawn
-    {-33, -31, -18, -14, 14, 18, 31, 33, 0},    // Knight
-    {-17, -15, 15, 17},                         // Bishop
-    {-16, -1, 1, 16, 0},                        // Rook
-    {-17, -16, -15, -1, 1, 15, 16, 17},         // Queen
-    {-17, -16, -15, -1, 1, 15, 16, 17},         // King
-    {0}                                         // Null
+    {SE, SW, 0},                                            // Pawn
+    {KSSW, KSSE, KWSW, KESE, KWNW, KENE, KNNW, KNNE, 0},    // Knight
+    {SW, SE, NW, NE, 0},                                    // Bishop
+    {S, W, E, N, 0},                                        // Rook
+    {SW, S, SE, W, E, NW, N, NE, 0},                        // Queen
+    {SW, S, SE, W, E, NW, N, NE, 0},                        // King
+    {0}                                                     // Null
 };
 
 
@@ -56,8 +64,8 @@ static void generate_pawn_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
         move_t** moves_head)
 {
-    static const int pawn_push[] = {16, -16};
-    static const int relative_pawn_rank[2][8] = {
+    static const direction_t pawn_push[] = {N, S};
+    static const rank_t relative_pawn_rank[2][8] = {
         {RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8},
         {RANK_8, RANK_7, RANK_6, RANK_5, RANK_4, RANK_3, RANK_2, RANK_1}
     };
