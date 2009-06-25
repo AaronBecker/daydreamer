@@ -50,23 +50,23 @@ static void generate_pawn_moves(const position_t* pos,
         // non-promotions
         to = from + pawn_push[side];
         if (pos->board[to] == NULL) {
-            *(moves++) = make_move(from, to, piece, EMPTY);
+            *(moves++) = create_move(from, to, piece, EMPTY);
             to += pawn_push[side];
             if (relative_rank == RANK_2 && pos->board[to] == NULL) {
                 // initial two-square push
-                *(moves++) = make_move(from, to, piece, EMPTY);
+                *(moves++) = create_move(from, to, piece, EMPTY);
             }
         }
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             // captures
             to = from + *delta;
             if (to == pos->ep_square) {
-                *(moves++) = make_move_enpassant(from, to, piece,
+                *(moves++) = create_move_enpassant(from, to, piece,
                         pos->board[to + pawn_push[side^1]]->piece);
             }
             if (!valid_board_index(to) || !pos->board[to]) continue;
             if (piece_colors_differ(piece, pos->board[to]->piece)) {
-                *(moves++) = make_move(from, to, piece, pos->board[to]->piece);
+                *(moves++) = create_move(from, to, piece, pos->board[to]->piece);
             }
         }
     } else {
@@ -74,7 +74,7 @@ static void generate_pawn_moves(const position_t* pos,
         to = from + pawn_push[side];
         if (pos->board[to] == NULL) {
             for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
-                *(moves++) = make_move_promote(from, to, piece, EMPTY, promoted);
+                *(moves++) = create_move_promote(from, to, piece, EMPTY, promoted);
             }
         }
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
@@ -83,7 +83,7 @@ static void generate_pawn_moves(const position_t* pos,
             if (!valid_board_index(to) || !pos->board[to]) continue;
             if (piece_colors_differ(piece, pos->board[to]->piece)) {
                 for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
-                    *(moves++) = make_move_promote(from, to, piece,
+                    *(moves++) = create_move_promote(from, to, piece,
                             pos->board[to]->piece, promoted);
                 }
             }
@@ -106,9 +106,9 @@ static void generate_piece_moves(const position_t* pos,
             to = from + *delta;
             if (!valid_board_index(to)) continue;
             if (pos->board[to] == NULL) {
-                *(moves++) = make_move(from, to, piece, NONE);
+                *(moves++) = create_move(from, to, piece, NONE);
             } else if (piece_colors_differ(piece, pos->board[to]->piece)) {
-                *(moves++) = make_move(from, to, piece, pos->board[to]->piece);
+                *(moves++) = create_move(from, to, piece, pos->board[to]->piece);
             }
         }
     } else {
@@ -119,9 +119,9 @@ static void generate_piece_moves(const position_t* pos,
                 to += *delta;
                 if (!valid_board_index(to)) break;
                 if (pos->board[to] == NULL) {
-                    *(moves++) = make_move(from, to, piece, NONE);
+                    *(moves++) = create_move(from, to, piece, NONE);
                 } else if (piece_colors_differ(piece, pos->board[to]->piece)) {
-                    *(moves++) = make_move(
+                    *(moves++) = create_move(
                             from, to, piece, pos->board[to]->piece);
                 }
             } while (!pos->board[to]);

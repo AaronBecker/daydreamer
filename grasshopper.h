@@ -74,27 +74,27 @@ typedef enum {
 typedef uint32_t move_t;
 #define ENPASSANT_FLAG          1<<29
 #define CASTLE_FLAG             1<<30
-#define move_from(move)         ((move) & 0xff)
-#define move_to(move)           (((move) >> 8) & 0xff)
-#define move_piece(move)        (((move) >> 16) & 0x0f)
-#define move_capture(move)      (((move) >> 20) & 0x0f)
-#define move_promote(move)      (((move) >> 24) & 0x0f)
-#define move_enpassant(move)    ((move) & ENPASSANT_FLAG)
-#define move_castle(move)       ((move) & CASTLE_FLAG)
-#define move_castle_long(move)  (move_castle(move) && \
-                                    square_file(move_to(move)) == FILE_C)
-#define move_castle_short(move) (move_castle(move) && \
-                                    square_file(move_to(move)) == FILE_G)
-#define make_move(from, to, piece, capture) \
+#define get_move_from(move)         ((move) & 0xff)
+#define get_move_to(move)           (((move) >> 8) & 0xff)
+#define get_move_piece(move)        (((move) >> 16) & 0x0f)
+#define get_move_capture(move)      (((move) >> 20) & 0x0f)
+#define get_move_promote(move)      (((move) >> 24) & 0x0f)
+#define get_move_enpassant(move)    ((move) & ENPASSANT_FLAG)
+#define get_move_castle(move)       ((move) & CASTLE_FLAG)
+#define is_move_castle_long(move)   (move_castle(move) && \
+                                        square_file(get_move_to(move)) == FILE_C)
+#define is_castle_short(move)       (move_castle(move) && \
+                                        square_file(get_move_to(move)) == FILE_G)
+#define create_move(from, to, piece, capture) \
                                 ((from) | ((to) << 8) | ((piece) << 16) | \
                                  ((capture) << 20))
-#define make_move_promote(from, to, piece, capture, promote) \
+#define create_move_promote(from, to, piece, capture, promote) \
                                 ((from) | ((to) << 8) | ((piece) << 16) | \
                                  ((capture) << 20) | ((promote) << 24))
-#define make_move_castle(from, to, piece) \
+#define create_move_castle(from, to, piece) \
                                 ((from) | ((to) << 8) | ((piece) << 16) | \
                                  CASTLE_FLAG)
-#define make_move_enpassant(from, to, piece, capture) \
+#define create_move_enpassant(from, to, piece, capture) \
                                 ((from) | ((to) << 8) | ((piece) << 16) | \
                                  ((capture) << 20) | ENPASSANT_FLAG)
 
