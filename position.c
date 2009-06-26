@@ -110,7 +110,9 @@ void set_position(position_t* pos, const char* fen)
     pos->ply = pos->ply*2 + (pos->side_to_move == BLACK ? 1 : 0);
 }
 
-bool is_square_attacked(const position_t* pos, const square_t sq, const color_t side)
+bool is_square_attacked(const position_t* pos,
+        const square_t sq,
+        const color_t side)
 {
     color_t other_side = side^1;
     // For every opposing piece, look up the attack data for its square.
@@ -152,8 +154,8 @@ bool is_move_legal(const position_t* pos, const move_t move)
     }
 
     // Just try the move and see if the king is being attacked afterwards.
-    // This is sort of inefficient--actually making and unmaking the move isn't strictly
-    // necessary.
+    // This is sort of inefficient--actually making and unmaking the move
+    // isn't strictly necessary.
     undo_info_t undo;
     do_move((position_t*)pos, move, &undo);
     bool legal = !is_square_attacked(pos, get_move_to(move), other_side);
@@ -161,3 +163,4 @@ bool is_move_legal(const position_t* pos, const move_t move)
 
     return legal;
 }
+
