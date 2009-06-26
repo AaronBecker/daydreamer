@@ -46,6 +46,7 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
 void do_move(position_t* pos, const move_t move, undo_info_t* undo)
 {
     // Set undo info, so we can roll back later.
+    undo->prev_move = pos->prev_move;
     undo->ep_square = pos->ep_square;
     undo->fifty_move_counter = pos->fifty_move_counter;
     undo->castle_rights = pos->castle_rights;
@@ -86,6 +87,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
 
     pos->ply++;
     pos->side_to_move ^= 1;
+    pos->prev_move = move;
 }
 
 void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
@@ -119,6 +121,7 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
     pos->ep_square = undo->ep_square;
     pos->fifty_move_counter = undo->fifty_move_counter;
     pos->castle_rights = undo->castle_rights;
+    pos->prev_move = undo->prev_move;
 }
 
 void check_move_validity(const position_t* pos, const move_t move)

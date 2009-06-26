@@ -73,6 +73,7 @@ typedef enum {
  * square_t  square_t  piece_t  piece_t  piece_type_t  bit  bit
  */
 typedef uint32_t move_t;
+#define NO_MOVE                     0
 #define ENPASSANT_FLAG              1<<29
 #define CASTLE_FLAG                 1<<30
 #define get_move_from(move)         ((move) & 0xff)
@@ -142,6 +143,7 @@ typedef struct {
 } position_t;
 
 typedef struct {
+    move_t prev_move;
     square_t ep_square;
     int fifty_move_counter;
     castle_rights_t castle_rights;
@@ -216,7 +218,7 @@ void move_to_san_str(position_t* pos, move_t move, char* str);
 void position_to_fen_str(position_t* pos, char* str);
 
 // perft.c
-void perft(char* fen_initial_position, int depth);
+void perft(char* fen_initial_position, int depth, bool divide);
 
 
 #ifdef __cplusplus

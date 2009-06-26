@@ -26,7 +26,9 @@ int main(void)
         9	2439530234167
         10	69352859712417
     */
-    perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",6);
+    perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",
+            6,
+            false);
     /*
         1	48
         2	2039

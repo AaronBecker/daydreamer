@@ -26,6 +26,7 @@ static void init_position(position_t* position)
     position->ply = 0;
     position->side_to_move = WHITE;
     position->castle_rights = CASTLE_NONE;
+    position->prev_move = NO_MOVE;
 }
 
 static square_t read_alg_square(const char* alg_square)
