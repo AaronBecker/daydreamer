@@ -110,7 +110,7 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
     } else if (is_move_enpassant(move)) {
         place_piece(pos, create_piece(side^1, PAWN), to-pawn_push[side]);
     } else if (promote_type) {
-        place_piece(pos, create_piece(side, PAWN), to);
+        place_piece(pos, create_piece(side, PAWN), from);
     }
 
     // Reset non-board state information.

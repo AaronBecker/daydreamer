@@ -44,13 +44,15 @@ int generate_moves(const position_t* pos, move_t* moves)
     if (has_oo_rights(pos, side) && !pos->board[king_home+1] &&
             !pos->board[king_home+2]) {
         moves = add_move(pos,
-                create_move_castle(king_home, king_home+2, EMPTY),
+                create_move_castle(king_home, king_home+2,
+                    create_piece(side, KING)),
                 moves);
     }
     if (has_ooo_rights(pos, side) && !pos->board[king_home-1] && 
             !pos->board[king_home-2] && !pos->board[king_home-3]) {
         moves = add_move(pos,
-                create_move_castle(king_home, king_home-2, EMPTY),
+                create_move_castle(king_home, king_home-2,
+                    create_piece(side, KING)),
                 moves);
     }
     *moves = 0;
