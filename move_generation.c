@@ -28,7 +28,19 @@ void generate_moves(const position_t* pos, move_t* moves)
             }
         }
     }
-    // FIXME: no castling or check recognition
+
+    // Castling. Castles are considered pseudo-legal if we have appropriate castling rights
+    // and the squares between king and rook are unoccupied.
+    // Note: this would require some overhauling to support Chess960.
+    square_t king_home = pos->pieces[side][KING][0].location;
+    if (has_oo_rights(pos, side) && !pos->board[king_home+1] && !pos->board[king_home+2]) {
+        *(moves++) = create_move_castle(king_home, king_home+2, EMPTY);
+    }
+    if (has_ooo_rights(pos, side) && !pos->board[king_home-1] && 
+            !pos->board[king_home-2] && !pos->board[king_home-3]) {
+        *(moves++) = create_move_castle(king_home, king_home-2, EMPTY);
+    }
+    *(moves+1) = 0;
 }
 
 static void generate_pawn_moves(const position_t* pos,

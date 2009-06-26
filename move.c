@@ -40,3 +40,10 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
     pos->board[to]->location = to;
 }
 
+void do_move(position_t* position, const move_t move, undo_info_t* undo)
+{
+}
+
+void undo_move(position_t* position, const move_t move, undo_info_t* undo)
+{
+}
