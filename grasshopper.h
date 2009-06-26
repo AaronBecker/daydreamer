@@ -25,7 +25,7 @@ typedef enum {
 } piece_t;
 
 typedef enum {
-    NONE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
+    NONE=0, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
 } piece_type_t;
 
 #define piece_type(piece)               ((piece) & 0x07)
@@ -53,7 +53,7 @@ typedef enum {
     A6=0x50, B6=0x51, C6=0x52, D6=0x53, E6=0x54, F6=0x55, G6=0x56, H6=0x57,
     A7=0x60, B7=0x61, C7=0x62, D7=0x63, E7=0x64, F7=0x65, G7=0x66, H7=0x67,
     A8=0x70, B8=0x71, C8=0x72, D8=0x73, E8=0x74, F8=0x75, G8=0x76, H8=0x77,
-    INVALID_SQUARE=0xff
+    INVALID_SQUARE=0x4b // just some square from the middle of the invalid part
 } square_t;
 
 #define square_rank(square)         ((square) >> 4)
@@ -80,8 +80,8 @@ typedef uint32_t move_t;
 #define get_move_piece(move)        (((move) >> 16) & 0x0f)
 #define get_move_capture(move)      (((move) >> 20) & 0x0f)
 #define get_move_promote(move)      (((move) >> 24) & 0x0f)
-#define is_move_enpassant(move)     (((move) & ENPASSANT_FLAG) == 0)
-#define is_move_castle(move)        (((move) & CASTLE_FLAG) == 0)
+#define is_move_enpassant(move)     (((move) & ENPASSANT_FLAG) == 1)
+#define is_move_castle(move)        (((move) & CASTLE_FLAG) == 1)
 #define is_move_castle_long(move)   (is_move_castle(move) && \
                                         (square_file(get_move_to(move)) == FILE_C))
 #define is_move_castle_short(move)  (is_move_castle(move) && \
@@ -103,7 +103,7 @@ typedef enum {
     NO_SLIDE=0, DIAGONAL, STRAIGHT, BOTH
 } slide_t;
 
-extern const int sliding_piece_types[];
+extern const slide_t sliding_piece_types[];
 #define piece_slide_type(piece)     (sliding_piece_types[piece])
 
 /**
@@ -196,7 +196,7 @@ void do_move(position_t* position, const move_t move, undo_info_t* undo);
 void undo_move(position_t* position, const move_t move, undo_info_t* undo);
 
 // move_generation.c
-void generate_moves(const position_t* position, move_t* move_list);
+int generate_moves(const position_t* position, move_t* move_list);
 
 // io.c
 void move_to_la_str(move_t move, char* str);
@@ -206,6 +206,9 @@ void print_board(const position_t* pos);
 // unimplemented
 void move_to_san_str(position_t* pos, move_t move, char* str);
 void position_to_fen_str(position_t* pos, char* str);
+
+// perft.c
+void perft(char* fen_initial_position, int depth);
 
 
 #ifdef __cplusplus

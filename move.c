@@ -52,8 +52,8 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     const square_t to = get_move_to(move);
     pos->ep_square = EMPTY;
     if (piece_type(get_move_piece(move)) == PAWN) {
-        if (relative_pawn_rank[square_rank(to)] -
-                relative_pawn_rank[square_rank(from)] != 1) {
+        if (relative_pawn_rank[side][square_rank(to)] -
+                relative_pawn_rank[side][square_rank(from)] != 1) {
             pos->ep_square = from + pawn_push[side];
         }
         pos->fifty_move_counter = 0;

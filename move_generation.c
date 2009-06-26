@@ -9,8 +9,9 @@ static void generate_piece_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
         move_t** moves);
 
-void generate_moves(const position_t* pos, move_t* moves)
+int generate_moves(const position_t* pos, move_t* moves)
 {
+    move_t* moves_head = moves;
     color_t side = pos->side_to_move;
     for (piece_type_t type = KING; type != NONE; --type) {
         for (int i = 0; i < pos->piece_count[side][type]; ++i) {
@@ -40,7 +41,8 @@ void generate_moves(const position_t* pos, move_t* moves)
             !pos->board[king_home-2] && !pos->board[king_home-3]) {
         *(moves++) = create_move_castle(king_home, king_home-2, EMPTY);
     }
-    *(moves+1) = 0;
+    *moves = 0;
+    return (moves-moves_head);
 }
 
 static void generate_pawn_moves(const position_t* pos,
@@ -115,7 +117,8 @@ static void generate_piece_moves(const position_t* pos,
             if (pos->board[to] == NULL) {
                 *(moves++) = create_move(from, to, piece, NONE);
             } else if (piece_colors_differ(piece, pos->board[to]->piece)) {
-                *(moves++) = create_move(from, to, piece, pos->board[to]->piece);
+                *(moves++) = create_move(
+                        from, to, piece, pos->board[to]->piece);
             }
         }
     } else {

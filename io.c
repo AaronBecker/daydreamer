@@ -9,11 +9,11 @@ void move_to_la_str(move_t move, char* str)
 {
     square_t from = get_move_from(move);
     square_t to = get_move_to(move);
-    str += snprintf(str, 4, "%c%c%c%c",
+    str += snprintf(str, 5, "%c%c%c%c",
            (char)square_file(from) + 'a', (char)square_rank(from) + '1',
            (char)square_file(to) + 'a', (char)square_rank(to) + '1');
     if (get_move_promote(move)) {
-        snprintf(str, 1, "%c", tolower(glyphs[get_move_piece(move)]));
+        snprintf(str, 2, "%c", tolower(glyphs[get_move_piece(move)]));
     }
 }
 
