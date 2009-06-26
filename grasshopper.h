@@ -80,8 +80,8 @@ typedef uint32_t move_t;
 #define get_move_piece(move)        (((move) >> 16) & 0x0f)
 #define get_move_capture(move)      (((move) >> 20) & 0x0f)
 #define get_move_promote(move)      (((move) >> 24) & 0x0f)
-#define is_move_enpassant(move)     (((move) & ENPASSANT_FLAG) == 1)
-#define is_move_castle(move)        (((move) & CASTLE_FLAG) == 1)
+#define is_move_enpassant(move)     (((move) & ENPASSANT_FLAG) != 0)
+#define is_move_castle(move)        (((move) & CASTLE_FLAG) != 0)
 #define is_move_castle_long(move)   (is_move_castle(move) && \
                                         (square_file(get_move_to(move)) == FILE_C))
 #define is_move_castle_short(move)  (is_move_castle(move) && \
@@ -132,7 +132,7 @@ typedef uint8_t castle_rights_t;
 typedef struct {
     piece_entry_t* board[128];          // 0x88 board
     piece_entry_t pieces[2][8][16];     // [color][type][piece entries]
-    uint8_t piece_count[2][8];          // [color][type]
+    int piece_count[2][8];              // [color][type]
     color_t side_to_move;
     move_t prev_move;
     square_t ep_square;
@@ -185,15 +185,23 @@ extern const attack_data_t* board_attack_data;
 
 // position.c
 void set_position(position_t* position, const char* fen);
-bool is_square_attacked(const position_t* position, const square_t square, const color_t side);
+bool is_square_attacked(const position_t* position,
+        const square_t square,
+        const color_t side);
 bool is_move_legal(const position_t* pos, const move_t move);
 
 // move.c
-void place_piece(position_t* position, const piece_t piece, const square_t square);
-void remove_piece(position_t* position, const square_t square);
-void transfer_piece(position_t* position, const square_t from, const square_t to);
+void place_piece(position_t* position,
+        const piece_t piece,
+        const square_t square);
+void remove_piece(position_t* position,
+        const square_t square);
+void transfer_piece(position_t* position,
+        const square_t from,
+        const square_t to);
 void do_move(position_t* position, const move_t move, undo_info_t* undo);
 void undo_move(position_t* position, const move_t move, undo_info_t* undo);
+void check_move_validity(const position_t* pos, const move_t move);
 
 // move_generation.c
 int generate_moves(const position_t* position, move_t* move_list);

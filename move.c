@@ -9,7 +9,9 @@ void place_piece(position_t* pos, const piece_t piece, const square_t square)
     }
     color_t color = piece_color(piece);
     piece_type_t type = piece_type(piece);
-    assert((color == WHITE || color == BLACK) && type != INVALID_PIECE);
+    assert(color == WHITE || color == BLACK);
+    assert(type != INVALID_PIECE);
+    assert(square != INVALID_SQUARE);
 
     piece_entry_t* entry = &pos->pieces[color][type]
         [pos->piece_count[color][type]++];
@@ -24,9 +26,10 @@ void remove_piece(position_t* pos, const square_t square)
     color_t color = piece_color(piece);
     piece_type_t type = piece_type(piece);
     // Swap the piece at the end of pos->pieces with the removed piece
-    int end_index = pos->piece_count[color][type]--;
+    int end_index = --pos->piece_count[color][type];
     pos->board[square]->piece = pos->pieces[color][type][end_index].piece;
     pos->board[square]->location = pos->pieces[color][type][end_index].location;
+    pos->board[pos->board[square]->location] = pos->board[square];
     pos->board[square] = NULL;
 }
 
@@ -50,6 +53,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     const color_t side = pos->side_to_move;
     const square_t from = get_move_from(move);
     const square_t to = get_move_to(move);
+    assert(valid_board_index(from) && valid_board_index(to));
     pos->ep_square = EMPTY;
     if (piece_type(get_move_piece(move)) == PAWN) {
         if (relative_pawn_rank[side][square_rank(to)] -
@@ -75,7 +79,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     } else if (is_move_castle_long(move)) {
         transfer_piece(pos, A1 + A8*side, D1 + A8*side);
     } else if (is_move_enpassant(move)) {
-        remove_piece(pos, undo->ep_square);
+        remove_piece(pos, to-pawn_push[side]);
     } else if (promote_type) {
         place_piece(pos, create_piece(side, promote_type), to);
     }
@@ -97,14 +101,14 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
         place_piece(pos, create_piece(pos->side_to_move, captured), to);
     }
 
-    // Un-promote/castle, if necessary.
+    // Un-promote/castle, if necessary, and fix en passant captures.
     const piece_type_t promote_type = get_move_promote(move);
     if (is_move_castle_short(move)) {
         transfer_piece(pos, F1 + A8*side, H1 + A8*side);
     } else if (is_move_castle_long(move)) {
         transfer_piece(pos, D1 + A8*side, A1 + A8*side);
     } else if (is_move_enpassant(move)) {
-        transfer_piece(pos, to, undo->ep_square);
+        place_piece(pos, create_piece(side^1, PAWN), to-pawn_push[side]);
     } else if (promote_type) {
         place_piece(pos, create_piece(side, PAWN), to);
     }
@@ -117,3 +121,18 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
     pos->castle_rights = undo->castle_rights;
 }
 
+void check_move_validity(const position_t* pos, const move_t move)
+{
+    const square_t from = get_move_from(move);
+    const square_t to = get_move_to(move);
+    const piece_t piece = get_move_piece(move);
+    const piece_t capture = get_move_capture(move);
+    assert(valid_board_index(from) && valid_board_index(to));
+    assert(pos->board[from]->piece == piece);
+    assert(pos->board[from]->location == from);
+    if (capture && !is_move_enpassant(move)) {
+        assert(pos->board[to]->piece == capture);
+    } else {
+        assert(pos->board[to] == NULL);
+    }
+}

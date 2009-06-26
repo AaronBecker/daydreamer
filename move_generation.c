@@ -9,6 +9,13 @@ static void generate_piece_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
         move_t** moves);
 
+static move_t* add_move(const position_t* pos, const move_t move, move_t* moves)
+{
+    check_move_validity(pos, move);
+    *(moves++) = move;
+    return moves;
+}
+
 int generate_moves(const position_t* pos, move_t* moves)
 {
     move_t* moves_head = moves;
@@ -30,16 +37,21 @@ int generate_moves(const position_t* pos, move_t* moves)
         }
     }
 
-    // Castling. Castles are considered pseudo-legal if we have appropriate castling rights
-    // and the squares between king and rook are unoccupied.
+    // Castling. Castles are considered pseudo-legal if we have appropriate
+    // castling rights and the squares between king and rook are unoccupied.
     // Note: this would require some overhauling to support Chess960.
     square_t king_home = E1 + side*A8;
-    if (has_oo_rights(pos, side) && !pos->board[king_home+1] && !pos->board[king_home+2]) {
-        *(moves++) = create_move_castle(king_home, king_home+2, EMPTY);
+    if (has_oo_rights(pos, side) && !pos->board[king_home+1] &&
+            !pos->board[king_home+2]) {
+        moves = add_move(pos,
+                create_move_castle(king_home, king_home+2, EMPTY),
+                moves);
     }
     if (has_ooo_rights(pos, side) && !pos->board[king_home-1] && 
             !pos->board[king_home-2] && !pos->board[king_home-3]) {
-        *(moves++) = create_move_castle(king_home, king_home-2, EMPTY);
+        moves = add_move(pos,
+                create_move_castle(king_home, king_home-2, EMPTY),
+                moves);
     }
     *moves = 0;
     return (moves-moves_head);
@@ -59,23 +71,26 @@ static void generate_pawn_moves(const position_t* pos,
         // non-promotions
         to = from + pawn_push[side];
         if (pos->board[to] == NULL) {
-            *(moves++) = create_move(from, to, piece, EMPTY);
+            moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
             to += pawn_push[side];
             if (relative_rank == RANK_2 && pos->board[to] == NULL) {
                 // initial two-square push
-                *(moves++) = create_move(from, to, piece, EMPTY);
+                moves = add_move(pos,
+                        create_move(from, to, piece, EMPTY),
+                        moves);
             }
         }
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             // captures
             to = from + *delta;
             if (to == pos->ep_square) {
-                *(moves++) = create_move_enpassant(from, to, piece,
-                        pos->board[to + pawn_push[side^1]]->piece);
+                moves = add_move(pos, create_move_enpassant(from, to, piece,
+                        pos->board[to + pawn_push[side^1]]->piece), moves);
             }
             if (!valid_board_index(to) || !pos->board[to]) continue;
             if (piece_colors_differ(piece, pos->board[to]->piece)) {
-                *(moves++) = create_move(from, to, piece, pos->board[to]->piece);
+                moves = add_move(pos, create_move(from, to, piece,
+                        pos->board[to]->piece), moves);
             }
         }
     } else {
@@ -83,7 +98,8 @@ static void generate_pawn_moves(const position_t* pos,
         to = from + pawn_push[side];
         if (pos->board[to] == NULL) {
             for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
-                *(moves++) = create_move_promote(from, to, piece, EMPTY, promoted);
+                moves = add_move(pos, create_move_promote(from, to, piece,
+                            EMPTY, promoted), moves);
             }
         }
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
@@ -92,8 +108,8 @@ static void generate_pawn_moves(const position_t* pos,
             if (!valid_board_index(to) || !pos->board[to]) continue;
             if (piece_colors_differ(piece, pos->board[to]->piece)) {
                 for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
-                    *(moves++) = create_move_promote(from, to, piece,
-                            pos->board[to]->piece, promoted);
+                    moves = add_move(pos, create_move_promote(from, to, piece,
+                            pos->board[to]->piece, promoted), moves);
                 }
             }
         }
@@ -115,10 +131,12 @@ static void generate_piece_moves(const position_t* pos,
             to = from + *delta;
             if (!valid_board_index(to)) continue;
             if (pos->board[to] == NULL) {
-                *(moves++) = create_move(from, to, piece, NONE);
+                moves = add_move(pos,
+                        create_move(from, to, piece, NONE),
+                        moves);
             } else if (piece_colors_differ(piece, pos->board[to]->piece)) {
-                *(moves++) = create_move(
-                        from, to, piece, pos->board[to]->piece);
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]->piece), moves);
             }
         }
     } else {
@@ -129,10 +147,12 @@ static void generate_piece_moves(const position_t* pos,
                 to += *delta;
                 if (!valid_board_index(to)) break;
                 if (pos->board[to] == NULL) {
-                    *(moves++) = create_move(from, to, piece, NONE);
+                    moves = add_move(pos,
+                            create_move(from, to, piece, NONE),
+                            moves);
                 } else if (piece_colors_differ(piece, pos->board[to]->piece)) {
-                    *(moves++) = create_move(
-                            from, to, piece, pos->board[to]->piece);
+                    moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]->piece), moves);
                 }
             } while (!pos->board[to]);
         }

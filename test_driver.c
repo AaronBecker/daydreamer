@@ -13,5 +13,5 @@ int main(void)
     print_board(&pos);
     generate_moves(&pos, moves);
     print_la_move_list(moves);
-    perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 3);
+    perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 6);
 }
