@@ -26,6 +26,12 @@ const direction_t piece_deltas[16][16] = {
     {0}                                                     // Null
 };
 
+const direction_t pawn_push[] = {N, S};
+const rank_t relative_pawn_rank[2][8] = {
+    {RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8},
+    {RANK_8, RANK_7, RANK_6, RANK_5, RANK_4, RANK_3, RANK_2, RANK_1}
+};
+
 const piece_flag_t piece_flags[] = {
     0, WP_FLAG, N_FLAG, B_FLAG, R_FLAG, Q_FLAG, K_FLAG, 0,
     0, BP_FLAG, N_FLAG, B_FLAG, R_FLAG, Q_FLAG, K_FLAG, 0, 0

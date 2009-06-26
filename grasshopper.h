@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,7 +15,7 @@ extern "C" {
  */
 
 typedef enum {
-    INVALID_COLOR=-1, WHITE=0, BLACK=1
+    WHITE=0, BLACK=1, INVALID_COLOR=INT_MAX
 } color_t;
 
 typedef enum {
@@ -31,7 +32,7 @@ typedef enum {
 #define piece_is_type(piece, type)      (piece_type((piece)) == (type))
 #define piece_color(piece)              ((piece) >> 3)
 #define piece_is_color(piece, color)    (piece_color((piece)) == (color))
-#define make_piece(color, type)         (((color) << 3) | (type))
+#define create_piece(color, type)       (((color) << 3) | (type))
 #define piece_colors_match(p1, p2)      (((p1) >> 3) == ((p2) >> 3))
 #define piece_colors_differ(p1, p2)     (((p1) >> 3) != ((p2) >> 3))
 
@@ -55,10 +56,10 @@ typedef enum {
     INVALID_SQUARE=0xff
 } square_t;
 
-#define square_rank(square)     ((square) >> 4)
-#define square_file(square)     ((square) & 0x0f)
-#define make_square(file, rank) (((rank) << 4) & (file))
-#define valid_board_index(idx)  !(idx & 0x88)
+#define square_rank(square)         ((square) >> 4)
+#define square_file(square)         ((square) & 0x0f)
+#define create_square(file, rank)   (((rank) << 4) & (file))
+#define valid_board_index(idx)      !(idx & 0x88)
 
 /**
  * Definitions for moves.
@@ -79,12 +80,12 @@ typedef uint32_t move_t;
 #define get_move_piece(move)        (((move) >> 16) & 0x0f)
 #define get_move_capture(move)      (((move) >> 20) & 0x0f)
 #define get_move_promote(move)      (((move) >> 24) & 0x0f)
-#define get_move_enpassant(move)    ((move) & ENPASSANT_FLAG)
-#define get_move_castle(move)       ((move) & CASTLE_FLAG)
-#define is_move_castle_long(move)   (get_move_castle(move) && \
-                                        square_file(get_move_to(move)) == FILE_C)
-#define is_move_castle_short(move)  (get_move_castle(move) && \
-                                        square_file(get_move_to(move)) == FILE_G)
+#define is_move_enpassant(move)     (((move) & ENPASSANT_FLAG) == 0)
+#define is_move_castle(move)        (((move) & CASTLE_FLAG) == 0)
+#define is_move_castle_long(move)   (is_move_castle(move) && \
+                                        (square_file(get_move_to(move)) == FILE_C))
+#define is_move_castle_short(move)  (is_move_castle(move) && \
+                                        (square_file(get_move_to(move)) == FILE_G))
 #define create_move(from, to, piece, capture) \
                                 ((from) | ((to) << 8) | ((piece) << 16) | \
                                  ((capture) << 20))
@@ -159,13 +160,15 @@ typedef enum {
 } direction_t;
 extern const direction_t piece_deltas[16][16];
 
+extern const direction_t pawn_push[];
+extern const rank_t relative_pawn_rank[2][8];
+
 typedef enum {
     NONE_FLAG=0, WP_FLAG=1<<0, BP_FLAG=1<<1, N_FLAG=1<<2,
     B_FLAG=1<<3, R_FLAG=1<<4, Q_FLAG=1<<5, K_FLAG=1<<6
 } piece_flag_t;
 extern const piece_flag_t piece_flags[];
 #define get_piece_flag(piece)       piece_flags[(piece)]
-
 
 typedef struct {
     piece_flag_t possible_attackers;

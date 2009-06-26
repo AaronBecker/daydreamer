@@ -32,7 +32,7 @@ void generate_moves(const position_t* pos, move_t* moves)
     // Castling. Castles are considered pseudo-legal if we have appropriate castling rights
     // and the squares between king and rook are unoccupied.
     // Note: this would require some overhauling to support Chess960.
-    square_t king_home = pos->pieces[side][KING][0].location;
+    square_t king_home = E1 + side*A8;
     if (has_oo_rights(pos, side) && !pos->board[king_home+1] && !pos->board[king_home+2]) {
         *(moves++) = create_move_castle(king_home, king_home+2, EMPTY);
     }
@@ -47,11 +47,6 @@ static void generate_pawn_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
         move_t** moves_head)
 {
-    static const direction_t pawn_push[] = {N, S};
-    static const rank_t relative_pawn_rank[2][8] = {
-        {RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8},
-        {RANK_8, RANK_7, RANK_6, RANK_5, RANK_4, RANK_3, RANK_2, RANK_1}
-    };
     color_t side = pos->side_to_move;
     piece_t piece = piece_entry->piece;
     square_t from = piece_entry->location;

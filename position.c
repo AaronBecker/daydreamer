@@ -15,7 +15,7 @@ static void init_position(position_t* position)
             position->piece_count[color][type] = 0;
             for (int index=0; index<16; ++index) {
                 piece_entry_t* entry = &position->pieces[color][type][index];
-                entry->piece = make_piece(color, type);
+                entry->piece = create_piece(color, type);
                 entry->location = INVALID_SQUARE;
             }
         }
@@ -25,6 +25,7 @@ static void init_position(position_t* position)
     position->ep_square = INVALID_SQUARE;
     position->ply = 0;
     position->side_to_move = WHITE;
+    position->castle_rights = CASTLE_NONE;
 }
 
 static square_t read_alg_square(const char* alg_square)
@@ -32,7 +33,7 @@ static square_t read_alg_square(const char* alg_square)
     assert(alg_square[0] >= 'a' && alg_square[0] < 'i');
     assert(alg_square[1] > '0' && alg_square[1] < '9'); 
     // TODO: log warning instead.
-    return make_square(tolower(alg_square[0])-'a', alg_square[1]-'1');
+    return create_square(tolower(alg_square[0])-'a', alg_square[1]-'1');
 }
 
 void set_position(position_t* pos, const char* fen)
@@ -80,7 +81,6 @@ void set_position(position_t* pos, const char* fen)
     while (*fen && isspace(*(++fen))) {}
 
     // Read castling rights.
-    pos->castle_rights = CASTLE_NONE;
     while (*fen && !isspace(*fen)) {
         switch (*fen) {
             case 'q': add_ooo_rights(pos, BLACK); break;
