@@ -16,6 +16,29 @@ static move_t* add_move(const position_t* pos, const move_t move, move_t* moves)
     return moves;
 }
 
+
+/*
+ * Fill the provided list with all pseudolegal moves in the given position.
+ */
+int generate_legal_moves(const position_t* pos, move_t* moves)
+{
+    int num_pseudo = generate_moves(pos, moves);
+    move_t* moves_tail = moves+num_pseudo;
+    move_t* moves_curr = moves;
+    while (moves_curr < moves_tail) {
+        if (!is_move_legal(pos, *moves_curr)) {
+            *moves_curr = *(--moves_tail);
+            *moves_tail = 0;
+        } else {
+            ++moves_curr;
+        }
+    }
+    return moves_tail-moves;
+}
+
+/*
+ * Fill the provided list with all pseudolegal moves in the given position.
+ */
 int generate_moves(const position_t* pos, move_t* moves)
 {
     move_t* moves_head = moves;
@@ -59,6 +82,9 @@ int generate_moves(const position_t* pos, move_t* moves)
     return (moves-moves_head);
 }
 
+/*
+ * Add all pseudo-legal moves that the given pawn can make.
+ */
 static void generate_pawn_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
         move_t** moves_head)
@@ -119,6 +145,10 @@ static void generate_pawn_moves(const position_t* pos,
     *moves_head = moves;
 }
 
+/*
+ * Add all pseudo-legal moves that the given piece (N/B/Q/K) can make,
+ * with the exception of castles.
+ */
 static void generate_piece_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
         move_t** moves_head)

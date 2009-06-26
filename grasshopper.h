@@ -206,6 +206,7 @@ void undo_move(position_t* position, const move_t move, undo_info_t* undo);
 void check_move_validity(const position_t* pos, const move_t move);
 
 // move_generation.c
+int generate_legal_moves(const position_t* pos, move_t* moves);
 int generate_moves(const position_t* position, move_t* move_list);
 
 // io.c

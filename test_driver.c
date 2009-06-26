@@ -5,14 +5,22 @@
 
 int main(void)
 {
-    //char* fen = "rnbqkbnr/pppppppp/8/8/8/N7/PPPPPPPP/R1BQKBNR b KQkq - 0 1";
-    //position_t pos;
-    //move_t moves[100];
-    //bzero(moves, 100*sizeof(move_t));
-    //set_position(&pos, fen);
-    //print_board(&pos);
-    //generate_moves(&pos, moves);
-    //print_la_move_list(moves);
+    char* fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPnP/RNBQKBNR w KQkq - 0 1";
+    position_t pos;
+    move_t moves[100];
+    bzero(moves, 100*sizeof(move_t));
+    set_position(&pos, fen);
+    print_board(&pos);
+    generate_legal_moves(&pos, moves);
+    print_la_move_list(moves);
+
+    fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+    set_position(&pos, fen);
+    print_board(&pos);
+    generate_legal_moves(&pos, moves);
+    print_la_move_list(moves);
+    generate_moves(&pos, moves);
+    print_la_move_list(moves);
     //perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 6);
     /*
         1	20
@@ -26,9 +34,9 @@ int main(void)
         9	2439530234167
         10	69352859712417
     */
-    perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",
-            6,
-            false);
+    //perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",
+    //        6,
+    //        true);
     /*
         1	48
         2	2039

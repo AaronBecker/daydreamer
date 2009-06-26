@@ -115,13 +115,12 @@ bool is_square_attacked(const position_t* pos,
         const square_t sq,
         const color_t side)
 {
-    color_t other_side = side^1;
     // For every opposing piece, look up the attack data for its square.
     for (piece_t p=PAWN; p<=KING; ++p) {
-        for (int i=0; i<pos->piece_count[other_side][p]; ++i) {
-            square_t from=pos->pieces[other_side][p][i].location;
+        for (int i=0; i<pos->piece_count[side][p]; ++i) {
+            square_t from=pos->pieces[side][p][i].location;
             const attack_data_t* attack_data = &get_attack_data(from, sq);
-            if (attack_data->possible_attackers | get_piece_flag(p)) {
+            if (attack_data->possible_attackers & get_piece_flag(p)) {
                 if (piece_slide_type(p) == NO_SLIDE) return true;
                 while (from != sq) {
                     from += attack_data->relative_direction;
@@ -159,9 +158,10 @@ bool is_move_legal(const position_t* pos, const move_t move)
     // isn't strictly necessary.
     undo_info_t undo;
     do_move((position_t*)pos, move, &undo);
-    bool legal = !is_square_attacked(pos, get_move_to(move), other_side);
+    bool legal = !is_square_attacked(pos,
+            pos->pieces[pos->side_to_move^1][KING][0].location,
+            other_side);
     undo_move((position_t*)pos, move, &undo);
-
     return legal;
 }
 

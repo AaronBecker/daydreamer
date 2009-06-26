@@ -24,7 +24,7 @@ static void divide(position_t* pos, int depth)
 {
     move_t move_list[128];
     move_t* current_move = move_list;
-    generate_moves(pos, move_list);
+    generate_legal_moves(pos, move_list);
 
     uint64_t child_nodes;
     //uint64_t* current_child_nodes = child_nodes;
@@ -45,7 +45,7 @@ static uint64_t full_search(position_t* pos, int depth)
     if (depth <= 0) return 1;
     move_t move_list[128];
     move_t* current_move = move_list;
-    int move_count = generate_moves(pos, move_list);
+    int move_count = generate_legal_moves(pos, move_list);
     if (depth == 1) return move_count;
 
     uint64_t nodes = 0;
