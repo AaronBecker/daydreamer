@@ -9,9 +9,10 @@ int main(void)
     position_t position;
     set_position(&position,
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    printf("grasshopper > ");
     while (fgets(command, 1024, stdin) != NULL) {
-        printf("grasshopper > ");
         handle_console(&position, command);
+        printf("grasshopper > ");
     }
 }
 

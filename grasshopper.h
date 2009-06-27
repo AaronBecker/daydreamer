@@ -9,6 +9,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 /**
  * Definitions for colors, pieces, and squares.
@@ -181,7 +182,10 @@ typedef struct {
 extern const attack_data_t* board_attack_data;
 #define get_attack_data(from, to)   board_attack_data[(from)-(to)]
 
-
+typedef struct {
+    struct timeval tv_start;
+    int elapsed_millis;
+} timer_t;
 
 /**
  * External function interface
@@ -232,6 +236,13 @@ void perft(position_t* position, int depth, bool divide);
 
 // storage.c
 void generate_attack_data(void);
+
+// timer.c
+void start_timer(timer_t* timer);
+void reset_timer(timer_t* timer);
+void resume_timer(timer_t* timer);
+int stop_timer(timer_t* timer);
+int elapsed_time(timer_t* timer);
 
 #ifdef __cplusplus
 } // extern "C"

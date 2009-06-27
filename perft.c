@@ -15,15 +15,16 @@ void perft_fen(char* fen_initial_position, int depth, bool div)
 
 void perft(position_t* position, int depth, bool div)
 {
-    print_board(position);
+    timer_t perft_timer;
+    start_timer(&perft_timer);
     if (div) {
         divide(position, depth);
     } else {
-        for (int d=1; d<=depth; ++d) {
-                uint64_t nodes = full_search(position, d);
-                printf("depth %2d: %15llu\n", d, nodes);
-        }
+        uint64_t nodes = full_search(position, depth);
+        printf("depth %d: %llu, ", depth, nodes);
     }
+    stop_timer(&perft_timer);
+    printf("elapsed time %d ms\n", elapsed_time(&perft_timer));
 }
 
 static void divide(position_t* pos, int depth)
