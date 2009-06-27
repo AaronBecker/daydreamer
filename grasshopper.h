@@ -231,8 +231,8 @@ move_t parse_la_move(position_t* pos, const char* la_move);
 square_t parse_la_square(const char* la_square);
 
 // perft.c
-void perft_fen(char* fen_initial_position, int depth, bool divide);
-void perft(position_t* position, int depth, bool divide);
+void perft_testsuite(char* filename);
+uint64_t perft(position_t* position, int depth, bool divide);
 
 // storage.c
 void generate_attack_data(void);

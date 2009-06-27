@@ -84,7 +84,15 @@ void handle_showfen(position_t* pos, char* command)
     printf("%s\n", fen_str);
 }
 
+static void handle_perftsuite(position_t* pos, char* command)
+{
+    (void)pos;
+    while(isspace(*command)) ++command;
+    perft_testsuite(command);
+}
+
 static char* command_prefixes[] = {
+    "perftsuite",
     "setboard",
     "showfen",
     "divide",
@@ -97,10 +105,11 @@ static char* command_prefixes[] = {
     NULL
 };
 static int command_prefix_lengths[] = {
-    8, 7, 6, 5, 5, 5, 4, 4, 4, 0
+    10, 8, 7, 6, 5, 5, 5, 4, 4, 4, 0
 };
 typedef void(*command_handler)(position_t*, char*);
 static command_handler handlers[] = {
+    &handle_perftsuite,
     &handle_setboard,
     &handle_showfen,
     &handle_divide,

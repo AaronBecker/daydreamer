@@ -1,33 +1,73 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 #include "grasshopper.h"
 
 static uint64_t full_search(position_t* pos, int depth);
-static void divide(position_t* pos, int depth);
+static uint64_t divide(position_t* pos, int depth);
+extern int errno;
 
-void perft_fen(char* fen_initial_position, int depth, bool div)
+void perft_testsuite(char* filename)
 {
-    position_t position;
-    set_position(&position, fen_initial_position);
-    perft(&position, depth, div);
+    char test_storage[1024];
+    char* test = test_storage;
+    position_t pos;
+    timer_t perft_timer;
+    reset_timer(&perft_timer);
+    FILE* test_file = fopen(filename, "r");
+    if (!test_file) {
+        printf("Couldn't open perft test file %s: %s\n",
+                filename, strerror(errno));
+        return;
+    }
+    int total_tests = 0, correct_tests = 0;
+    while (fgets(test, 1024, test_file)) {
+        char* fen = strsep(&test, ";");
+        set_position(&pos, fen);
+        printf("Test %d: %s\n", total_tests+1, fen);
+        bool failure = false;
+        do {
+            int depth;
+            uint64_t correct_answer;
+            sscanf(test, "D%d %llu", &depth, &correct_answer);
+            resume_timer(&perft_timer);
+            uint64_t result = full_search(&pos, depth);
+            int time = stop_timer(&perft_timer);
+            printf("\tDepth %d: %15llu", depth, result);
+            if (result != correct_answer) {
+                failure = true;
+                printf(" expected %15llu -- FAIL",
+                        correct_answer,
+                        time/1000.0);
+            } else printf(" -- SUCCESS");
+            printf(" / %.2fs\n", time/1000.0);
+        } while ((test = strchr(test, ';') + 1) != 1);
+        ++total_tests;
+        if (!failure) ++correct_tests;
+        test = test_storage;
+    }
+    printf("Tests completed. %d/%d tests passed in %.2fs.\n",
+            correct_tests, total_tests, elapsed_time(&perft_timer)/1000.0);
 }
 
-void perft(position_t* position, int depth, bool div)
+uint64_t perft(position_t* position, int depth, bool div)
 {
     timer_t perft_timer;
     start_timer(&perft_timer);
+    uint64_t nodes;
     if (div) {
-        divide(position, depth);
+        nodes = divide(position, depth);
     } else {
-        uint64_t nodes = full_search(position, depth);
+        nodes = full_search(position, depth);
         printf("depth %d: %llu, ", depth, nodes);
     }
     stop_timer(&perft_timer);
     printf("elapsed time %d ms\n", elapsed_time(&perft_timer));
+    return nodes;
 }
 
-static void divide(position_t* pos, int depth)
+static uint64_t divide(position_t* pos, int depth)
 {
     move_t move_list[256];
     move_t* current_move = move_list;
@@ -46,6 +86,7 @@ static void divide(position_t* pos, int depth)
         ++current_move;
     }
     printf("%d moves, %llu total nodes\n", num_moves, total_nodes);
+    return total_nodes;
 }
 
 static uint64_t full_search(position_t* pos, int depth)
