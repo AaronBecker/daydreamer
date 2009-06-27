@@ -38,11 +38,10 @@ void perft_testsuite(char* filename)
             if (result != correct_answer) {
                 failure = true;
                 printf(" expected %15llu -- FAIL",
-                        correct_answer,
-                        time/1000.0);
+                        correct_answer);
             } else printf(" -- SUCCESS");
             printf(" / %.2fs\n", time/1000.0);
-        } while ((test = strchr(test, ';') + 1) != 1);
+        } while ((test = strchr(test, ';') + 1) != (char*)1);
         ++total_tests;
         if (!failure) ++correct_tests;
         test = test_storage;
