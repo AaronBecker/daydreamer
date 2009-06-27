@@ -58,7 +58,7 @@ typedef enum {
 
 #define square_rank(square)         ((square) >> 4)
 #define square_file(square)         ((square) & 0x0f)
-#define create_square(file, rank)   (((rank) << 4) & (file))
+#define create_square(file, rank)   (((rank) << 4) | (file))
 #define valid_board_index(idx)      !(idx & 0x88)
 
 /**
@@ -181,6 +181,8 @@ typedef struct {
 extern const attack_data_t* board_attack_data;
 #define get_attack_data(from, to)   board_attack_data[(from)-(to)]
 
+
+
 /**
  * External function interface
  */
@@ -190,7 +192,7 @@ void set_position(position_t* position, const char* fen);
 bool is_square_attacked(const position_t* position,
         const square_t square,
         const color_t side);
-bool is_move_legal(const position_t* pos, const move_t move);
+bool is_move_legal(position_t* pos, const move_t move);
 
 // move.c
 void place_piece(position_t* position,
@@ -210,7 +212,9 @@ int generate_legal_moves(const position_t* pos, move_t* moves);
 int generate_moves(const position_t* position, move_t* move_list);
 
 // io.c
+void handle_console(position_t* pos, char* command);
 void move_to_la_str(move_t move, char* str);
+void position_to_fen_str(position_t* pos, char* fen);
 void print_la_move(move_t move);
 void print_la_move_list(const move_t* move);
 void print_board(const position_t* pos);
@@ -218,9 +222,16 @@ void print_board(const position_t* pos);
 void move_to_san_str(position_t* pos, move_t move, char* str);
 void position_to_fen_str(position_t* pos, char* str);
 
-// perft.c
-void perft(char* fen_initial_position, int depth, bool divide);
+// parse.c
+move_t parse_la_move(position_t* pos, const char* la_move);
+square_t parse_la_square(const char* la_square);
 
+// perft.c
+void perft_fen(char* fen_initial_position, int depth, bool divide);
+void perft(position_t* position, int depth, bool divide);
+
+// storage.c
+void generate_attack_data(void);
 
 #ifdef __cplusplus
 } // extern "C"
