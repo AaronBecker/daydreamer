@@ -26,7 +26,7 @@ int generate_legal_moves(const position_t* pos, move_t* moves)
     move_t* moves_tail = moves+num_pseudo;
     move_t* moves_curr = moves;
     while (moves_curr < moves_tail) {
-        if (!is_move_legal(pos, *moves_curr)) {
+        if (!is_move_legal((position_t*)pos, *moves_curr)) {
             *moves_curr = *(--moves_tail);
             *moves_tail = 0;
         } else {

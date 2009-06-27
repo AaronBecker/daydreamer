@@ -29,14 +29,6 @@ static void init_position(position_t* position)
     position->prev_move = NO_MOVE;
 }
 
-static square_t read_alg_square(const char* alg_square)
-{
-    assert(alg_square[0] >= 'a' && alg_square[0] < 'i');
-    assert(alg_square[1] > '0' && alg_square[1] < '9'); 
-    // TODO: log warning instead.
-    return create_square(tolower(alg_square[0])-'a', alg_square[1]-'1');
-}
-
 void set_position(position_t* pos, const char* fen)
 {
     init_position(pos);
@@ -101,7 +93,7 @@ void set_position(position_t* pos, const char* fen)
 
     // Read en-passant square
     if (*fen != '-') {
-        pos->ep_square = read_alg_square(fen++);
+        pos->ep_square = parse_la_square(fen++);
     }
     while (*fen && isspace(*(++fen))) {}
     if (!*fen) return;
@@ -120,7 +112,8 @@ bool is_square_attacked(const position_t* pos,
         for (int i=0; i<pos->piece_count[side][p]; ++i) {
             square_t from=pos->pieces[side][p][i].location;
             const attack_data_t* attack_data = &get_attack_data(from, sq);
-            if (attack_data->possible_attackers & get_piece_flag(p)) {
+            if (attack_data->possible_attackers &
+                    get_piece_flag(pos->pieces[side][p][i].piece)) {
                 if (piece_slide_type(p) == NO_SLIDE) return true;
                 while (from != sq) {
                     from += attack_data->relative_direction;
@@ -133,22 +126,19 @@ bool is_square_attacked(const position_t* pos,
     return false;
 }
 
-bool is_move_legal(const position_t* pos, const move_t move)
+bool is_move_legal(position_t* pos, const move_t move)
 {
     color_t other_side = pos->side_to_move^1;
     square_t king_square = pos->pieces[pos->side_to_move][KING][0].location;
-    if (get_move_piece(move) == KING) {
-        return !is_square_attacked(pos, get_move_to(move), other_side);
-    }
 
     // See if any attacks are preventing castling.
     if (is_move_castle_long(move)) {
-        return (is_square_attacked(pos, king_square, other_side) ||
+        return !(is_square_attacked(pos, king_square, other_side) ||
                 is_square_attacked(pos, king_square-1, other_side) ||
                 is_square_attacked(pos, king_square-2, other_side));
     }
     if (is_move_castle_short(move)) {
-        return (is_square_attacked(pos, king_square, other_side) ||
+        return !(is_square_attacked(pos, king_square, other_side) ||
                 is_square_attacked(pos, king_square+1, other_side) ||
                 is_square_attacked(pos, king_square+2, other_side));
     }
@@ -157,11 +147,11 @@ bool is_move_legal(const position_t* pos, const move_t move)
     // This is sort of inefficient--actually making and unmaking the move
     // isn't strictly necessary.
     undo_info_t undo;
-    do_move((position_t*)pos, move, &undo);
+    do_move(pos, move, &undo);
     bool legal = !is_square_attacked(pos,
             pos->pieces[pos->side_to_move^1][KING][0].location,
             other_side);
-    undo_move((position_t*)pos, move, &undo);
+    undo_move(pos, move, &undo);
     return legal;
 }
 

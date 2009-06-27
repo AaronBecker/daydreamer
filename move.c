@@ -52,6 +52,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     undo->castle_rights = pos->castle_rights;
 
     const color_t side = pos->side_to_move;
+    const color_t other_side = side^1;
     const square_t from = get_move_from(move);
     const square_t to = get_move_to(move);
     assert(valid_board_index(from) && valid_board_index(to));
@@ -67,10 +68,12 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     // Remove castling rights as necessary.
     if (from == A1 + side*A8) remove_ooo_rights(pos, side);
     else if (from == H1 + side*A8) remove_oo_rights(pos, side);
-    else if (from == E1 + ((unsigned)side)*A8)  {
+    else if (from == E1 + side*A8)  {
         remove_oo_rights(pos, side);
         remove_ooo_rights(pos, side);
     } 
+    if (to == A1 + other_side*A8) remove_ooo_rights(pos, other_side);
+    else if (to == H1 + other_side*A8) remove_oo_rights(pos, other_side);
 
     transfer_piece(pos, from, to);
 
@@ -100,7 +103,11 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
     transfer_piece(pos, to, from);
     piece_type_t captured = get_move_capture(move);
     if (captured != EMPTY) {
-        place_piece(pos, create_piece(pos->side_to_move, captured), to);
+        if (is_move_enpassant(move)) {
+            place_piece(pos, create_piece(side^1, PAWN), to-pawn_push[side]);
+        } else {
+            place_piece(pos, create_piece(pos->side_to_move, captured), to);
+        }
     }
 
     // Un-promote/castle, if necessary, and fix en passant captures.
@@ -109,8 +116,6 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
         transfer_piece(pos, F1 + A8*side, H1 + A8*side);
     } else if (is_move_castle_long(move)) {
         transfer_piece(pos, D1 + A8*side, A1 + A8*side);
-    } else if (is_move_enpassant(move)) {
-        place_piece(pos, create_piece(side^1, PAWN), to-pawn_push[side]);
     } else if (promote_type) {
         place_piece(pos, create_piece(side, PAWN), from);
     }
