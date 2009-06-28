@@ -25,7 +25,7 @@ tags: $(SRCFILES)
 	$(CTAGS) $(HEADERS) $(SRCFILES)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $<
 
 clean:
 	rm -f $(OBJFILES) grasshopper tags
