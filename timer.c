@@ -25,12 +25,12 @@ void start_timer(timer_t* timer)
  */
 int stop_timer(timer_t* timer)
 {
-    timer->running = false;
     struct timeval tv_end;
     gettimeofday(&tv_end, NULL);
     int elapsed_millis = (tv_end.tv_sec - timer->tv_start.tv_sec)*1000 +
         (tv_end.tv_usec - timer->tv_start.tv_usec)/1000;
     timer->elapsed_millis += elapsed_millis;
+    timer->running = false;
     return elapsed_millis;
 }
 
@@ -40,6 +40,14 @@ int stop_timer(timer_t* timer)
  */
 int elapsed_time(timer_t* timer)
 {
+    if (timer->running) {
+        struct timeval tv_end;
+        gettimeofday(&tv_end, NULL);
+        int elapsed_millis = (tv_end.tv_sec - timer->tv_start.tv_sec)*1000 +
+            (tv_end.tv_usec - timer->tv_start.tv_usec)/1000;
+        timer->elapsed_millis += elapsed_millis;
+        gettimeofday(&timer->tv_start, NULL);
+    }
     return timer->elapsed_millis;
 }
 
