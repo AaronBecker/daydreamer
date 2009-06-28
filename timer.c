@@ -2,11 +2,20 @@
 #include "grasshopper.h"
 
 /*
+ * Initialize a timer.
+ */
+void init_timer(timer_t* timer)
+{
+    timer->elapsed_millis = 0;
+    timer->running = false;
+}
+
+/*
  * Start up a timer with a new clock.
  */
 void start_timer(timer_t* timer)
 {
-    timer->elapsed_millis = 0;
+    timer->running = true;
     gettimeofday(&timer->tv_start, NULL);
 }
 
@@ -16,28 +25,13 @@ void start_timer(timer_t* timer)
  */
 int stop_timer(timer_t* timer)
 {
+    timer->running = false;
     struct timeval tv_end;
     gettimeofday(&tv_end, NULL);
     int elapsed_millis = (tv_end.tv_sec - timer->tv_start.tv_sec)*1000 +
         (tv_end.tv_usec - timer->tv_start.tv_usec)/1000;
     timer->elapsed_millis += elapsed_millis;
     return elapsed_millis;
-}
-
-/*
- * Restart a timer that's been stopped without resetting its internal clock.
- */
-void resume_timer(timer_t* timer)
-{
-    gettimeofday(&timer->tv_start, NULL);
-}
-
-/*
- * Reset the internal clock of a timer.
- */
-void reset_timer(timer_t* timer)
-{
-    timer->elapsed_millis = 0;
 }
 
 /*

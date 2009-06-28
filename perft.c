@@ -25,7 +25,7 @@ void perft_testsuite(char* filename)
     char* test = test_storage;
     position_t pos;
     timer_t perft_timer;
-    reset_timer(&perft_timer);
+    init_timer(&perft_timer);
     FILE* test_file = fopen(filename, "r");
     if (!test_file) {
         extern int errno;
@@ -43,7 +43,7 @@ void perft_testsuite(char* filename)
             int depth;
             uint64_t correct_answer;
             sscanf(test, "D%d %llu", &depth, &correct_answer);
-            resume_timer(&perft_timer);
+            start_timer(&perft_timer);
             uint64_t result = full_search(&pos, depth);
             int time = stop_timer(&perft_timer);
             printf("\tDepth %d: %15llu", depth, result);
@@ -70,6 +70,7 @@ void perft_testsuite(char* filename)
 uint64_t perft(position_t* position, int depth, bool div)
 {
     timer_t perft_timer;
+    init_timer(&perft_timer);
     start_timer(&perft_timer);
     uint64_t nodes;
     if (div) {

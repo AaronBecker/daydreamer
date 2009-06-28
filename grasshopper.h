@@ -194,6 +194,7 @@ extern const attack_data_t* board_attack_data;
 typedef struct {
     struct timeval tv_start;
     int elapsed_millis;
+    bool running;
 } timer_t;
 
 /*
@@ -203,6 +204,16 @@ extern int piece_square_values[BK+1][0x80];
 extern const int material_values[];
 #define material_value(piece)               material_values[piece]
 #define piece_square_value(piece, square)   piece_square_values[piece][square]
+
+/*
+ * Search data.
+ */
+typedef struct {
+    uint64_t node_limit;
+    int depth_limit;
+    timer_t search_timer;
+    int deadline;
+} search_data_t;
 
 /**
  * External function interface
@@ -262,9 +273,8 @@ int search(position_t* pos, int alpha, int beta, int depth);
 void root_search(position_t* pos, int depth);
 
 // timer.c
+void init_timer(timer_t* timer);
 void start_timer(timer_t* timer);
-void reset_timer(timer_t* timer);
-void resume_timer(timer_t* timer);
 int stop_timer(timer_t* timer);
 int elapsed_time(timer_t* timer);
 
