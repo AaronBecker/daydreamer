@@ -289,7 +289,7 @@ void print_la_move_list(const move_t* move)
 {
     while(*move) {
         print_la_move(*move++);
-        printf("\n");
+        printf(" ");
     }
     printf("\n");
 }

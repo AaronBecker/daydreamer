@@ -208,12 +208,19 @@ extern const int material_values[];
 /*
  * Search data.
  */
+#define MAX_SEARCH_DEPTH        64
+
 typedef struct {
     uint64_t node_limit;
+    uint64_t nodes_searched;
     int depth_limit;
-    timer_t search_timer;
+    timer_t timer;
     int deadline;
 } search_data_t;
+
+typedef struct {
+    move_t pv[MAX_SEARCH_DEPTH];
+} search_node_t;
 
 /**
  * External function interface
@@ -269,7 +276,6 @@ void perft_testsuite(char* filename);
 uint64_t perft(position_t* position, int depth, bool divide);
 
 // search.c
-int search(position_t* pos, int alpha, int beta, int depth);
 void root_search(position_t* pos, int depth);
 
 // timer.c
