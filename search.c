@@ -73,14 +73,18 @@ void root_search(position_t* pos, int depth)
     for (move_t* move = root_moves; *move; ++move, ++move_index) {
         undo_info_t undo;
         do_move(pos, *move, &undo);
-        scores[move_index] = -search(pos, search_stack, 0,
+        scores[move_index] = -search(pos, search_stack, 1,
                 -beta, -alpha, depth-1);
-        int i=0;
+        int i=1;
+        pvs[move_index][0] = *move;
         for (; search_stack->pv[i] != NO_MOVE; ++i) {
             pvs[move_index][i] = search_stack->pv[i];
         }
         pvs[move_index][i] = NO_MOVE;
         undo_move(pos, *move, &undo);
+        print_pv(pvs[move_index], depth, scores[move_index],
+                elapsed_time(&root_search_data.timer),
+                root_search_data.nodes_searched);
     }
     stop_timer(&root_search_data.timer);
     
@@ -90,9 +94,9 @@ void root_search(position_t* pos, int depth)
     int best_index=-1;
     char la_move[6];
     for (move_t* move = root_moves; *move; ++move, ++move_index) {
-        move_to_la_str(*move, la_move);
-        printf("%s:\t%d\n", la_move, scores[move_index]);
-        print_la_move_list(pvs[move_index]);
+        //move_to_la_str(*move, la_move);
+        //printf("%s:\t%d\n", la_move, scores[move_index]);
+        //print_la_move_list(pvs[move_index]);
         if (scores[move_index] > best_score) {
             best_index = move_index;
             best_score = scores[move_index];
@@ -100,11 +104,11 @@ void root_search(position_t* pos, int depth)
         }
     }
     move_to_la_str(best_move, la_move);
-    float time_taken = ((float)elapsed_time(&root_search_data.timer))/100.0;
+    float time_taken = ((float)elapsed_time(&root_search_data.timer))/1000.0;
     printf("\nbest move: %s, %d\n", la_move, best_score);
     print_la_move_list(pvs[best_index]);
     printf("nodes searched: %llu\n", root_search_data.nodes_searched);
-    printf("time elapsed: %.2f, %.2f nodes/s\n", time_taken,
+    printf("time elapsed: %.2fs, %.2f nodes/s\n", time_taken,
             root_search_data.nodes_searched / time_taken);
 
     // TODO: iterative deepening

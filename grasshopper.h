@@ -264,6 +264,7 @@ void position_to_fen_str(position_t* pos, char* fen);
 void print_la_move(move_t move);
 void print_la_move_list(const move_t* move);
 void print_board(const position_t* pos);
+void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes);
 // unimplemented
 void move_to_san_str(position_t* pos, move_t move, char* str);
 

@@ -279,7 +279,7 @@ void print_la_move(move_t move)
 {
     static char move_str[6];
     move_to_la_str(move, move_str);
-    printf("%s", move_str);
+    printf("%s ", move_str);
 }
 
 /*
@@ -289,9 +289,18 @@ void print_la_move_list(const move_t* move)
 {
     while(*move) {
         print_la_move(*move++);
-        printf(" ");
     }
     printf("\n");
+}
+
+/*
+ * Print a princial variation in uci format.
+ */
+void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes)
+{
+    printf("info depth %d score cp %d time %d nodes %llu nps %.2f pv ",
+            depth, score, time, nodes, (float)nodes/time*1000);
+    print_la_move_list(pv);
 }
 
 /*
