@@ -24,6 +24,7 @@ static const command_handler handlers[];
  */
 void handle_console(position_t* pos, char* command)
 {
+    while(isspace(*command)) ++command;
     for (int i=0; command_prefixes[i]; ++i) {
         if (!strncasecmp(command,
                     command_prefixes[i],
@@ -32,6 +33,15 @@ void handle_console(position_t* pos, char* command)
             return;
         }
     }
+    // try to treat the input as a long algebraic move
+    move_t move;
+    move = parse_la_move(pos, command);
+    if (!move) {
+        printf("unrecognized command\n");
+        return;
+    }
+    undo_info_t undo;
+    do_move(pos, move, &undo);
 }
 
 /*
@@ -72,23 +82,6 @@ void handle_eval(position_t* pos, char* command)
     pos->side_to_move ^=1;
     assert(simple_eval(pos) == -eval);
     pos->side_to_move ^=1;
-}
-
-/*
- * Command: move <la_move>
- * Executes a move specified in long algebraic notation.
- */
-void handle_move(position_t* pos, char* command)
-{
-    while(isspace(*command)) ++command;
-    move_t move;
-    move = parse_la_move(pos, command);
-    if (!move) {
-        printf("invalid move\n");
-        return;
-    }
-    undo_info_t undo;
-    do_move(pos, move, &undo);
 }
 
 void handle_undo(position_t* pos, char* command)
@@ -182,14 +175,13 @@ static const char* command_prefixes[] = {
     "perft",
     "print",
     "eval",
-    "move",
     "undo",
     "quit",
     NULL
 };
 
 static const int command_prefix_lengths[] = {
-    10, 8, 7, 6, 5, 5, 5, 4, 4, 4, 4, 0
+    10, 8, 7, 6, 5, 5, 5, 4, 4, 4, 0
 };
 
 static const command_handler handlers[] = {
@@ -201,7 +193,6 @@ static const command_handler handlers[] = {
     &handle_perft,
     &handle_print,
     &handle_eval,
-    &handle_move,
     &handle_undo,
     &handle_quit
 };
