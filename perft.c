@@ -6,8 +6,19 @@
 
 static uint64_t full_search(position_t* pos, int depth);
 static uint64_t divide(position_t* pos, int depth);
-extern int errno;
 
+/*
+ * Execute a series of perft tests from a given file. The test file consists of
+ * any number of test lines, and each line has the following format:
+ * <fen description>( ;D<d> <nodes>)+
+ * where <d> is the target depth and <nodes is the number of nodes at that
+ * depth. So, for example, to test the initial position at depths 1 and 2:
+ * rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ;D1 20 ;D2 400
+ * The test results and elapsed time are printed to stdout.
+ *
+ * This file format and the associated test files are taken from ROCE. For
+ * more information, see http://www.rocechess.ch/rocee.html.
+ */
 void perft_testsuite(char* filename)
 {
     char test_storage[1024];
@@ -17,6 +28,7 @@ void perft_testsuite(char* filename)
     reset_timer(&perft_timer);
     FILE* test_file = fopen(filename, "r");
     if (!test_file) {
+        extern int errno;
         printf("Couldn't open perft test file %s: %s\n",
                 filename, strerror(errno));
         return;
@@ -50,6 +62,11 @@ void perft_testsuite(char* filename)
             correct_tests, total_tests, elapsed_time(&perft_timer)/1000.0);
 }
 
+/*
+ * Determine the total number of nodes at depth |depth| in the game tree
+ * rooted at |position|. If |div| is true, report numbers for each current
+ * legal move. The number of nodes found and elapsed time are reported.
+ */
 uint64_t perft(position_t* position, int depth, bool div)
 {
     timer_t perft_timer;
@@ -59,13 +76,17 @@ uint64_t perft(position_t* position, int depth, bool div)
         nodes = divide(position, depth);
     } else {
         nodes = full_search(position, depth);
-        printf("depth %d: %llu, ", depth, nodes);
+        printf("%llu nodes", nodes);
     }
     stop_timer(&perft_timer);
-    printf("elapsed time %d ms\n", elapsed_time(&perft_timer));
+    printf(", elapsed time %d ms\n", elapsed_time(&perft_timer));
     return nodes;
 }
 
+/*
+ * Print the number of nodes descended from each legal move in the given
+ * position at depth |depth|, returning the total number of nodes.
+ */
 static uint64_t divide(position_t* pos, int depth)
 {
     move_t move_list[256];
@@ -84,10 +105,14 @@ static uint64_t divide(position_t* pos, int depth)
         printf("%s: %llu\n", la_move, child_nodes);
         ++current_move;
     }
-    printf("%d moves, %llu total nodes\n", num_moves, total_nodes);
+    printf("%d moves, %llu nodes", num_moves, total_nodes);
     return total_nodes;
 }
 
+/*
+ * Do a full search of the position tree rooted at |pos|, to depth |depth|.
+ * This does no evaluation whatsoever, it just counts nodes.
+ */
 static uint64_t full_search(position_t* pos, int depth)
 {
     if (depth <= 0) return 1;

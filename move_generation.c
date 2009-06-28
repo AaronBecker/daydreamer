@@ -9,22 +9,27 @@ static void generate_piece_moves(const position_t* pos,
         const piece_entry_t* piece_entry,
         move_t** moves);
 
-static move_t* add_move(const position_t* pos, const move_t move, move_t* moves)
+/*
+ * Push a new move onto a stack of moves, first doing some sanity checks.
+ */
+static move_t* add_move(const position_t* pos,
+        const move_t move,
+        move_t* moves)
 {
     check_move_validity(pos, move);
     *(moves++) = move;
     return moves;
 }
 
-
 /*
- * Fill the provided list with all pseudolegal moves in the given position.
+ * Fill the provided list with all legal moves in the given position.
  */
 int generate_legal_moves(const position_t* pos, move_t* moves)
 {
     int num_pseudo = generate_moves(pos, moves);
     move_t* moves_tail = moves+num_pseudo;
     move_t* moves_curr = moves;
+    int test=0;
     while (moves_curr < moves_tail) {
         if (!is_move_legal((position_t*)pos, *moves_curr)) {
             *moves_curr = *(--moves_tail);
@@ -38,6 +43,8 @@ int generate_legal_moves(const position_t* pos, move_t* moves)
 
 /*
  * Fill the provided list with all pseudolegal moves in the given position.
+ * Pseudolegal moves are moves which would be legal if we didn't have to worry
+ * about leaving our king in check.
  */
 int generate_moves(const position_t* pos, move_t* moves)
 {

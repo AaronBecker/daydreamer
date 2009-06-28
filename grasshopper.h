@@ -224,7 +224,6 @@ void print_la_move_list(const move_t* move);
 void print_board(const position_t* pos);
 // unimplemented
 void move_to_san_str(position_t* pos, move_t move, char* str);
-void position_to_fen_str(position_t* pos, char* str);
 
 // parse.c
 move_t parse_la_move(position_t* pos, const char* la_move);

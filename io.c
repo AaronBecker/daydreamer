@@ -4,10 +4,38 @@
 #include <string.h>
 #include "grasshopper.h"
     
-static const char glyphs[] = " PNBRQK  pnbrqk";
+static const char glyphs[] = ".PNBRQK  pnbrqk";
 
 /**
  * Console command handling.
+ */
+
+static const char* command_prefixes[];
+static const int command_prefix_lengths[];
+typedef void(*command_handler)(position_t*, char*);
+static const command_handler handlers[];
+
+/*
+ * Take a command string and dispatch the appropriate handler function.
+ * The command is checked to see if it starts with a recongnized command
+ * string. If it does, the appropriate handler function is called with the
+ * remainder of the command as an argument.
+ */
+void handle_console(position_t* pos, char* command)
+{
+    for (int i=0; command_prefixes[i]; ++i) {
+        if (!strncasecmp(command,
+                    command_prefixes[i],
+                    command_prefix_lengths[i])) {
+            handlers[i](pos, command+command_prefix_lengths[i]);
+            return;
+        }
+    }
+}
+
+/*
+ * Command: setboard <fen>
+ * Sets the board to the given FEN position.
  */
 void handle_setboard(position_t* pos, char* command)
 {
@@ -15,12 +43,20 @@ void handle_setboard(position_t* pos, char* command)
     set_position(pos, command);
 }
 
+/*
+ * Command: print
+ * Prints an ascii represenation of the current position.
+ */
 void handle_print(position_t* pos, char* command)
 {
     (void)command;
     print_board(pos);
 }
 
+/*
+ * Command: move <la_move>
+ * Executes a move specified in long algebraic notation.
+ */
 void handle_move(position_t* pos, char* command)
 {
     while(isspace(*command)) ++command;
@@ -41,6 +77,10 @@ void handle_undo(position_t* pos, char* command)
     printf("not implemented\n");
 }
 
+/*
+ * Command: moves
+ * Print all legal and pseudo-legal moves in the current position.
+ */
 void handle_moves(position_t* pos, char* command)
 {
     (void)command;
@@ -53,6 +93,10 @@ void handle_moves(position_t* pos, char* command)
     print_la_move_list(moves);
 }
 
+/*
+ * Command: perft <depth>
+ * Count the nodes at depth <depth> in the current game tree.
+ */
 void handle_perft(position_t* pos, char* command)
 {
     int depth;
@@ -61,6 +105,11 @@ void handle_perft(position_t* pos, char* command)
     perft(pos, depth, false);
 }
 
+/*
+ * Command: divide <depth>
+ * Count the nodes at depth <depth> in the current game tree, separating out
+ * the results for each move.
+ */
 void handle_divide(position_t* pos, char* command)
 {
     int depth;
@@ -69,6 +118,10 @@ void handle_divide(position_t* pos, char* command)
     perft(pos, depth, true);
 }
 
+/*
+ * Command: quit
+ * Exit the program.
+ */
 void handle_quit(position_t* pos, char* command)
 {
     (void)pos;
@@ -76,6 +129,10 @@ void handle_quit(position_t* pos, char* command)
     exit(0);
 }
 
+/*
+ * Command: showfen
+ * Print the FEN representation of the current position.
+ */
 void handle_showfen(position_t* pos, char* command)
 {
     (void)command;
@@ -84,6 +141,10 @@ void handle_showfen(position_t* pos, char* command)
     printf("%s\n", fen_str);
 }
 
+/*
+ * Command: perftsuite <filename>
+ * Run the perftsuite in the file with the given name.
+ */
 static void handle_perftsuite(position_t* pos, char* command)
 {
     (void)pos;
@@ -91,7 +152,7 @@ static void handle_perftsuite(position_t* pos, char* command)
     perft_testsuite(command);
 }
 
-static char* command_prefixes[] = {
+static const char* command_prefixes[] = {
     "perftsuite",
     "setboard",
     "showfen",
@@ -104,11 +165,12 @@ static char* command_prefixes[] = {
     "quit",
     NULL
 };
-static int command_prefix_lengths[] = {
+
+static const int command_prefix_lengths[] = {
     10, 8, 7, 6, 5, 5, 5, 4, 4, 4, 0
 };
-typedef void(*command_handler)(position_t*, char*);
-static command_handler handlers[] = {
+
+static const command_handler handlers[] = {
     &handle_perftsuite,
     &handle_setboard,
     &handle_showfen,
@@ -121,20 +183,12 @@ static command_handler handlers[] = {
     &handle_quit
 };
 
-void handle_console(position_t* pos, char* command)
-{
-    for (int i=0; command_prefixes[i]; ++i) {
-        if (!strncasecmp(command,
-                    command_prefixes[i],
-                    command_prefix_lengths[i])) {
-            handlers[i](pos, command+command_prefix_lengths[i]);
-            return;
-        }
-    }
-}
+/**
+ * Text conversion functions.
+ */
 
 /*
- * Text conversion functions.
+ * Convert a move to its long algebraic string form.
  */
 void move_to_la_str(move_t move, char* str)
 {
@@ -148,6 +202,10 @@ void move_to_la_str(move_t move, char* str)
     }
 }
 
+/*
+ * Convert a position to its FEN form.
+ * (see wikipedia.org/wiki/Forsyth-Edwards_Notation)
+ */
 void position_to_fen_str(position_t* pos, char* fen)
 {
     int empty_run=0;
@@ -186,6 +244,9 @@ void position_to_fen_str(position_t* pos, char* fen)
     *fen = '\0';
 }
 
+/*
+ * Print the long algebraic form of |move| to stdout.
+ */
 void print_la_move(move_t move)
 {
     static char move_str[6];
@@ -193,6 +254,9 @@ void print_la_move(move_t move)
     printf("%s", move_str);
 }
 
+/*
+ * Print a null-terminated list of moves to stdout.
+ */
 void print_la_move_list(const move_t* move)
 {
     while(*move) {
@@ -202,6 +266,9 @@ void print_la_move_list(const move_t* move)
     printf("\n");
 }
 
+/*
+ * Print an ascii representation of the current board.
+ */
 void print_board(const position_t* pos)
 {
     for (square_t sq = A8; sq != INVALID_SQUARE; ++sq) {
@@ -215,7 +282,6 @@ void print_board(const position_t* pos)
     }
 }
 
-
 // unimplemented
 void move_to_san_str(position_t* pos, move_t move, char* str);
-void position_to_fen_str(position_t* pos, char* str);
+

@@ -3,6 +3,10 @@
 #include <ctype.h>
 #include "grasshopper.h"
 
+/*
+ * Convert an algebraic string representation of a square (e.g. A1, c6) to
+ * a square_t.
+ */
 square_t parse_la_square(const char* alg_square)
 {
     assert(tolower(alg_square[0]) >= 'a' && tolower(alg_square[0]) < 'i');
@@ -11,6 +15,11 @@ square_t parse_la_square(const char* alg_square)
     return create_square(tolower(alg_square[0])-'a', alg_square[1]-'1');
 }
 
+/*
+ * Convert a long algebraic move string (e.g. E2E4, c7c8q) to a move_t.
+ * Only legal moves are generated--if the given move is impossible, NO_MOVE
+ * is returned instead.
+ */
 move_t parse_la_move(position_t* pos, const char* la_move)
 {
     square_t from = parse_la_square(la_move);

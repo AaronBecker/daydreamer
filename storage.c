@@ -108,9 +108,9 @@ const attack_data_t board_attack_data_storage[256] = {
 const attack_data_t* board_attack_data = board_attack_data_storage + 128;
 
 /**
- * This is the function originally used to generate the static board attack data. It's not used
- * for anything now, but if the attack data structures are changed and this data needs to be
- * regenerated, this could come in handy.
+ * This is the function originally used to generate the static board attack
+ * data. It's not used for anything now, but if the attack data structures are
+ * changed and this data needs to be regenerated, this could come in handy.
  */
 #include <strings.h>
 #include <stdio.h>

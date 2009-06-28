@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include "grasshopper.h"
 
+/*
+ * Set up the basic data structures of a position. Used internally by
+ * set_position, but does not result in a legal board and should not be used
+ * elsewhere.
+ */
 static void init_position(position_t* position)
 {
     for (int square=0; square<128; ++square) {
@@ -29,6 +34,10 @@ static void init_position(position_t* position)
     position->prev_move = NO_MOVE;
 }
 
+/*
+ * Given an FEN position description, set the given position to match it.
+ * (see wikipedia.org/wiki/Forsyth-Edwards_Notation for a description of FEN)
+ */
 void set_position(position_t* pos, const char* fen)
 {
     init_position(pos);
@@ -37,7 +46,6 @@ void set_position(position_t* pos, const char* fen)
     for (square_t square=A8; square!=INVALID_SQUARE; ++fen, ++square) {
         if (isdigit(*fen)) {
             if (*fen == '0' || *fen == '9') {
-                //TODO: log_warning
                 assert(false);
             } else {
                 square += *fen - '1';
@@ -60,7 +68,7 @@ void set_position(position_t* pos, const char* fen)
             case '/': square -= 17 + square_file(square); break;
             case ' ': square = INVALID_SQUARE-1; break;
             case '\0': return;
-            default: assert(false); //TODO: log_warning
+            default: assert(false);
         }
     }
     while (isspace(*fen)) ++fen;
@@ -69,7 +77,7 @@ void set_position(position_t* pos, const char* fen)
     switch (tolower(*fen)) {
         case 'w': pos->side_to_move = WHITE; break;
         case 'b': pos->side_to_move = BLACK; break;
-        default: assert(false); // TODO: log_warning
+        default: assert(false);
     }
     while (*fen && isspace(*(++fen))) {}
 
@@ -109,11 +117,13 @@ bool is_square_attacked(const position_t* pos,
 {
     // For every opposing piece, look up the attack data for its square.
     for (piece_t p=PAWN; p<=KING; ++p) {
-        for (int i=0; i<pos->piece_count[side][p]; ++i) {
-            square_t from=pos->pieces[side][p][i].location;
+        const int num_pieces = pos->piece_count[side][p];
+        for (int i=0; i<num_pieces; ++i) {
+            const piece_entry_t* piece_entry = &pos->pieces[side][p][i];
+            square_t from=piece_entry->location;
             const attack_data_t* attack_data = &get_attack_data(from, sq);
             if (attack_data->possible_attackers &
-                    get_piece_flag(pos->pieces[side][p][i].piece)) {
+                    get_piece_flag(piece_entry->piece)) {
                 if (piece_slide_type(p) == NO_SLIDE) return true;
                 while (from != sq) {
                     from += attack_data->relative_direction;
