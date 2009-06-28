@@ -36,7 +36,7 @@ void handle_console(position_t* pos, char* command)
     // try to treat the input as a long algebraic move
     move_t move;
     move = parse_la_move(pos, command);
-    if (!move) {
+    if (move == NO_MOVE) {
         printf("unrecognized command\n");
         return;
     }
@@ -48,7 +48,7 @@ void handle_console(position_t* pos, char* command)
  * Command: setboard <fen>
  * Sets the board to the given FEN position.
  */
-void handle_setboard(position_t* pos, char* command)
+static void handle_setboard(position_t* pos, char* command)
 {
     while(isspace(*command)) ++command;
     set_position(pos, command);
@@ -58,7 +58,7 @@ void handle_setboard(position_t* pos, char* command)
  * Command: print
  * Prints an ascii represenation of the current position.
  */
-void handle_print(position_t* pos, char* command)
+static void handle_print(position_t* pos, char* command)
 {
     (void)command;
     print_board(pos);
@@ -68,7 +68,7 @@ void handle_print(position_t* pos, char* command)
  * Command: eval
  * Prints static evaluation of the current position in centipawns.
  */
-void handle_eval(position_t* pos, char* command)
+static void handle_eval(position_t* pos, char* command)
 {
     (void)command;
     int eval = simple_eval(pos);
@@ -84,7 +84,7 @@ void handle_eval(position_t* pos, char* command)
     pos->side_to_move ^=1;
 }
 
-void handle_undo(position_t* pos, char* command)
+static void handle_undo(position_t* pos, char* command)
 {
     (void)pos;
     (void)command;
@@ -95,7 +95,7 @@ void handle_undo(position_t* pos, char* command)
  * Command: moves
  * Print all legal and pseudo-legal moves in the current position.
  */
-void handle_moves(position_t* pos, char* command)
+static void handle_moves(position_t* pos, char* command)
 {
     (void)command;
     move_t moves[256];
@@ -111,7 +111,7 @@ void handle_moves(position_t* pos, char* command)
  * Command: perft <depth>
  * Count the nodes at depth <depth> in the current game tree.
  */
-void handle_perft(position_t* pos, char* command)
+static void handle_perft(position_t* pos, char* command)
 {
     int depth;
     while(isspace(*command)) ++command;
@@ -124,7 +124,7 @@ void handle_perft(position_t* pos, char* command)
  * Count the nodes at depth <depth> in the current game tree, separating out
  * the results for each move.
  */
-void handle_divide(position_t* pos, char* command)
+static void handle_divide(position_t* pos, char* command)
 {
     int depth;
     while(isspace(*command)) ++command;
@@ -136,7 +136,7 @@ void handle_divide(position_t* pos, char* command)
  * Command: quit
  * Exit the program.
  */
-void handle_quit(position_t* pos, char* command)
+static void handle_quit(position_t* pos, char* command)
 {
     (void)pos;
     (void)command;
@@ -147,7 +147,7 @@ void handle_quit(position_t* pos, char* command)
  * Command: showfen
  * Print the FEN representation of the current position.
  */
-void handle_showfen(position_t* pos, char* command)
+static void handle_showfen(position_t* pos, char* command)
 {
     (void)command;
     char fen_str[128];
@@ -166,11 +166,24 @@ static void handle_perftsuite(position_t* pos, char* command)
     perft_testsuite(command);
 }
 
+/*
+ * Command: search <depth>
+ * Search the current position to the given depth.
+ */
+static void handle_search(position_t* pos, char* command)
+{
+    while(isspace(*command)) ++command;
+    int depth;
+    sscanf(command, "%d", &depth);
+    root_search(pos, depth);
+}
+
 static const char* command_prefixes[] = {
     "perftsuite",
     "setboard",
     "showfen",
     "divide",
+    "search",
     "moves",
     "perft",
     "print",
@@ -181,7 +194,7 @@ static const char* command_prefixes[] = {
 };
 
 static const int command_prefix_lengths[] = {
-    10, 8, 7, 6, 5, 5, 5, 4, 4, 4, 0
+    10, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, 0
 };
 
 static const command_handler handlers[] = {
@@ -189,6 +202,7 @@ static const command_handler handlers[] = {
     &handle_setboard,
     &handle_showfen,
     &handle_divide,
+    &handle_search,
     &handle_moves,
     &handle_perft,
     &handle_print,

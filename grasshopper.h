@@ -210,6 +210,7 @@ extern const int material_values[];
 
 // grasshopper.c
 void grasshopper_init(void);
+void generate_attack_data(void);
 
 // eval.c
 int simple_eval(const position_t* pos);
@@ -256,8 +257,9 @@ square_t parse_la_square(const char* la_square);
 void perft_testsuite(char* filename);
 uint64_t perft(position_t* position, int depth, bool divide);
 
-// storage.c
-void generate_attack_data(void);
+// search.c
+int search(position_t* pos, int alpha, int beta, int depth);
+void root_search(position_t* pos, int depth);
 
 // timer.c
 void start_timer(timer_t* timer);
@@ -269,5 +271,5 @@ int elapsed_time(timer_t* timer);
 #ifdef __cplusplus
 } // extern "C"
 #endif
-#endif
+#endif // GRASSHOPPER_H
 
