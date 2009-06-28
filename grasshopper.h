@@ -61,6 +61,7 @@ typedef enum {
 #define square_file(square)         ((square) & 0x0f)
 #define create_square(file, rank)   (((rank) << 4) | (file))
 #define valid_board_index(idx)      !(idx & 0x88)
+#define flip_square(square)         ((square) ^ 0x70)
 
 /**
  * Definitions for moves.
@@ -85,9 +86,11 @@ typedef uint32_t move_t;
 #define is_move_enpassant(move)     (((move) & ENPASSANT_FLAG) != 0)
 #define is_move_castle(move)        (((move) & CASTLE_FLAG) != 0)
 #define is_move_castle_long(move)   (is_move_castle(move) && \
-                                        (square_file(get_move_to(move)) == FILE_C))
+                                        (square_file(get_move_to(move)) == \
+                                         FILE_C))
 #define is_move_castle_short(move)  (is_move_castle(move) && \
-                                        (square_file(get_move_to(move)) == FILE_G))
+                                        (square_file(get_move_to(move)) == \
+                                         FILE_G))
 #define create_move(from, to, piece, capture) \
                                 ((from) | ((to) << 8) | ((piece) << 16) | \
                                  ((capture) << 20))
@@ -122,14 +125,21 @@ typedef uint8_t castle_rights_t;
 #define BLACK_OO                        0x01 << 1
 #define WHITE_OOO                       0x01 << 2
 #define BLACK_OOO                       0x01 << 3
-#define CASTLE_ALL                      (WHITE_OO | BLACK_OO | WHITE_OOO | BLACK_OOO)
+#define CASTLE_ALL                      (WHITE_OO | BLACK_OO | \
+                                            WHITE_OOO | BLACK_OOO)
 #define CASTLE_NONE                     0
-#define has_oo_rights(pos, side)        ((pos)->castle_rights & (WHITE_OO<<(side)))
-#define has_ooo_rights(pos, side)       ((pos)->castle_rights & (WHITE_OOO<<(side)))
-#define add_oo_rights(pos, side)        ((pos)->castle_rights |= (WHITE_OO<<(side)))
-#define add_ooo_rights(pos, side)       ((pos)->castle_rights |= (WHITE_OOO<<(side)))
-#define remove_oo_rights(pos, side)     ((pos)->castle_rights &= ~(WHITE_OO<<(side)))
-#define remove_ooo_rights(pos, side)    ((pos)->castle_rights &= ~(WHITE_OOO<<(side)))
+#define has_oo_rights(pos, side)        ((pos)->castle_rights & \
+                                            (WHITE_OO<<(side)))
+#define has_ooo_rights(pos, side)       ((pos)->castle_rights & \
+                                            (WHITE_OOO<<(side)))
+#define add_oo_rights(pos, side)        ((pos)->castle_rights |= \
+                                            (WHITE_OO<<(side)))
+#define add_ooo_rights(pos, side)       ((pos)->castle_rights |= \
+                                            (WHITE_OOO<<(side)))
+#define remove_oo_rights(pos, side)     ((pos)->castle_rights &= \
+                                            ~(WHITE_OO<<(side)))
+#define remove_ooo_rights(pos, side)    ((pos)->castle_rights &= \
+                                            ~(WHITE_OOO<<(side)))
 
 typedef struct {
     piece_entry_t* board[128];          // 0x88 board
@@ -213,7 +223,7 @@ void check_move_validity(const position_t* pos, const move_t move);
 
 // move_generation.c
 int generate_legal_moves(const position_t* pos, move_t* moves);
-int generate_moves(const position_t* position, move_t* move_list);
+int generate_pseudo_moves(const position_t* position, move_t* move_list);
 
 // io.c
 void handle_console(position_t* pos, char* command);

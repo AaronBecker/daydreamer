@@ -118,7 +118,6 @@ static uint64_t full_search(position_t* pos, int depth)
     if (depth <= 0) return 1;
     move_t move_list[256];
     move_t* current_move = move_list;
-    generate_moves(pos, move_list);
     int move_count = generate_legal_moves(pos, move_list);
     if (depth == 1) return move_count;
 

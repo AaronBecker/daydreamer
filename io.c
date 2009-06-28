@@ -85,7 +85,7 @@ void handle_moves(position_t* pos, char* command)
 {
     (void)command;
     move_t moves[256];
-    int num_moves = generate_moves(pos, moves);
+    int num_moves = generate_pseudo_moves(pos, moves);
     printf("%d pseduo-legal moves:\n", num_moves);
     print_la_move_list(moves);
     num_moves = generate_legal_moves(pos, moves);
