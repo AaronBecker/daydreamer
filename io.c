@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -51,6 +52,26 @@ void handle_print(position_t* pos, char* command)
 {
     (void)command;
     print_board(pos);
+}
+
+/*
+ * Command: eval
+ * Prints static evaluation of the current position in centipawns.
+ */
+void handle_eval(position_t* pos, char* command)
+{
+    (void)command;
+    int eval = simple_eval(pos);
+    printf("evaluation: %d\n", eval);
+    printf("material: (%d,%d)\npiece square: (%d,%d)\n",
+            pos->material_eval[WHITE],
+            pos->material_eval[BLACK],
+            pos->piece_square_eval[WHITE],
+            pos->piece_square_eval[BLACK]);
+    // make sure black eval is inverse of white
+    pos->side_to_move ^=1;
+    assert(simple_eval(pos) == -eval);
+    pos->side_to_move ^=1;
 }
 
 /*
@@ -160,6 +181,7 @@ static const char* command_prefixes[] = {
     "moves",
     "perft",
     "print",
+    "eval",
     "move",
     "undo",
     "quit",
@@ -167,7 +189,7 @@ static const char* command_prefixes[] = {
 };
 
 static const int command_prefix_lengths[] = {
-    10, 8, 7, 6, 5, 5, 5, 4, 4, 4, 0
+    10, 8, 7, 6, 5, 5, 5, 4, 4, 4, 4, 0
 };
 
 static const command_handler handlers[] = {
@@ -178,6 +200,7 @@ static const command_handler handlers[] = {
     &handle_moves,
     &handle_perft,
     &handle_print,
+    &handle_eval,
     &handle_move,
     &handle_undo,
     &handle_quit

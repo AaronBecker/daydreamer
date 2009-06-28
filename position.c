@@ -24,6 +24,8 @@ static void init_position(position_t* position)
                 entry->location = INVALID_SQUARE;
             }
         }
+        position->material_value[color] = 0;
+        position->piece_square_value[color] = 0;
     }
 
     position->fifty_move_counter = 0;

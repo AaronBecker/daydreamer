@@ -5,6 +5,7 @@
 
 int main(void)
 {
+    grasshopper_init();
     char command[1024];
     position_t position;
     set_position(&position,

@@ -94,10 +94,13 @@ int piece_square_values[BK+1][0x80] = {
     -50, -50, -50, -50, -50, -50, -50, -50,  0,  0,  0,  0,  0,  0,  0,  0,
     -50, -50, -50, -50, -50, -50, -50, -50,  0,  0,  0,  0,  0,  0,  0,  0 }
 
-    // black piece tables are mirror images filled in during init_eval
+    // black piece tables are mirror images filled in during eval_init
 };
 
-void init_eval(void)
+/*
+ * Initialize all static evaluation data structures.
+ */
+void eval_init(void)
 {
     for (piece_t piece=BP; piece<=BK; ++piece) {
         for (square_t square=A1; square<=H8; ++square) {
@@ -107,3 +110,15 @@ void init_eval(void)
         }
     }
 }
+
+/*
+ * Perform a simple position evaluation based just on material and piece
+ * square bonuses.
+ */
+int simple_eval(const position_t* pos)
+{
+    color_t side = pos->side_to_move;
+    return pos->material_eval[side] - pos->material_eval[side^1] +
+        pos->piece_square_eval[side] - pos->piece_square_eval[side^1];
+}
+

@@ -1,6 +1,12 @@
 
 #include "grasshopper.h"
 
+extern void eval_init(void);
+void grasshopper_init(void)
+{
+    eval_init();
+}
+
 const slide_t sliding_piece_types[] = {
     0, 0, 0, DIAGONAL, STRAIGHT, BOTH, 0, 0,
     0, 0, 0, DIAGONAL, STRAIGHT, BOTH, 0

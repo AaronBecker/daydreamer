@@ -14,7 +14,6 @@ extern "C" {
 /**
  * Definitions for colors, pieces, and squares.
  */
-
 typedef enum {
     WHITE=0, BLACK=1, INVALID_COLOR=INT_MAX
 } color_t;
@@ -114,7 +113,6 @@ extern const slide_t sliding_piece_types[];
 /**
  * Definitions for positions.
  */
-
 typedef struct {
     piece_t piece;
     square_t location;
@@ -150,6 +148,8 @@ typedef struct {
     square_t ep_square;
     int fifty_move_counter;
     int ply;
+    int material_eval[2];
+    int piece_square_eval[2];
     castle_rights_t castle_rights;
 } position_t;
 
@@ -163,7 +163,6 @@ typedef struct {
 /*
  * Definitions for piece movement and attack directions.
  */
-
 typedef enum {
     SSW=-33, SSE=-31,
     WSW=-18, SW=-17, S=-16, SE=-15, ESE=-14,
@@ -197,9 +196,23 @@ typedef struct {
     int elapsed_millis;
 } timer_t;
 
+/*
+ * Position evaluation.
+ */
+extern int piece_square_values[BK+1][0x80];
+extern const int material_values[];
+#define material_value(piece)               material_values[piece]
+#define piece_square_value(piece, square)   piece_square_values[piece][square]
+
 /**
  * External function interface
  */
+
+// grasshopper.c
+void grasshopper_init(void);
+
+// eval.c
+int simple_eval(const position_t* pos);
 
 // position.c
 void set_position(position_t* position, const char* fen);
