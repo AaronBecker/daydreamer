@@ -99,13 +99,12 @@ void root_search(void)
             best_move = *move;
         }
     }
+    print_pv(root_data.pvs[best_index], depth,
+            root_data.move_scores[best_index],
+            elapsed_time(&root_data.timer),
+            root_data.nodes_searched);
     move_to_la_str(best_move, la_move);
-    float time_taken = ((float)elapsed_time(&root_data.timer))/1000.0;
-    printf("\nbest move: %s, %d\n", la_move, best_score);
-    print_la_move_list(root_data.pvs[best_index]);
-    printf("nodes searched: %llu\n", root_data.nodes_searched);
-    printf("time elapsed: %.2fs, %.2f nodes/s\n", time_taken,
-            root_data.nodes_searched / time_taken);
+    printf("bestmove %s\n", la_move);
 
     // TODO: iterative deepening
     //      TODO: sort moves based on prev iteration

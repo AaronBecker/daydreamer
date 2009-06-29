@@ -15,13 +15,15 @@ static void calculate_search_time(int wtime,
         int binc,
         int movestogo);
 
-
 void uci_main(void)
 {
     printf("id name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
     printf("id author %s\n", ENGINE_AUTHOR);
     // TODO: should probably support some options (at least the mandatory ones)
     printf("uciok\n");
+    init_search_data();
+    set_position(&root_data.root_pos,
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     while (1) uci_get_input();
 }
 
@@ -38,12 +40,12 @@ static void uci_handle_command(char* command)
     else if (!strncasecmp(command, "quit", 4)) exit(0);
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
-    // not handled: setoption name <option>
+    // not handled: setoption name <option>, ucinewgame
 }
 
 static void uci_position(char* uci_pos)
 {
-    while (isspace(*uci_pos) && *uci_pos) ++uci_pos;
+    while (isspace(*uci_pos)) ++uci_pos;
     if (!strncasecmp(uci_pos, "startpos", 8)) {
         set_position(&root_data.root_pos, 
                 "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -74,39 +76,33 @@ static void uci_go(char* command)
 {
     char* info;
     int wtime=0, btime=0, winc=0, binc=0, movestogo=0, movetime=0;
-    root_data.infinite = false;
-    root_data.ponder = false;
-    root_data.depth_limit = 0;
-    root_data.node_limit = 0;
-    root_data.mate_search = 0;
 
-    if (!(info = strcasestr(command, "searchmoves"))) {
-    } else if (!(info = strcasestr(command, "ponder"))) {
+    if ((info = strcasestr(command, "searchmoves"))) {
+    } else if ((info = strcasestr(command, "ponder"))) {
         root_data.ponder = true;
-    } else if (!(info = strcasestr(command, "wtime"))) {
+    } else if ((info = strcasestr(command, "wtime"))) {
         sscanf(info+5, " %d", &wtime);
-    } else if (!(info = strcasestr(command, "btime"))) {
+    } else if ((info = strcasestr(command, "btime"))) {
         sscanf(info+5, " %d", &btime);
-    } else if (!(info = strcasestr(command, "winc"))) {
+    } else if ((info = strcasestr(command, "winc"))) {
         sscanf(info+4, " %d", &winc);
-    } else if (!(info = strcasestr(command, "binc"))) {
+    } else if ((info = strcasestr(command, "binc"))) {
         sscanf(info+4, " %d", &binc);
-    } else if (!(info = strcasestr(command, "movestogo"))) {
+    } else if ((info = strcasestr(command, "movestogo"))) {
         sscanf(info+9, " %d", &movestogo);
-    } else if (!(info = strcasestr(command, "depth"))) {
+    } else if ((info = strcasestr(command, "depth"))) {
         sscanf(info+5, " %d", &root_data.depth_limit);
-    } else if (!(info = strcasestr(command, "nodes"))) {
+    } else if ((info = strcasestr(command, "nodes"))) {
         sscanf(info+5, " %llu", &root_data.node_limit);
-    } else if (!(info = strcasestr(command, "mate"))) {
+    } else if ((info = strcasestr(command, "mate"))) {
         sscanf(info+4, " %d", &root_data.mate_search);
-    } else if (!(info = strcasestr(command, "movetime"))) {
+    } else if ((info = strcasestr(command, "movetime"))) {
         sscanf(info+8, " %d", &movetime);
         root_data.time_target = root_data.time_limit = movetime;
-    } else if (!(info = strcasestr(command, "infinite"))) {
+    } else if ((info = strcasestr(command, "infinite"))) {
         root_data.infinite = true;
     }
 
-    init_search_data();
     if (!movetime && !root_data.infinite) {
         calculate_search_time(wtime, btime, winc, binc, movestogo);
     }

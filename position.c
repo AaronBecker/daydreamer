@@ -37,6 +37,9 @@ static void init_position(position_t* position)
     position->prev_move = NO_MOVE;
 }
 
+/*
+ * Create a copy of |src| in |dst|.
+ */
 void copy_position(position_t* dst, position_t* src)
 {
     memcpy(dst, src, sizeof(position_t));
