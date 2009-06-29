@@ -27,7 +27,20 @@ static bool should_stop_searching(search_data_t* data)
     // TODO: take time_limit and search difficulty into account
     if (data->node_limit &&
             data->nodes_searched >= data->node_limit) return true;
+    // TODO: we need a heuristic for when the current result is "good enough",
+    // regardless of search params.
     return false;
+}
+
+static bool should_deepen(search_data_t* data)
+{
+    if (should_stop_searching()) return false;
+    // If we're more than halfway through our time, we won't make it through
+    // the next iteration anyway. TODO: this margin could be tightened up.
+    if (!data->infinite && data->time_target &&
+        data->time_target-elapsed_time(&data->timer) >
+        data->time_target/2) return false;
+    return true;
 }
 
 void perform_periodic_checks(search_data_t* data)
@@ -144,9 +157,7 @@ void root_search(void)
             root_data.root_moves[0] = root_data.best_move;
         }
         
-        if (should_stop_searching(&root_data)) break;
-        // TODO: figure out when the current result is "good enough",
-        // regardless of search params, and stop if possible.
+        if (!should_deepen(&root_data)) break;
     }
     stop_timer(&root_data.timer);
     printf("info string targettime %d elapsedtime %d\n",
