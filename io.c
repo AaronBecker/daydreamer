@@ -175,7 +175,23 @@ static void handle_search(position_t* pos, char* command)
     while(isspace(*command)) ++command;
     int depth;
     sscanf(command, "%d", &depth);
-    root_search(pos, depth);
+    init_search_data();
+    extern search_data_t root_data;
+    copy_position(&root_data.root_pos, pos);
+    root_data.depth_limit = depth;
+    root_data.infinite = true;
+    root_search();
+}
+
+/*
+ * Command: uci
+ * Switch to uci protocol.
+ */
+static void handle_uci(position_t* pos, char* command)
+{
+    (void)pos;
+    (void)command;
+    uci_main();
 }
 
 static const char* command_prefixes[] = {
@@ -190,11 +206,12 @@ static const char* command_prefixes[] = {
     "eval",
     "undo",
     "quit",
+    "uci",
     NULL
 };
 
 static const int command_prefix_lengths[] = {
-    10, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, 0
+    10, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 0
 };
 
 static const command_handler handlers[] = {
@@ -208,7 +225,8 @@ static const command_handler handlers[] = {
     &handle_print,
     &handle_eval,
     &handle_undo,
-    &handle_quit
+    &handle_quit,
+    &handle_uci
 };
 
 /**

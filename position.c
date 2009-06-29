@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 #include "grasshopper.h"
 
 /*
@@ -34,6 +35,21 @@ static void init_position(position_t* position)
     position->side_to_move = WHITE;
     position->castle_rights = CASTLE_NONE;
     position->prev_move = NO_MOVE;
+}
+
+void copy_position(position_t* dst, position_t* src)
+{
+    memcpy(dst, src, sizeof(position_t));
+    for (color_t color=WHITE; color<=BLACK; ++color) {
+        for (piece_type_t type=PAWN; type<=KING; ++type) {
+            for (int index=0; index<16; ++index) {
+                piece_entry_t* entry = &dst->pieces[color][type][index];
+                if (entry->location != INVALID_SQUARE) {
+                    dst->board[entry->location] = entry;
+                }
+            }
+        }
+    }
 }
 
 /*

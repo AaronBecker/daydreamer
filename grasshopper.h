@@ -11,6 +11,10 @@ extern "C" {
 #include <stdlib.h>
 #include <sys/time.h>
 
+#define ENGINE_NAME     "Grasshopper"
+#define ENGINE_VERSION  "0"
+#define ENGINE_AUTHOR   "Aaron Becker"
+
 /**
  * Definitions for colors, pieces, and squares.
  */
@@ -211,16 +215,30 @@ extern const int material_values[];
 #define MAX_SEARCH_DEPTH        64
 
 typedef struct {
-    uint64_t node_limit;
-    uint64_t nodes_searched;
-    int depth_limit;
-    timer_t timer;
-    int deadline;
-} search_data_t;
-
-typedef struct {
     move_t pv[MAX_SEARCH_DEPTH];
 } search_node_t;
+
+typedef struct {
+    // search state info
+    position_t root_pos;
+    move_t root_moves[256];
+    int move_scores[256];
+    move_t pvs[256][MAX_SEARCH_DEPTH];
+    search_node_t search_stack[MAX_SEARCH_DEPTH];
+    uint64_t nodes_searched;
+    
+    // when should we stop?
+    timer_t timer;
+    uint64_t node_limit;
+    int depth_limit;
+    int time_limit;
+    int time_target;
+    int mate_search;
+    bool infinite;
+    bool ponder;
+} search_data_t;
+
+extern search_data_t root_data;
 
 /**
  * External function interface
@@ -235,6 +253,7 @@ int simple_eval(const position_t* pos);
 
 // position.c
 void set_position(position_t* position, const char* fen);
+void copy_position(position_t* dst, position_t* src);
 bool is_square_attacked(const position_t* position,
         const square_t square,
         const color_t side);
@@ -277,13 +296,17 @@ void perft_testsuite(char* filename);
 uint64_t perft(position_t* position, int depth, bool divide);
 
 // search.c
-void root_search(position_t* pos, int depth);
+void init_search_data(void);
+void root_search(void);
 
 // timer.c
 void init_timer(timer_t* timer);
 void start_timer(timer_t* timer);
 int stop_timer(timer_t* timer);
 int elapsed_time(timer_t* timer);
+
+// uci.c
+void uci_main(void);
 
 #ifdef __cplusplus
 } // extern "C"
