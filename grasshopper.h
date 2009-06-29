@@ -18,6 +18,9 @@ extern "C" {
 /**
  * Definitions for colors, pieces, and squares.
  */
+
+#define FEN_STARTPOS "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 typedef enum {
     WHITE=0, BLACK=1, INVALID_COLOR=INT_MAX
 } color_t;
@@ -218,6 +221,10 @@ typedef struct {
     move_t pv[MAX_SEARCH_DEPTH];
 } search_node_t;
 
+typedef enum {
+    ENGINE_IDLE=0, ENGINE_PONDERING, ENGINE_THINKING, ENGINE_ABORTED
+} engine_status_t;
+
 typedef struct {
     // search state info
     position_t root_pos;
@@ -226,6 +233,8 @@ typedef struct {
     move_t pvs[256][MAX_SEARCH_DEPTH];
     search_node_t search_stack[MAX_SEARCH_DEPTH];
     uint64_t nodes_searched;
+    int current_depth;
+    engine_status_t engine_status;
     
     // when should we stop?
     timer_t timer;
@@ -284,6 +293,7 @@ void print_la_move(move_t move);
 void print_la_move_list(const move_t* move);
 void print_board(const position_t* pos);
 void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes);
+void check_for_input(search_data_t* search_data);
 // unimplemented
 void move_to_san_str(position_t* pos, move_t move, char* str);
 

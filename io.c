@@ -316,8 +316,9 @@ void print_la_move_list(const move_t* move)
  */
 void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes)
 {
-    printf("info depth %d score cp %d time %d nodes %llu nps %.2f pv ",
-            depth, score, time, nodes, (float)nodes/time*1000);
+    // note: use time+1 avoid divide-by-zero
+    printf("info depth %d score cp %d time %d nodes %llu nps %d pv ",
+            depth, score, time, nodes, nodes/(time+1)/1000);
     print_la_move_list(pv);
 }
 
@@ -336,6 +337,85 @@ void print_board(const position_t* pos)
         printf("%c ", glyphs[pos->board[sq] ? pos->board[sq]->piece : EMPTY]);
     }
 }
+
+/*
+ * Boilerplate code to see if data is available to be read on stdin.
+ * Cross-platform for unix/windows. Thanks to the original author. I've seen
+ * this in Scorpio, Viper, Beowulf, Olithink, and others, so I don't
+ * know where it's from originally.
+ */
+int bios_key(void);
+void check_for_input(search_data_t* search_data)
+{
+    char input[1024];
+    int data = bios_key();
+    if (data) {
+        if (!fgets(input, 1024, stdin))
+            strcpy(input, "quit\n");
+        if (!strncasecmp(input, "quit", 4)) {
+            search_data->engine_status = ENGINE_ABORTED;
+        } else if (!strncasecmp(input, "stop", 4)) {
+            search_data->engine_status = ENGINE_ABORTED;
+        } else if (strncasecmp(input, "ponderhit", 9) == 0) {
+            // TODO: handle ponderhits
+        }
+    }
+}
+
+#ifndef _WIN32
+/* unix version */
+int bios_key(void)
+{
+    fd_set readfds;
+    struct timeval timeout;
+
+    FD_ZERO(&readfds);
+    FD_SET(fileno(stdin), &readfds);
+    /* Set to timeout immediately */
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+    select(16, &readfds, 0, 0, &timeout);
+
+    return (FD_ISSET(fileno(stdin), &readfds));
+}
+
+#else
+/* Windows-version */
+#include <windows.h>
+#include <conio.h>
+int bios_key(void)
+{
+    static int init=0, pipe=0;
+    static HANDLE inh;
+    DWORD dw;
+    /*
+     * If we're running under XBoard then we can't use _kbhit() as the input
+     * commands are sent to us directly over the internal pipe
+     */
+#if defined(FILE_CNT)
+    if (stdin->_cnt > 0) return stdin->_cnt;
+#endif
+    if (!init) {
+        init = 1;
+        inh = GetStdHandle(STD_INPUT_HANDLE);
+        pipe = !GetConsoleMode(inh, &dw);
+        if (!pipe) {
+            SetConsoleMode(inh,
+                    dw & ~(ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT));
+            FlushConsoleInputBuffer(inh);
+        }
+    }
+    if (pipe) {
+        if (!PeekNamedPipe(inh, NULL, 0, NULL, &dw, NULL)) {
+            return 1;
+        }
+        return dw;
+    } else {
+        GetNumberOfConsoleInputEvents(inh, &dw);
+        return dw <= 1 ? 0 : dw;
+    }
+}
+#endif
 
 // unimplemented
 void move_to_san_str(position_t* pos, move_t move, char* str);
