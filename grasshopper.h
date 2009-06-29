@@ -229,8 +229,9 @@ typedef struct {
     // search state info
     position_t root_pos;
     move_t root_moves[256];
-    int move_scores[256];
-    move_t pvs[256][MAX_SEARCH_DEPTH];
+    move_t best_move;
+    int best_score;
+    move_t pv[MAX_SEARCH_DEPTH];
     search_node_t search_stack[MAX_SEARCH_DEPTH];
     uint64_t nodes_searched;
     int current_depth;
@@ -261,12 +262,13 @@ void generate_attack_data(void);
 int simple_eval(const position_t* pos);
 
 // position.c
-void set_position(position_t* position, const char* fen);
+char* set_position(position_t* position, const char* fen);
 void copy_position(position_t* dst, position_t* src);
 bool is_square_attacked(const position_t* position,
         const square_t square,
         const color_t side);
 bool is_move_legal(position_t* pos, const move_t move);
+bool is_check(const position_t* pos);
 
 // move.c
 void place_piece(position_t* position,

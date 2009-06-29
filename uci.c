@@ -21,7 +21,6 @@ void uci_main(void)
     printf("id author %s\n", ENGINE_AUTHOR);
     // TODO: should probably support some options (at least the mandatory ones)
     printf("uciok\n");
-    init_search_data();
     set_position(&root_data.root_pos, FEN_STARTPOS);
     while (1) uci_get_input();
 }
@@ -51,21 +50,23 @@ static void uci_position(char* uci_pos)
     } else if (!strncasecmp(uci_pos, "fen", 3)) {
         uci_pos += 3;
         while (*uci_pos && isspace(*uci_pos)) ++uci_pos;
-        set_position(&root_data.root_pos, uci_pos);
+        uci_pos = set_position(&root_data.root_pos, uci_pos);
     }
-    while (*uci_pos && isspace(*uci_pos)) ++uci_pos;
+    while (isspace(*uci_pos)) ++uci_pos;
     if (!strncasecmp(uci_pos, "moves", 5)) {
         uci_pos += 5;
+        while (isspace(*uci_pos)) ++uci_pos;
         while (*uci_pos) {
-            while (*uci_pos && isspace(*uci_pos)) ++uci_pos;
             move_t move = parse_la_move(&root_data.root_pos, uci_pos);
             if (move == NO_MOVE) {
                 printf("Warning: could not parse %s\n", uci_pos);
+                print_board(&root_data.root_pos);
                 return;
             }
             undo_info_t dummy_undo;
             do_move(&root_data.root_pos, move, &dummy_undo);
             while (*uci_pos && !isspace(*uci_pos)) ++uci_pos;
+            while (isspace(*uci_pos)) ++uci_pos;
         }
     }
 }
@@ -75,9 +76,22 @@ static void uci_go(char* command)
     char* info;
     int wtime=0, btime=0, winc=0, binc=0, movestogo=0, movetime=0;
 
-    root_data.infinite = root_data.ponder = false;
-    root_data.depth_limit = root_data.node_limit = root_data.mate_search = 0;
+    init_search_data();
     if ((info = strcasestr(command, "searchmoves"))) {
+        info += 11;
+        int move_index=0;
+        while (isspace(*info)) ++info;
+        while (*info) {
+            move_t move = parse_la_move(&root_data.root_pos, info);
+            if (move == NO_MOVE) {
+                printf("Warning: could not parse %s\n", info);
+                print_board(&root_data.root_pos);
+                return;
+            }
+            root_data.root_moves[move_index++] = move;
+            while (*info && !isspace(*info)) ++info;
+            while (isspace(*info)) ++info;
+        }
     }
     if ((info = strcasestr(command, "ponder"))) {
         root_data.ponder = true;
@@ -117,6 +131,7 @@ static void uci_go(char* command)
     if (!movetime && !root_data.infinite) {
         calculate_search_time(wtime, btime, winc, binc, movestogo);
     }
+    print_board(&root_data.root_pos);
     root_search();
 }
 

@@ -317,7 +317,7 @@ void print_la_move_list(const move_t* move)
 void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes)
 {
     // note: use time+1 avoid divide-by-zero
-    printf("info depth %d score cp %d time %d nodes %llu nps %d pv ",
+    printf("info depth %d score cp %d time %d nodes %llu nps %llu pv ",
             depth, score, time, nodes, nodes/(time+1)/1000);
     print_la_move_list(pv);
 }
