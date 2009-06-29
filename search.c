@@ -104,13 +104,13 @@ void root_search(void)
     if (!*root_data.root_moves) generate_legal_moves(pos, root_data.root_moves);
 
     // iterative deepening loop
-    int move_index = 0;
+    int move_index = 0, best_index=0;
     int* curr_depth = &root_data.current_depth;
-    root_data.best_score = -MATE_VALUE-1;
     for (*curr_depth=1;
             !root_data.depth_limit || *curr_depth<=root_data.depth_limit;
             ++*curr_depth) {
         int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
+        root_data.best_score = -MATE_VALUE-1;
         printf("info depth %d\n", *curr_depth);
         for (move_t* move=root_data.root_moves; *move; ++move, ++move_index) {
             undo_info_t undo;
@@ -124,9 +124,8 @@ void root_search(void)
                 if (score > root_data.best_score) {
                     root_data.best_score = score;
                     root_data.best_move = *move;
+                    best_index = move_index;
                     // update pv
-                    // FIXME: make sure pv is always extended to the
-                    // current depth
                     root_data.pv[0] = *move;
                     int i=1;
                     for (; root_data.search_stack->pv[i] != NO_MOVE; ++i) {
@@ -137,12 +136,12 @@ void root_search(void)
                             root_data.best_score,
                             elapsed_time(&root_data.timer),
                             root_data.nodes_searched);
-                    // TODO: sort moves based on scores
-                    // with good sorting we won't have to be careful about
-                    // replacing good scores from the previous depth with
-                    // bad ones from this depth.
+                    // TODO: improve move ordering 
                 }
             }
+            // move the pv move to the front of the list
+            root_data.root_moves[best_index] = root_data.root_moves[0];
+            root_data.root_moves[0] = root_data.best_move;
         }
         
         if (should_stop_searching(&root_data)) break;
