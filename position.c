@@ -59,7 +59,7 @@ void copy_position(position_t* dst, position_t* src)
  * Given an FEN position description, set the given position to match it.
  * (see wikipedia.org/wiki/Forsyth-Edwards_Notation for a description of FEN)
  */
-void set_position(position_t* pos, const char* fen)
+char* set_position(position_t* pos, const char* fen)
 {
     init_position(pos);
 
@@ -88,7 +88,7 @@ void set_position(position_t* pos, const char* fen)
             case 'K': place_piece(pos, WK, square); break;
             case '/': square -= 17 + square_file(square); break;
             case ' ': square = INVALID_SQUARE-1; break;
-            case '\0': return;
+            case '\0': return (char*)fen;
             default: assert(false);
         }
     }
@@ -118,18 +118,19 @@ void set_position(position_t* pos, const char* fen)
         ++fen;
     }
     while (isspace(*fen)) ++fen;
-    if (!*fen) return;
+    if (!*fen) return (char*)fen;
 
     // Read en-passant square
     if (*fen != '-') {
         pos->ep_square = parse_la_square(fen++);
     }
     while (*fen && isspace(*(++fen))) {}
-    if (!*fen) return;
+    if (!*fen) return (char*)fen;
 
     // Read 50-move rule status and current move number.
-    sscanf(fen, "%d %d", &pos->fifty_move_counter, &pos->ply);
+    fen += sscanf(fen, "%d %d", &pos->fifty_move_counter, &pos->ply);
     pos->ply = pos->ply*2 + (pos->side_to_move == BLACK ? 1 : 0);
+    return (char*)fen;
 }
 
 bool is_square_attacked(const position_t* pos,
@@ -155,6 +156,12 @@ bool is_square_attacked(const position_t* pos,
         }
     }
     return false;
+}
+
+bool is_check(const position_t* pos)
+{
+    square_t king_square = pos->pieces[pos->side_to_move][KING][0].location;
+    return is_square_attacked(pos, king_square, pos->side_to_move^1);
 }
 
 bool is_move_legal(position_t* pos, const move_t move)
