@@ -102,7 +102,7 @@ static void generate_piece_captures(const position_t* pos,
         // not a sliding piece, just iterate over dest. squares
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             to = from + *delta;
-            if (!valid_board_index(to)) continue;
+            if (!valid_board_index(to) || !pos->board[to]) continue;
             if (piece_colors_differ(piece, pos->board[to]->piece)) {
                 moves = add_move(pos, create_move(from, to, piece,
                             pos->board[to]->piece), moves);
@@ -115,6 +115,7 @@ static void generate_piece_captures(const position_t* pos,
             do {
                 to += *delta;
                 if (!valid_board_index(to)) break;
+                if (!pos->board[to]) continue;
                 if (piece_colors_differ(piece, pos->board[to]->piece)) {
                     moves = add_move(pos, create_move(from, to, piece,
                             pos->board[to]->piece), moves);
@@ -161,11 +162,9 @@ static void generate_pawn_captures(const position_t* pos,
             if (!valid_board_index(to) ||
                 !pos->board[to] ||
                 !piece_colors_differ(piece, pos->board[to]->piece)) continue;
-            if (piece_colors_differ(piece, pos->board[to]->piece)) {
-                for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
-                    moves = add_move(pos, create_move_promote(from, to, piece,
-                            pos->board[to]->piece, promoted), moves);
-                }
+            for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
+                moves = add_move(pos, create_move_promote(from, to, piece,
+                        pos->board[to]->piece, promoted), moves);
             }
         }
     }
@@ -237,24 +236,22 @@ static void generate_pawn_noncaptures(const position_t* pos,
     if (relative_rank < RANK_7) {
         // non-promotions
         to = from + pawn_push[side];
-        if (pos->board[to] == NULL) {
-            moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
-            to += pawn_push[side];
-            if (relative_rank == RANK_2 && pos->board[to] == NULL) {
-                // initial two-square push
-                moves = add_move(pos,
-                        create_move(from, to, piece, EMPTY),
-                        moves);
-            }
+        if (pos->board[to]) return;
+        moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
+        to += pawn_push[side];
+        if (relative_rank == RANK_2 && pos->board[to] == NULL) {
+            // initial two-square push
+            moves = add_move(pos,
+                    create_move(from, to, piece, EMPTY),
+                    moves);
         }
     } else {
         // promotions
         to = from + pawn_push[side];
-        if (pos->board[to] == NULL) {
-            for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
-                moves = add_move(pos, create_move_promote(from, to, piece,
-                            EMPTY, promoted), moves);
-            }
+        if (pos->board[to]) return;
+        for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
+            moves = add_move(pos, create_move_promote(from, to, piece,
+                        EMPTY, promoted), moves);
         }
     }
     *moves_head = moves;
@@ -276,12 +273,10 @@ static void generate_piece_noncaptures(const position_t* pos,
         // not a sliding piece, just iterate over dest. squares
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             to = from + *delta;
-            if (!valid_board_index(to)) continue;
-            if (pos->board[to] == NULL) {
-                moves = add_move(pos,
-                        create_move(from, to, piece, NONE),
-                        moves);
-            }
+            if (!valid_board_index(to) || pos->board[to]) continue;
+            moves = add_move(pos,
+                    create_move(from, to, piece, NONE),
+                    moves);
         }
     } else {
         // a sliding piece, keep going until we hit something
@@ -289,12 +284,10 @@ static void generate_piece_noncaptures(const position_t* pos,
             to = from;
             do {
                 to += *delta;
-                if (!valid_board_index(to)) break;
-                if (pos->board[to] == NULL) {
-                    moves = add_move(pos,
-                            create_move(from, to, piece, NONE),
-                            moves);
-                }
+                if (!valid_board_index(to) || pos->board[to]) break;
+                moves = add_move(pos,
+                        create_move(from, to, piece, NONE),
+                        moves);
             } while (!pos->board[to]);
         }
     }
