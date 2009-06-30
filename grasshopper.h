@@ -286,6 +286,8 @@ void check_move_validity(const position_t* pos, const move_t move);
 // move_generation.c
 int generate_legal_moves(const position_t* pos, move_t* moves);
 int generate_pseudo_moves(const position_t* position, move_t* move_list);
+int generate_pseudo_captures(const position_t* position, move_t* move_list);
+int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);
 
 // io.c
 void handle_console(position_t* pos, char* command);
