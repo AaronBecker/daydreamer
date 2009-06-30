@@ -34,7 +34,7 @@ static bool should_stop_searching(search_data_t* data)
 
 static bool should_deepen(search_data_t* data)
 {
-    if (should_stop_searching()) return false;
+    if (should_stop_searching(data)) return false;
     // If we're more than halfway through our time, we won't make it through
     // the next iteration anyway. TODO: this margin could be tightened up.
     if (!data->infinite && data->time_target &&
