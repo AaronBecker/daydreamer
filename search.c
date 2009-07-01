@@ -129,25 +129,39 @@ void root_search(void)
     // iterative deepening loop
     int move_index = 0, best_index=0;
     int* curr_depth = &root_data.current_depth;
+    root_data.best_score = -MATE_VALUE-1;
     for (*curr_depth=1;
             !root_data.depth_limit || *curr_depth<=root_data.depth_limit;
             ++*curr_depth) {
         int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
-        root_data.best_score = -MATE_VALUE-1;
+        int best_depth_score = -MATE_VALUE-1;
         printf("info depth %d\n", *curr_depth);
+        bool pv = true;
         for (move_t* move=root_data.root_moves; *move; ++move, ++move_index) {
             undo_info_t undo;
             do_move(pos, *move, &undo);
-            int score = -search(pos, root_data.search_stack, 1,
-                    -beta, -alpha, *curr_depth-1);
+            int score;
+            if (pv) {
+                score = -search(pos, root_data.search_stack,
+                        1,-beta, -alpha, *curr_depth-1);
+            } else {
+                score = -search(pos, root_data.search_stack,
+                        1, -alpha-1, -alpha, *curr_depth-1);
+                if (score > alpha) score = -search(pos, root_data.search_stack,
+                        1, -beta, -alpha, *curr_depth-1);
+            }
             undo_move(pos, *move, &undo);
+            if (root_data.engine_status == ENGINE_ABORTED) break;
             // update score
             if (score > alpha) {
                 alpha = score;
-                if (score > root_data.best_score) {
-                    root_data.best_score = score;
-                    root_data.best_move = *move;
-                    best_index = move_index;
+                pv = false;
+                if (score > best_depth_score) {
+                    if (score > root_data.best_score) {
+                        root_data.best_score = score;
+                        root_data.best_move = *move;
+                        best_index = move_index;
+                    }
                     // update pv
                     root_data.pv[0] = *move;
                     int i=1;

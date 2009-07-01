@@ -8,7 +8,7 @@ int static_exchange_eval(position_t* pos, move_t move)
     square_t attacked_sq = get_move_to(move);
     piece_t attacker = get_move_piece(move);
     piece_t captured = get_move_capture(move);
-    assert(captured);
+    if (!captured) return 0; // no capture--exchange is even
     const piece_entry_t* attackers[2][16];
     int num_attackers[2] = { 0, 0 };
     int initial_attacker[2] = { 0, 0 };
