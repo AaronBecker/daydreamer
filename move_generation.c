@@ -47,6 +47,26 @@ int generate_legal_moves(const position_t* pos, move_t* moves)
 }
 
 /*
+ * Fill the provided list with all legal non-capturing moves in the given
+ * position.
+ */
+int generate_legal_noncaptures(const position_t* pos, move_t* moves)
+{
+    int num_pseudo = generate_pseudo_noncaptures(pos, moves);
+    move_t* moves_tail = moves+num_pseudo;
+    move_t* moves_curr = moves;
+    while (moves_curr < moves_tail) {
+        if (!is_move_legal((position_t*)pos, *moves_curr)) {
+            *moves_curr = *(--moves_tail);
+            *moves_tail = 0;
+        } else {
+            ++moves_curr;
+        }
+    }
+    return moves_tail-moves;
+}
+
+/*
  * Fill the provided list with all pseudolegal moves in the given position.
  * Pseudolegal moves are moves which would be legal if we didn't have to worry
  * about leaving our king in check.

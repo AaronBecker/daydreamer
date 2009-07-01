@@ -9,6 +9,14 @@
 
 search_data_t root_data;
 
+static int quiesce(position_t* pos,
+        search_node_t* search_node,
+        int ply,
+        int alpha,
+        int beta,
+        int depth);
+
+
 void init_search_data(void)
 {
     position_t copy;
@@ -57,9 +65,11 @@ int search(position_t* pos,
         int depth)
 {
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
+    if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
     if (!depth) {
-        search_node->pv[ply] = NO_MOVE;
-        return simple_eval(pos); // TODO: quiescence search
+        //search_node->pv[ply] = NO_MOVE;
+        //return simple_eval(pos);
+        return quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-1);
     }
     if (++root_data.nodes_searched & CHECK_INTERVAL) {
         perform_periodic_checks(&root_data);
@@ -180,6 +190,52 @@ static int quiesce(position_t* pos,
         int beta,
         int depth)
 {
+    if (root_data.engine_status == ENGINE_ABORTED) return 0;
+    if (++root_data.nodes_searched & CHECK_INTERVAL) {
+        perform_periodic_checks(&root_data);
+    }
+    if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
+    int eval = simple_eval(pos);
+    int score = eval;
+    if (score >= beta) return beta;
+    if (alpha < score) alpha = score;
+    
+    move_t moves[256];
+    generate_pseudo_captures(pos, moves);
+    int num_legal_captures = 0;
+    for (move_t* move = moves; *move; ++move) {
+        if (!is_move_legal(pos, *move)) continue;
+        ++num_legal_captures;
+        undo_info_t undo;
+        do_move(pos, *move, &undo);
+        score = -quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-1);
+        undo_move(pos, *move, &undo);
+        if (score >= beta) return beta;
+        if (score > alpha) {
+            alpha = score;
+            // update pv from child search nodes
+            search_node->pv[ply] = *move;
+            int i = ply;
+            do {
+                ++i;
+                search_node->pv[i] = (search_node+1)->pv[i];
+            } while ((search_node+1)->pv[i] != NO_MOVE);
+        }
+    }
+    if (!num_legal_captures) {
+        search_node->pv[ply] = NO_MOVE;
+        int num_legal_noncaptures = generate_legal_noncaptures(pos, moves);
+        if (num_legal_noncaptures) {
+            // we've reached quiescence
+            return eval;
+        }
+        // No legal moves, this is either stalemate or checkmate.
+        // note: adjust MATE_VALUE by ply so that we favor shorter mates
+        if (is_check(pos)) {
+            return -(MATE_VALUE-ply);
+        }
+        return DRAW_VALUE;
+    }
     return alpha;
 }
 
