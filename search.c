@@ -127,7 +127,7 @@ void root_search(void)
     if (!*root_data.root_moves) generate_legal_moves(pos, root_data.root_moves);
 
     // iterative deepening loop
-    int move_index = 0, best_index=0;
+    int move_index = 0;
     int* curr_depth = &root_data.current_depth;
     root_data.best_score = -MATE_VALUE-1;
     for (*curr_depth=1;
@@ -135,6 +135,7 @@ void root_search(void)
             ++*curr_depth) {
         int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
         int best_depth_score = -MATE_VALUE-1;
+        int best_index = 0;
         printf("info depth %d\n", *curr_depth);
         bool pv = true;
         for (move_t* move=root_data.root_moves; *move; ++move, ++move_index) {
@@ -143,7 +144,7 @@ void root_search(void)
             int score;
             if (pv) {
                 score = -search(pos, root_data.search_stack,
-                        1,-beta, -alpha, *curr_depth-1);
+                        1, -beta, -alpha, *curr_depth-1);
             } else {
                 score = -search(pos, root_data.search_stack,
                         1, -alpha-1, -alpha, *curr_depth-1);
@@ -157,40 +158,40 @@ void root_search(void)
                 alpha = score;
                 pv = false;
                 if (score > best_depth_score) {
+                    best_depth_score = score;
                     if (score > root_data.best_score) {
                         root_data.best_score = score;
                         root_data.best_move = *move;
                         best_index = move_index;
                     }
-                    // update pv
-                    root_data.pv[0] = *move;
-                    int i=1;
-                    for (; root_data.search_stack->pv[i] != NO_MOVE; ++i) {
-                        root_data.pv[i] = root_data.search_stack->pv[i];
-                    }
-                    root_data.pv[i] = NO_MOVE;
-                    print_pv(root_data.pv, *curr_depth,
-                            root_data.best_score,
-                            elapsed_time(&root_data.timer),
-                            root_data.nodes_searched);
-                    // TODO: improve move ordering 
                 }
+                // update pv
+                root_data.pv[0] = *move;
+                int i=1;
+                for (; root_data.search_stack->pv[i] != NO_MOVE; ++i) {
+                    root_data.pv[i] = root_data.search_stack->pv[i];
+                }
+                root_data.pv[i] = NO_MOVE;
+                print_pv(root_data.pv, *curr_depth,
+                        root_data.best_score,
+                        elapsed_time(&root_data.timer),
+                        root_data.nodes_searched);
             }
-            // move the pv move to the front of the list
-            root_data.root_moves[best_index] = root_data.root_moves[0];
-            root_data.root_moves[0] = root_data.best_move;
         }
-        
+        // swap the pv move to the front of the list
+        root_data.root_moves[best_index] = root_data.root_moves[0];
+        root_data.root_moves[0] = root_data.best_move;
         if (!should_deepen(&root_data)) break;
     }
+    --root_data.current_depth;
     stop_timer(&root_data.timer);
-    printf("info string targettime %d elapsedtime %d\n",
-            root_data.time_target, elapsed_time(&root_data.timer));
     
     print_pv(root_data.pv, root_data.current_depth,
             root_data.best_score,
             elapsed_time(&root_data.timer),
             root_data.nodes_searched);
+    printf("info string targettime %d elapsedtime %d\n",
+            root_data.time_target, elapsed_time(&root_data.timer));
     char la_move[6];
     move_to_la_str(root_data.best_move, la_move);
     printf("bestmove %s\n", la_move);
@@ -218,9 +219,9 @@ static int quiesce(position_t* pos,
     generate_pseudo_captures(pos, moves);
     int num_legal_captures = 0;
     for (move_t* move = moves; *move; ++move) {
-        if (static_exchange_eval(pos, *move) < 0) continue;
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_captures;
+        if (static_exchange_eval(pos, *move) < 0) continue;
         undo_info_t undo;
         do_move(pos, *move, &undo);
         score = -quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-1);
@@ -342,7 +343,6 @@ void root_search_minimax(void)
     stop_timer(&root_data.timer);
     printf("info string targettime %d elapsedtime %d\n",
             root_data.time_target, elapsed_time(&root_data.timer));
-    
     print_pv(root_data.pv, depth,
             root_data.best_score,
             elapsed_time(&root_data.timer),
