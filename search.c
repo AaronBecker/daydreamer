@@ -127,7 +127,7 @@ void root_search(void)
     if (!*root_data.root_moves) generate_legal_moves(pos, root_data.root_moves);
 
     // iterative deepening loop
-    int move_index = 0;
+    char la_move[6];
     int* curr_depth = &root_data.current_depth;
     root_data.best_score = -MATE_VALUE-1;
     for (*curr_depth=1;
@@ -138,7 +138,11 @@ void root_search(void)
         int best_index = 0;
         printf("info depth %d\n", *curr_depth);
         bool pv = true;
-        for (move_t* move=root_data.root_moves; *move; ++move, ++move_index) {
+        int move_index = 0;
+        for (move_t* move=root_data.root_moves, move_index=0; *move;
+                ++move, ++move_index) {
+            move_to_la_str(*move, la_move);
+            printf("info currmove %s currmovenumber %d\n", la_move, move_index);
             undo_info_t undo;
             do_move(pos, *move, &undo);
             int score;
@@ -152,7 +156,10 @@ void root_search(void)
                         1, -beta, -alpha, *curr_depth-1);
             }
             undo_move(pos, *move, &undo);
-            if (root_data.engine_status == ENGINE_ABORTED) break;
+            if (root_data.engine_status == ENGINE_ABORTED) {
+                --root_data.current_depth;
+                break;
+            }
             // update score
             if (score > alpha) {
                 alpha = score;
@@ -183,7 +190,6 @@ void root_search(void)
         root_data.root_moves[0] = root_data.best_move;
         if (!should_deepen(&root_data)) break;
     }
-    --root_data.current_depth;
     stop_timer(&root_data.timer);
     
     print_pv(root_data.pv, root_data.current_depth,
@@ -192,7 +198,6 @@ void root_search(void)
             root_data.nodes_searched);
     printf("info string targettime %d elapsedtime %d\n",
             root_data.time_target, elapsed_time(&root_data.timer));
-    char la_move[6];
     move_to_la_str(root_data.best_move, la_move);
     printf("bestmove %s\n", la_move);
     root_data.engine_status = ENGINE_IDLE;
