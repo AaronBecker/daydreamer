@@ -312,6 +312,7 @@ uint64_t perft(position_t* position, int depth, bool divide);
 // search.c
 void init_search_data(void);
 void root_search(void);
+void root_search_minimax(void);
 
 // timer.c
 void init_timer(timer_t* timer);
