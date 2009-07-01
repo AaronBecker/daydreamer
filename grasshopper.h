@@ -315,6 +315,9 @@ void init_search_data(void);
 void root_search(void);
 void root_search_minimax(void);
 
+// static_exchange_eval.c
+int static_exchange_eval(position_t* pos, move_t move);
+
 // timer.c
 void init_timer(timer_t* timer);
 void start_timer(timer_t* timer);
