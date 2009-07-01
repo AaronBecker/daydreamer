@@ -200,6 +200,17 @@ static void handle_minimax(position_t* pos, char* command)
     root_search_minimax();
 }
 
+/*
+ * Command: see <move>
+ * Print the static exchange evaluation for the given capturing move.
+ */
+static void handle_see(position_t* pos, char* command)
+{
+    while (isspace(*command)) ++command;
+    move_t capture = parse_la_move(pos, command);
+    printf("see: %d\n", static_exchange_eval(pos, capture));
+}
+
 
 /*
  * Command: uci
@@ -226,11 +237,12 @@ static const char* command_prefixes[] = {
     "undo",
     "quit",
     "uci",
+    "see",
     NULL
 };
 
 static const int command_prefix_lengths[] = {
-    10, 8, 7, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 0
+    10, 8, 7, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 0
 };
 
 static const command_handler handlers[] = {
@@ -246,7 +258,8 @@ static const command_handler handlers[] = {
     &handle_eval,
     &handle_undo,
     &handle_quit,
-    &handle_uci
+    &handle_uci,
+    &handle_see
 };
 
 /**
