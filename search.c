@@ -69,7 +69,7 @@ int search(position_t* pos,
     if (!depth) {
         //search_node->pv[ply] = NO_MOVE;
         //return simple_eval(pos);
-        return quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-1);
+        return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
     if (++root_data.nodes_searched & CHECK_INTERVAL) {
         perform_periodic_checks(&root_data);
@@ -204,6 +204,7 @@ static int quiesce(position_t* pos,
     generate_pseudo_captures(pos, moves);
     int num_legal_captures = 0;
     for (move_t* move = moves; *move; ++move) {
+        if (static_exchange_eval(pos, *move) < 0) continue;
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_captures;
         undo_info_t undo;
