@@ -84,9 +84,7 @@ static void uci_go(char* command)
         while (*info) {
             move_t move = parse_la_move(&root_data.root_pos, info);
             if (move == NO_MOVE) {
-                printf("Warning: could not parse %s\n", info);
-                print_board(&root_data.root_pos);
-                return;
+                break;
             }
             root_data.root_moves[move_index++] = move;
             while (*info && !isspace(*info)) ++info;
