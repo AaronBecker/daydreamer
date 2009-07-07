@@ -3,11 +3,6 @@
 #include <strings.h>
 #include "daydreamer.h"
 
-#define CHECK_INTERVAL  0xffff
-#define MATE_VALUE      0xffff
-#define DRAW_VALUE      0
-#define NULL_R          3
-
 search_data_t root_data;
 
 static int quiesce(position_t* pos,
@@ -88,7 +83,7 @@ int search(position_t* pos,
         return simple_eval(pos);
         //return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
-    if (++root_data.nodes_searched & CHECK_INTERVAL) {
+    if (++root_data.nodes_searched & POLL_INTERVAL) {
         perform_periodic_checks(&root_data);
     }
     bool pv = true;
@@ -183,17 +178,15 @@ void root_search(void)
                         1, -beta, -alpha, *curr_depth-1);
             }
             undo_move(pos, *move, &undo);
-            if (root_data.engine_status == ENGINE_ABORTED) {
-                --root_data.current_depth;
-                break;
-            }
+            if (root_data.engine_status == ENGINE_ABORTED) break;
             // update score
             if (score > alpha) {
                 alpha = score;
                 pv = false;
                 if (score > best_depth_score) {
                     best_depth_score = score;
-                    if (score > root_data.best_score) {
+                    if (score > root_data.best_score ||
+                            *move == root_data.best_move) {
                         root_data.best_score = score;
                         root_data.best_move = *move;
                         best_index = move_index;
@@ -215,10 +208,14 @@ void root_search(void)
         // swap the pv move to the front of the list
         root_data.root_moves[best_index] = root_data.root_moves[0];
         root_data.root_moves[0] = root_data.best_move;
-        if (!should_deepen(&root_data)) break;
+        if (!should_deepen(&root_data)) {
+            ++root_data.current_depth;
+            break;
+        }
     }
     stop_timer(&root_data.timer);
     
+    --root_data.current_depth;
     print_pv(root_data.pv, root_data.current_depth,
             root_data.best_score,
             elapsed_time(&root_data.timer),
@@ -238,7 +235,7 @@ static int quiesce(position_t* pos,
         int depth)
 {
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if (++root_data.nodes_searched & CHECK_INTERVAL) {
+    if (++root_data.nodes_searched & POLL_INTERVAL) {
         perform_periodic_checks(&root_data);
     }
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
@@ -302,7 +299,7 @@ static int minimax(position_t* pos,
         search_node->pv[ply] = NO_MOVE;
         return simple_eval(pos);
     }
-    if (++root_data.nodes_searched & CHECK_INTERVAL) {
+    if (++root_data.nodes_searched & POLL_INTERVAL) {
         perform_periodic_checks(&root_data);
     }
     int score, best_score = -MATE_VALUE-1;
@@ -385,5 +382,4 @@ void root_search_minimax(void)
     printf("bestmove %s\n", la_move);
     root_data.engine_status = ENGINE_IDLE;
 }
-
 

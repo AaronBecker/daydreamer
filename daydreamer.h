@@ -251,6 +251,11 @@ typedef struct {
 
 extern search_data_t root_data;
 
+#define POLL_INTERVAL   0xffff
+#define MATE_VALUE      0xffff
+#define DRAW_VALUE      0
+#define NULL_R          3
+
 /**
  * External function interface
  */
