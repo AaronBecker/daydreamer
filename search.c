@@ -194,7 +194,7 @@ void root_search(void)
                         1, -beta, -alpha, *curr_depth-1);
             }
             undo_move(pos, *move, &undo);
-            printf("score %d\n", score);
+            //printf("score %d\n", score);
             if (root_data.engine_status == ENGINE_ABORTED) break;
             // update score
             if (score > alpha) {
