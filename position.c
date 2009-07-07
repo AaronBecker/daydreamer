@@ -42,10 +42,11 @@ static void init_position(position_t* position)
  */
 void copy_position(position_t* dst, position_t* src)
 {
+    check_board_validity(src);
     memcpy(dst, src, sizeof(position_t));
     for (color_t color=WHITE; color<=BLACK; ++color) {
         for (piece_type_t type=PAWN; type<=KING; ++type) {
-            for (int index=0; index<16; ++index) {
+            for (int index=0; index<dst->piece_count[color][type]; ++index) {
                 piece_entry_t* entry = &dst->pieces[color][type][index];
                 if (entry->location != INVALID_SQUARE) {
                     dst->board[entry->location] = entry;
@@ -53,6 +54,8 @@ void copy_position(position_t* dst, position_t* src)
             }
         }
     }
+    check_board_validity(src);
+    check_board_validity(dst);
 }
 
 /*
@@ -88,7 +91,8 @@ char* set_position(position_t* pos, const char* fen)
             case 'K': place_piece(pos, WK, square); break;
             case '/': square -= 17 + square_file(square); break;
             case ' ': square = INVALID_SQUARE-1; break;
-            case '\0': return (char*)fen;
+            case '\0':check_board_validity(pos);
+                      return (char*)fen;
             default: assert(false);
         }
     }
@@ -118,18 +122,25 @@ char* set_position(position_t* pos, const char* fen)
         ++fen;
     }
     while (isspace(*fen)) ++fen;
-    if (!*fen) return (char*)fen;
+    if (!*fen) {
+        check_board_validity(pos);
+        return (char*)fen;
+    }
 
     // Read en-passant square
     if (*fen != '-') {
         pos->ep_square = parse_la_square(fen++);
     }
     while (*fen && isspace(*(++fen))) {}
-    if (!*fen) return (char*)fen;
+    if (!*fen) {
+        check_board_validity(pos);
+        return (char*)fen;
+    }
 
     // Read 50-move rule status and current move number.
     fen += sscanf(fen, "%d %d", &pos->fifty_move_counter, &pos->ply);
     pos->ply = pos->ply*2 + (pos->side_to_move == BLACK ? 1 : 0);
+    check_board_validity(pos);
     return (char*)fen;
 }
 
@@ -191,5 +202,30 @@ bool is_move_legal(position_t* pos, const move_t move)
             other_side);
     undo_move(pos, move, &undo);
     return legal;
+}
+
+/*
+ * Do some basic consistency checking on |pos| to identify bugs.
+ */
+void check_board_validity(position_t* pos)
+{
+    assert(pos->piece_count[0][KING] == 1);
+    assert(pos->piece_count[1][KING] == 1);
+    assert(pos->piece_count[0][PAWN] <= 8);
+    assert(pos->piece_count[1][PAWN] <= 8);
+    for (square_t sq=A1; sq<=H8; ++sq) {
+        if (!valid_board_index(sq)) continue;
+        if (pos->board[sq]) assert(pos->board[sq]->location == sq);
+    }
+    for (piece_type_t type=PAWN; type<=KING; ++type) {
+        for (int i=0; i<pos->piece_count[0][type]; ++i)
+            assert(pos->pieces[0][type][i].location == INVALID_SQUARE ||
+                    pos->board[pos->pieces[0][type][i].location] ==
+                    &pos->pieces[0][type][i]);
+        for (int i=0; i<pos->piece_count[1][type]; ++i)
+            assert(pos->pieces[1][type][i].location == INVALID_SQUARE ||
+                    pos->board[pos->pieces[1][type][i].location] ==
+                    &pos->pieces[1][type][i]);
+    }
 }
 
