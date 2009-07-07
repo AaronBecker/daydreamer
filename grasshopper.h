@@ -82,6 +82,7 @@ typedef enum {
  */
 typedef uint32_t move_t;
 #define NO_MOVE                     0
+#define NULL_MOVE                   0xffff
 #define ENPASSANT_FLAG              1<<29
 #define CASTLE_FLAG                 1<<30
 #define get_move_from(move)         ((move) & 0xff)
@@ -281,6 +282,8 @@ void transfer_piece(position_t* position,
         const square_t to);
 void do_move(position_t* position, const move_t move, undo_info_t* undo);
 void undo_move(position_t* position, const move_t move, undo_info_t* undo);
+void do_nullmove(position_t* pos, undo_info_t* undo);
+void undo_nullmove(position_t* pos, undo_info_t* undo);
 void check_move_validity(const position_t* pos, const move_t move);
 
 // move_generation.c
