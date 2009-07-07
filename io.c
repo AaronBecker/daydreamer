@@ -175,9 +175,9 @@ static void handle_search(position_t* pos, char* command)
     while(isspace(*command)) ++command;
     int depth;
     sscanf(command, "%d", &depth);
-    init_search_data();
     extern search_data_t root_data;
     copy_position(&root_data.root_pos, pos);
+    init_search_data();
     root_data.depth_limit = depth;
     root_data.infinite = true;
     root_search();
@@ -351,7 +351,7 @@ void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes)
 {
     // note: use time+1 avoid divide-by-zero
     // mate scores are given as MATE_VALUE-ply, so we can calculate depth
-    if (abs(score) + 256 > MATE_VALUE) {
+    if (is_mate_score(score)) {
         printf("info depth %d score mate %d time %d nodes %llu nps %llu pv ",
                 depth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),

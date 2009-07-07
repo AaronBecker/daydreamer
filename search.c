@@ -3,6 +3,8 @@
 #include <strings.h>
 #include "daydreamer.h"
 
+#define OUTPUT_DELAY    2000
+
 search_data_t root_data;
 
 static int quiesce(position_t* pos,
@@ -89,14 +91,18 @@ int search(position_t* pos,
     bool pv = true;
     int score = -MATE_VALUE-1;
     move_t moves[256];
-    // nullmove search, just check for beta cutoff
+    // nullmove reduction, just check for beta cutoff
     if (is_nullmove_allowed(pos)) {
         undo_info_t undo;
         do_nullmove(pos, &undo);
         score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth-NULL_R);
         undo_nullmove(pos, &undo);
-        if (score >= beta) return beta;
+        if (score >= beta) {
+            depth -= NULLMOVE_DEPTH_REDUCTION;
+            if (depth <= 0) return simple_eval(pos);
+            //return quiesce(pos, search_node, ply, alpha, beta, depth);
+        }
     }
     generate_pseudo_moves(pos, moves);
     int num_legal_moves = 0;
@@ -104,6 +110,8 @@ int search(position_t* pos,
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;
         undo_info_t undo;
+        check_board_validity(pos);
+        check_move_validity(pos, *move);
         do_move(pos, *move, &undo);
         if (pv) score = -search(pos, search_node+1, ply+1,
                 -beta, -alpha, depth-1);
@@ -147,6 +155,7 @@ void root_search(void)
     start_timer(&root_data.timer);
     if (!*root_data.root_moves) generate_legal_moves(pos, root_data.root_moves);
     root_data.best_move = root_data.root_moves[0];
+    check_board_validity(pos);
 
     // iterative deepening loop
     char la_move[6];
@@ -158,14 +167,21 @@ void root_search(void)
         int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
         int best_depth_score = -MATE_VALUE-1;
         int best_index = 0;
-        printf("info depth %d\n", *curr_depth);
+        if (elapsed_time(&root_data.timer) > OUTPUT_DELAY) {
+            printf("info depth %d\n", *curr_depth);
+        }
         bool pv = true;
         int move_index = 0;
         for (move_t* move=root_data.root_moves; *move;
                 ++move, ++move_index) {
             move_to_la_str(*move, la_move);
-            printf("info currmove %s currmovenumber %d\n", la_move, move_index);
+            if (elapsed_time(&root_data.timer) > OUTPUT_DELAY) {
+                printf("info currmove %s currmovenumber %d\n",
+                        la_move, move_index);
+            }
             undo_info_t undo;
+            check_board_validity(pos);
+            check_move_validity(pos, *move);
             do_move(pos, *move, &undo);
             int score;
             if (pv) {
@@ -178,6 +194,7 @@ void root_search(void)
                         1, -beta, -alpha, *curr_depth-1);
             }
             undo_move(pos, *move, &undo);
+            printf("score %d\n", score);
             if (root_data.engine_status == ENGINE_ABORTED) break;
             // update score
             if (score > alpha) {
@@ -199,10 +216,12 @@ void root_search(void)
                     root_data.pv[i] = root_data.search_stack->pv[i];
                 }
                 root_data.pv[i] = NO_MOVE;
-                print_pv(root_data.pv, *curr_depth,
-                        root_data.best_score,
-                        elapsed_time(&root_data.timer),
-                        root_data.nodes_searched);
+                if (elapsed_time(&root_data.timer) > OUTPUT_DELAY) {
+                    print_pv(root_data.pv, *curr_depth,
+                            root_data.best_score,
+                            elapsed_time(&root_data.timer),
+                            root_data.nodes_searched);
+                }
             }
         }
         // swap the pv move to the front of the list

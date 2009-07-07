@@ -255,6 +255,9 @@ extern search_data_t root_data;
 #define MATE_VALUE      0xffff
 #define DRAW_VALUE      0
 #define NULL_R          3
+#define NULLMOVE_DEPTH_REDUCTION    4
+
+#define is_mate_score(score)       (abs(score) + 256 > MATE_VALUE)
 
 /**
  * External function interface
@@ -275,6 +278,7 @@ bool is_square_attacked(const position_t* position,
         const color_t side);
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_check(const position_t* pos);
+void check_board_validity(position_t* pos);
 
 // move.c
 void place_piece(position_t* position,
