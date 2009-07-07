@@ -4,7 +4,7 @@
 #include "daydreamer.h"
 
 #define CHECK_INTERVAL  0xffff
-#define MATE_VALUE      0xfff
+#define MATE_VALUE      0xffff
 #define DRAW_VALUE      0
 #define NULL_R          3
 
@@ -60,6 +60,13 @@ void perform_periodic_checks(search_data_t* data)
 
 static bool is_nullmove_allowed(position_t* pos)
 {
+    // don't allow nullmove if either side is in check
+    if (is_square_attacked(pos,
+            pos->pieces[pos->side_to_move][KING][0].location,
+            pos->side_to_move^1) ||
+        is_square_attacked(pos,
+            pos->pieces[pos->side_to_move^1][KING][0].location,
+            pos->side_to_move)) return false;
     // allow nullmove if we're not down to king/pawns
     int piece_value = pos->material_eval[pos->side_to_move] -
         material_value(WK) -
@@ -91,13 +98,8 @@ int search(position_t* pos,
     if (is_nullmove_allowed(pos)) {
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        // legality check
-        if (!is_square_attacked(pos,
-            pos->pieces[pos->side_to_move^1][KING][0].location,
-            pos->side_to_move)) {
-            score = -search(pos, search_node+1, ply+1,
-                    -beta, -beta+1, depth-NULL_R);
-        }
+        score = -search(pos, search_node+1, ply+1,
+                -beta, -beta+1, depth-NULL_R);
         undo_nullmove(pos, &undo);
         if (score >= beta) return beta;
     }
