@@ -58,6 +58,15 @@ void perform_periodic_checks(search_data_t* data)
     check_for_input(data);
 }
 
+static bool is_nullmove_allowed(position_t* pos)
+{
+    // allow nullmove if we're not down to king/pawns
+    int piece_value = pos->material_eval[pos->side_to_move] -
+        material_value(WK) -
+        material_value(WP)*pos->piece_count[pos->side_to_move][PAWN];
+    return piece_value != 0;
+}
+
 int search(position_t* pos,
         search_node_t* search_node,
         int ply,
@@ -79,8 +88,7 @@ int search(position_t* pos,
     int score = -MATE_VALUE-1;
     move_t moves[256];
     // nullmove search, just check for beta cutoff
-    // TODO: more extensive conditions on when nullmoves are allowed
-    {
+    if (is_nullmove_allowed(pos)) {
         undo_info_t undo;
         do_nullmove(pos, &undo);
         // legality check
@@ -91,7 +99,7 @@ int search(position_t* pos,
                     -beta, -beta+1, depth-NULL_R);
         }
         undo_nullmove(pos, &undo);
-        if (score >= beta) return score;
+        if (score >= beta) return beta;
     }
     generate_pseudo_moves(pos, moves);
     int num_legal_moves = 0;
