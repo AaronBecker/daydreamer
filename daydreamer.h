@@ -1,5 +1,5 @@
-#ifndef GRASSHOPPER_H
-#define GRASSHOPPER_H
+#ifndef DAYDREAMER_H
+#define DAYDREAMER_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,7 +11,7 @@ extern "C" {
 #include <stdlib.h>
 #include <sys/time.h>
 
-#define ENGINE_NAME     "Grasshopper"
+#define ENGINE_NAME     "Daydreamer"
 #define ENGINE_VERSION  "0"
 #define ENGINE_AUTHOR   "Aaron Becker"
 
@@ -255,8 +255,8 @@ extern search_data_t root_data;
  * External function interface
  */
 
-// grasshopper.c
-void grasshopper_init(void);
+// daydreamer.c
+void daydreamer_init(void);
 void generate_attack_data(void);
 
 // eval.c
@@ -333,5 +333,5 @@ void uci_main(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif
-#endif // GRASSHOPPER_H
+#endif // DAYDREAMER_H
 

@@ -1,5 +1,5 @@
 
-#include "grasshopper.h"
+#include "daydreamer.h"
 #include <assert.h>
 
 static void generate_pawn_captures(const position_t* pos,

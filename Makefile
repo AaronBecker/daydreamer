@@ -16,10 +16,10 @@ OBJFILES := $(patsubst %.c,%.o,$(wildcard *.c))
 
 .PHONY: all clean tags
 
-all: grasshopper
+all: daydreamer
 
-grasshopper: $(OBJFILES)
-	$(CC) $(LDFLAGS) $(OBJFILES) -o grasshopper
+daydreamer: $(OBJFILES)
+	$(CC) $(LDFLAGS) $(OBJFILES) -o daydreamer
 
 tags: $(SRCFILES)
 	$(CTAGS) $(HEADERS) $(SRCFILES)
@@ -28,4 +28,4 @@ tags: $(SRCFILES)
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	rm -f $(OBJFILES) grasshopper tags
+	rm -f $(OBJFILES) daydreamer tags

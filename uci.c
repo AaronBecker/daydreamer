@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "grasshopper.h"
+#include "daydreamer.h"
 
 static void uci_get_input(void);
 static void uci_handle_command(char* command);
