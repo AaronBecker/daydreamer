@@ -350,8 +350,18 @@ void print_la_move_list(const move_t* move)
 void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes)
 {
     // note: use time+1 avoid divide-by-zero
-    printf("info depth %d score cp %d time %d nodes %llu nps %llu pv ",
-            depth, score, time, nodes, nodes/(time+1)*1000);
+    // mate scores are given as MATE_VALUE-ply, so we can calculate depth
+    if (abs(score) + 256 > MATE_VALUE) {
+        printf("info depth %d score mate %d time %d nodes %llu nps %llu pv ",
+                depth,
+                (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),
+                time,
+                nodes,
+                nodes/(time+1)*1000);
+    } else {
+        printf("info depth %d score cp %d time %d nodes %llu nps %llu pv ",
+                depth, score, time, nodes, nodes/(time+1)*1000);
+    }
     print_la_move_list(pv);
 }
 
