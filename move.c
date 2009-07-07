@@ -157,6 +157,30 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
     pos->prev_move = undo->prev_move;
 }
 
+void do_nullmove(position_t* pos, undo_info_t* undo)
+{
+    undo->ep_square = pos->ep_square;
+    undo->castle_rights = pos->castle_rights;
+    undo->prev_move = pos->prev_move;
+    undo->fifty_move_counter = pos->fifty_move_counter;
+    pos->side_to_move ^= 1;
+    pos->ep_square = EMPTY;
+    pos->fifty_move_counter++;
+    pos->ply++;
+    pos->prev_move = NULL_MOVE;
+}
+
+void undo_nullmove(position_t* pos, undo_info_t* undo)
+{
+    pos->ep_square = undo->ep_square;
+    pos->castle_rights = undo->castle_rights;
+    pos->prev_move = undo->prev_move;
+    pos->fifty_move_counter = undo->fifty_move_counter;
+    pos->side_to_move ^= 1;
+    pos->ply--;
+}
+
+
 /*
  * Perform some sanity checks on |move| to flag obviously invalid moves.
  */

@@ -6,6 +6,7 @@
 #define CHECK_INTERVAL  0xffff
 #define MATE_VALUE      0xfff
 #define DRAW_VALUE      0
+#define NULL_R          3
 
 search_data_t root_data;
 
@@ -66,17 +67,32 @@ int search(position_t* pos,
 {
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
-    if (!depth) {
-        //search_node->pv[ply] = NO_MOVE;
-        //return simple_eval(pos);
-        return quiesce(pos, search_node, ply, alpha, beta, depth);
+    if (depth <= 0) {
+        search_node->pv[ply] = NO_MOVE;
+        return simple_eval(pos);
+        //return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
     if (++root_data.nodes_searched & CHECK_INTERVAL) {
         perform_periodic_checks(&root_data);
     }
     bool pv = true;
-    int score;
+    int score = -MATE_VALUE-1;
     move_t moves[256];
+    // nullmove search, just check for beta cutoff
+    // TODO: more extensive conditions on when nullmoves are allowed
+    {
+        undo_info_t undo;
+        do_nullmove(pos, &undo);
+        // legality check
+        if (!is_square_attacked(pos,
+            pos->pieces[pos->side_to_move^1][KING][0].location,
+            pos->side_to_move)) {
+            score = -search(pos, search_node+1, ply+1,
+                    -beta, -beta+1, depth-NULL_R);
+        }
+        undo_nullmove(pos, &undo);
+        if (score >= beta) return score;
+    }
     generate_pseudo_moves(pos, moves);
     int num_legal_moves = 0;
     for (move_t* move = moves; *move; ++move) {
@@ -125,6 +141,7 @@ void root_search(void)
     init_timer(&root_data.timer);
     start_timer(&root_data.timer);
     if (!*root_data.root_moves) generate_legal_moves(pos, root_data.root_moves);
+    root_data.best_move = root_data.root_moves[0];
 
     // iterative deepening loop
     char la_move[6];
@@ -139,7 +156,7 @@ void root_search(void)
         printf("info depth %d\n", *curr_depth);
         bool pv = true;
         int move_index = 0;
-        for (move_t* move=root_data.root_moves, move_index=0; *move;
+        for (move_t* move=root_data.root_moves; *move;
                 ++move, ++move_index) {
             move_to_la_str(*move, la_move);
             printf("info currmove %s currmovenumber %d\n", la_move, move_index);
@@ -247,6 +264,7 @@ static int quiesce(position_t* pos,
         search_node->pv[ply] = NO_MOVE;
         int num_legal_noncaptures = generate_legal_noncaptures(pos, moves);
         if (num_legal_noncaptures) {
+            // TODO: if we're in check, we haven't quiesced yet--handle this
             // we've reached quiescence
             return eval;
         }
