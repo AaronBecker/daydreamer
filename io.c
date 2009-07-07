@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "grasshopper.h"
+#include "daydreamer.h"
     
 static const char glyphs[] = ".PNBRQK  pnbrqk";
 

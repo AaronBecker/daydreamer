@@ -1,6 +1,6 @@
 
 #include <assert.h>
-#include "grasshopper.h"
+#include "daydreamer.h"
 
 /*
  * Modify |pos| by adding |piece| to |square|. If |square| is occupied, its

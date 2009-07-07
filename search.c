@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include "grasshopper.h"
+#include "daydreamer.h"
 
 #define CHECK_INTERVAL  0xffff
 #define MATE_VALUE      0xfff

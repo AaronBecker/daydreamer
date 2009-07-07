@@ -1,7 +1,7 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include "grasshopper.h"
+#include "daydreamer.h"
 
 /*
  * Convert an algebraic string representation of a square (e.g. A1, c6) to

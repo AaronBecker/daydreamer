@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "grasshopper.h"
+#include "daydreamer.h"
 
 static uint64_t full_search(position_t* pos, int depth);
 static uint64_t divide(position_t* pos, int depth);

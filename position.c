@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "grasshopper.h"
+#include "daydreamer.h"
 
 /*
  * Set up the basic data structures of a position. Used internally by

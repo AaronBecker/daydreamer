@@ -1,6 +1,6 @@
 
 #include <assert.h>
-#include "grasshopper.h"
+#include "daydreamer.h"
 
 int static_exchange_eval(position_t* pos, move_t move)
 {

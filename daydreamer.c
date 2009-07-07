@@ -1,8 +1,8 @@
 
-#include "grasshopper.h"
+#include "daydreamer.h"
 
 extern void eval_init(void);
-void grasshopper_init(void)
+void daydreamer_init(void)
 {
     eval_init();
 }
