@@ -190,11 +190,14 @@ void root_search(void)
             } else {
                 score = -search(pos, root_data.search_stack,
                         1, -alpha-1, -alpha, *curr_depth-1);
-                if (score > alpha) score = -search(pos, root_data.search_stack,
+                if (score > alpha) {
+                    score = -search(pos, root_data.search_stack,
                         1, -beta, -alpha, *curr_depth-1);
+                }
             }
+            //printf("pv score %d alpha %d beta %d depth %d\n",
+            //      score, alpha, beta, *curr_depth-1);
             undo_move(pos, *move, &undo);
-            //printf("score %d\n", score);
             if (root_data.engine_status == ENGINE_ABORTED) break;
             // update score
             if (score > alpha) {
