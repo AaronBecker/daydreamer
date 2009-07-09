@@ -180,7 +180,6 @@ void undo_nullmove(position_t* pos, undo_info_t* undo)
     pos->ply--;
 }
 
-
 /*
  * Perform some sanity checks on |move| to flag obviously invalid moves.
  */

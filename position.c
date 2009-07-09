@@ -138,7 +138,9 @@ char* set_position(position_t* pos, const char* fen)
     }
 
     // Read 50-move rule status and current move number.
-    fen += sscanf(fen, "%d %d", &pos->fifty_move_counter, &pos->ply);
+    int consumed;
+    sscanf(fen, "%d %d%n", &pos->fifty_move_counter, &pos->ply, &consumed);
+    fen += consumed;
     pos->ply = pos->ply*2 + (pos->side_to_move == BLACK ? 1 : 0);
     check_board_validity(pos);
     return (char*)fen;

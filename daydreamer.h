@@ -12,7 +12,7 @@ extern "C" {
 #include <sys/time.h>
 
 #define ENGINE_NAME     "Daydreamer"
-#define ENGINE_VERSION  "0"
+#define ENGINE_VERSION  "0.0"
 #define ENGINE_AUTHOR   "Aaron Becker"
 
 /**
@@ -338,6 +338,12 @@ int elapsed_time(timer_t* timer);
 
 // uci.c
 void uci_main(void);
+
+// uci_option.c
+void init_uci_options(void);
+void set_uci_option(char* command);
+void print_uci_options(void);
+
 
 #ifdef __cplusplus
 } // extern "C"

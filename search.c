@@ -147,6 +147,11 @@ int search(position_t* pos,
     return alpha;
 }
 
+// TODO: split up root search a bit
+void deepening_search(search_data_t* search_data)
+{
+}
+
 void root_search(void)
 {
     position_t* pos = &root_data.root_pos;
