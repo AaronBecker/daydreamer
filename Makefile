@@ -4,8 +4,7 @@ CC = /usr/bin/gcc-4.2
 CTAGS = ctags
 
 DEBUGFLAGS = -g -O0
-OPTFLAGS = -g -O3
-PROFFLAGS = -g -O3 -pg
+OPTFLAGS = -g -O3 -NDEBUG
 CFLAGS = -Wall -Wextra --std=c99 $(DEBUGFLAGS)
 #CFLAGS = -Wall -Wextra --std=c99 $(OPTFLAGS)
 #CFLAGS = -Wall -Wextra --std=c99 $(PROFFLAGS)
