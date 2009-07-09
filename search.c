@@ -82,8 +82,8 @@ int search(position_t* pos,
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
     if (depth <= 0) {
         search_node->pv[ply] = NO_MOVE;
-        return simple_eval(pos);
-        //return quiesce(pos, search_node, ply, alpha, beta, depth);
+        //return simple_eval(pos);
+        return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
     if (++root_data.nodes_searched & POLL_INTERVAL) {
         perform_periodic_checks(&root_data);
@@ -100,8 +100,12 @@ int search(position_t* pos,
         undo_nullmove(pos, &undo);
         if (score >= beta) {
             depth -= NULLMOVE_DEPTH_REDUCTION;
-            if (depth <= 0) return simple_eval(pos);
-            //return quiesce(pos, search_node, ply, alpha, beta, depth);
+            if (depth <= 0) {
+                //return simple_eval(pos);
+                return quiesce(pos, search_node, ply, alpha, beta, depth);
+            } else {
+                return beta;
+            }
         }
     }
     generate_pseudo_moves(pos, moves);
