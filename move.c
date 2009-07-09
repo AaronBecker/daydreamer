@@ -180,21 +180,3 @@ void undo_nullmove(position_t* pos, undo_info_t* undo)
     pos->ply--;
 }
 
-/*
- * Perform some sanity checks on |move| to flag obviously invalid moves.
- */
-void check_move_validity(const position_t* pos, const move_t move)
-{
-    const square_t from = get_move_from(move);
-    const square_t to = get_move_to(move);
-    const piece_t piece = get_move_piece(move);
-    const piece_t capture = get_move_capture(move);
-    assert(valid_board_index(from) && valid_board_index(to));
-    assert(pos->board[from]->piece == piece);
-    assert(pos->board[from]->location == from);
-    if (capture && !is_move_enpassant(move)) {
-        assert(pos->board[to]->piece == capture);
-    } else {
-        assert(pos->board[to] == NULL);
-    }
-}

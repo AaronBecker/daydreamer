@@ -206,28 +206,4 @@ bool is_move_legal(position_t* pos, const move_t move)
     return legal;
 }
 
-/*
- * Do some basic consistency checking on |pos| to identify bugs.
- */
-void check_board_validity(position_t* pos)
-{
-    assert(pos->piece_count[0][KING] == 1);
-    assert(pos->piece_count[1][KING] == 1);
-    assert(pos->piece_count[0][PAWN] <= 8);
-    assert(pos->piece_count[1][PAWN] <= 8);
-    for (square_t sq=A1; sq<=H8; ++sq) {
-        if (!valid_board_index(sq)) continue;
-        if (pos->board[sq]) assert(pos->board[sq]->location == sq);
-    }
-    for (piece_type_t type=PAWN; type<=KING; ++type) {
-        for (int i=0; i<pos->piece_count[0][type]; ++i)
-            assert(pos->pieces[0][type][i].location == INVALID_SQUARE ||
-                    pos->board[pos->pieces[0][type][i].location] ==
-                    &pos->pieces[0][type][i]);
-        for (int i=0; i<pos->piece_count[1][type]; ++i)
-            assert(pos->pieces[1][type][i].location == INVALID_SQUARE ||
-                    pos->board[pos->pieces[1][type][i].location] ==
-                    &pos->pieces[1][type][i]);
-    }
-}
 

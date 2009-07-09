@@ -260,6 +260,22 @@ extern search_data_t root_data;
 #define is_mate_score(score)       (abs(score) + 256 > MATE_VALUE)
 
 /**
+ * Debugging functionality.
+ */
+
+void _check_board_validity(const position_t* pos);
+void _check_move_validity(const position_t* pos, const move_t move);
+
+#ifdef NDEBUG
+#define check_board_validity(x)                 ((void)0)
+#define check_move_validity(x,y)                ((void)0)
+#else
+#define check_board_validity(x)                 _check_board_validity(x)
+#define check_move_validity(x,y)                _check_move_validity(x,y)
+#endif
+
+
+/**
  * External function interface
  */
 
@@ -278,7 +294,7 @@ bool is_square_attacked(const position_t* position,
         const color_t side);
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_check(const position_t* pos);
-void check_board_validity(position_t* pos);
+//void check_board_validity(position_t* pos);
 
 // move.c
 void place_piece(position_t* position,
@@ -293,7 +309,7 @@ void do_move(position_t* position, const move_t move, undo_info_t* undo);
 void undo_move(position_t* position, const move_t move, undo_info_t* undo);
 void do_nullmove(position_t* pos, undo_info_t* undo);
 void undo_nullmove(position_t* pos, undo_info_t* undo);
-void check_move_validity(const position_t* pos, const move_t move);
+//void check_move_validity(const position_t* pos, const move_t move);
 
 // move_generation.c
 int generate_legal_moves(const position_t* pos, move_t* moves);
