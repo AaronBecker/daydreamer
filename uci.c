@@ -17,9 +17,10 @@ static void calculate_search_time(int wtime,
 
 void uci_main(void)
 {
-    printf("id name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
+    printf("\nid name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
     printf("id author %s\n", ENGINE_AUTHOR);
-    // TODO: should probably support some options (at least the mandatory ones)
+    init_uci_options();
+    print_uci_options();
     printf("uciok\n");
     set_position(&root_data.root_pos, FEN_STARTPOS);
     while (1) uci_get_input();
@@ -38,7 +39,10 @@ static void uci_handle_command(char* command)
     else if (!strncasecmp(command, "quit", 4)) exit(0);
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
-    // not handled: setoption name <option>, ucinewgame
+    else if (!strncasecmp(command, "setoption name", 14)) {
+        set_uci_option(command+15);
+    }
+    // not handled: ucinewgame, debug, register, ponderhit, stop
 }
 
 static void uci_position(char* uci_pos)
