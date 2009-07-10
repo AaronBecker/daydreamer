@@ -7,6 +7,9 @@ Search
     Better statistics gathering/reporting
     Unified handling of search options
     TBB?
+    Ponder
+    Checks in quiescence
+    Identify "tough" moves and take more time on them
 
 Transposition Table
 
@@ -22,4 +25,5 @@ Interface
 
 Split out monolithic header
 Expand evaluation function
+Chess960 support
 
