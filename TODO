@@ -1,0 +1,29 @@
+
+Search
+    Move ordering/scoring
+    Extensions
+    Refactor ID loop and nullmove handling
+    Internal ID
+    Better statistics gathering/reporting
+    Unified handling of search options
+    TBB?
+    Ponder
+    Checks in quiescence
+    Identify "tough" moves and take more time on them
+
+Transposition Table
+
+Check flag in position
+Track pinned pieces in SEE
+Special standalone PSQ
+    
+Interface
+    SAN translation
+    Basic Winboard interface?
+    ECO classification
+    Improve non-UCI console interface
+
+Split out monolithic header
+Expand evaluation function
+Chess960 support
+
