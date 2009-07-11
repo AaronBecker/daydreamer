@@ -30,7 +30,7 @@ static void init_position(position_t* position)
     }
 
     position->fifty_move_counter = 0;
-    position->ep_square = INVALID_SQUARE;
+    position->ep_square = EMPTY;
     position->ply = 0;
     position->side_to_move = WHITE;
     position->castle_rights = CASTLE_NONE;
