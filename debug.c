@@ -45,3 +45,11 @@ void _check_move_validity(const position_t* pos, const move_t move)
         assert(pos->board[to] == NULL);
     }
 }
+
+/*
+ * Check to see if |pos|'s incremental hash is correct.
+ */
+void _check_position_hash(const position_t* pos)
+{
+    assert(hash_position(pos) == pos->hash);
+}

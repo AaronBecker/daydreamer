@@ -68,6 +68,8 @@ typedef enum {
 #define create_square(file, rank)   (((rank) << 4) | (file))
 #define valid_board_index(idx)      !(idx & 0x88)
 #define flip_square(square)         ((square) ^ 0x70)
+#define square_to_index(square)     ((square)+((square) & 0x07))>>1
+#define index_to_square(square)     ((square)+((square) & ~0x07))
 
 /**
  * Definitions for moves.
@@ -146,6 +148,7 @@ typedef uint8_t castle_rights_t;
                                             ~(WHITE_OO<<(side)))
 #define remove_ooo_rights(pos, side)    ((pos)->castle_rights &= \
                                             ~(WHITE_OOO<<(side)))
+typedef uint64_t hashkey_t;
 
 typedef struct {
     piece_entry_t* board[128];          // 0x88 board
@@ -159,6 +162,7 @@ typedef struct {
     int material_eval[2];
     int piece_square_eval[2];
     castle_rights_t castle_rights;
+    hashkey_t hash;
 } position_t;
 
 typedef struct {
@@ -204,6 +208,26 @@ typedef struct {
     int elapsed_millis;
     bool running;
 } timer_t;
+
+/*
+ * Hashing.
+ */
+
+extern const hashkey_t piece_random[2][7][64];
+extern const hashkey_t castle_random[2][2][2];
+extern const hashkey_t enpassant_random[64];
+extern const hashkey_t side_random[2];
+#define piece_hash(p,sq) \
+    piece_random[piece_color(p)][piece_type(p)][square_to_index(sq)]
+#define ep_hash(pos) \
+    enpassant_random[square_to_index((pos)->ep_square)]
+#define castle_hash(pos) \
+    (castle_random[has_oo_rights(pos, WHITE) ? 1 : 0][0][0] ^ \
+    castle_random[has_ooo_rights(pos, WHITE) ? 1 : 0][0][1] ^ \
+    castle_random[has_oo_rights(pos, BLACK) ? 1 : 0][1][0] ^ \
+    castle_random[has_ooo_rights(pos, BLACK) ? 1 : 0][1][1])
+#define side_hash(pos) \
+    side_random((pos)->side_to_move)
 
 /*
  * Position evaluation.
@@ -272,15 +296,17 @@ extern search_data_t root_data;
 
 void _check_board_validity(const position_t* pos);
 void _check_move_validity(const position_t* pos, const move_t move);
+void _check_position_hash(const position_t* pos);
 
 #ifdef NDEBUG
 #define check_board_validity(x)                 ((void)0)
 #define check_move_validity(x,y)                ((void)0)
+#define check_position_hash(x)                  ((void)0)
 #else
 #define check_board_validity(x)                 _check_board_validity(x)
 #define check_move_validity(x,y)                _check_move_validity(x,y)
+#define check_position_hash(x)                  _check_position_hash(x)
 #endif
-
 
 /**
  * External function interface
@@ -293,14 +319,20 @@ void generate_attack_data(void);
 // eval.c
 int simple_eval(const position_t* pos);
 
-// position.c
-char* set_position(position_t* position, const char* fen);
-void copy_position(position_t* dst, position_t* src);
-bool is_square_attacked(const position_t* position,
-        const square_t square,
-        const color_t side);
-bool is_move_legal(position_t* pos, const move_t move);
-bool is_check(const position_t* pos);
+// hash.c
+hashkey_t hash_position(position_t* pos);
+
+// io.c
+void handle_console(position_t* pos, char* command);
+void move_to_la_str(move_t move, char* str);
+void position_to_fen_str(position_t* pos, char* fen);
+void print_la_move(move_t move);
+void print_la_move_list(const move_t* move);
+void print_board(const position_t* pos);
+void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes);
+void check_for_input(search_data_t* search_data);
+// unimplemented
+void move_to_san_str(position_t* pos, move_t move, char* str);
 
 // move.c
 void place_piece(position_t* position,
@@ -323,18 +355,6 @@ int generate_pseudo_moves(const position_t* position, move_t* move_list);
 int generate_pseudo_captures(const position_t* position, move_t* move_list);
 int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);
 
-// io.c
-void handle_console(position_t* pos, char* command);
-void move_to_la_str(move_t move, char* str);
-void position_to_fen_str(position_t* pos, char* fen);
-void print_la_move(move_t move);
-void print_la_move_list(const move_t* move);
-void print_board(const position_t* pos);
-void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes);
-void check_for_input(search_data_t* search_data);
-// unimplemented
-void move_to_san_str(position_t* pos, move_t move, char* str);
-
 // parse.c
 move_t parse_la_move(position_t* pos, const char* la_move);
 square_t parse_la_square(const char* la_square);
@@ -342,6 +362,15 @@ square_t parse_la_square(const char* la_square);
 // perft.c
 void perft_testsuite(char* filename);
 uint64_t perft(position_t* position, int depth, bool divide);
+
+// position.c
+char* set_position(position_t* position, const char* fen);
+void copy_position(position_t* dst, position_t* src);
+bool is_square_attacked(const position_t* position,
+        const square_t square,
+        const color_t side);
+bool is_move_legal(position_t* pos, const move_t move);
+bool is_check(const position_t* pos);
 
 // search.c
 void init_search_data(void);
