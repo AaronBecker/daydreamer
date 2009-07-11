@@ -178,26 +178,33 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
 
 void do_nullmove(position_t* pos, undo_info_t* undo)
 {
+    check_board_validity(pos);
     undo->ep_square = pos->ep_square;
     undo->castle_rights = pos->castle_rights;
     undo->prev_move = pos->prev_move;
     undo->fifty_move_counter = pos->fifty_move_counter;
+    undo->hash = pos->hash;
     pos->hash ^= side_hash(pos);
+    pos->hash ^= ep_hash(pos);
     pos->side_to_move ^= 1;
+    pos->hash ^= side_hash(pos);
     pos->ep_square = EMPTY;
     pos->fifty_move_counter++;
     pos->ply++;
     pos->prev_move = NULL_MOVE;
+    check_board_validity(pos);
 }
 
 void undo_nullmove(position_t* pos, undo_info_t* undo)
 {
+    check_board_validity(pos);
     pos->ep_square = undo->ep_square;
     pos->castle_rights = undo->castle_rights;
     pos->prev_move = undo->prev_move;
-    pos->fifty_move_counter = undo->fifty_move_counter;
     pos->side_to_move ^= 1;
-    pos->hash ^= side_hash(pos);
+    pos->fifty_move_counter = undo->fifty_move_counter;
+    pos->hash = undo->hash;
     pos->ply--;
+    check_board_validity(pos);
 }
 
