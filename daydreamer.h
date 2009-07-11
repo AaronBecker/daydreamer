@@ -226,11 +226,18 @@ typedef enum {
     ENGINE_IDLE=0, ENGINE_PONDERING, ENGINE_THINKING, ENGINE_ABORTED
 } engine_status_t;
 
+typedef enum {
+    SCORE_EXACT, SCORE_LOWERBOUND, SCORE_UPPERBOUND
+} score_type_t;
+
 typedef struct {
     // search state info
     position_t root_pos;
     move_t root_moves[256];
-    move_t best_move;
+    int root_move_scores[256];
+    int root_move_depths[256];
+    score_type_t root_move_types[256];
+    move_t best_move; // FIXME: shouldn't this be redundant with pv[0]?
     int best_score;
     move_t pv[MAX_SEARCH_DEPTH];
     search_node_t search_stack[MAX_SEARCH_DEPTH];
@@ -294,7 +301,6 @@ bool is_square_attacked(const position_t* position,
         const color_t side);
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_check(const position_t* pos);
-//void check_board_validity(position_t* pos);
 
 // move.c
 void place_piece(position_t* position,
@@ -309,7 +315,6 @@ void do_move(position_t* position, const move_t move, undo_info_t* undo);
 void undo_move(position_t* position, const move_t move, undo_info_t* undo);
 void do_nullmove(position_t* pos, undo_info_t* undo);
 void undo_nullmove(position_t* pos, undo_info_t* undo);
-//void check_move_validity(const position_t* pos, const move_t move);
 
 // move_generation.c
 int generate_legal_moves(const position_t* pos, move_t* moves);
