@@ -229,6 +229,14 @@ extern const hashkey_t side_random[2];
     castle_random[has_ooo_rights(pos, BLACK) ? 1 : 0][1][1])
 #define side_hash(pos)  ((pos)->side_to_move * 0xffffffffffffffffull)
 
+typedef struct {
+    hashkey_t key;
+    uint16_t score;
+    uint16_t depth;
+    move_t move;
+} transposition_entry_t;
+extern transposition_entry_t* transposition_table;
+
 /*
  * Position evaluation.
  */
@@ -283,7 +291,7 @@ typedef struct {
 extern search_data_t root_data;
 
 #define POLL_INTERVAL   0xffff
-#define MATE_VALUE      0xffff
+#define MATE_VALUE      0x7fff
 #define DRAW_VALUE      0
 #define NULL_R          3
 #define NULLMOVE_DEPTH_REDUCTION    4
@@ -385,6 +393,10 @@ void init_timer(timer_t* timer);
 void start_timer(timer_t* timer);
 int stop_timer(timer_t* timer);
 int elapsed_time(timer_t* timer);
+
+// trans_table.c
+transposition_entry_t* get_transposition(position_t* pos);
+void put_transposition(position_t* pos, int depth, int score);
 
 // uci.c
 void uci_main(void);

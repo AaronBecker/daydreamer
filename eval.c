@@ -10,7 +10,7 @@
 #define BISHOP_VAL    325
 #define ROOK_VAL      500
 #define QUEEN_VAL     975
-#define KING_VAL      20000
+#define KING_VAL      10000
 
 const int material_values[] = {
     0, PAWN_VAL, KNIGHT_VAL, BISHOP_VAL, ROOK_VAL, QUEEN_VAL, KING_VAL, 0,
