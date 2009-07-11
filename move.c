@@ -63,8 +63,8 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
     piece_t p = pos->board[to]->piece;
     pos->piece_square_eval[piece_color(p)] -= piece_square_value(p, from);
     pos->piece_square_eval[piece_color(p)] += piece_square_value(p, to);
-    pos->hash ^= piece_hash(piece, from);
-    pos->hash ^= piece_hash(piece, to);
+    pos->hash ^= piece_hash(p, from);
+    pos->hash ^= piece_hash(p, to);
 }
 
 /*
@@ -73,13 +73,14 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
  */
 void do_move(position_t* pos, const move_t move, undo_info_t* undo)
 {
-    check_move_validity(move);
+    check_move_validity(pos, move);
     check_board_validity(pos);
     // Set undo info, so we can roll back later.
     undo->prev_move = pos->prev_move;
     undo->ep_square = pos->ep_square;
     undo->fifty_move_counter = pos->fifty_move_counter;
     undo->castle_rights = pos->castle_rights;
+    undo->hash = pos->hash;
 
     // xor old data out of the hash key
     pos->hash ^= ep_hash(pos);
@@ -128,6 +129,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     pos->prev_move = move;
     pos->hash ^= ep_hash(pos);
     pos->hash ^= castle_hash(pos);
+    pos->hash ^= side_hash(pos);
     check_board_validity(pos);
 }
 
@@ -170,6 +172,7 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
     pos->fifty_move_counter = undo->fifty_move_counter;
     pos->castle_rights = undo->castle_rights;
     pos->prev_move = undo->prev_move;
+    pos->hash = undo->hash;
     check_board_validity(pos);
 }
 
