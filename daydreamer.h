@@ -148,6 +148,7 @@ typedef uint8_t castle_rights_t;
                                             ~(WHITE_OO<<(side)))
 #define remove_ooo_rights(pos, side)    ((pos)->castle_rights &= \
                                             ~(WHITE_OOO<<(side)))
+typedef uint64_t hashkey_t;
 
 typedef struct {
     piece_entry_t* board[128];          // 0x88 board
@@ -161,6 +162,7 @@ typedef struct {
     int material_eval[2];
     int piece_square_eval[2];
     castle_rights_t castle_rights;
+    hashkey_t hash;
 } position_t;
 
 typedef struct {
@@ -211,7 +213,6 @@ typedef struct {
  * Hashing.
  */
 
-typedef uint64_t hashkey_t;
 extern const hashkey_t piece_random[2][7][64];
 extern const hashkey_t castle_random[2][2][2];
 extern const hashkey_t enpassant_random[64];

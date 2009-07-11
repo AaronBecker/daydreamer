@@ -35,6 +35,7 @@ static void init_position(position_t* position)
     position->side_to_move = WHITE;
     position->castle_rights = CASTLE_NONE;
     position->prev_move = NO_MOVE;
+    position->hash = 0;
 }
 
 /*
@@ -92,6 +93,7 @@ char* set_position(position_t* pos, const char* fen)
             case '/': square -= 17 + square_file(square); break;
             case ' ': square = INVALID_SQUARE-1; break;
             case '\0':check_board_validity(pos);
+                      pos->hash = hash_position(pos);
                       return (char*)fen;
             default: assert(false);
         }
@@ -124,6 +126,7 @@ char* set_position(position_t* pos, const char* fen)
     while (isspace(*fen)) ++fen;
     if (!*fen) {
         check_board_validity(pos);
+        pos->hash = hash_position(pos);
         return (char*)fen;
     }
 
@@ -134,6 +137,7 @@ char* set_position(position_t* pos, const char* fen)
     while (*fen && isspace(*(++fen))) {}
     if (!*fen) {
         check_board_validity(pos);
+        pos->hash = hash_position(pos);
         return (char*)fen;
     }
 
@@ -143,6 +147,7 @@ char* set_position(position_t* pos, const char* fen)
     fen += consumed;
     pos->ply = pos->ply*2 + (pos->side_to_move == BLACK ? 1 : 0);
     check_board_validity(pos);
+    pos->hash = hash_position(pos);
     return (char*)fen;
 }
 
