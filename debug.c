@@ -45,3 +45,8 @@ void _check_move_validity(const position_t* pos, const move_t move)
         assert(pos->board[to] == NULL);
     }
 }
+
+void _check_position_hash(const position_t* pos)
+{
+    assert(hash_position(pos) == pos->hash);
+}

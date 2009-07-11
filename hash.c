@@ -351,6 +351,11 @@ const hashkey_t enpassant_random[64] = {
   0x0000000000000000ULL
 };
 
+const hashkey_t[2] side_random = {
+    0x0000000000000000ULL,
+    0x4ba36abdd2101f45ULL
+};
+
 hashkey_t hash_position(position_t* pos)
 {
     hashkey_t hash = 0;
@@ -360,5 +365,6 @@ hashkey_t hash_position(position_t* pos)
     }
     hash ^= ep_hash(pos);
     hash ^= castle_hash(pos);
+    hash ^= side_hash(pos);
     return hash;
 }
