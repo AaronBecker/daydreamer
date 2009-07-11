@@ -25,6 +25,7 @@ void _check_board_validity(const position_t* pos)
                     pos->board[pos->pieces[1][type][i].location] ==
                     &pos->pieces[1][type][i]);
     }
+    assert(hash_position(pos) == pos->hash);
 }
 
 /*

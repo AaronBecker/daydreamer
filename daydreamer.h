@@ -226,8 +226,7 @@ extern const hashkey_t side_random[2];
     castle_random[has_ooo_rights(pos, WHITE) ? 1 : 0][0][1] ^ \
     castle_random[has_oo_rights(pos, BLACK) ? 1 : 0][1][0] ^ \
     castle_random[has_ooo_rights(pos, BLACK) ? 1 : 0][1][1])
-#define side_hash(pos) \
-    side_random((pos)->side_to_move)
+#define side_hash(pos)  0xffffffffffffffffull
 
 /*
  * Position evaluation.
@@ -320,7 +319,7 @@ void generate_attack_data(void);
 int simple_eval(const position_t* pos);
 
 // hash.c
-hashkey_t hash_position(position_t* pos);
+hashkey_t hash_position(const position_t* pos);
 
 // io.c
 void handle_console(position_t* pos, char* command);

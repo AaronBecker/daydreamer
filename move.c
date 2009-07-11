@@ -13,6 +13,7 @@ void place_piece(position_t* pos, const piece_t piece, const square_t square)
     }
     color_t color = piece_color(piece);
     piece_type_t type = piece_type(piece);
+    pos->hash ^= piece_hash(piece, square);
     assert(color == WHITE || color == BLACK);
     assert(type != INVALID_PIECE);
     assert(square != INVALID_SQUARE);
@@ -31,10 +32,11 @@ void place_piece(position_t* pos, const piece_t piece, const square_t square)
  */
 void remove_piece(position_t* pos, const square_t square)
 {
-    if (!pos->board[square]) return;
+    assert(pos->board[square]);
     piece_t piece = pos->board[square]->piece;
     color_t color = piece_color(piece);
     piece_type_t type = piece_type(piece);
+    pos->hash ^= piece_hash(piece, square);
     // Swap the piece at the end of pos->pieces with the removed piece
     int end_index = --pos->piece_count[color][type];
     pos->board[square]->piece = pos->pieces[color][type][end_index].piece;
@@ -51,7 +53,7 @@ void remove_piece(position_t* pos, const square_t square)
  */
 void transfer_piece(position_t* pos, const square_t from, const square_t to)
 {
-    if (!pos->board[from]) return;
+    assert(pos->board[from]);
     if (pos->board[to]) {
         remove_piece(pos, to);
     }
@@ -61,6 +63,8 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
     piece_t p = pos->board[to]->piece;
     pos->piece_square_eval[piece_color(p)] -= piece_square_value(p, from);
     pos->piece_square_eval[piece_color(p)] += piece_square_value(p, to);
+    pos->hash ^= piece_hash(piece, from);
+    pos->hash ^= piece_hash(piece, to);
 }
 
 /*
@@ -69,11 +73,18 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
  */
 void do_move(position_t* pos, const move_t move, undo_info_t* undo)
 {
+    check_move_validity(move);
+    check_board_validity(pos);
     // Set undo info, so we can roll back later.
     undo->prev_move = pos->prev_move;
     undo->ep_square = pos->ep_square;
     undo->fifty_move_counter = pos->fifty_move_counter;
     undo->castle_rights = pos->castle_rights;
+
+    // xor old data out of the hash key
+    pos->hash ^= ep_hash(pos);
+    pos->hash ^= castle_hash(pos);
+    pos->hash ^= side_hash(pos);
 
     const color_t side = pos->side_to_move;
     const color_t other_side = side^1;
@@ -115,6 +126,9 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     pos->ply++;
     pos->side_to_move ^= 1;
     pos->prev_move = move;
+    pos->hash ^= ep_hash(pos);
+    pos->hash ^= castle_hash(pos);
+    check_board_validity(pos);
 }
 
 /*
@@ -123,6 +137,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
  */
 void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
 {
+    check_board_validity(pos);
     const color_t side = pos->side_to_move^1;
     const square_t from = get_move_from(move);
     const square_t to = get_move_to(move);
@@ -155,6 +170,7 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
     pos->fifty_move_counter = undo->fifty_move_counter;
     pos->castle_rights = undo->castle_rights;
     pos->prev_move = undo->prev_move;
+    check_board_validity(pos);
 }
 
 void do_nullmove(position_t* pos, undo_info_t* undo)
@@ -163,6 +179,7 @@ void do_nullmove(position_t* pos, undo_info_t* undo)
     undo->castle_rights = pos->castle_rights;
     undo->prev_move = pos->prev_move;
     undo->fifty_move_counter = pos->fifty_move_counter;
+    pos->hash ^= side_hash(pos);
     pos->side_to_move ^= 1;
     pos->ep_square = EMPTY;
     pos->fifty_move_counter++;
@@ -177,6 +194,7 @@ void undo_nullmove(position_t* pos, undo_info_t* undo)
     pos->prev_move = undo->prev_move;
     pos->fifty_move_counter = undo->fifty_move_counter;
     pos->side_to_move ^= 1;
+    pos->hash ^= side_hash(pos);
     pos->ply--;
 }
 
