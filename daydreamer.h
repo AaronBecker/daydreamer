@@ -216,6 +216,7 @@ typedef struct {
 extern const hashkey_t piece_random[2][7][64];
 extern const hashkey_t castle_random[2][2][2];
 extern const hashkey_t enpassant_random[64];
+extern const hashkey_t side_random[2];
 #define piece_hash(p,sq) \
     piece_random[piece_color(p)][piece_type(p)][square_to_index(sq)]
 #define ep_hash(pos) \
@@ -225,6 +226,8 @@ extern const hashkey_t enpassant_random[64];
     castle_random[has_ooo_rights(pos, WHITE) ? 1 : 0][0][1] ^ \
     castle_random[has_oo_rights(pos, BLACK) ? 1 : 0][1][0] ^ \
     castle_random[has_ooo_rights(pos, BLACK) ? 1 : 0][1][1])
+#define side_hash(pos) \
+    side_random((pos)->side_to_move)
 
 /*
  * Position evaluation.
@@ -286,15 +289,17 @@ extern search_data_t root_data;
 
 void _check_board_validity(const position_t* pos);
 void _check_move_validity(const position_t* pos, const move_t move);
+void _check_position_hash(const position_t* pos);
 
 #ifdef NDEBUG
 #define check_board_validity(x)                 ((void)0)
 #define check_move_validity(x,y)                ((void)0)
+#define check_position_hash(x)                  ((void)0)
 #else
 #define check_board_validity(x)                 _check_board_validity(x)
 #define check_move_validity(x,y)                _check_move_validity(x,y)
+#define check_position_hash(x)                  _check_position_hash(x)
 #endif
-
 
 /**
  * External function interface
