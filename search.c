@@ -114,8 +114,6 @@ int search(position_t* pos,
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;
         undo_info_t undo;
-        check_board_validity(pos);
-        check_move_validity(pos, *move);
         do_move(pos, *move, &undo);
         if (pv) score = -search(pos, search_node+1, ply+1,
                 -beta, -alpha, depth-1);
@@ -164,7 +162,6 @@ void root_search(void)
     start_timer(&root_data.timer);
     if (!*root_data.root_moves) generate_legal_moves(pos, root_data.root_moves);
     root_data.best_move = root_data.root_moves[0];
-    check_board_validity(pos);
 
     // iterative deepening loop
     char la_move[6];
@@ -189,8 +186,6 @@ void root_search(void)
                         la_move, move_index);
             }
             undo_info_t undo;
-            check_board_validity(pos);
-            check_move_validity(pos, *move);
             do_move(pos, *move, &undo);
             int score;
             if (pv) {
