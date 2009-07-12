@@ -370,6 +370,7 @@ void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes)
  */
 void print_board(const position_t* pos)
 {
+    printf("hash: %llx\n", pos->hash);
     for (square_t sq = A8; sq != INVALID_SQUARE; ++sq) {
         if (!valid_board_index(sq)) {
             printf("\n");
