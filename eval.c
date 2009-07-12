@@ -94,13 +94,13 @@ int piece_square_values[BK+1][0x80] = {
     -50, -50, -50, -50, -50, -50, -50, -50,  0,  0,  0,  0,  0,  0,  0,  0,
     -50, -50, -50, -50, -50, -50, -50, -50,  0,  0,  0,  0,  0,  0,  0,  0 }
 
-    // black piece tables are mirror images filled in during eval_init
+    // black piece tables are mirror images filled in during init_eval
 };
 
 /*
  * Initialize all static evaluation data structures.
  */
-void eval_init(void)
+void init_eval(void)
 {
     for (piece_t piece=BP; piece<=BK; ++piece) {
         for (square_t square=A1; square<=H8; ++square) {
@@ -122,3 +122,15 @@ int simple_eval(const position_t* pos)
         pos->piece_square_eval[side] - pos->piece_square_eval[side^1];
 }
 
+bool insufficient_material(const position_t* pos)
+{
+    return (pos->piece_count[WHITE][PAWN] == 0 &&
+        pos->piece_count[BLACK][PAWN] == 0 &&
+        pos->material_eval[WHITE] < ROOK_VAL &&
+        pos->material_eval[BLACK] < ROOK_VAL);
+}
+
+bool is_draw(const position_t* pos)
+{
+    return pos->fifty_move_counter >= 100 || insufficient_material(pos);
+}

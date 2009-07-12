@@ -82,12 +82,20 @@ int search(position_t* pos,
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
     if (depth <= 0) {
         search_node->pv[ply] = NO_MOVE;
-        //return simple_eval(pos);
         return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
+    if (is_draw(pos)) return DRAW_VALUE;
     if (++root_data.nodes_searched & POLL_INTERVAL) {
         perform_periodic_checks(&root_data);
     }
+    // check transposition table
+    move_t hash_move;
+    bool hash_hit = get_transposition(pos, depth, &alpha, &beta, &hash_move);
+    if (hash_hit && alpha >= beta) {
+        search_node->pv[ply] = hash_move;
+        return alpha;
+    }
+
     bool pv = true;
     int score = -MATE_VALUE-1;
     move_t moves[256];
@@ -110,6 +118,7 @@ int search(position_t* pos,
     }
     generate_pseudo_moves(pos, moves);
     int num_legal_moves = 0;
+    int orig_alpha = alpha;
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;
@@ -124,7 +133,10 @@ int search(position_t* pos,
                     -beta, -alpha, depth-1);
         }
         undo_move(pos, *move, &undo);
-        if (score >= beta) return beta;
+        if (score >= beta) {
+            put_transposition(pos, *move, ply, beta, SCORE_UPPERBOUND);
+            return beta;
+        }
         if (score > alpha) {
             alpha = score;
             pv = false;
@@ -140,12 +152,15 @@ int search(position_t* pos,
     if (!num_legal_moves) {
         // No legal moves, this is either stalemate or checkmate.
         search_node->pv[ply] = NO_MOVE;
-        // note: adjust MATE_VALUE by ply so that we favor shorter mates
         if (is_check(pos)) {
+            // note: adjust MATE_VALUE by ply so that we favor shorter mates
             return -(MATE_VALUE-ply);
         }
         return DRAW_VALUE;
     }
+    score_type_t score_type = (alpha == orig_alpha) ?
+        SCORE_LOWERBOUND : SCORE_EXACT;
+    put_transposition(pos, search_node->pv[ply], ply, alpha, score_type);
     return alpha;
 }
 
@@ -174,6 +189,7 @@ void root_search(void)
         int best_depth_score = -MATE_VALUE-1;
         int best_index = 0;
         if (elapsed_time(&root_data.timer) > OUTPUT_DELAY) {
+            print_transposition_stats();
             printf("info depth %d\n", *curr_depth);
         }
         bool pv = true;

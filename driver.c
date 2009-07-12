@@ -9,7 +9,7 @@ int main(void)
     setbuf(stdout, NULL);
     setbuf(stdin, NULL);
 
-    daydreamer_init();
+    init_daydreamer();
     char command[1024];
     position_t position;
     set_position(&position, FEN_STARTPOS);

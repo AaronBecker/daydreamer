@@ -94,24 +94,20 @@ typedef uint32_t move_t;
 #define get_move_promote(move)      (((move) >> 24) & 0x0f)
 #define is_move_enpassant(move)     (((move) & ENPASSANT_FLAG) != 0)
 #define is_move_castle(move)        (((move) & CASTLE_FLAG) != 0)
-#define is_move_castle_long(move)   (is_move_castle(move) && \
-                                        (square_file(get_move_to(move)) == \
-                                         FILE_C))
-#define is_move_castle_short(move)  (is_move_castle(move) && \
-                                        (square_file(get_move_to(move)) == \
-                                         FILE_G))
+#define is_move_castle_long(move) \
+    (is_move_castle(move) && (square_file(get_move_to(move)) == FILE_C))
+#define is_move_castle_short(move) \
+    (is_move_castle(move) && (square_file(get_move_to(move)) == FILE_G))
 #define create_move(from, to, piece, capture) \
-                                ((from) | ((to) << 8) | ((piece) << 16) | \
-                                 ((capture) << 20))
+    ((from) | ((to) << 8) | ((piece) << 16) | ((capture) << 20))
 #define create_move_promote(from, to, piece, capture, promote) \
-                                ((from) | ((to) << 8) | ((piece) << 16) | \
-                                 ((capture) << 20) | ((promote) << 24))
+    ((from) | ((to) << 8) | ((piece) << 16) | \
+     ((capture) << 20) | ((promote) << 24))
 #define create_move_castle(from, to, piece) \
-                                ((from) | ((to) << 8) | ((piece) << 16) | \
-                                 CASTLE_FLAG)
+    ((from) | ((to) << 8) | ((piece) << 16) | CASTLE_FLAG)
 #define create_move_enpassant(from, to, piece, capture) \
-                                ((from) | ((to) << 8) | ((piece) << 16) | \
-                                 ((capture) << 20) | ENPASSANT_FLAG)
+    ((from) | ((to) << 8) | ((piece) << 16) | \
+     ((capture) << 20) | ENPASSANT_FLAG)
 
 typedef enum {
     NO_SLIDE=0, DIAGONAL, STRAIGHT, BOTH
@@ -210,32 +206,6 @@ typedef struct {
     bool running;
 } timer_t;
 
-/*
- * Hashing.
- */
-
-extern const hashkey_t piece_random[2][7][64];
-extern const hashkey_t castle_random[2][2][2];
-extern const hashkey_t enpassant_random[64];
-extern const hashkey_t side_random[2];
-#define piece_hash(p,sq) \
-    piece_random[piece_color(p)][piece_type(p)][square_to_index(sq)]
-#define ep_hash(pos) \
-    enpassant_random[square_to_index((pos)->ep_square)]
-#define castle_hash(pos) \
-    (castle_random[has_oo_rights(pos, WHITE) ? 1 : 0][0][0] ^ \
-    castle_random[has_ooo_rights(pos, WHITE) ? 1 : 0][0][1] ^ \
-    castle_random[has_oo_rights(pos, BLACK) ? 1 : 0][1][0] ^ \
-    castle_random[has_ooo_rights(pos, BLACK) ? 1 : 0][1][1])
-#define side_hash(pos)  ((pos)->side_to_move * 0xffffffffffffffffull)
-
-typedef struct {
-    hashkey_t key;
-    uint16_t score;
-    uint16_t depth;
-    move_t move;
-} transposition_entry_t;
-extern transposition_entry_t* transposition_table;
 
 /*
  * Position evaluation.
@@ -298,6 +268,35 @@ extern search_data_t root_data;
 
 #define is_mate_score(score)       (abs(score) + 256 > MATE_VALUE)
 
+
+/*
+ * Hashing.
+ */
+
+extern const hashkey_t piece_random[2][7][64];
+extern const hashkey_t castle_random[2][2][2];
+extern const hashkey_t enpassant_random[64];
+extern const hashkey_t side_random[2];
+#define piece_hash(p,sq) \
+    piece_random[piece_color(p)][piece_type(p)][square_to_index(sq)]
+#define ep_hash(pos) \
+    enpassant_random[square_to_index((pos)->ep_square)]
+#define castle_hash(pos) \
+    (castle_random[has_oo_rights(pos, WHITE) ? 1 : 0][0][0] ^ \
+    castle_random[has_ooo_rights(pos, WHITE) ? 1 : 0][0][1] ^ \
+    castle_random[has_oo_rights(pos, BLACK) ? 1 : 0][1][0] ^ \
+    castle_random[has_ooo_rights(pos, BLACK) ? 1 : 0][1][1])
+#define side_hash(pos)  ((pos)->side_to_move * 0x629b66dbf31b7adbull)
+
+typedef struct {
+    hashkey_t key;
+    move_t move;
+    uint16_t depth;
+    uint16_t score;
+    score_type_t score_type;
+} transposition_entry_t;
+extern transposition_entry_t* transposition_table;
+
 /**
  * Debugging functionality.
  */
@@ -321,11 +320,13 @@ void _check_position_hash(const position_t* pos);
  */
 
 // daydreamer.c
-void daydreamer_init(void);
+void init_daydreamer(void);
 void generate_attack_data(void);
 
 // eval.c
 int simple_eval(const position_t* pos);
+bool insufficient_material(const position_t* pos);
+bool is_draw(const position_t* pos);
 
 // hash.c
 hashkey_t hash_position(const position_t* pos);
@@ -395,8 +396,19 @@ int stop_timer(timer_t* timer);
 int elapsed_time(timer_t* timer);
 
 // trans_table.c
-transposition_entry_t* get_transposition(position_t* pos);
-void put_transposition(position_t* pos, int depth, int score);
+void init_transposition_table(const int max_bytes);
+void clear_transposition_table(void);
+bool get_transposition(position_t* pos,
+        int depth,
+        int* lb,
+        int* ub,
+        move_t* move);
+void put_transposition(position_t* pos,
+        move_t move,
+        int depth,
+        int score,
+        score_type_t score_type);
+void print_transposition_stats(void);
 
 // uci.c
 void uci_main(void);

@@ -1,10 +1,11 @@
 
 #include "daydreamer.h"
 
-extern void eval_init(void);
-void daydreamer_init(void)
+extern void init_eval(void);
+void init_daydreamer(void)
 {
-    eval_init();
+    init_eval();
+    init_transposition_table(16 * 1<<20);
 }
 
 const slide_t sliding_piece_types[] = {

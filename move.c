@@ -176,6 +176,10 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
     check_board_validity(pos);
 }
 
+/*
+ * Perform a nullmove, aka pass. Not a legal move, but useful for search
+ * heuristics.
+ */
 void do_nullmove(position_t* pos, undo_info_t* undo)
 {
     check_board_validity(pos);
@@ -184,8 +188,8 @@ void do_nullmove(position_t* pos, undo_info_t* undo)
     undo->prev_move = pos->prev_move;
     undo->fifty_move_counter = pos->fifty_move_counter;
     undo->hash = pos->hash;
-    pos->hash ^= side_hash(pos);
     pos->hash ^= ep_hash(pos);
+    pos->hash ^= side_hash(pos);
     pos->side_to_move ^= 1;
     pos->hash ^= side_hash(pos);
     pos->ep_square = EMPTY;
@@ -195,6 +199,9 @@ void do_nullmove(position_t* pos, undo_info_t* undo)
     check_board_validity(pos);
 }
 
+/*
+ * Undo the effects of a nullmove.
+ */
 void undo_nullmove(position_t* pos, undo_info_t* undo)
 {
     check_board_validity(pos);
