@@ -5,9 +5,8 @@ CTAGS = ctags
 
 COMMONFLAGS = -Wall -Wextra --std=c99
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0
-OPTFLAGS = $(COMMONFLAGS) -g -O3 -NDEBUG
+OPTFLAGS = $(COMMONFLAGS) -g -O3 -DNDEBUG
 CFLAGS = $(DEBUGFLAGS)
-#CFLAGS = -Wall -Wextra --std=c99 $(OPTFLAGS)
 
 SRCFILES := $(wildcard *.c)
 HEADERS  := $(wildcard *.h)
