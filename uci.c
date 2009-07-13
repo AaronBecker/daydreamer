@@ -21,8 +21,8 @@ void uci_main(void)
     printf("id author %s\n", ENGINE_AUTHOR);
     init_uci_options();
     print_uci_options();
-    printf("uciok\n");
     set_position(&root_data.root_pos, FEN_STARTPOS);
+    printf("uciok\n");
     while (1) uci_get_input();
 }
 
