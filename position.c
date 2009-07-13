@@ -119,7 +119,12 @@ char* set_position(position_t* pos, const char* fen)
                       // Either '-': no castle rights (do nothing), or
                       // A-Ha-h (960 castling notation).
                       // TODO: support A-Ha-h
-                      if (*fen != '-') assert(false);
+                      if (*fen != '-') {
+                          // the fen string must have ended
+                          check_board_validity(pos);
+                          pos->hash = hash_position(pos);
+                          return (char*)fen;
+                      }
         }
         ++fen;
     }
