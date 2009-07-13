@@ -93,6 +93,7 @@ int search(position_t* pos,
     bool hash_hit = get_transposition(pos, depth, &alpha, &beta, &hash_move);
     if (hash_hit && alpha >= beta) {
         search_node->pv[ply] = hash_move;
+        search_node->pv[ply+1] = 0;
         return alpha;
     }
 
@@ -134,7 +135,7 @@ int search(position_t* pos,
         }
         undo_move(pos, *move, &undo);
         if (score >= beta) {
-            put_transposition(pos, *move, ply, beta, SCORE_UPPERBOUND);
+            put_transposition(pos, *move, depth, beta, SCORE_LOWERBOUND);
             return beta;
         }
         if (score > alpha) {
@@ -159,8 +160,11 @@ int search(position_t* pos,
         return DRAW_VALUE;
     }
     score_type_t score_type = (alpha == orig_alpha) ?
-        SCORE_LOWERBOUND : SCORE_EXACT;
-    put_transposition(pos, search_node->pv[ply], ply, alpha, score_type);
+        SCORE_UPPERBOUND : SCORE_EXACT;
+    put_transposition(pos, search_node->pv[ply], depth, alpha, score_type);
+    //print_board(pos);
+    //printf("added hash depth %d score %d move ", depth, alpha);
+    //print_la_move(search_node->pv[ply]);
     return alpha;
 }
 
