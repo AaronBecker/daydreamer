@@ -37,6 +37,8 @@ void _check_move_validity(const position_t* pos, const move_t move)
     const square_t to = get_move_to(move);
     const piece_t piece = get_move_piece(move);
     const piece_t capture = get_move_capture(move);
+    (void)pos,(void)move;                           // Avoid warning when
+    (void)from,(void)to,(void)piece,(void)capture;  // NDEBUG is defined.
     assert(valid_board_index(from) && valid_board_index(to));
     assert(pos->board[from]->piece == piece);
     assert(pos->board[from]->location == from);
@@ -52,5 +54,6 @@ void _check_move_validity(const position_t* pos, const move_t move)
  */
 void _check_position_hash(const position_t* pos)
 {
+    (void)pos; // Avoid warning when NDEBUG is defined.
     assert(hash_position(pos) == pos->hash);
 }

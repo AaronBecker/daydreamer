@@ -307,7 +307,7 @@ void _check_position_hash(const position_t* pos);
 
 #ifdef NDEBUG
 #define check_board_validity(x)                 ((void)0)
-#define check_move_validity(x,y)                ((void)0)
+#define check_move_validity(x,y)                ((void)0,(void)0)
 #define check_position_hash(x)                  ((void)0)
 #else
 #define check_board_validity(x)                 _check_board_validity(x)
