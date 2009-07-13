@@ -3,17 +3,23 @@
 CC = /usr/bin/gcc-4.2
 CTAGS = ctags
 
-DEBUGFLAGS = -g -O0
-OPTFLAGS = -g -O3 -NDEBUG
-#CFLAGS = -Wall -Wextra --std=c99 $(DEBUGFLAGS)
-CFLAGS = -Wall -Wextra --std=c99 $(OPTFLAGS)
-#CFLAGS = -Wall -Wextra --std=c99 $(PROFFLAGS)
+COMMONFLAGS = -Wall -Wextra --std=c99
+DEBUGFLAGS = $(COMMONFLAGS) -g -O0
+OPTFLAGS = $(COMMONFLAGS) -g -O3 -NDEBUG
+CFLAGS = $(DEBUGFLAGS)
+#CFLAGS = -Wall -Wextra --std=c99 $(OPTFLAGS)
 
 SRCFILES := $(wildcard *.c)
 HEADERS  := $(wildcard *.h)
 OBJFILES := $(patsubst %.c,%.o,$(wildcard *.c))
 
-.PHONY: all clean tags
+.PHONY: all clean tags debug opt
+
+debug:
+	$(MAKE) clean all CFLAGS="$(DEBUGFLAGS)"
+
+opt:
+	$(MAKE) clean all CFLAGS="$(OPTFLAGS)"
 
 all: daydreamer
 
