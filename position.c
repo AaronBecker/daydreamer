@@ -141,8 +141,8 @@ char* set_position(position_t* pos, const char* fen)
     }
     while (*fen && isspace(*(++fen))) {}
     if (!*fen) {
-        check_board_validity(pos);
         pos->hash = hash_position(pos);
+        check_board_validity(pos);
         return (char*)fen;
     }
 
@@ -189,8 +189,22 @@ bool is_check(const position_t* pos)
 
 bool is_move_legal(position_t* pos, const move_t move)
 {
-    color_t other_side = pos->side_to_move^1;
-    square_t king_square = pos->pieces[pos->side_to_move][KING][0].location;
+    const color_t other_side = pos->side_to_move^1;
+    const square_t king_square = pos->pieces[other_side^1][KING][0].location;
+
+    // don't try to make invalid/inconsistent moves
+    const square_t from = get_move_from(move);
+    const square_t to = get_move_to(move);
+    const piece_t piece = get_move_piece(move);
+    const piece_t capture = get_move_capture(move);
+    if (!valid_board_index(from) || !valid_board_index(to)) return false;
+    if (!pos->board[from] || pos->board[from]->piece != piece) return false;
+    if (pos->board[from]->location != from) return false;
+    if (capture && !is_move_enpassant(move)) {
+        if (pos->board[to]->piece != capture) return false;
+    } else {
+        if (pos->board[to] != NULL) return false;
+    }
 
     // See if any attacks are preventing castling.
     if (is_move_castle_long(move)) {
