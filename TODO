@@ -22,6 +22,7 @@ Interface
     Basic Winboard interface?
     ECO classification
     Improve non-UCI console interface
+    FEN output
 
 Split out monolithic header
 Expand evaluation function
