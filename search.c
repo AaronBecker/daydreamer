@@ -24,6 +24,20 @@ void init_search_data(void)
     init_timer(&root_data.timer);
 }
 
+static void print_hash_pv(position_t* pos, int depth)
+{
+    int alpha, beta;
+    move_t hash_move;
+    undo_info_t undo;
+    if (!depth ||
+            !get_transposition(pos, depth, &alpha, &beta, &hash_move)) return;
+    if (!is_move_legal(pos, hash_move)) return;
+    print_la_move(hash_move);
+    do_move(pos, hash_move, &undo);
+    print_hash_pv(pos, depth-1);
+    undo_move(pos, hash_move, &undo);
+}
+
 static bool should_stop_searching(search_data_t* data)
 {
     if (data->engine_status == ENGINE_ABORTED) return true;
@@ -85,7 +99,7 @@ int search(position_t* pos,
         return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
     if (is_draw(pos)) return DRAW_VALUE;
-    if (++root_data.nodes_searched & POLL_INTERVAL) {
+    if (++root_data.nodes_searched & POLL_INTERVAL == 0) {
         perform_periodic_checks(&root_data);
     }
     // check transposition table
@@ -192,6 +206,7 @@ void root_search(void)
         int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
         int best_depth_score = -MATE_VALUE-1;
         int best_index = 0;
+
         if (elapsed_time(&root_data.timer) > OUTPUT_DELAY) {
             print_transposition_stats();
             printf("info depth %d\n", *curr_depth);
@@ -248,7 +263,10 @@ void root_search(void)
                             root_data.best_score,
                             elapsed_time(&root_data.timer),
                             root_data.nodes_searched);
+                    printf("hashpv ");
+                    print_hash_pv(pos, *curr_depth);
                 }
+                put_transposition(pos, *move, *curr_depth, alpha, SCORE_EXACT);
             }
         }
         // swap the pv move to the front of the list
@@ -266,8 +284,11 @@ void root_search(void)
             root_data.best_score,
             elapsed_time(&root_data.timer),
             root_data.nodes_searched);
+    printf("hashpv ");
+    print_hash_pv(pos, root_data.current_depth);
     printf("info string targettime %d elapsedtime %d\n",
             root_data.time_target, elapsed_time(&root_data.timer));
+    print_transposition_stats();
     move_to_la_str(root_data.best_move, la_move);
     printf("bestmove %s\n", la_move);
     root_data.engine_status = ENGINE_IDLE;
@@ -281,7 +302,7 @@ static int quiesce(position_t* pos,
         int depth)
 {
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if (++root_data.nodes_searched & POLL_INTERVAL) {
+    if (++root_data.nodes_searched & POLL_INTERVAL == 0) {
         perform_periodic_checks(&root_data);
     }
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
@@ -345,7 +366,7 @@ static int minimax(position_t* pos,
         search_node->pv[ply] = NO_MOVE;
         return simple_eval(pos);
     }
-    if (++root_data.nodes_searched & POLL_INTERVAL) {
+    if (++root_data.nodes_searched & POLL_INTERVAL == 0) {
         perform_periodic_checks(&root_data);
     }
     int score, best_score = -MATE_VALUE-1;
