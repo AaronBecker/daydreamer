@@ -56,10 +56,12 @@ bool get_transposition(position_t* pos,
     hash_stats.hits++;
     *move = entry->move;
     if (depth <= entry->depth) {
-        if (entry->score_type == SCORE_UPPERBOUND ||
-                entry->score_type == SCORE_EXACT) *ub = entry->score;
-        if (entry->score_type == SCORE_LOWERBOUND ||
-                entry->score_type == SCORE_EXACT) *lb = entry->score;
+        if ((entry->score_type == SCORE_UPPERBOUND ||
+                entry->score_type == SCORE_EXACT) &&
+                entry->score < *ub) *ub = entry->score;
+        if ((entry->score_type == SCORE_LOWERBOUND ||
+                entry->score_type == SCORE_EXACT) &&
+                entry->score > *lb) *lb = entry->score;
     }
     return true;
 }
@@ -81,8 +83,8 @@ void put_transposition(position_t* pos,
     entry->score = score;
     entry->score_type = score_type;
     switch (score_type) {
-        case SCORE_LOWERBOUND: hash_stats.alpha++; break;
-        case SCORE_UPPERBOUND: hash_stats.beta++; break;
+        case SCORE_LOWERBOUND: hash_stats.beta++; break;
+        case SCORE_UPPERBOUND: hash_stats.alpha++; break;
         case SCORE_EXACT: hash_stats.exact++;
     }
 }
@@ -90,10 +92,13 @@ void put_transposition(position_t* pos,
 void print_transposition_stats(void)
 {
     printf("hash entries: %d\n", num_buckets);
-    printf("filled: %d\n", hash_stats.occupied);
+    printf("filled: %d (%.2f%%)\n", hash_stats.occupied,
+            (float)hash_stats.occupied / (float)num_buckets * 100.);
     printf("evictions: %d\n", hash_stats.evictions);
-    printf("hits: %d\n", hash_stats.hits);
-    printf("misses: %d\n", hash_stats.misses);
+    printf("hits: %d (%.2f%%)\n", hash_stats.hits,
+            (float)hash_stats.hits / (hash_stats.hits+hash_stats.misses)*100.);
+    printf("misses: %d (%.2f%%)\n", hash_stats.misses,
+            (float)hash_stats.misses/(hash_stats.hits+hash_stats.misses)*100.);
     printf("alpha: %d\n", hash_stats.alpha);
     printf("beta: %d\n", hash_stats.beta);
     printf("exact: %d\n", hash_stats.exact);
