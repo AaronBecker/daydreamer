@@ -201,7 +201,7 @@ bool is_move_legal(position_t* pos, const move_t move)
     if (!pos->board[from] || pos->board[from]->piece != piece) return false;
     if (pos->board[from]->location != from) return false;
     if (capture && !is_move_enpassant(move)) {
-        if (pos->board[to]->piece != capture) return false;
+        if (!pos->board[to] || pos->board[to]->piece != capture) return false;
     } else {
         if (pos->board[to] != NULL) return false;
     }

@@ -99,16 +99,20 @@ int search(position_t* pos,
         return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
     if (is_draw(pos)) return DRAW_VALUE;
-    if (++root_data.nodes_searched & POLL_INTERVAL == 0) {
+    if ((++root_data.nodes_searched & POLL_INTERVAL) == 0) {
         perform_periodic_checks(&root_data);
     }
+    bool full_window = (beta-alpha > 1);
+
     // check transposition table
-    move_t hash_move;
-    bool hash_hit = get_transposition(pos, depth, &alpha, &beta, &hash_move);
-    if (hash_hit && alpha >= beta) {
-        search_node->pv[ply] = hash_move;
-        search_node->pv[ply+1] = 0;
-        return alpha;
+    if (!full_window) { // TODO: use hash for move ordering
+        move_t hash_move;
+        bool hash_hit = get_transposition(pos, depth, &alpha, &beta, &hash_move);
+        if (hash_hit && alpha >= beta) {
+            search_node->pv[ply] = hash_move;
+            search_node->pv[ply+1] = 0;
+            return alpha;
+        }
     }
 
     bool pv = true;
@@ -144,11 +148,14 @@ int search(position_t* pos,
         else {
             score = -search(pos, search_node+1, ply+1,
                     -alpha-1, -alpha, depth-1);
-            if (score > alpha) score = -search(pos, search_node+1, ply+1,
-                    -beta, -alpha, depth-1);
+            if (score > alpha && score < beta) {
+                score = -search(pos, search_node+1, ply+1,
+                        -beta, -alpha, depth-1);
+            }
         }
         undo_move(pos, *move, &undo);
         if (score >= beta) {
+            // TODO: killer move heuristic
             put_transposition(pos, *move, depth, beta, SCORE_LOWERBOUND);
             return beta;
         }
@@ -176,9 +183,6 @@ int search(position_t* pos,
     score_type_t score_type = (alpha == orig_alpha) ?
         SCORE_UPPERBOUND : SCORE_EXACT;
     put_transposition(pos, search_node->pv[ply], depth, alpha, score_type);
-    //print_board(pos);
-    //printf("added hash depth %d score %d move ", depth, alpha);
-    //print_la_move(search_node->pv[ply]);
     return alpha;
 }
 
@@ -199,12 +203,13 @@ void root_search(void)
     // iterative deepening loop
     char la_move[6];
     int* curr_depth = &root_data.current_depth;
+    int best_depth_score;
     root_data.best_score = -MATE_VALUE-1;
     for (*curr_depth=1;
             !root_data.depth_limit || *curr_depth<=root_data.depth_limit;
             ++*curr_depth) {
         int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
-        int best_depth_score = -MATE_VALUE-1;
+        best_depth_score = -MATE_VALUE-1;
         int best_index = 0;
 
         if (elapsed_time(&root_data.timer) > OUTPUT_DELAY) {
@@ -234,8 +239,6 @@ void root_search(void)
                         1, -beta, -alpha, *curr_depth-1);
                 }
             }
-            //printf("pv score %d alpha %d beta %d depth %d\n",
-            //      score, alpha, beta, *curr_depth-1);
             undo_move(pos, *move, &undo);
             if (root_data.engine_status == ENGINE_ABORTED) break;
             // update score
@@ -265,13 +268,18 @@ void root_search(void)
                             root_data.nodes_searched);
                     printf("hashpv ");
                     print_hash_pv(pos, *curr_depth);
+                    printf("\n");
                 }
-                put_transposition(pos, *move, *curr_depth, alpha, SCORE_EXACT);
             }
         }
-        // swap the pv move to the front of the list
-        root_data.root_moves[best_index] = root_data.root_moves[0];
-        root_data.root_moves[0] = root_data.best_move;
+        if (alpha != -MATE_VALUE-1) {
+            // swap the pv move to the front of the list
+            root_data.root_moves[best_index] = root_data.root_moves[0];
+            root_data.root_moves[0] = root_data.best_move;
+            root_data.best_score = best_depth_score;
+            put_transposition(pos, root_data.best_move, root_data.current_depth,
+                    root_data.best_score, SCORE_EXACT);
+        }
         if (!should_deepen(&root_data)) {
             ++root_data.current_depth;
             break;
@@ -302,7 +310,7 @@ static int quiesce(position_t* pos,
         int depth)
 {
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if (++root_data.nodes_searched & POLL_INTERVAL == 0) {
+    if ((++root_data.nodes_searched & POLL_INTERVAL) == 0) {
         perform_periodic_checks(&root_data);
     }
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
@@ -366,7 +374,7 @@ static int minimax(position_t* pos,
         search_node->pv[ply] = NO_MOVE;
         return simple_eval(pos);
     }
-    if (++root_data.nodes_searched & POLL_INTERVAL == 0) {
+    if ((++root_data.nodes_searched & POLL_INTERVAL) == 0) {
         perform_periodic_checks(&root_data);
     }
     int score, best_score = -MATE_VALUE-1;

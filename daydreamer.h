@@ -292,7 +292,7 @@ typedef struct {
     hashkey_t key;
     move_t move;
     uint16_t depth;
-    uint16_t score;
+    int32_t score;
     score_type_t score_type;
 } transposition_entry_t;
 extern transposition_entry_t* transposition_table;
