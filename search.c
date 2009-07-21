@@ -222,12 +222,7 @@ void deepening_search(search_data_t* search_data)
     stop_timer(&search_data->timer);
     
     --search_data->current_depth;
-    print_pv(search_data->pv, search_data->current_depth,
-            search_data->best_score,
-            elapsed_time(&search_data->timer),
-            search_data->nodes_searched);
-    printf("hashpv ");
-    print_hash_pv(&search_data->root_pos, search_data->current_depth);
+    print_pv(search_data);
     printf("info string targettime %d elapsedtime %d\n",
             search_data->time_target, elapsed_time(&search_data->timer));
     print_transposition_stats();
@@ -282,14 +277,7 @@ static bool root_search(search_data_t* search_data)
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, *move);
             if (elapsed_time(&search_data->timer) > OUTPUT_DELAY) {
-                print_pv(search_data->pv, search_data->current_depth,
-                        search_data->best_score,
-                        elapsed_time(&search_data->timer),
-                        search_data->nodes_searched);
-                printf("hashpv ");
-                print_hash_pv(&search_data->root_pos,
-                        search_data->current_depth);
-                printf("\n");
+                print_pv(search_data);
             }
         }
     }
@@ -423,20 +411,14 @@ void root_search_minimax(void)
             root_data.best_score = score;
             root_data.best_move = *move;
             update_pv(root_data.pv, root_data.search_stack->pv, 0, *move);
-            print_pv(root_data.pv, depth,
-                    root_data.best_score,
-                    elapsed_time(&root_data.timer),
-                    root_data.nodes_searched);
+            print_pv(&root_data);
         }
     }
         
     stop_timer(&root_data.timer);
     printf("info string targettime %d elapsedtime %d\n",
             root_data.time_target, elapsed_time(&root_data.timer));
-    print_pv(root_data.pv, depth,
-            root_data.best_score,
-            elapsed_time(&root_data.timer),
-            root_data.nodes_searched);
+    print_pv(&root_data);
     char la_move[6];
     move_to_la_str(root_data.best_move, la_move);
     printf("bestmove %s\n", la_move);

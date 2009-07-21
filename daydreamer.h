@@ -336,9 +336,9 @@ void handle_console(position_t* pos, char* command);
 void move_to_la_str(move_t move, char* str);
 void position_to_fen_str(position_t* pos, char* fen);
 void print_la_move(move_t move);
-void print_la_move_list(const move_t* move);
+int print_la_move_list(const move_t* move);
 void print_board(const position_t* pos);
-void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes);
+void print_pv(search_data_t* search_data);
 void check_for_input(search_data_t* search_data);
 // unimplemented
 void move_to_san_str(position_t* pos, move_t move, char* str);
