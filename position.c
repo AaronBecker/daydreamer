@@ -92,7 +92,8 @@ char* set_position(position_t* pos, const char* fen)
             case 'K': place_piece(pos, WK, square); break;
             case '/': square -= 17 + square_file(square); break;
             case ' ': square = INVALID_SQUARE-1; break;
-            case '\0':check_board_validity(pos);
+            case '\0':
+            case '\n':check_board_validity(pos);
                       pos->hash = hash_position(pos);
                       return (char*)fen;
             default: assert(false);
