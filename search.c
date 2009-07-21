@@ -7,6 +7,7 @@
 
 search_data_t root_data;
 
+static bool root_search(search_data_t* search_data);
 static int quiesce(position_t* pos,
         search_node_t* search_node,
         int ply,
@@ -189,117 +190,122 @@ int search(position_t* pos,
 // TODO: split up root search a bit
 void deepening_search(search_data_t* search_data)
 {
-}
-
-void root_search(void)
-{
-    position_t* pos = &root_data.root_pos;
-    root_data.engine_status = ENGINE_THINKING;
-    init_timer(&root_data.timer);
-    start_timer(&root_data.timer);
-    if (!*root_data.root_moves) generate_legal_moves(pos, root_data.root_moves);
-    root_data.best_move = root_data.root_moves[0];
+    search_data->engine_status = ENGINE_THINKING;
+    init_timer(&search_data->timer);
+    start_timer(&search_data->timer);
+    // If |search_data| already has a list of root moves, we search only
+    // those moves. Otherwise, search everything. This allows support for the
+    // uci searchmoves command.
+    if (!*search_data->root_moves) {
+        generate_legal_moves(&search_data->root_pos, search_data->root_moves);
+    }
 
     // iterative deepening loop
-    char la_move[6];
-    int* curr_depth = &root_data.current_depth;
-    int best_depth_score;
     root_data.best_score = -MATE_VALUE-1;
-    for (*curr_depth=1;
-            !root_data.depth_limit || *curr_depth<=root_data.depth_limit;
-            ++*curr_depth) {
-        int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
-        best_depth_score = -MATE_VALUE-1;
-        int best_index = 0;
-
-        if (elapsed_time(&root_data.timer) > OUTPUT_DELAY) {
+    for (search_data->current_depth=1;
+            !search_data->depth_limit ||
+            search_data->current_depth <= search_data->depth_limit;
+            ++search_data->current_depth) {
+        if (elapsed_time(&search_data->timer) > OUTPUT_DELAY) {
             print_transposition_stats();
-            printf("info depth %d\n", *curr_depth);
+            printf("info depth %d\n", search_data->current_depth);
         }
-        bool pv = true;
-        int move_index = 0;
-        for (move_t* move=root_data.root_moves; *move;
-                ++move, ++move_index) {
-            move_to_la_str(*move, la_move);
-            if (elapsed_time(&root_data.timer) > OUTPUT_DELAY) {
-                printf("info currmove %s currmovenumber %d\n",
-                        la_move, move_index);
-            }
-            undo_info_t undo;
-            do_move(pos, *move, &undo);
-            int score;
-            if (pv) {
-                score = -search(pos, root_data.search_stack,
-                        1, -beta, -alpha, *curr_depth-1);
-            } else {
-                score = -search(pos, root_data.search_stack,
-                        1, -alpha-1, -alpha, *curr_depth-1);
-                if (score > alpha) {
-                    score = -search(pos, root_data.search_stack,
-                        1, -beta, -alpha, *curr_depth-1);
-                }
-            }
-            undo_move(pos, *move, &undo);
-            if (root_data.engine_status == ENGINE_ABORTED) break;
-            // update score
-            if (score > alpha) {
-                alpha = score;
-                pv = false;
-                if (score > best_depth_score) {
-                    best_depth_score = score;
-                    if (score > root_data.best_score ||
-                            *move == root_data.best_move) {
-                        root_data.best_score = score;
-                        root_data.best_move = *move;
-                        best_index = move_index;
-                    }
-                }
-                // update pv
-                root_data.pv[0] = *move;
-                int i=1;
-                for (; root_data.search_stack->pv[i] != NO_MOVE; ++i) {
-                    root_data.pv[i] = root_data.search_stack->pv[i];
-                }
-                root_data.pv[i] = NO_MOVE;
-                if (elapsed_time(&root_data.timer) > OUTPUT_DELAY) {
-                    print_pv(root_data.pv, *curr_depth,
-                            root_data.best_score,
-                            elapsed_time(&root_data.timer),
-                            root_data.nodes_searched);
-                    printf("hashpv ");
-                    print_hash_pv(pos, *curr_depth);
-                    printf("\n");
-                }
-            }
-        }
-        if (alpha != -MATE_VALUE-1) {
-            // swap the pv move to the front of the list
-            root_data.root_moves[best_index] = root_data.root_moves[0];
-            root_data.root_moves[0] = root_data.best_move;
-            root_data.best_score = best_depth_score;
-            put_transposition(pos, root_data.best_move, root_data.current_depth,
-                    root_data.best_score, SCORE_EXACT);
-        }
-        if (!should_deepen(&root_data)) {
-            ++root_data.current_depth;
+        bool finished = root_search(search_data);
+        if (!finished || !should_deepen(search_data)) {
+            ++search_data->current_depth;
             break;
         }
     }
-    stop_timer(&root_data.timer);
+    stop_timer(&search_data->timer);
     
-    --root_data.current_depth;
-    print_pv(root_data.pv, root_data.current_depth,
-            root_data.best_score,
-            elapsed_time(&root_data.timer),
-            root_data.nodes_searched);
+    --search_data->current_depth;
+    print_pv(search_data->pv, search_data->current_depth,
+            search_data->best_score,
+            elapsed_time(&search_data->timer),
+            search_data->nodes_searched);
     printf("hashpv ");
-    print_hash_pv(pos, root_data.current_depth);
+    print_hash_pv(&search_data->root_pos, search_data->current_depth);
     printf("info string targettime %d elapsedtime %d\n",
-            root_data.time_target, elapsed_time(&root_data.timer));
+            search_data->time_target, elapsed_time(&search_data->timer));
     print_transposition_stats();
-    move_to_la_str(root_data.best_move, la_move);
+    char la_move[6];
+    move_to_la_str(search_data->best_move, la_move);
     printf("bestmove %s\n", la_move);
     root_data.engine_status = ENGINE_IDLE;
+}
+
+static bool root_search(search_data_t* search_data)
+{
+    int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
+    int best_depth_score = -MATE_VALUE-1;
+    bool pv = true;
+    int best_index = 0, move_index = 0;
+    position_t* pos = &search_data->root_pos;
+    for (move_t* move=search_data->root_moves; *move;
+            ++move, ++move_index) {
+        if (elapsed_time(&search_data->timer) > OUTPUT_DELAY) {
+            char la_move[6];
+            move_to_la_str(*move, la_move);
+            printf("info currmove %s currmovenumber %d\n", la_move, move_index);
+        }
+        undo_info_t undo;
+        do_move(pos, *move, &undo);
+        int score;
+        if (pv) {
+            score = -search(pos, search_data->search_stack,
+                    1, -beta, -alpha, search_data->current_depth-1);
+        } else {
+            score = -search(pos, search_data->search_stack,
+                    1, -alpha-1, -alpha, search_data->current_depth-1);
+            if (score > alpha) {
+                score = -search(pos, search_data->search_stack,
+                    1, -beta, -alpha, search_data->current_depth-1);
+            }
+        }
+        undo_move(pos, *move, &undo);
+        if (search_data->engine_status == ENGINE_ABORTED) return false;
+        // update score
+        if (score > alpha) {
+            alpha = score;
+            pv = false;
+            if (score > best_depth_score) {
+                best_depth_score = score;
+                if (score > search_data->best_score ||
+                        *move == search_data->best_move) {
+                    search_data->best_score = score;
+                    search_data->best_move = *move;
+                    best_index = move_index;
+                }
+            }
+            // update pv
+            search_data->pv[0] = *move;
+            int i=1;
+            for (; search_data->search_stack->pv[i] != NO_MOVE; ++i) {
+                search_data->pv[i] = search_data->search_stack->pv[i];
+            }
+            search_data->pv[i] = NO_MOVE;
+            if (elapsed_time(&search_data->timer) > OUTPUT_DELAY) {
+                print_pv(search_data->pv, search_data->current_depth,
+                        search_data->best_score,
+                        elapsed_time(&search_data->timer),
+                        search_data->nodes_searched);
+                printf("hashpv ");
+                print_hash_pv(&search_data->root_pos,
+                        search_data->current_depth);
+                printf("\n");
+            }
+        }
+    }
+    if (alpha != -MATE_VALUE-1) {
+        // swap the pv move to the front of the list
+        search_data->root_moves[best_index] = search_data->root_moves[0];
+        search_data->root_moves[0] = search_data->best_move;
+        search_data->best_score = best_depth_score;
+        put_transposition(pos, search_data->best_move,
+                search_data->current_depth,
+                search_data->best_score, SCORE_EXACT);
+    }
+    return true;
 }
 
 static int quiesce(position_t* pos,
