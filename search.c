@@ -7,7 +7,14 @@
 
 search_data_t root_data;
 
+static bool should_stop_searching(search_data_t* data);
 static bool root_search(search_data_t* search_data);
+static int search(position_t* pos,
+        search_node_t* search_node,
+        int ply,
+        int alpha,
+        int beta,
+        int depth);
 static int quiesce(position_t* pos,
         search_node_t* search_node,
         int ply,
@@ -25,6 +32,9 @@ void init_search_data(void)
     init_timer(&root_data.timer);
 }
 
+/*
+ * Copy pv from a deeper search node, adding a new move at the current ply.
+ */
 static void update_pv(move_t* dst, move_t* src, int ply, move_t move)
 {
     dst[ply] = move;
@@ -35,20 +45,19 @@ static void update_pv(move_t* dst, move_t* src, int ply, move_t move)
     } while (src[i] != NO_MOVE);
 }
 
-static void print_hash_pv(position_t* pos, int depth)
+/*
+ * Every POLL_INTERVAL nodes, this function is called to check user input.
+ */
+static void perform_periodic_checks(search_data_t* data)
 {
-    int alpha, beta;
-    move_t hash_move;
-    undo_info_t undo;
-    if (!depth ||
-            !get_transposition(pos, depth, &alpha, &beta, &hash_move)) return;
-    if (!is_move_legal(pos, hash_move)) return;
-    print_la_move(hash_move);
-    do_move(pos, hash_move, &undo);
-    print_hash_pv(pos, depth-1);
-    undo_move(pos, hash_move, &undo);
+    if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
+    check_for_input(data);
 }
 
+/*
+ * Should we terminate the search? This considers time and node limits, as
+ * well as user input. This function is checked periodically during search.
+ */
 static bool should_stop_searching(search_data_t* data)
 {
     if (data->engine_status == ENGINE_ABORTED) return true;
@@ -63,6 +72,11 @@ static bool should_stop_searching(search_data_t* data)
     return false;
 }
 
+/*
+ * Should we go on to the next level of iterative deepening in our root
+ * search? This considers regular stopping conditions and also guesses whether
+ * or not we can finish the next depth in the remaining time.
+ */
 static bool should_deepen(search_data_t* data)
 {
     if (should_stop_searching(data)) return false;
@@ -74,12 +88,10 @@ static bool should_deepen(search_data_t* data)
     return true;
 }
 
-void perform_periodic_checks(search_data_t* data)
-{
-    if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
-    check_for_input(data);
-}
-
+/*
+ * In the given position, is the nullmove heuristic valid? We avoid nullmoves
+ * in cases where we're down to king and pawns because of zugzwang.
+ */
 static bool is_nullmove_allowed(position_t* pos)
 {
     // don't allow nullmove if either side is in check
@@ -96,101 +108,12 @@ static bool is_nullmove_allowed(position_t* pos)
     return piece_value != 0;
 }
 
-int search(position_t* pos,
-        search_node_t* search_node,
-        int ply,
-        int alpha,
-        int beta,
-        int depth)
-{
-    if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
-    if (depth <= 0) {
-        search_node->pv[ply] = NO_MOVE;
-        return quiesce(pos, search_node, ply, alpha, beta, depth);
-    }
-    if (is_draw(pos)) return DRAW_VALUE;
-    if ((++root_data.nodes_searched & POLL_INTERVAL) == 0) {
-        perform_periodic_checks(&root_data);
-    }
-    bool full_window = (beta-alpha > 1);
 
-    // check transposition table
-    if (!full_window) { // TODO: use hash for move ordering
-        move_t hash_move;
-        bool hash_hit = get_transposition(pos, depth, &alpha, &beta, &hash_move);
-        if (hash_hit && alpha >= beta) {
-            search_node->pv[ply] = hash_move;
-            search_node->pv[ply+1] = 0;
-            return alpha;
-        }
-    }
-
-    bool pv = true;
-    int score = -MATE_VALUE-1;
-    move_t moves[256];
-    // nullmove reduction, just check for beta cutoff
-    if (is_nullmove_allowed(pos)) {
-        undo_info_t undo;
-        do_nullmove(pos, &undo);
-        score = -search(pos, search_node+1, ply+1,
-                -beta, -beta+1, depth-NULL_R);
-        undo_nullmove(pos, &undo);
-        if (score >= beta) {
-            depth -= NULLMOVE_DEPTH_REDUCTION;
-            if (depth <= 0) {
-                return quiesce(pos, search_node, ply, alpha, beta, depth);
-            } else {
-                return beta;
-            }
-        }
-    }
-    generate_pseudo_moves(pos, moves);
-    int num_legal_moves = 0;
-    int orig_alpha = alpha;
-    for (move_t* move = moves; *move; ++move) {
-        if (!is_move_legal(pos, *move)) continue;
-        ++num_legal_moves;
-        undo_info_t undo;
-        do_move(pos, *move, &undo);
-        if (pv) score = -search(pos, search_node+1, ply+1,
-                -beta, -alpha, depth-1);
-        else {
-            score = -search(pos, search_node+1, ply+1,
-                    -alpha-1, -alpha, depth-1);
-            if (score > alpha && score < beta) {
-                score = -search(pos, search_node+1, ply+1,
-                        -beta, -alpha, depth-1);
-            }
-        }
-        undo_move(pos, *move, &undo);
-        if (score >= beta) {
-            // TODO: killer move heuristic
-            put_transposition(pos, *move, depth, beta, SCORE_LOWERBOUND);
-            return beta;
-        }
-        if (score > alpha) {
-            alpha = score;
-            pv = false;
-            update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
-        }
-    }
-    if (!num_legal_moves) {
-        // No legal moves, this is either stalemate or checkmate.
-        search_node->pv[ply] = NO_MOVE;
-        if (is_check(pos)) {
-            // note: adjust MATE_VALUE by ply so that we favor shorter mates
-            return -(MATE_VALUE-ply);
-        }
-        return DRAW_VALUE;
-    }
-    score_type_t score_type = (alpha == orig_alpha) ?
-        SCORE_UPPERBOUND : SCORE_EXACT;
-    put_transposition(pos, search_node->pv[ply], depth, alpha, score_type);
-    return alpha;
-}
-
-// TODO: split up root search a bit
+/*
+ * Iterative deepening search of the root position. This is the external
+ * function that is called by the console interface. For each depth,
+ * |root_search| performs the actual search.
+ */
 void deepening_search(search_data_t* search_data)
 {
     search_data->engine_status = ENGINE_THINKING;
@@ -232,6 +155,10 @@ void deepening_search(search_data_t* search_data)
     root_data.engine_status = ENGINE_IDLE;
 }
 
+/*
+ * Perform search at the root position. |search_data| contains all relevant
+ * search information, which is set in |deepening_search|.
+ */
 static bool root_search(search_data_t* search_data)
 {
     int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
@@ -239,6 +166,7 @@ static bool root_search(search_data_t* search_data)
     bool pv = true;
     int best_index = 0, move_index = 0;
     position_t* pos = &search_data->root_pos;
+    // TODO: proper move scoring/ordering
     for (move_t* move=search_data->root_moves; *move;
             ++move, ++move_index) {
         if (elapsed_time(&search_data->timer) > OUTPUT_DELAY) {
@@ -293,6 +221,111 @@ static bool root_search(search_data_t* search_data)
     return true;
 }
 
+static int search(position_t* pos,
+        search_node_t* search_node,
+        int ply,
+        int alpha,
+        int beta,
+        int depth)
+{
+    if (root_data.engine_status == ENGINE_ABORTED) return 0;
+    if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
+    if (depth <= 0) {
+        search_node->pv[ply] = NO_MOVE;
+        return quiesce(pos, search_node, ply, alpha, beta, depth);
+    }
+    if (is_draw(pos)) return DRAW_VALUE;
+    if ((++root_data.nodes_searched & POLL_INTERVAL) == 0) {
+        perform_periodic_checks(&root_data);
+    }
+    bool full_window = (beta-alpha > 1);
+
+    // check transposition table
+    // TODO: maybe factor into its own function
+    if (!full_window) { // TODO: use hash for move ordering
+        move_t hash_move;
+        bool hash_hit = get_transposition(
+                pos, depth, &alpha, &beta, &hash_move);
+        if (hash_hit && alpha >= beta) {
+            search_node->pv[ply] = hash_move;
+            search_node->pv[ply+1] = 0;
+            return alpha;
+        }
+    }
+
+    bool pv = true;
+    int score = -MATE_VALUE-1;
+    move_t moves[256];
+    // nullmove reduction, just check for beta cutoff
+    // TODO: factor into its own function
+    if (is_nullmove_allowed(pos)) {
+        undo_info_t undo;
+        do_nullmove(pos, &undo);
+        score = -search(pos, search_node+1, ply+1,
+                -beta, -beta+1, depth-NULL_R);
+        undo_nullmove(pos, &undo);
+        if (score >= beta) {
+            depth -= NULLMOVE_DEPTH_REDUCTION;
+            if (depth <= 0) {
+                return quiesce(pos, search_node, ply, alpha, beta, depth);
+            } else {
+                return beta;
+            }
+        }
+    }
+    generate_pseudo_moves(pos, moves);
+    int num_legal_moves = 0;
+    int orig_alpha = alpha;
+    // TODO: proper move scoring/ordering
+    // TODO: extensions
+    // TODO: late move reductions
+    for (move_t* move = moves; *move; ++move) {
+        if (!is_move_legal(pos, *move)) continue;
+        ++num_legal_moves;
+        undo_info_t undo;
+        do_move(pos, *move, &undo);
+        if (pv) score = -search(pos, search_node+1, ply+1,
+                -beta, -alpha, depth-1);
+        else {
+            score = -search(pos, search_node+1, ply+1,
+                    -alpha-1, -alpha, depth-1);
+            if (score > alpha && score < beta) {
+                score = -search(pos, search_node+1, ply+1,
+                        -beta, -alpha, depth-1);
+            }
+        }
+        undo_move(pos, *move, &undo);
+        if (score >= beta) {
+            // TODO: killer move heuristic
+            put_transposition(pos, *move, depth, beta, SCORE_LOWERBOUND);
+            return beta;
+        }
+        if (score > alpha) {
+            alpha = score;
+            pv = false;
+            update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
+        }
+    }
+    if (!num_legal_moves) {
+        // No legal moves, this is either stalemate or checkmate.
+        search_node->pv[ply] = NO_MOVE;
+        if (is_check(pos)) {
+            // note: adjust MATE_VALUE by ply so that we favor shorter mates
+            return -(MATE_VALUE-ply);
+        }
+        return DRAW_VALUE;
+    }
+    score_type_t score_type = (alpha == orig_alpha) ?
+        SCORE_UPPERBOUND : SCORE_EXACT;
+    put_transposition(pos, search_node->pv[ply], depth, alpha, score_type);
+    return alpha;
+}
+
+/*
+ * Search a position until it becomes "quiet". This is called at the leaves
+ * of |search| to avoid using the static evalutor on positions that have
+ * easy tactics on the board.
+ */
 static int quiesce(position_t* pos,
         search_node_t* search_node,
         int ply,
