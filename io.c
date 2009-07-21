@@ -334,21 +334,31 @@ void print_la_move(move_t move)
 }
 
 /*
- * Print a null-terminated list of moves to stdout.
+ * Print a null-terminated list of moves to stdout, returning the number of
+ * nodes printed.
  */
-void print_la_move_list(const move_t* move)
+int print_la_move_list(const move_t* move)
 {
+    int moves=0;
     while(*move) {
         print_la_move(*move++);
+        ++moves;
     }
     printf("\n");
+    return moves;
 }
 
 /*
  * Print a princial variation in uci format.
  */
-void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes)
+void print_pv(search_data_t* search_data)
 {
+    const move_t* pv = search_data->pv;
+    const int depth = search_data->current_depth;
+    const int score = search_data->best_score;
+    const int time = elapsed_time(&search_data->timer);
+    const uint64_t nodes = search_data->nodes_searched;
+
     // note: use time+1 avoid divide-by-zero
     // mate scores are given as MATE_VALUE-ply, so we can calculate depth
     if (is_mate_score(score)) {
@@ -362,7 +372,26 @@ void print_pv(const move_t* pv, int depth, int score, int time, uint64_t nodes)
         printf("info depth %d score cp %d time %d nodes %llu nps %llu pv ",
                 depth, score, time, nodes, nodes/(time+1)*1000);
     }
-    print_la_move_list(pv);
+    int moves = print_la_move_list(pv);
+    //printf("moves %d depth %d\n", moves, depth); fflush(stdout);
+    if (moves < depth) {
+        // If our pv is shortened by a hash hit,
+        // try to get more moves from the hash table.
+        position_t pos;
+        undo_info_t undo;
+        copy_position(&pos, &search_data->root_pos);
+        for (int i=0; pv[i] != NO_MOVE; ++i) do_move(&pos, pv[i], &undo);
+
+        int alpha, beta;
+        move_t hash_move;
+        while (moves < depth) {
+            if (!get_transposition(&pos, depth, &alpha, &beta, &hash_move) ||
+                    !is_move_legal(&pos, hash_move)) return;
+            print_la_move(hash_move);
+            do_move(&pos, hash_move, &undo);
+            ++moves;
+        }
+    }
 }
 
 /*
