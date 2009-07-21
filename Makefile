@@ -13,12 +13,13 @@ HEADERS  := $(wildcard *.h)
 OBJFILES := $(patsubst %.c,%.o,$(wildcard *.c))
 
 .PHONY: all clean tags debug opt
+.DEFAULT: opt
 
 debug:
-	$(MAKE) clean all CFLAGS="$(DEBUGFLAGS)"
+	$(MAKE) daydreamer CFLAGS="$(DEBUGFLAGS)"
 
 opt:
-	$(MAKE) clean all CFLAGS="$(OPTFLAGS)"
+	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS)"
 
 all: daydreamer
 
