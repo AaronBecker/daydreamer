@@ -134,7 +134,7 @@ static void uci_go(char* command)
         calculate_search_time(wtime, btime, winc, binc, movestogo);
     }
     print_board(&root_data.root_pos);
-    root_search();
+    deepening_search(&root_data);
 }
 
 static void calculate_search_time(int wtime,

@@ -180,7 +180,7 @@ static void handle_search(position_t* pos, char* command)
     init_search_data();
     root_data.depth_limit = depth;
     root_data.infinite = true;
-    root_search();
+    deepening_search(&root_data);
 }
 
 /*

@@ -383,8 +383,8 @@ bool is_check(const position_t* pos);
 
 // search.c
 void init_search_data(void);
-void root_search(void);
 void root_search_minimax(void);
+void deepening_search(search_data_t* search_data);
 
 // static_exchange_eval.c
 int static_exchange_eval(position_t* pos, move_t move);
