@@ -129,7 +129,6 @@ int search(position_t* pos,
         if (score >= beta) {
             depth -= NULLMOVE_DEPTH_REDUCTION;
             if (depth <= 0) {
-                //return simple_eval(pos);
                 return quiesce(pos, search_node, ply, alpha, beta, depth);
             } else {
                 return beta;
@@ -210,8 +209,8 @@ void deepening_search(search_data_t* search_data)
             print_transposition_stats();
             printf("info depth %d\n", search_data->current_depth);
         }
-        bool finished = root_search(search_data);
-        if (!finished || !should_deepen(search_data)) {
+        bool no_abort = root_search(search_data);
+        if (!no_abort || !should_deepen(search_data)) {
             ++search_data->current_depth;
             break;
         }
