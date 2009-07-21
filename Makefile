@@ -13,7 +13,7 @@ HEADERS  := $(wildcard *.h)
 OBJFILES := $(patsubst %.c,%.o,$(wildcard *.c))
 
 .PHONY: all clean tags debug opt
-.DEFAULT: opt
+.DEFAULT_GOAL := opt
 
 debug:
 	$(MAKE) daydreamer CFLAGS="$(DEBUGFLAGS)"
