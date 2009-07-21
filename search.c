@@ -25,6 +25,16 @@ void init_search_data(void)
     init_timer(&root_data.timer);
 }
 
+static void update_pv(move_t* dst, move_t* src, int ply, move_t move)
+{
+    dst[ply] = move;
+    int i=ply;
+    do {
+        ++i;
+        dst[i] = src[i];
+    } while (src[i] != NO_MOVE);
+}
+
 static void print_hash_pv(position_t* pos, int depth)
 {
     int alpha, beta;
@@ -162,13 +172,7 @@ int search(position_t* pos,
         if (score > alpha) {
             alpha = score;
             pv = false;
-            // update pv from child search nodes
-            search_node->pv[ply] = *move;
-            int i = ply;
-            do {
-                ++i;
-                search_node->pv[i] = (search_node+1)->pv[i];
-            } while ((search_node+1)->pv[i] != NO_MOVE);
+            update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
         }
     }
     if (!num_legal_moves) {
@@ -276,13 +280,7 @@ static bool root_search(search_data_t* search_data)
                     best_index = move_index;
                 }
             }
-            // update pv
-            search_data->pv[0] = *move;
-            int i=1;
-            for (; search_data->search_stack->pv[i] != NO_MOVE; ++i) {
-                search_data->pv[i] = search_data->search_stack->pv[i];
-            }
-            search_data->pv[i] = NO_MOVE;
+            update_pv(search_data->pv, search_data->search_stack->pv, 0, *move);
             if (elapsed_time(&search_data->timer) > OUTPUT_DELAY) {
                 print_pv(search_data->pv, search_data->current_depth,
                         search_data->best_score,
@@ -338,13 +336,7 @@ static int quiesce(position_t* pos,
         if (score >= beta) return beta;
         if (score > alpha) {
             alpha = score;
-            // update pv from child search nodes
-            search_node->pv[ply] = *move;
-            int i = ply;
-            do {
-                ++i;
-                search_node->pv[i] = (search_node+1)->pv[i];
-            } while ((search_node+1)->pv[i] != NO_MOVE);
+            update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
         }
     }
     if (!num_legal_captures) {
@@ -392,13 +384,7 @@ static int minimax(position_t* pos,
         undo_move(pos, *move, &undo);
         if (score > best_score) {
             best_score = score;
-            // update pv from child search nodes
-            search_node->pv[ply] = *move;
-            int i = ply;
-            do {
-                ++i;
-                search_node->pv[i] = (search_node+1)->pv[i];
-            } while ((search_node+1)->pv[i] != NO_MOVE);
+            update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
         }
     }
     if (!num_moves) {
@@ -436,13 +422,7 @@ void root_search_minimax(void)
         if (score > root_data.best_score) {
             root_data.best_score = score;
             root_data.best_move = *move;
-            // update pv
-            root_data.pv[0] = *move;
-            int i=1;
-            for (; root_data.search_stack->pv[i] != NO_MOVE; ++i) {
-                root_data.pv[i] = root_data.search_stack->pv[i];
-            }
-            root_data.pv[i] = NO_MOVE;
+            update_pv(root_data.pv, root_data.search_stack->pv, 0, *move);
             print_pv(root_data.pv, depth,
                     root_data.best_score,
                     elapsed_time(&root_data.timer),
