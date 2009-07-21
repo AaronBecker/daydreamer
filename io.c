@@ -15,6 +15,7 @@ static const char* command_prefixes[];
 static const int command_prefix_lengths[];
 typedef void(*command_handler)(position_t*, char*);
 static const command_handler handlers[];
+static int bios_key(void);
 
 /*
  * Take a command string and dispatch the appropriate handler function.
@@ -349,7 +350,7 @@ int print_la_move_list(const move_t* move)
 }
 
 /*
- * Print a princial variation in uci format.
+ * Print a principal variation in uci format.
  */
 void print_pv(search_data_t* search_data)
 {
@@ -373,7 +374,6 @@ void print_pv(search_data_t* search_data)
                 depth, score, time, nodes, nodes/(time+1)*1000);
     }
     int moves = print_la_move_list(pv);
-    //printf("moves %d depth %d\n", moves, depth); fflush(stdout);
     if (moves < depth) {
         // If our pv is shortened by a hash hit,
         // try to get more moves from the hash table.
@@ -412,12 +412,9 @@ void print_board(const position_t* pos)
 }
 
 /*
- * Boilerplate code to see if data is available to be read on stdin.
- * Cross-platform for unix/windows. Thanks to the original author. I've seen
- * this in Scorpio, Viper, Beowulf, Olithink, and others, so I don't
- * know where it's from originally.
+ * Look for and handle console commands (just uci at the moment). Called
+ * periodically during search.
  */
-int bios_key(void);
 void check_for_input(search_data_t* search_data)
 {
     char input[1024];
@@ -435,6 +432,12 @@ void check_for_input(search_data_t* search_data)
     }
 }
 
+/*
+ * Boilerplate code to see if data is available to be read on stdin.
+ * Cross-platform for unix/windows.
+ * Many thanks to the original author(s). I've seen this in Scorpio, Viper,
+ * Beowulf, Olithink, and others, so I don't know where it's from originally.
+ */
 #ifndef _WIN32
 /* unix version */
 int bios_key(void)
