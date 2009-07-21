@@ -22,6 +22,7 @@ static move_t* add_move(const position_t* pos,
         const move_t move,
         move_t* moves)
 {
+    (void)pos; // avoid warning when NDEBUG is defined
     check_move_validity(pos, move);
     *(moves++) = move;
     return moves;
