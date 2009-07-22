@@ -132,5 +132,7 @@ bool insufficient_material(const position_t* pos)
 
 bool is_draw(const position_t* pos)
 {
-    return pos->fifty_move_counter >= 100 || insufficient_material(pos);
+    return pos->fifty_move_counter >= 100 ||
+        insufficient_material(pos) ||
+        is_repetition(pos);
 }

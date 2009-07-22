@@ -145,6 +145,7 @@ typedef uint8_t castle_rights_t;
 #define remove_ooo_rights(pos, side)    ((pos)->castle_rights &= \
                                             ~(WHITE_OOO<<(side)))
 typedef uint64_t hashkey_t;
+#define HASH_HISTORY_LENGTH  512
 
 typedef struct {
     piece_entry_t* board[128];          // 0x88 board
@@ -159,6 +160,7 @@ typedef struct {
     int piece_square_eval[2];
     castle_rights_t castle_rights;
     hashkey_t hash;
+    hashkey_t hash_history[HASH_HISTORY_LENGTH];
 } position_t;
 
 typedef struct {
@@ -311,7 +313,7 @@ void _check_board_validity(const position_t* pos);
 void _check_move_validity(const position_t* pos, const move_t move);
 void _check_position_hash(const position_t* pos);
 
-#ifdef NDEBUG
+#ifdef OMIT_CHECKS
 #define check_board_validity(x)                 ((void)0)
 #define check_move_validity(x,y)                ((void)0,(void)0)
 #define check_position_hash(x)                  ((void)0)
@@ -386,6 +388,7 @@ bool is_square_attacked(const position_t* position,
         const color_t side);
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_check(const position_t* pos);
+bool is_repetition(const position_t* pos);
 
 // search.c
 void init_search_data(search_data_t* data);
