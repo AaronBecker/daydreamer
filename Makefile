@@ -5,7 +5,8 @@ CTAGS = ctags
 
 COMMONFLAGS = -Wall -Wextra --std=c99
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0
-OPTFLAGS = $(COMMONFLAGS) -g -O3 -DNDEBUG
+OPTFLAGS = $(COMMONFLAGS) -g -O3 -DOMIT_CHECKS
+EXTRAOPTFLAGS = $(COMMONFLAGS) -O3 -DOMIT_CHECKS -DNDEBUG
 CFLAGS = $(DEBUGFLAGS)
 
 SRCFILES := $(wildcard *.c)
@@ -20,6 +21,9 @@ debug:
 
 opt:
 	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS)"
+
+extraopt:
+	$(MAKE) daydreamer CFLAGS="$(EXTRAOPTFLAGS)"
 
 all: daydreamer
 
