@@ -159,8 +159,8 @@ void deepening_search(search_data_t* search_data)
         generate_legal_moves(&search_data->root_pos, search_data->root_moves);
     }
 
-    // iterative deepening loop
-    root_data.best_score = -MATE_VALUE-1;
+    move_t id_pv[MAX_SEARCH_DEPTH];
+    int id_score = root_data.best_score = -MATE_VALUE-1;
     for (search_data->current_depth=1;
             !search_data->depth_limit ||
             search_data->current_depth <= search_data->depth_limit;
@@ -170,14 +170,19 @@ void deepening_search(search_data_t* search_data)
             printf("info depth %d\n", search_data->current_depth);
         }
         bool no_abort = root_search(search_data);
-        if (!no_abort || !should_deepen(search_data)) {
+        if (!no_abort) break;
+        memcpy(id_pv, search_data->pv, MAX_SEARCH_DEPTH * sizeof(int));
+        id_score = search_data->best_score;
+        if (!should_deepen(search_data)) {
             ++search_data->current_depth;
             break;
         }
     }
     stop_timer(&search_data->timer);
-    
+
     --search_data->current_depth;
+    search_data->best_score = id_score;
+    memcpy(search_data->pv, id_pv, MAX_SEARCH_DEPTH * sizeof(int));
     print_pv(search_data);
     printf("info string targettime %d elapsedtime %d\n",
             search_data->time_target, elapsed_time(&search_data->timer));
@@ -195,7 +200,7 @@ void deepening_search(search_data_t* search_data)
 static bool root_search(search_data_t* search_data)
 {
     int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
-    int best_depth_score = -MATE_VALUE-1;
+    search_data->best_score = -MATE_VALUE-1;
     bool pv = true;
     int best_index = 0, move_index = 0;
     position_t* pos = &search_data->root_pos;
@@ -228,14 +233,10 @@ static bool root_search(search_data_t* search_data)
         if (score > alpha) {
             alpha = score;
             pv = false;
-            if (score > best_depth_score) {
-                best_depth_score = score;
-                if (score > search_data->best_score ||
-                        *move == search_data->best_move) {
-                    search_data->best_score = score;
-                    search_data->best_move = *move;
-                    best_index = move_index;
-                }
+            if (score > search_data->best_score) {
+                search_data->best_score = score;
+                search_data->best_move = *move;
+                best_index = move_index;
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, *move);
             if (should_output(search_data)) {
@@ -247,7 +248,6 @@ static bool root_search(search_data_t* search_data)
         // swap the pv move to the front of the list
         search_data->root_moves[best_index] = search_data->root_moves[0];
         search_data->root_moves[0] = search_data->best_move;
-        search_data->best_score = best_depth_score;
         put_transposition(pos, search_data->best_move,
                 search_data->current_depth,
                 search_data->best_score, SCORE_EXACT);
