@@ -19,7 +19,7 @@ void uci_main(void)
 {
     printf("\nid name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
     printf("id author %s\n", ENGINE_AUTHOR);
-    init_uci_options();
+    init_uci_options(&root_data.options);
     print_uci_options();
     set_position(&root_data.root_pos, FEN_STARTPOS);
     printf("uciok\n");
@@ -40,7 +40,7 @@ static void uci_handle_command(char* command)
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
     else if (!strncasecmp(command, "setoption name", 14)) {
-        set_uci_option(command+15);
+        set_uci_option(command+15, &root_data.options);
     }
     // not handled: ucinewgame, debug, register, ponderhit, stop
 }
@@ -80,7 +80,7 @@ static void uci_go(char* command)
     char* info;
     int wtime=0, btime=0, winc=0, binc=0, movestogo=0, movetime=0;
 
-    init_search_data();
+    init_search_data(&root_data);
     if ((info = strcasestr(command, "searchmoves"))) {
         info += 11;
         int move_index=0;

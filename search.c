@@ -3,7 +3,9 @@
 #include <strings.h>
 #include "daydreamer.h"
 
-#define OUTPUT_DELAY    2000
+#define should_output(s)    \
+    (elapsed_time(&((s)->timer)) > (s)->options.output_delay)
+
 
 search_data_t root_data;
 
@@ -22,14 +24,27 @@ static int quiesce(position_t* pos,
         int beta,
         int depth);
 
-
-void init_search_data(void)
+void init_search_data(search_data_t* data)
 {
-    position_t copy;
-    copy_position(&copy, &root_data.root_pos);
-    memset(&root_data, 0, sizeof(root_data));
-    copy_position(&root_data.root_pos, &copy);
-    init_timer(&root_data.timer);
+    memset(data->root_moves, 0, sizeof(move_t) * 256);
+    memset(data->root_move_scores, 0, sizeof(int) * 256);
+    memset(data->root_move_depths, 0, sizeof(int) * 256);
+    memset(data->root_move_types, 0, sizeof(score_type_t) * 256);
+    data->best_move = NO_MOVE;
+    data->best_score = 0;
+    memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
+    memset(data->search_stack, 0, sizeof(search_node_t) * MAX_SEARCH_DEPTH);
+    data->nodes_searched = 0;
+    data->current_depth = 0;
+    data->engine_status = ENGINE_IDLE;
+    init_timer(&data->timer);
+    data->node_limit = 0;
+    data->depth_limit = 0;
+    data->time_limit = 0;
+    data->time_target = 0;
+    data->mate_search = 0;
+    data->infinite = 0;
+    data->ponder = 0;
 }
 
 /*
@@ -46,12 +61,15 @@ static void update_pv(move_t* dst, move_t* src, int ply, move_t move)
 }
 
 /*
- * Every POLL_INTERVAL nodes, this function is called to check user input.
+ * Every time a node is expanded, this function increments the node counter.
+ * Every POLL_INTERVAL nodes, user input, is checked.
  */
-static void perform_periodic_checks(search_data_t* data)
+static void open_node(search_data_t* data)
 {
-    if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
-    check_for_input(data);
+    if ((++data->nodes_searched & POLL_INTERVAL) == 0) {
+        if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
+        check_for_input(data);
+    }
 }
 
 /*
@@ -108,7 +126,6 @@ static bool is_nullmove_allowed(position_t* pos)
     return piece_value != 0;
 }
 
-
 /*
  * Iterative deepening search of the root position. This is the external
  * function that is called by the console interface. For each depth,
@@ -132,7 +149,7 @@ void deepening_search(search_data_t* search_data)
             !search_data->depth_limit ||
             search_data->current_depth <= search_data->depth_limit;
             ++search_data->current_depth) {
-        if (elapsed_time(&search_data->timer) > OUTPUT_DELAY) {
+        if (should_output(search_data)) {
             print_transposition_stats();
             printf("info depth %d\n", search_data->current_depth);
         }
@@ -169,7 +186,7 @@ static bool root_search(search_data_t* search_data)
     // TODO: proper move scoring/ordering
     for (move_t* move=search_data->root_moves; *move;
             ++move, ++move_index) {
-        if (elapsed_time(&search_data->timer) > OUTPUT_DELAY) {
+        if (should_output(search_data)) {
             char la_move[6];
             move_to_la_str(*move, la_move);
             printf("info currmove %s currmovenumber %d\n", la_move, move_index);
@@ -204,7 +221,7 @@ static bool root_search(search_data_t* search_data)
                 }
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, *move);
-            if (elapsed_time(&search_data->timer) > OUTPUT_DELAY) {
+            if (should_output(search_data)) {
                 print_pv(search_data);
             }
         }
@@ -235,9 +252,7 @@ static int search(position_t* pos,
         return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
     if (is_draw(pos)) return DRAW_VALUE;
-    if ((++root_data.nodes_searched & POLL_INTERVAL) == 0) {
-        perform_periodic_checks(&root_data);
-    }
+    open_node(&root_data);
     bool full_window = (beta-alpha > 1);
 
     // check transposition table
@@ -334,9 +349,7 @@ static int quiesce(position_t* pos,
         int depth)
 {
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if ((++root_data.nodes_searched & POLL_INTERVAL) == 0) {
-        perform_periodic_checks(&root_data);
-    }
+    open_node(&root_data);
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
     int eval = simple_eval(pos);
     int score = eval;
@@ -392,9 +405,7 @@ static int minimax(position_t* pos,
         search_node->pv[ply] = NO_MOVE;
         return simple_eval(pos);
     }
-    if ((++root_data.nodes_searched & POLL_INTERVAL) == 0) {
-        perform_periodic_checks(&root_data);
-    }
+    open_node(&root_data);
     int score, best_score = -MATE_VALUE-1;
     move_t moves[256];
     int num_moves = generate_legal_moves(pos, moves);

@@ -206,7 +206,6 @@ typedef struct {
     bool running;
 } timer_t;
 
-
 /*
  * Position evaluation.
  */
@@ -233,8 +232,15 @@ typedef enum {
 } score_type_t;
 
 typedef struct {
-    // search state info
+    int poll_interval;
+    int output_delay;
+} search_options_t;
+
+typedef struct {
     position_t root_pos;
+    search_options_t options;
+
+    // search state info
     move_t root_moves[256];
     int root_move_scores[256];
     int root_move_depths[256];
@@ -246,7 +252,7 @@ typedef struct {
     uint64_t nodes_searched;
     int current_depth;
     engine_status_t engine_status;
-    
+
     // when should we stop?
     timer_t timer;
     uint64_t node_limit;
@@ -382,7 +388,7 @@ bool is_move_legal(position_t* pos, const move_t move);
 bool is_check(const position_t* pos);
 
 // search.c
-void init_search_data(void);
+void init_search_data(search_data_t* data);
 void root_search_minimax(void);
 void deepening_search(search_data_t* search_data);
 
@@ -414,8 +420,8 @@ void print_transposition_stats(void);
 void uci_main(void);
 
 // uci_option.c
-void init_uci_options(void);
-void set_uci_option(char* command);
+void init_uci_options(search_options_t* options);
+void set_uci_option(char* command, search_options_t* options);
 void print_uci_options(void);
 
 
