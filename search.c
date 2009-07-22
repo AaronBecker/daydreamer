@@ -24,6 +24,10 @@ static int quiesce(position_t* pos,
         int beta,
         int depth);
 
+/*
+ * Zero out all search variables prior to starting a search. Leaves the
+ * position and search options untouched.
+ */
 void init_search_data(search_data_t* data)
 {
     memset(data->root_moves, 0, sizeof(move_t) * 256);
@@ -101,7 +105,7 @@ static int extend(position_t* pos, move_t move)
 {
     if (is_check(pos)) return 1;
     square_t sq = get_move_to(move);
-    if (piece_type(pos->board[sq].piece) == PAWN &&
+    if (piece_type(pos->board[sq]->piece) == PAWN &&
             square_rank(sq) == RANK_7) return 1;
     return 0;
 }

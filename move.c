@@ -124,7 +124,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
         place_piece(pos, create_piece(side, promote_type), to);
     }
 
-    pos->ply++;
+    pos->hash_history[pos->ply++] = undo->hash;
     pos->side_to_move ^= 1;
     pos->prev_move = move;
     pos->hash ^= ep_hash(pos);
@@ -194,7 +194,7 @@ void do_nullmove(position_t* pos, undo_info_t* undo)
     pos->hash ^= side_hash(pos);
     pos->ep_square = EMPTY;
     pos->fifty_move_counter++;
-    pos->ply++;
+    pos->hash_history[pos->ply++] = undo->hash;
     pos->prev_move = NULL_MOVE;
     check_board_validity(pos);
 }

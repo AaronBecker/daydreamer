@@ -36,6 +36,7 @@ static void init_position(position_t* position)
     position->castle_rights = CASTLE_NONE;
     position->prev_move = NO_MOVE;
     position->hash = 0;
+    memset(position->hash_history, 0, HASH_HISTORY_LENGTH * sizeof(hashkey_t));
 }
 
 /*
@@ -231,4 +232,14 @@ bool is_move_legal(position_t* pos, const move_t move)
     return legal;
 }
 
-
+bool is_repetition(const position_t* pos)
+{
+    if (pos->fifty_move_counter < 2) return false;
+    int ply_distance = 2;
+    while (ply_distance <= pos->fifty_move_counter) {
+        assert(pos->ply >= ply_distance);
+        if (pos->hash_history[pos->ply-ply_distance] == pos->hash) return true;
+        ply_distance += 2;
+    }
+    return false;
+}
