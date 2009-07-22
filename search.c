@@ -91,6 +91,15 @@ static bool should_stop_searching(search_data_t* data)
 }
 
 /*
+ * Should the search depth be extended? Note that our move has
+ * already been played in |pos|. For now, just extend one ply on checks.
+ */
+static int extend(position_t* pos)
+{
+    return is_check(pos) ? 1 : 0;
+}
+
+/*
  * Should we go on to the next level of iterative deepening in our root
  * search? This considers regular stopping conditions and also guesses whether
  * or not we can finish the next depth in the remaining time.
@@ -113,12 +122,7 @@ static bool should_deepen(search_data_t* data)
 static bool is_nullmove_allowed(position_t* pos)
 {
     // don't allow nullmove if either side is in check
-    if (is_square_attacked(pos,
-            pos->pieces[pos->side_to_move][KING][0].location,
-            pos->side_to_move^1) ||
-        is_square_attacked(pos,
-            pos->pieces[pos->side_to_move^1][KING][0].location,
-            pos->side_to_move)) return false;
+    if (is_check(pos)) return false;
     // allow nullmove if we're not down to king/pawns
     int piece_value = pos->material_eval[pos->side_to_move] -
         material_value(WK) -
@@ -193,16 +197,17 @@ static bool root_search(search_data_t* search_data)
         }
         undo_info_t undo;
         do_move(pos, *move, &undo);
+        int ext = extend(pos);
         int score;
         if (pv) {
             score = -search(pos, search_data->search_stack,
-                    1, -beta, -alpha, search_data->current_depth-1);
+                    1, -beta, -alpha, search_data->current_depth+ext-1);
         } else {
             score = -search(pos, search_data->search_stack,
-                    1, -alpha-1, -alpha, search_data->current_depth-1);
+                    1, -alpha-1, -alpha, search_data->current_depth+ext-1);
             if (score > alpha) {
                 score = -search(pos, search_data->search_stack,
-                    1, -beta, -alpha, search_data->current_depth-1);
+                    1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
         undo_move(pos, *move, &undo);
@@ -299,14 +304,15 @@ static int search(position_t* pos,
         ++num_legal_moves;
         undo_info_t undo;
         do_move(pos, *move, &undo);
+        int ext = extend(pos);
         if (pv) score = -search(pos, search_node+1, ply+1,
-                -beta, -alpha, depth-1);
+                -beta, -alpha, depth+ext-1);
         else {
             score = -search(pos, search_node+1, ply+1,
-                    -alpha-1, -alpha, depth-1);
+                    -alpha-1, -alpha, depth+ext-1);
             if (score > alpha && score < beta) {
                 score = -search(pos, search_node+1, ply+1,
-                        -beta, -alpha, depth-1);
+                        -beta, -alpha, depth+ext-1);
             }
         }
         undo_move(pos, *move, &undo);
@@ -338,7 +344,7 @@ static int search(position_t* pos,
 
 /*
  * Search a position until it becomes "quiet". This is called at the leaves
- * of |search| to avoid using the static evalutor on positions that have
+ * of |search| to avoid using the static evaluator on positions that have
  * easy tactics on the board.
  */
 static int quiesce(position_t* pos,
