@@ -1,9 +1,9 @@
 
+#include "daydreamer.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "daydreamer.h"
 
 typedef enum {
     OPTION_CHECK,

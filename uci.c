@@ -1,9 +1,9 @@
 
+#include "daydreamer.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "daydreamer.h"
 
 static void uci_get_input(void);
 static void uci_handle_command(char* command);

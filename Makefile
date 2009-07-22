@@ -1,6 +1,5 @@
 
-#CC = gcc
-CC = /usr/bin/gcc-4.2
+CC = gcc
 CTAGS = ctags
 
 COMMONFLAGS = -Wall -Wextra --std=c99
