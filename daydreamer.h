@@ -12,7 +12,6 @@ extern "C" {
 #include <stdlib.h>
 #include <sys/time.h>
 
-
 #define ENGINE_NAME     "Daydreamer"
 #define ENGINE_VERSION  "0.0"
 #define ENGINE_AUTHOR   "Aaron Becker"
