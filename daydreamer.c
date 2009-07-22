@@ -5,7 +5,7 @@ extern void init_eval(void);
 void init_daydreamer(void)
 {
     init_eval();
-    init_transposition_table(64 * 1<<20);
+    init_transposition_table(32 * 1<<20);
 }
 
 const slide_t sliding_piece_types[] = {
