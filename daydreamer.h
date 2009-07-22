@@ -5,11 +5,13 @@
 extern "C" {
 #endif
 
+#include "compatibility.h"
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/time.h>
+
 
 #define ENGINE_NAME     "Daydreamer"
 #define ENGINE_VERSION  "0.0"
@@ -206,7 +208,7 @@ typedef struct {
     struct timeval tv_start;
     int elapsed_millis;
     bool running;
-} timer_t;
+} milli_timer_t;
 
 /*
  * Position evaluation.
@@ -256,7 +258,7 @@ typedef struct {
     engine_status_t engine_status;
 
     // when should we stop?
-    timer_t timer;
+    milli_timer_t timer;
     uint64_t node_limit;
     int depth_limit;
     int time_limit;
@@ -399,10 +401,10 @@ void deepening_search(search_data_t* search_data);
 int static_exchange_eval(position_t* pos, move_t move);
 
 // timer.c
-void init_timer(timer_t* timer);
-void start_timer(timer_t* timer);
-int stop_timer(timer_t* timer);
-int elapsed_time(timer_t* timer);
+void init_timer(milli_timer_t* timer);
+void start_timer(milli_timer_t* timer);
+int stop_timer(milli_timer_t* timer);
+int elapsed_time(milli_timer_t* timer);
 
 // trans_table.c
 void init_transposition_table(const int max_bytes);

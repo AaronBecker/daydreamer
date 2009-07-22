@@ -1,8 +1,9 @@
 
+#include "daydreamer.h"
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include "daydreamer.h"
 
 static uint64_t full_search(position_t* pos, int depth);
 static uint64_t divide(position_t* pos, int depth);
@@ -24,11 +25,10 @@ void perft_testsuite(char* filename)
     char test_storage[1024];
     char* test = test_storage;
     position_t pos;
-    timer_t perft_timer;
+    milli_timer_t perft_timer;
     init_timer(&perft_timer);
     FILE* test_file = fopen(filename, "r");
     if (!test_file) {
-        extern int errno;
         printf("Couldn't open perft test file %s: %s\n",
                 filename, strerror(errno));
         return;
@@ -69,7 +69,7 @@ void perft_testsuite(char* filename)
  */
 uint64_t perft(position_t* position, int depth, bool div)
 {
-    timer_t perft_timer;
+    milli_timer_t perft_timer;
     init_timer(&perft_timer);
     start_timer(&perft_timer);
     uint64_t nodes;
