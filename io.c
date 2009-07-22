@@ -178,7 +178,7 @@ static void handle_search(position_t* pos, char* command)
     sscanf(command, "%d", &depth);
     extern search_data_t root_data;
     copy_position(&root_data.root_pos, pos);
-    init_search_data();
+    init_search_data(&root_data);
     root_data.depth_limit = depth;
     root_data.infinite = true;
     deepening_search(&root_data);
@@ -193,7 +193,7 @@ static void handle_minimax(position_t* pos, char* command)
     while(isspace(*command)) ++command;
     int depth;
     sscanf(command, "%d", &depth);
-    init_search_data();
+    init_search_data(&root_data);
     extern search_data_t root_data;
     copy_position(&root_data.root_pos, pos);
     root_data.depth_limit = depth;

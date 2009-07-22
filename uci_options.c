@@ -13,7 +13,7 @@ typedef enum {
     OPTION_STRING
 } uci_option_type_t;
 
-typedef void(*option_handler)(void*, char*);
+typedef void(*option_handler)(void*, char*, search_options_t*);
 
 typedef struct {
     uci_option_type_t type;
@@ -26,8 +26,8 @@ typedef struct {
     option_handler handler;
 } uci_option_t;
 
-int uci_option_count = 0;
-uci_option_t uci_options[128];
+static int uci_option_count = 0;
+static uci_option_t uci_options[128];
 
 static void add_uci_option(char* name,
         uci_option_type_t type,
@@ -85,27 +85,51 @@ void print_uci_options(void)
     }
 }
 
-void set_uci_option(char* command)
+void set_uci_option(char* command, search_options_t* options)
 {
-    // expect "<name> value <value>
+    // expect "<name> value <value>"
     while (isspace(*command)) ++command;
     for (int i=0; i<uci_option_count; ++i) {
         int name_length = strlen(uci_options[i].name);
         if (!strncasecmp(command, uci_options[i].name, name_length)) {
-            uci_options[i].handler(&uci_options[i], command + name_length);
+            command += name_length;
+            while(isspace(*command)) ++command;
+            uci_options[i].handler(&uci_options[i], command, options);
             return;
         }
     }
 }
 
-static void handle_hash(void* option, char* value)
+static void handle_hash(void* opt, char* value, search_options_t* options)
 {
-    // do nothing, we don't even have a hash table.
-    (void)option;
-    (void)value;
+    (void)options;
+    uci_option_t* option = opt;
+    int mbytes = 0;
+    sscanf(value, "value %d", &mbytes);
+    if (mbytes < option->min || mbytes > option->max) {
+        sscanf(option->default_value, "%d", &mbytes);
+    }
+    init_transposition_table(mbytes * (1<<20));
 }
 
-void init_uci_options(void)
+static void handle_output_delay(void* opt,
+        char* value,
+        search_options_t* options)
 {
-    add_uci_option("Hash", OPTION_SPIN, "1", 0, 4096, NULL, &handle_hash);
+    uci_option_t* option = opt;
+    int delay = 0;
+    sscanf(value, "value %d", &delay);
+    if (delay < option->min || delay > option->max) {
+        sscanf(option->default_value, "%d", &delay);
+    }
+    options->output_delay = delay;
+}
+
+void init_uci_options(search_options_t* options)
+{
+    add_uci_option("Hash", OPTION_SPIN, "32", 1, 4096, NULL, &handle_hash);
+    set_uci_option("Hash value 32", options);
+    add_uci_option("Output Delay", OPTION_SPIN, "2000", 0, 1000000, NULL,
+            &handle_output_delay);
+    set_uci_option("Output Delay value 2000", options);
 }
