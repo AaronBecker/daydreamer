@@ -95,7 +95,7 @@ static void uci_go(char* command)
             while (isspace(*info)) ++info;
         }
     }
-    if ((info = strcasestr(command, "ponder"))) {
+    if ((strcasestr(command, "ponder"))) {
         root_data.ponder = true;
     }
     if ((info = strcasestr(command, "wtime"))) {
@@ -126,7 +126,7 @@ static void uci_go(char* command)
         sscanf(info+8, " %d", &movetime);
         root_data.time_target = root_data.time_limit = movetime;
     }
-    if ((info = strcasestr(command, "infinite"))) {
+    if ((strcasestr(command, "infinite"))) {
         root_data.infinite = true;
     }
 

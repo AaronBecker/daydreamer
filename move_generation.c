@@ -161,10 +161,8 @@ static void generate_pawn_captures(const position_t* pos,
     rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
     move_t* moves = *moves_head;
     if (relative_rank < RANK_7) {
-        // non-promotions
-        to = from + pawn_push[side];
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
-            // captures
+            // non-promote captures
             to = from + *delta;
             if (to == pos->ep_square) {
                 moves = add_move(pos, create_move_enpassant(from, to, piece,
