@@ -245,9 +245,6 @@ typedef struct {
 
     // search state info
     move_t root_moves[256];
-    int root_move_scores[256];
-    int root_move_depths[256];
-    score_type_t root_move_types[256];
     move_t best_move; // FIXME: shouldn't this be redundant with pv[0]?
     int best_score;
     move_t pv[MAX_SEARCH_DEPTH];

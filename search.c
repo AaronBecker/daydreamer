@@ -32,9 +32,6 @@ static int quiesce(position_t* pos,
 void init_search_data(search_data_t* data)
 {
     memset(data->root_moves, 0, sizeof(move_t) * 256);
-    memset(data->root_move_scores, 0, sizeof(int) * 256);
-    memset(data->root_move_depths, 0, sizeof(int) * 256);
-    memset(data->root_move_types, 0, sizeof(score_type_t) * 256);
     data->best_move = NO_MOVE;
     data->best_score = 0;
     memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
