@@ -1,0 +1,309 @@
+./polyglot epd-test -epd tests/wac.epd
+PolyGlot 1.4W10UCIb22 by Fabien Letouzey
+
+EngineName=Daydreamer 0
+
+[Search parameters: MaxDepth=63   MaxTime=5.0   DepthDelta=3   MinDepth=8   MinTime=1.0]
+
+ 1: "WAC.001"       OK    1 score=+99.97    pv [D=63, T=   0.25s, N=   227k] =Qg6 fxg6 Nxg6#
+ 2: "WAC.002"       --    1 score= +0.42    pv [D=11, T=   2.61s, N=  2689k] =Kg7 h4 Kg8 Rf2 Rb5 Rg2+ Kf7
+ 3: "WAC.003"       OK    2 score= +3.33    pv [D=10, T=   2.69s, N=  2353k] =Rg3 Bg4 Rxg4 Rxg4 Qe6+ Kg7 hxg4 Qd5 Re1 Rf6 Qc8
+ 4: "WAC.004"       OK    3 score=+99.97    pv [D=63, T=   0.12s, N=   121k] =Qxh7+ Kxh7 hxg6#
+ 5: "WAC.005"       OK    4 score=+99.97    pv [D=63, T=   0.06s, N=    62k] =Qc4+ Nxc4 bxc4#
+ 6: "WAC.006"       OK    5 score= +5.95    pv [D=14, T=   3.26s, N=  4723k] =Rb7 Rb5 Rxb5 Kg8 Rf5 a5 Rxa5 Kf7 Rf5+ Ke6 Kg5 Kd7 Kxg4 Kc7 Kf3
+ 7: "WAC.007"       OK    6 score= +5.33    pv [D=10, T=   3.49s, N=  2471k] =Ne3 Ngf3 Nxd1 Kxd1 d5 e3 f6 c4 fxe5 Nxe5
+ 8: "WAC.008"       OK    7 score=+15.08    pv [D=11, T=   2.73s, N=  2826k] =Rf7 Qxf7 Nxf7+ Kg8 Nh6+ Kh8 Re1 Be6 Rxe6 f3 Nxf5 Rg8 Nxg7
+ 9: "WAC.009"       OK    8 score=+99.91    pv [D=14, T=   3.06s, N=  4431k] =Bh2+ Kh1 Bg3+ Kg1 Rh1+ Kxh1 Qh4+ Kg1 Qh2#
+10: "WAC.010"       OK    9 score= +2.75    pv [D=10, T=   3.03s, N=  3219k] =Rxh7 fxe5 Qxg7+ Qxg7 Rxg7+ Kxg7 Nf5+ exf5 Rxd8 Be6 Rd6 Bc4 f4
+11: "WAC.011"       OK   10 score= +4.38    pv [D=10, T=   2.57s, N=  2402k] =Bxc6 Nd5 Bxd7+ Bxd7 c3 Nxb6 Nxb6 Bc5+ Kh1 Bxb6 Qd6 Be3 cxb4
+12: "WAC.012"       OK   11 score=+99.97    pv [D=63, T=   0.05s, N=    48k] =Qxf3+ Rxf3 Rg1#
+13: "WAC.013"       OK   12 score= +1.59    pv [D=12, T=   3.21s, N=  3194k] =Qxf8+ Kxf8 Nd7+ Kg8 Nxe5 Nxe5 e4 dxe4 Bxe4 b6 Kg1 g5 Rd1 c3
+14: "WAC.014"       OK   13 score=+99.93    pv [D=14, T=   2.30s, N=  3174k] =Qxh7+ Kf8 Bf6 Bxe3+ Rxe3 Qd6 Qg7#
+15: "WAC.015"       OK   14 score= +6.42    pv [D=13, T=   2.48s, N=  2993k] =Rxb7 Rxb7 c6+ Kc7 cxb7+ Kxb7 Rd1 h5 Rd6 g5 Rxe6 f4 gxf4 gxf4 b3
+16: "WAC.016"       OK   15 score= +3.13    pv [D= 9, T=   5.04s, N=  4128k] =Nc3 Qe6 Bxc5 Rfd8 f4 f5 fxe5 b6 Be3 Nxe5
+17: "WAC.017"       OK   16 score= +1.21    pv [D= 9, T=   2.81s, N=  2428k] =Ne5 Qxb3 Nxd7+ Kc8 axb3 Kxd7 Rxa7 Rb6 c4 Re8
+18: "WAC.018"       OK   17 score= +4.74    pv [D=14, T=   2.57s, N=  2655k] =Rh8 Ra1+ Kf2 Ra2+ Ke1 Ra1+ Kd2 Ra2+ Kc1 Ra1+ Kb2 Rxa7 Rh7+ Kf8 Rxa7 Kg8
+19: "WAC.019"       OK   18 score= +1.05    pv [D=10, T=   3.10s, N=  3091k] =c6 Bxh2+ Nxh2 Qxb5 Nxb5 bxc6 Nc7 Rb8 Rxa7 Rb7 Rxb7 Bxb7
+20: "WAC.020"       OK   19 score= +8.62    pv [D=10, T=   2.58s, N=  2137k] =Bb5 Qxb5+ axb5 Ke2 Qf6 f3 Rxa4 Rxa4 bxa4 Be3 Bd6
+21: "WAC.021"       OK   20 score= +6.11    pv [D=10, T=   3.02s, N=  3417k] =Qh6 Qxe1+ Bf1 Qe3+ Nxe3 Nxe3 Bd3 f5 Qg5+ Kh8 Qxe3 Bc6 Bxf5
+22: "WAC.022"       OK   21 score= -0.02    pv [D= 8, T=   5.08s, N=  3473k] =Ba2 Nd5 Nxe4 f5 Bxd5 Qxd5 Qh5+ Kf8 Ng5 Qxg2 Nxh7+
+23: "WAC.023"       OK   22 score= +3.93    pv [D=10, T=   3.20s, N=  2931k] =g4 Qxc2 Re2 Qxe2 Qxe2 a5 Qc2 Rb8 b4 axb4 axb4
+24: "WAC.024"       OK   23 score= +7.57    pv [D=10, T=   2.78s, N=  2925k] =Bd4 Bf2 Bxe3 Nxe3 Qxb4 Bc2 gxf5 Bxf5 Ne5 g4
+25: "WAC.025"       OK   24 score=+11.07    pv [D=12, T=   2.42s, N=  2948k] =Qh4+ Kg2 Qxf6 Rxf8+ Qxf8 b4 g5 b5 Qf7 a4 Qxc4 Kf1 Qb3 Kf2 Qxa4
+26: "WAC.026"       OK   25 score= +0.65    pv [D=10, T=   2.66s, N=  2566k] =Bf5 b4 Bxe4 Qxe4 Qc7 Qe3 Qc4 Qf3 b5 a3
+27: "WAC.027"       OK   26 score=+99.97    pv [D=63, T=   0.11s, N=   119k] =Qf8+ Rxf8 Rxf8#
+28: "WAC.028"       OK   27 score= +3.44    pv [D=11, T=   4.37s, N=  4301k] =Qe1+ Bf1 Bb3 Qxc6 Rdc8 Rb5 Rxc6 Rxb8+ Kg7 Rxb3 Rc1 h3 Qxf1+ Kh2 Qxf2 Rxa5
+29: "WAC.029"       OK   28 score= +1.71    pv [D=10, T=   3.51s, N=  3435k] =c6 bxc6 Bxc6 Rd4 Bxa8 Qxa8 b5 Qd5 Rbd1
+30: "WAC.030"       OK   29 score= +1.02    pv [D= 9, T=   2.55s, N=  2305k] =Nxd6 Nxd6 Qxc6 Bb7 Qxd6 Qxd6 Rxd6 Bxg2 Kxg2 Rxb4
+31: "WAC.031"       OK   30 score= +3.14    pv [D=10, T=   2.30s, N=  2138k] =d6 Bxd6 Rxd6 Rb8 Qc7 Rc8 Qd7 Rc1+ Rd1 Rxd1+ Qxd1
+32: "WAC.032"       OK   31 score= +1.14    pv [D=11, T=   5.00s, N=  5046k] =Qd8+ Kg7 Qxf6+ Kxf6 Nxe4+ Kg7 Nxc5 bxc5 e4 f5 e5 Kg8 f4 c4
+33: "WAC.033"       OK   32 score= +2.15    pv [D= 8, T=   2.78s, N=  2389k] =Qe5+ Kf8 Re1 Kg8 Qe8+ Kg7 Re7 Rd1+ Kg2 Qd6 Qxf7+
+34: "WAC.034"       OK   33 score= +2.68    pv [D=11, T=   2.05s, N=  2140k] =Bg1 Kxg1 Rxd3 Bxd3 Bxe4 Bxe4 Qxe4 Ng3 Qe3+ Kf1 g6 Rd8+ Kg7
+35: "WAC.035"       OK   34 score=+99.93    pv [D=16, T=   2.32s, N=  4415k] =Rxh7+ Kxh7 Qh5+ Kg8 Qf7+ Kh7 Qxg7#
+36: "WAC.036"       OK   35 score= +3.57    pv [D=10, T=   2.92s, N=  2584k] =Re1+ Rxe1 Qxc6 Rac1 Qd6 Rcd1 c6 g3 Kg8 f4 h4
+37: "WAC.037"       OK   36 score= +1.31    pv [D=11, T=   4.26s, N=  4460k] =Nxd4+ N3xd4 Rxc2+ Nxc2 Rxc2+ Kf1 Rxb2 Bxb6 Nc3 Nxc3 Bxc3 Bc5 Ra2 Rd3
+38: "WAC.038"       OK   37 score= +1.69    pv [D=10, T=   2.38s, N=  2235k] =Rd8+ Kxd8 Qxe1 f6 Qc3 Rf7 Kg1 a5 a4 f5 h4
+39: "WAC.039"       OK   38 score= +3.60    pv [D=11, T=   2.59s, N=  2353k] =Na4 Qxa1 Qxa1 e5 Be3 Be6 Kg1 Rac8 Nc3 g6 Qb2
+40: "WAC.040"       OK   39 score= +4.41    pv [D=11, T=   2.53s, N=  2296k] =Rc8 Qxc8 Rxc8 Rcd1 Kg8 Rd8+ Rxd8 Rxd8+ Kf7 Rb8 Qd7 e4 Qd1+ Kg2
+41: "WAC.041"       OK   40 score=+11.10    pv [D=12, T=   3.93s, N=  3454k] =Ka5 Rg1 Rf8+ Kb7 g8=Q Ra1+ Kb4 Rb1+ Kc3 Rc1+ Kd2 Rc5 Rb8+ Ka6 Qa2+ Kb5 Qe6
+42: "WAC.042"       OK   41 score= +3.37    pv [D=11, T=   3.24s, N=  3214k] =Ba5 Bf8 Qc3 Bb4 Bxb4 Qc7 Rad1 a5 Ba3 f5 Bd3
+43: "WAC.043"       OK   42 score=+10.12    pv [D=10, T=   2.86s, N=  3042k] =Be7 Rxe5 Bxf6+ Qxf6 Qxa8+ Kg7 d8=Q Qxd8 Qxd8 Rf5 Qd4+ Kg6 g4
+44: "WAC.044"       OK   43 score= +2.13    pv [D= 8, T=   4.04s, N=  2767k] =dxc4 Rxd8 Nxd8 Qxb7 Nxb7 Be4 Nc5 f3
+45: "WAC.045"       OK   44 score= +4.89    pv [D=10, T=   5.00s, N=  4980k] =Qxa1 Qg2 Rf5 Qc6 Bf8 h4 Rxe5 Qf3 Kg8 b3
+46: "WAC.046"       OK   45 score= +1.09    pv [D= 8, T=   5.03s, N=  3735k] =Nb5 Qa5+ Rd2 Rb8 Nc7 Rf8 Nxe6 Rf6 Nf4
+47: "WAC.047"       OK   46 score= +0.85    pv [D= 9, T=   3.39s, N=  2495k] =Nxd4 Nxd4 Qxg5 f4 Qc5 Rfd1 Bd7 Ne4 Nxe4 Qxe4
+48: "WAC.048"       OK   47 score= +2.11    pv [D=10, T=   3.03s, N=  2765k] =Rb4 Qxa7 Rxc4 Be3 Nd5 Rac1 f5 Qa5 Be6 Rfe1
+49: "WAC.049"       OK   48 score=+99.89    pv [D=14, T=   2.16s, N=  2514k] =Qxh7+ Kxh7 Rh5+ Kg8 Ng6 Qg2+ Rxg2 Rf8 Rh8+ Kf7 Rxf8#
+50: "WAC.050"       OK   49 score=+99.95    pv [D=63, T=   1.30s, N=  1143k] =Rxb6+ Qxc6 Rxa2+ Qa4 Rxa4#
+51: "WAC.051"       OK   50 score=+99.83    pv [D=10, T=   3.07s, N=  3830k] =Rg4+ Qg5 hxg5 Rg8 gxh6+ Kh8 Rxg8+ Kxg8 Qg5+ Kf7 Qg7+ Ke8 Bb5+ Kd8 Qf8+ Kc7 Qd6#
+52: "WAC.052"       OK   51 score= +3.68    pv [D=10, T=   3.28s, N=  3067k] =Re7 Qxe7 Nxe7+ Bxe7 Qe3 Kd7 Qd4+ Bd6 Qg7+ Be7 Qe5 Rf8 d4
+53: "WAC.053"       OK   52 score= +3.93    pv [D=11, T=   2.06s, N=  2056k] =Re1 Be2 Rxf1+ Bxf1 a5 a4 Qa3 Rxf4 Qc5+ Rf2 Qxd5 Be2 g5
+54: "WAC.054"       OK   53 score=+99.97    pv [D=63, T=   0.12s, N=   146k] =Qh1+ Kxh1 Rf1#
+55: "WAC.055"       OK   54 score=+99.93    pv [D= 7, T=   4.26s, N=  3639k] =Qxg7+ Kxg7 Bf6+ Kh7 Rh4+ Kg8 Rh8#
+56: "WAC.056"       OK   55 score= +5.70    pv [D= 9, T=   5.07s, N=  3801k] =Bxf2+ Qxf2 Nd3+ Kf1 Nxf2 Kxf2 Nxe4+ Kf1 d5 Nf3 O-O Kg1
+57: "WAC.057"       OK   56 score=+99.95    pv [D=60, T=   2.00s, N=  2378k] =Rf8+ Qxf8 Rxf8+ Rxf8 Qxg6#
+58: "WAC.058"       OK   57 score= +6.52    pv [D=10, T=   3.43s, N=  3603k] =Qd1+ Kg5 Qd2+ Rf4+ Kg1 Kh5 Qh2+ Kg4 Rg6+ Kf3 Qf2+ Ke4 Qe2+ Kd5 Qxb5+ Ke4 Qxe5+ Kxe5 gxf4+ Kxf4
+59: "WAC.059"       OK   58 score= +4.69    pv [D=11, T=   3.47s, N=  3557k] =Nd5 Bxd4 Nxe7+ Kg7 Nxd4 Kh6 Bc1+ Kh5 exf5 gxf5 Nexc6 Bb7 Be3 Bxc6 Nxc6
+60: "WAC.060"       OK   59 score=+99.97    pv [D=63, T=   0.08s, N=    91k] =Qh8+ Bxh8 Rxh8#
+61: "WAC.061"       OK   60 score=+99.97    pv [D=63, T=   0.11s, N=   123k] =Qf7+ Rxf7 exf7#
+62: "WAC.062"       OK   61 score= +0.52    pv [D= 9, T=   3.14s, N=  2511k] =Rxg3+ Kh1 Rd3 Qa7 Qg5 Rfe1 Qg4 Qf2 Rd8 c5
+63: "WAC.063"       OK   62 score= +1.43    pv [D= 8, T=   5.05s, N=  4063k] =Nxf7 Rd5 Ne5 Nf6 g4 Bd7 Be4 Nxe4 Qxe4
+64: "WAC.064"       OK   63 score=+99.95    pv [D=63, T=   0.77s, N=   893k] =g4+ Kg6 Qe8+ Kg5 Qh5#
+65: "WAC.065"       OK   64 score= +9.52    pv [D=10, T=   2.17s, N=  2028k] =Ne7+ Qxe7 dxe7 Re8 Bxe6 fxe6 Rxd7 e4 Rxa7 Bb7 Qg5 Bc6
+66: "WAC.066"       OK   65 score= +3.70    pv [D=11, T=   5.01s, N=  4784k] =Qxe5 Nxe5 Rg5 Nxc6+ bxc6 Rf3 Re8 Rh3 h5 Rf1 Be3 Rhf3
+67: "WAC.067"       OK   66 score= +3.92    pv [D=12, T=   2.83s, N=  2907k] =Rxd5 Qxd5 Re8+ Rxe8 Qxd5+ Kf8 Kg2 Re7 Kf1 Kg7 Qd6 Kf7 Qd5+ Kg7 Kg1
+68: "WAC.068"       OK   67 score= +5.20    pv [D=11, T=   3.23s, N=  3075k] =Qxe3 Qxb2 Rxc5 Qa1+ Qc1 Qxc1+ Rxc1 g6 Rc6 f5 f4 Kf7 Kg1
+69: "WAC.069"       OK   68 score= +5.93    pv [D=11, T=   3.31s, N=  3219k] =f3 Qxe6 Qxe6 c3 bxc3 dxc3 Qb3 Rd1+ Kf2 Ra1 Qxc3 Rxa2
+70: "WAC.070"       OK   69 score= +6.48    pv [D=10, T=   2.71s, N=  2331k] =Na2+ Nxa2 Qxb5 dxe5 dxe5 Ng5 Rxd1+ Rxd1 h6 Nxf7 Rf8 c4 Qxb3
+71: "WAC.071"       --   69 score= -1.05    pv [D= 8, T=   3.86s, N=  2976k] =Qf3 Qc6 Rbe1 Rhe8 Qh3+ Qd7 Qxd7+ Kxd7 Be5
+72: "WAC.072"       OK   70 score= +1.99    pv [D=10, T=   3.21s, N=  3211k] =e6 fxe6 Rxd7 b5 Bd3 Rad8 Rxd8 Rxd8 Bxf5 exf5
+73: "WAC.073"       OK   71 score= +3.62    pv [D= 9, T=   3.19s, N=  2709k] =Qd2 Kh7 Qxd7 Bd6 Qb5 Ra6 Re3 g6 Qf1 gxf5 Qxf5+
+74: "WAC.074"       OK   72 score= +5.53    pv [D=10, T=   3.36s, N=  2942k] =Qf1+ Qxf1 e2+ Nf2 exf1=Q+ Kxf1 Rxf2+ Ke1 Rxg2 b4 Be3 h3 Rc2 Ba1 Rxa2
+75: "WAC.075"       OK   73 score= +4.41    pv [D=10, T=   2.44s, N=  1989k] =Qd6 hxg4 Qxb4 Rf1 Qxg4 Be3 Qe4 c3 f5 Bd4
+76: "WAC.076"       OK   74 score= +2.36    pv [D= 8, T=   2.33s, N=  1419k] =Bxf6 Nxd4 cxd4 Bxf5 exf5 gxf6 Qg4+ Kh8 Bd5
+77: "WAC.077"       OK   75 score= +8.33    pv [D= 9, T=   2.13s, N=  1885k] =Ng3 Qxd4 Ne2+ Kh1 Nxd4 Na3 Qe4 Be3 Bb4 Nc4
+78: "WAC.078"       OK   76 score= +2.98    pv [D= 9, T=   3.06s, N=  3152k] =Ng5+ Nxg5 Rd7+ Qxd7 Qxd7+ Kf8 Bxg5 Bxg5 Qxc7 b6 Qe5
+79: "WAC.079"       OK   77 score=+99.95    pv [D=32, T=   2.01s, N=  2169k] =Qxh2+ Kxh2 hxg3+ Kg1 Rh1#
+80: "WAC.080"       OK   78 score= +4.73    pv [D=11, T=   2.53s, N=  2596k] =Ra1 Qb3 Bc2 Qxb2 Bh7+ Nxh7 Qxb2 Rfc8 Bf4 Rxc4 Rac1 Rac8
+81: "WAC.081"       OK   79 score= +0.62    pv [D=10, T=   2.75s, N=  2850k] =Bd6 Rxd6 Ne8 Rdd7 Nxc7 Rxc7 Bd5 Bxb5 Rxa3 Bc4
+82: "WAC.082"       OK   80 score= +7.62    pv [D=10, T=   4.81s, N=  5485k] =Bh7+ Kf8 Qa3+ Re7 Bd3 Qxf1+ Bxf1 f5 Rh8+ Bg8 Rxg8+ Kxg8 Qxe7 Rd1
+83: "WAC.083"       OK   81 score= +4.03    pv [D= 9, T=   2.48s, N=  2321k] =Qxd7 Qb8 Qxb7 Rxe7 Qxe7 Rxd1+ Bxd1 Nd5 Qe2 Qd6
+84: "WAC.084"       OK   82 score=+99.97    pv [D=63, T=   0.16s, N=   175k] =Qg8+ Rxg8 Nf7#
+85: "WAC.085"       OK   83 score= +6.35    pv [D=11, T=   2.18s, N=  2543k] =Na6 Qd8 Rxd8 Rxd8 Qc3 Rf6 Bg2 Rc8 d5 Rd6 dxc6
+86: "WAC.086"       --   83 score= -0.01    pv [D=11, T=   3.19s, N=  3315k] =Ke6 Kd2 Kf7 Kc1 Kg8 Kb1 Ne4 Nxe4 fxe4 d5 cxd5 cxd5
+87: "WAC.087"       --   83 score= +1.84    pv [D=11, T=   2.63s, N=  2665k] =c4 a5 Kf8 Nf3 Rg6 Kh2 Kg8 Kg1 f4 b5 a6
+88: "WAC.088"       OK   84 score=+99.93    pv [D=17, T=   2.35s, N=  3805k] =Rxg2+ Kxg2 Rg8+ Kf2 Qh2+ Kf3 Qg2#
+89: "WAC.089"       OK   85 score= +7.36    pv [D=11, T=   2.53s, N=  2765k] =g5 fxg5 fxg5 Rxf7 gxh4 Kxh4 Bd6 Rh3 Qa5 Nf3 Bxf3 Rhxf3 Qxa2
+90: "WAC.090"       OK   86 score= +1.98    pv [D= 9, T=   2.44s, N=  2145k] =Nxg7 Bxc4 Nxe8 Nxe8 Rf4 Qd5 Rg4+ Kh7 Qc2+ f5 Be5
+91: "WAC.091"       OK   87 score= +1.05    pv [D= 9, T=   2.04s, N=  1603k] =Be6 Nf4 exf4 Bxd4 Qd7 Rd1 Bxh3+ Kg1 Bxf1 Kxf1 Qe6
+92: "WAC.092"       --   87 score= -0.19    pv [D= 7, T=   2.03s, N=  1262k] =g5 e5 Ne8 Bxb7 Rb8 b4 Qxb4
+93: "WAC.093"       OK   88 score= +1.32    pv [D=10, T=   2.18s, N=  1604k] =Bh6 Nd7 Bb5 Qxh6 Qxh8 Qg6 Kf1 a6 Bd3
+94: "WAC.094"       OK   89 score= +8.65    pv [D=11, T=   2.88s, N=  3502k] =e4+ Kxe4 Nc3+ Kd3 Nxd5 cxd5 Qb1+ Kd4 Qd1+ Kc4 Qxh5 Kd4 Kb8 e4 Qf3
+95: "WAC.095"       OK   90 score= +9.41    pv [D=10, T=   4.56s, N=  4755k] =Ng4+ hxg4 Rh1+ Kg7 Qxg5 gxf3+ Kg3 Rf8 Rh6 Kg8 Rxg6+ Kf7 Rg7+ Ke8 Rxb7
+96: "WAC.096"       OK   91 score= +2.12    pv [D=10, T=   3.64s, N=  2998k] =Qd8+ Qf8 Qxc7 Qb4 b3 Bf5 Bxd5 Na3+ Kc1 Bxg6 Qxb7 Qxb7 Bxb7
+97: "WAC.097"       OK   92 score=+99.95    pv [D=63, T=   1.13s, N=  1520k] =Qa8+ Kh7 Qh8+ Nxh8 Rg7#
+98: "WAC.098"       OK   93 score= +6.48    pv [D= 9, T=   2.54s, N=  2444k] =Nxe4 Qxe5 Nxd2+ Kc1 dxe5 Kxd2 Rxb4 Kxd3 Rxb2 Re2
+99: "WAC.099"       OK   94 score=+99.97    pv [D=63, T=   0.16s, N=   134k] =Rh5 Bf5 Qxh7#
+100: "WAC.100"       --   94 score= +1.17    pv [D=18, T=   2.55s, N=  2904k] =Kb3 Bb8 Ka2 Bc7 Be3 Bb6 Ka1 Kb8 Kb1 Ka7 Ka1 Kb8 Kb1 Ka7 Ka1 Kb8 Kb1
+101: "WAC.101"       OK   95 score= +0.42    pv [D=10, T=   2.22s, N=  1976k] =Bc3 Rd1 Rb8 Ne3 g6 Rb1 Bd4 Nd5 Rd8
+102: "WAC.102"       OK   96 score=+99.95    pv [D=63, T=   1.75s, N=  2346k] =Qxf8+ Kh5 Rxh7+ Kg4 Qg7#
+103: "WAC.103"       OK   97 score=+99.93    pv [D=16, T=   2.02s, N=  2722k] =Qxg6+ hxg6 Rxg6+ Rg7 Rxg7+ Kf8 Rh8#
+104: "WAC.104"       OK   98 score=+99.95    pv [D=33, T=   2.07s, N=  2277k] =Qxh5 exd5 Qxh6+ Nh7 Qxh7#
+105: "WAC.105"       OK   99 score=+15.15    pv [D= 9, T=   2.44s, N=  1964k] =Qxh4 Nef3 Nxf3+ Nxf3 Bxf3 Bxh7+ Kf8 Bxg7+ Kxg7 Qb2+ f6 Qxf6+ Qxf6 Bd3
+106: "WAC.106"       OK  100 score= +8.68    pv [D=10, T=   2.68s, N=  2868k] =Nf2+ Qxf2 Rxf2 g4 Bxg4 Rxe8+ Qxe8 Ng3 Qb5 c4 Qxc4 b3 Qxb3
+107: "WAC.107"       OK  101 score= +1.76    pv [D=14, T=   4.21s, N=  4612k] =Nb5 Ne6 Nxc7 Nxc7 Rxa7 f5 Rb7 Kc6 Ra7 g6 g3 Kd7 Rb7 e4 fxe4 fxe4
+108: "WAC.108"       OK  102 score= +2.74    pv [D= 8, T=   5.04s, N=  4390k] =Qe5 Qa7+ c5 g6 Qxa1 Qxc5+ Kf1 Qc4 Qc3 Qd5
+109: "WAC.109"       OK  103 score= +1.06    pv [D=10, T=   3.54s, N=  2935k] =c3 Qxd6 cxd6 Bxc3 dxe5 f4 Ne7 fxe5 O-O
+110: "WAC.110"       OK  104 score= +7.83    pv [D=11, T=   2.22s, N=  2461k] =Be3 Na1 Bxd2+ Rxd2 Qf1+ Rd1 Qxg2 Bh4 Rd7 Re1 Be4 Kb1 Kb8
+111: "WAC.111"       OK  105 score= +8.10    pv [D=12, T=   4.99s, N=  5744k] =Qf1+ Kg4 Qe2+ Kxh4 g5+ Kg3 Bf4+ Qxf4 gxf4+ Kh4 f5 Nd6 Qxd3 Kg5 Qxh3 Kxf4
+112: "WAC.112"       OK  106 score= +3.61    pv [D=10, T=   2.60s, N=  2372k] =Rxe6 Bxf4+ Rxf4 Qxf4+ gxf4 Rg1+ Bd1 Kg8 Rh6 Rg2 Rxh4 Rxf2 Rg4+ Kf7
+113: "WAC.113"       OK  107 score= +1.44    pv [D=10, T=   5.01s, N=  4521k] =Qxf6 Bxf6 Bb4+ Qd2 Bxd2+ Kxd2 gxf6 cxb5 Be6 a4 O-O e4
+114: "WAC.114"       OK  108 score= +2.85    pv [D=10, T=   2.15s, N=  1996k] =Bxh7+ Nxh7 Ng6 Qg3+ Rxg3 Nxg3 Qd3 Bd7 b4 Ne4 Nxe4 dxe4
+115: "WAC.115"       OK  109 score= +2.19    pv [D=10, T=   5.04s, N=  4718k] =Nd6 Kg8 Nxf7 Kxf7 f4 Qd5 Kg1 Qd1+ Kf2 Qc2+ Kg1 Kg8
+116: "WAC.116"       OK  110 score= +1.70    pv [D=10, T=   3.99s, N=  3877k] =Rd2 Bxh7+ Kh8 Qe3 Rxf2 Rg2 Rxg2 Kxg2 Kxh7 axb5
+117: "WAC.117"       OK  111 score= +7.69    pv [D=11, T=   5.02s, N=  4653k] =Ne4 Qd4 e5 fxe4 exd4 Nc5 d3 Rc1 a5 g4 Qe7
+118: "WAC.118"       OK  112 score= +4.94    pv [D= 9, T=   5.01s, N=  4849k] =Rh4 Re3 Rxh5 Rxg3 hxg3 Rd8 Bc4 Rd7 Kg1
+119: "WAC.119"       OK  113 score= +4.16    pv [D=10, T=   2.62s, N=  2495k] =Qxd3 Qxg7+ Kxg7 cxd3 Nf2+ Kg1 Nxd3+ Kh1 Re2 h4 Nxb2 Bxb2+ Rxb2 Rac1
+120: "WAC.120"       OK  114 score= +1.87    pv [D= 9, T=   4.60s, N=  4316k] =g6 Qxg6 Bxg7 Qxh6+ Bxh6 Rf7 Rhg1+ Kh8 Nd4 f4 Nc6 Bxc6 dxc6
+121: "WAC.121"       OK  115 score=+12.73    pv [D=11, T=   3.70s, N=  4038k] =Bxf3+ Kxf3 Qh1+ Ng2 Bxd2 d7 Ba5 Ke3 Qxg2 c5 Qd5 d8=Q+ Qxd8 Ke4 Qf6
+122: "WAC.122"       OK  116 score=+11.32    pv [D=11, T=   3.16s, N=  3762k] =Rxf1+ Kxf1 Bd3+ Ke1 Qxf4 Rxe6 Qc1+ Kf2 Qxc4 Re8+ Nc8 Nxc7 Qf4+ Ke1 Qxc7
+123: "WAC.123"       OK  117 score= +1.96    pv [D= 9, T=   4.51s, N=  4607k] =Rc7 Qe4 Rxc3 Qxf3 Rxf3 Rd4 f5 gxf5 gxf5
+124: "WAC.124"       OK  118 score= +2.83    pv [D=10, T=   5.00s, N=  4915k] =g3 Rg6+ Kh8 Rh6+ Kg7 Rf6 Rd1+ Kg2 gxf2 Rxf2 Re5 Kh2 Rxg5 a6
+125: "WAC.125"       OK  119 score= +2.89    pv [D= 9, T=   2.51s, N=  2270k] =Bxd4+ Qxd4 Nxc3 bxc3 Qxd4+ cxd4 Rxe2 Rfe1 Rxe1+ Rxe1 Be6 a4
+126: "WAC.126"       OK  120 score= +5.61    pv [D=10, T=   3.10s, N=  3152k] =Rxc6+ Kb5+ Rxb6+ axb6 Qd5+ Ka6 Qc4+ Ka7 Qc7+ Ka6 Qc4+ Ka7 Qc7+ Ka6 Qc4+ Ka7 Qc7+ Ka6 Qxe5 Ka7
+127: "WAC.127"       OK  121 score= +3.49    pv [D= 9, T=   2.41s, N=  2091k] =Rxb7 Rxb7 Qxa6 Kd8 Qxb7 gxf4 Qb8+ Nc8 Qxf4 Nd6
+128: "WAC.128"       OK  122 score= +1.79    pv [D= 8, T=   5.03s, N=  4718k] =Qg6 Qxf6 Qxf6 Nxc2 Rb1 Nb4 Qf3 Rxg2 Qxb7 Nxd3 Qxb5
+129: "WAC.129"       OK  123 score= +1.99    pv [D=10, T=   2.56s, N=  2336k] =Bf3 Bb5 Qe4 Qc4 Qxe3 Bc1 Qe4 Qc3 Kg8 Bc4+ Kh7
+130: "WAC.130"       OK  124 score= +0.30    pv [D=10, T=   2.55s, N=  2377k] =Qh6 Bxe3 Qxh3 Re2 Qg3+ Rg2 Qe1+ Qf1 Qxf1+ Kxf1 fxe3+ Ke2 Re6 g5
+131: "WAC.131"       OK  125 score= +4.14    pv [D= 9, T=   3.79s, N=  3696k] =Re8 g5 Qg3 h6 Rxd8 Rxd8 Qc7 Rd6 Qxa7
+132: "WAC.132"       OK  126 score=+99.95    pv [D=63, T=   1.65s, N=  1989k] =Re1 Rxe1 Rxe1 Qxe1 Qg2#
+133: "WAC.133"       OK  127 score= +2.75    pv [D=10, T=   3.36s, N=  3520k] =Bh4 Be6 Qxe6 Qxe6 Bxe6 h5 Bf6 Rh7 Rfe1 b5
+134: "WAC.134"       OK  128 score=+99.93    pv [D=17, T=   2.32s, N=  4383k] =Rd1+ Kc2 Rd2+ Kxd2 Qxb2+ Ke1 Qc1#
+135: "WAC.135"       OK  129 score= +0.97    pv [D= 9, T=   5.03s, N=  4390k] =Nd4 Qa6 Ra8 Qxb6 Qxa7 Qxa7 Rxa7 a3 Kg8
+136: "WAC.136"       OK  130 score=+99.95    pv [D=56, T=   2.01s, N=  2477k] =Rc8+ Qxc8 Qxg7+ Rxg7 Rxg7#
+137: "WAC.137"       OK  131 score= +1.97    pv [D=10, T=   2.71s, N=  2674k] =Rd7 Qxd7 Nh6+ gxh6 Qxd7 Re7 Qxb5 Ne5 Bxh6 Bc6 Qc5
+138: "WAC.138"       OK  132 score=+99.91    pv [D=11, T=   2.66s, N=  2799k] =h5 Qe8 Rxe8 Ne4 Qxe4 Kg5 Qg6+ Kf4 Re4#
+139: "WAC.139"       OK  133 score=+99.93    pv [D=12, T=   2.68s, N=  4114k] =Nf6+ gxf6 Qf8+ Kxf8 Bh6+ Kg8 Re8#
+140: "WAC.140"       OK  134 score= +9.62    pv [D=10, T=   2.62s, N=  2976k] =Rc7 Qxc7 Bxc7 Rf7 Bxd8 Rxd8 h7+ Kh8 Qxf7 e5 Rd1 Kxh7 dxe5 fxe5 Rxd5
+141: "WAC.141"       --  134 score= -1.32    pv [D= 8, T=   4.41s, N=  3368k] =Kf1 a5 Bg5 Ne2 Qb1 Nf4 Kg1 Ne2+ Kf1
+142: "WAC.142"       OK  135 score= +3.89    pv [D= 9, T=   2.94s, N=  2900k] =Re8 Ng6 Rxd8 Nxf4 Rxa8 Nh3+ Kf1 Rxf5 Ne3 Rg5 Rxa7
+143: "WAC.143"       OK  136 score=+99.95    pv [D=63, T=   1.67s, N=  1499k] =Rxh6+ gxh6 Nxf6+ Kh8 Qg8#
+144: "WAC.144"       OK  137 score= +1.68    pv [D=11, T=   3.35s, N=  3349k] =d3 cxd3 Bxe2 Qxe2 Qd4+ Qf2 Qxa4 e5 Be7 d4 Qc4
+145: "WAC.145"       OK  138 score= +8.60    pv [D= 9, T=   2.23s, N=  2251k] =Re8 Qxe8 Qxf6+ Kg8 Bh6 Qe3+ Bxe3 Bd7 Qxd6 Re8 Qxd7 Rxe3 Qxf5
+146: "WAC.146"       --  138 score= +3.29    pv [D=12, T=   5.01s, N=  5898k] =Bd3 Ke3 Bf1 Kf2 Bd3 Ke3 Bf1 Kf2 Bd3 Ke3 Bf5 Kf4
+147: "WAC.147"       OK  139 score= +1.83    pv [D= 9, T=   2.75s, N=  1890k] =Nxg4 hxg4 Bxb2 Rb1 Qa5+ Nd2 Qxa2 Bxd5 Bxg4
+148: "WAC.148"       OK  140 score= +9.64    pv [D= 9, T=   2.11s, N=  2126k] =Rxg7 Qxe6 Rxh7 h4 Re2 Qxe2 Qxe2+ Kd8 Qd3 h3 Qxf5
+149: "WAC.149"       OK  141 score= +1.23    pv [D=10, T=   5.02s, N=  4980k] =Bxg2 Re3 Rxe3 Qxe3 f4 Qe1 Bd5 Qf2 g5 hxg5 hxg5
+150: "WAC.150"       OK  142 score= +4.87    pv [D= 8, T=   2.92s, N=  2580k] =e3 Bxe3 Qxe2 Qxd6 Rxe3 Qd5 Ree8 f4
+151: "WAC.151"       OK  143 score= +0.76    pv [D=11, T=   2.53s, N=  2515k] =Nc3 Rc5 Ne4 Rb5 Ra1 Kg8 f4 Rb8 Rxa5 Rd8
+152: "WAC.152"       --  143 score= +1.87    pv [D= 8, T=   2.25s, N=  1814k] =Nd5 Nxd5 Rxc7 Bxc7 e4 Nb6 Bd4 Bc6 Qd3
+153: "WAC.153"       OK  144 score= +3.07    pv [D=10, T=   3.82s, N=  3109k] =Nxd4 cxd4 R8xc5 Rd1 Rc7 Qd2 Qb6 g4 f6 Qd3
+154: "WAC.154"       OK  145 score=+99.97    pv [D=63, T=   0.10s, N=   108k] =Qxf7+ Kh8 Qxf8#
+155: "WAC.155"       --  145 score= +0.18    pv [D= 8, T=   3.00s, N=  2445k] =Qc8 Rf7 Qa6 Qb3 Re3 Qb8 Re4 Qb4
+156: "WAC.156"       OK  146 score=+99.97    pv [D=63, T=   0.10s, N=   130k] =Qxh6+ gxh6 Bf6#
+157: "WAC.157"       --  146 score= +2.42    pv [D= 9, T=   3.41s, N=  3257k] =hxg4 bxc2+ Bxc2 Qg5 Qe3 Qxe3 Ne7+ Kh8 Rxe3 Rxg2 Nxc6 Rxg4 Nxa7
+158: "WAC.158"       OK  147 score=+99.95    pv [D=57, T=   2.02s, N=  2379k] =Rxg7+ Kxg7 Bh6+ Kxh6 Qg5#
+159: "WAC.159"       OK  148 score= +8.13    pv [D=10, T=   2.75s, N=  2649k] =Ne6+ g5 Qf6+ Qg6 Bc1 Bd2 Nxf8 Qxf6 Rxf6+ Kg7 Nxh7 Bb7 f8=N
+160: "WAC.160"       OK  149 score=+99.97    pv [D=63, T=   0.20s, N=   213k] =Qxd7+ Nxd7 Ne6#
+161: "WAC.161"       OK  150 score=+99.93    pv [D=13, T=   2.35s, N=  3273k] =Qxd8+ Rxd8 f8=Q+ Rxf8 Rxf8+ Nxf8 Nf7#
+162: "WAC.162"       OK  151 score= +1.69    pv [D= 9, T=   4.51s, N=  4371k] =Bd5 exd5 Qxc6+ Kd8 Qxa8+ Kd7 Qxa7+ Ke6 Kd2 Bd6 Qd4 Nf6
+163: "WAC.163"       --  151 score= +0.46    pv [D= 9, T=   2.89s, N=  2370k] =cxd5 Qxd5+ Be6 Qd4 c6 b3 Qe2 Nc4 Qd3 Rad1 Qxd4 Rxd4
+164: "WAC.164"       OK  152 score= +3.52    pv [D=11, T=   2.43s, N=  2512k] =Rxc4+ Kxc4 Nd2+ Kd4 Nb3+ Kc4 Nd2+ Kd4 Nb3+ Kc4 Nxa1 Nxb4 axb4 Kxb4 Nc2+ Kc5 Kg1
+165: "WAC.165"       OK  153 score= +2.75    pv [D= 9, T=   2.03s, N=  1834k] =Re2 e3 Qd4 c5 Rxf2 cxd4 Rxg2 dxc3 bxc3
+166: "WAC.166"       OK  154 score= +2.63    pv [D=10, T=   2.12s, N=  1925k] =d4 O-O dxc3 Bd6 Rad8 Rd1 Qb2 Rb1 Qa3 e4
+167: "WAC.167"       OK  155 score=+99.91    pv [D=13, T=   2.63s, N=  3657k] =Rxg2+ Kxg2 Rf2+ Kg3 Qf3+ Kh4 Qe4+ Kg3 Rg2#
+168: "WAC.168"       OK  156 score=+99.85    pv [D=11, T=   2.82s, N=  3115k] =Qd2+ Rf2 Qxe3 Bxc5 Qxc5 Raf1 e3+ Rf3 gxf3+ Rxf3 e2 c4 e1=Q g4 Qcf2#
+169: "WAC.169"       OK  157 score= +4.29    pv [D=10, T=   3.96s, N=  4213k] =Bh6 Kh1 Bxe3 Qe1 Qxe1+ Rxe1 Rf4 Ra1 Rxe4 Ra8+ Kf7 Rc8 dxc5 bxc5 Bxc5 Rxc7+
+170: "WAC.170"       OK  158 score= +4.31    pv [D=12, T=   2.40s, N=  2705k] =Qxc4 Qb1+ Qf1 Qxf1+ Kxf1 h5 Rg6+ Kh7 Rxe6 Rc8 Rxb6 Rc1+ Ke2 Rc2+ Ke1 Rc1+ Kd2 Re1
+171: "WAC.171"       OK  159 score= +2.22    pv [D= 8, T=   5.05s, N=  4784k] =Bh6+ Kxh6 Nf7+ Kg7 Nxd8 Rxd8 Qe5+ Kf7 Re1 Rd6 g3
+172: "WAC.172"       OK  160 score=+99.95    pv [D=63, T=   1.66s, N=  2097k] =Qe1+ Bxe1 Ne2+ Kh1 Rf1#
+173: "WAC.173"       OK  161 score=+99.95    pv [D=32, T=   2.02s, N=  2589k] =Qh6+ Kf6 Rf5+ Kxf5 Qf4#
+174: "WAC.174"       OK  162 score= +2.54    pv [D= 9, T=   3.05s, N=  2394k] =Nxg2 Re5 Nf4 Qa1 Rc2 Qd1 Rxd2 Qxd2 Bxf3+ Kg1
+175: "WAC.175"       OK  163 score= +1.65    pv [D=10, T=   3.41s, N=  2740k] =Nh5 Qxd4+ Qxd4 Nxd4 Nxf6+ Kf7 Nxg4+ Kg7 Ne3 Bc6 Nf5+ Nxf5 Rxf5 Kg8
+176: "WAC.176"       OK  164 score= +2.26    pv [D=10, T=   2.10s, N=  2060k] =Rxh2+ Kxh2 g5 Qf2 Bxf2 Rxf2 Be6 Bxe6 fxe6 Kg1
+177: "WAC.177"       OK  165 score=+99.95    pv [D=46, T=   2.01s, N=  1939k] =Qa3+ Kb1 Qxa2+ Kc1 Qxc2#
+178: "WAC.178"       OK  166 score= +1.38    pv [D=10, T=   2.68s, N=  2706k] =Nxe6 f5 Nxg5 fxe4 Nxe4 Rf8 Rd1 f5 gxf5 Rxf5
+179: "WAC.179"       OK  167 score=+99.95    pv [D=61, T=   2.01s, N=  2228k] =Qg1+ Rxg1 Nf2+ Kg2 Bh3#
+180: "WAC.180"       --  167 score= +0.05    pv [D= 6, T=   3.86s, N=  2225k] =Qb7 O-O Rad8 f4 Bg6 fxe5 dxe5
+181: "WAC.181"       OK  168 score= +7.07    pv [D=11, T=   3.63s, N=  2994k] =Ng4 Rg2 fxg2+ Qxg2 Rg8 Na2 Qxe3 Rf1 Qxd3 Nb4 Qe3 Nd5
+182: "WAC.182"       OK  169 score=+99.89    pv [D=11, T=   3.57s, N=  3374k] =Qh5 Nf6 Bxf6 Qxh2 Qxh2 h5 Qxh5 Bb4+ axb4 gxh5 Bh7#
+183: "WAC.183"       OK  170 score= +0.98    pv [D=10, T=   4.38s, N=  4521k] =Bf6 Rxg1 Rxg1 Bd6 Rg8+ Kd7 Rxb8 Bxb8 Bxd4 e5 Bf5+ Ke7
+184: "WAC.184"       OK  171 score=+99.97    pv [D=63, T=   0.14s, N=   136k] =Qe7+ Rxe7 Nf6#
+185: "WAC.185"       OK  172 score= +3.64    pv [D=11, T=   2.85s, N=  2698k] =Qxh7+ Kf8 Qh8+ Ke7 Qxg7+ Bf7 Ng6+ Kd7 Qxf7+ Kc8 Ne7+ Kb7 Nc6 Rf8 Qe6 Rbc8 Be3
+186: "WAC.186"       OK  173 score=+99.95    pv [D=58, T=   2.04s, N=  2042k] =Bf8+ Bh5 Qxh5+ gxh5 Rh6#
+187: "WAC.187"       OK  174 score= +6.04    pv [D=12, T=   2.83s, N=  2946k] =Nh3+ Rxh3 Qxe4 Rhe3 Qf5 Rf3 Re2 Rf1 Qd5 b3 Rxa2 bxc4 bxc4
+188: "WAC.188"       OK  175 score=+99.97    pv [D=63, T=   0.12s, N=   143k] =Qg7+ Bxg7 Nf6#
+189: "WAC.189"       OK  176 score= +6.71    pv [D=12, T=   5.05s, N=  5373k] =Re8+ Rxe8 Rxe8+ Nxe8 d8=Q c6 g7+ Kxg7 Qxe8 cxd5 Qxh5 d4 Nf5+ Kf8 Qh8+ Kf7 Qg7+ Ke6 Nxd4+
+190: "WAC.190"       OK  177 score= +5.22    pv [D= 9, T=   3.74s, N=  3668k] =Bh3 Bc2 Nf2+ Qxf2 Qxf2 Bd3 Qe1+
+191: "WAC.191"       OK  178 score=+99.95    pv [D=63, T=   1.85s, N=  2538k] =Qc4 Qd5 Qxd5 Rxe8 Qg8#
+192: "WAC.192"       OK  179 score= +7.75    pv [D=10, T=   3.86s, N=  3734k] =Nd3+ Qxd3 exd3 O-O-O Bxa3 Bb3 dxc2 Bxc2 Bxb2+ Kxb2 Kxf7 Kb1
+193: "WAC.193"       OK  180 score= +1.23    pv [D= 8, T=   2.55s, N=  2012k] =Qxe3 Bb8 Qd4 Kh1 Rxf2 Rxf2 Rxf2 Kg1
+194: "WAC.194"       OK  181 score= +5.17    pv [D=11, T=   2.27s, N=  2200k] =Nh6+ Kh8 Qxe5 Qc8 Nf5 Rg8 Qe7 Qe6 Qxb7 Qxe4 Ne3 f5 Qxa7
+195: "WAC.195"       OK  182 score= +2.03    pv [D=10, T=   2.83s, N=  2608k] =g3 Qe4 Rxd8 Rxd8 Bxf6 Qxe2 Rxe2 Rd1+ Nf1 b5 f3
+196: "WAC.196"       OK  183 score= +0.58    pv [D= 8, T=   2.10s, N=  1679k] =Nb4 cxb4 Bxb4+ Kf1 Rb6 Nxe5 Qe8 Qxb6 axb6 Kg1
+197: "WAC.197"       OK  184 score=+99.95    pv [D=63, T=   0.51s, N=   655k] =Qf1+ Rg1 Ng3+ hxg3 Qh3#
+198: "WAC.198"       OK  185 score= +4.02    pv [D=10, T=   3.08s, N=  2825k] =Rd3 Rxg6+ hxg6 Qc1 Nh3 Kg2 Qg4+ Kf1 Rd4 Qe3 Rxc4 f3
+199: "WAC.199"       OK  186 score= +3.39    pv [D= 8, T=   2.01s, N=  1449k] =Rfd1 Qe6 Bxc6 Nxc6 Rxc6 Rxd1+ Qxd1 Qd7 Rd6
+200: "WAC.200"       OK  187 score= +1.71    pv [D= 7, T=   3.42s, N=  2195k] =Bxf6 Qc7 d6 Qf7 Bd4 Nc6 Ne5
+201: "WAC.201"       OK  188 score=+16.55    pv [D=10, T=   3.74s, N=  3638k] =Ra7 Bd7 Rxd7 Rf6 Rxe7 Rxf2 Kxf2
+202: "WAC.202"       OK  189 score= +0.84    pv [D=12, T=   5.01s, N=  5000k] =Rxa2 Qxa2 Rxb8 Re1 Qe8 Qa7 Rc8 Qb7 f5 Qd5 fxe4 Qxe4 Qxe4 Rxe4
+203: "WAC.203"       OK  190 score=+99.95    pv [D=63, T=   2.01s, N=  2373k] =Qh6 Qf6 Bxf6 gxf6 Qg7#
+204: "WAC.204"       OK  191 score= -0.65    pv [D=10, T=   3.76s, N=  4252k] =Rxe5 Qxe5 Ng6 hxg6 Qxe5 cxd5 Qxd5 Rb8 b4 Be6
+205: "WAC.205"       OK  192 score= +4.95    pv [D= 9, T=   5.01s, N=  4128k] =Qxg5 Bh5 Bxf6 Nh7 Qxg7+ Qxg7 Bxg7 Rxe2 Rxh5 Nf8
+206: "WAC.206"       OK  193 score= +1.27    pv [D=11, T=   3.54s, N=  3026k] =Rc6 Qb2 Qb7 Qa1 Rxc1+ Qxc1 Qb1 c8=Q a1=Q Qxb1 Qxb1+ Kh2 Qe4
+207: "WAC.207"       OK  194 score= +2.32    pv [D=11, T=   2.76s, N=  2374k] =Qxg7+ Kxg7 Rg3+ Qg5 Rxg5+ Kh6 Rg3 Be3 Rxe3 Rd8 Rg3 d5 Bc1+ Kh5 Be2+ Kh4 cxd5 exd5
+208: "WAC.208"       OK  195 score=+10.09    pv [D=11, T=   3.71s, N=  3983k] =Bf7+ Kh8 Be8 Qf7 Bxf7 h6 Be6 Be7 b4 Rf8 Qd3 Rxf1+ Qxf1
+209: "WAC.209"       OK  196 score= +8.89    pv [D= 8, T=   2.50s, N=  2964k] =Rxe5+ dxe5 Qxe5+ Kd7 Qf5+ Re6 Qxf7+ Kc8 Bxe6+ Kb8 Qe8+ Kb7 Rd7 b4 Rxc7+ Kxc7
+210: "WAC.210"       OK  197 score= +0.45    pv [D= 9, T=   2.09s, N=  2032k] =Rh1 f6 Qxh7+ Kf7 g5 Nxf4 gxf4 f5 g6+ Ke8 Qh5
+211: "WAC.211"       OK  198 score=+99.93    pv [D=14, T=   2.19s, N=  3127k] =Qxf7+ Kxf7 Nh6+ Ke7 Rg7+ Kf8 Rf7#
+212: "WAC.212"       OK  199 score=+99.91    pv [D=11, T=   2.78s, N=  3290k] =Qxg7+ Bxg7 Rf7+ Kd6 Nb5+ Kd5 c4+ Ke4 Re1#
+213: "WAC.213"       --  199 score= -5.08    pv [D= 7, T=   5.07s, N=  3538k] =Ba3 Rxd3 Bxb4 Nxb4 Rg3 Rd1 f4
+214: "WAC.214"       OK  200 score= +1.30    pv [D= 8, T=   3.37s, N=  2485k] =Ng5 Re8 Nexf7 Rec8 Qxe6 Qxe6 Rxe6
+215: "WAC.215"       OK  201 score=+99.93    pv [D=15, T=   2.33s, N=  3746k] =Qh7+ Kf8 Qh8+ Ke7 Nf5+ exf5 Bc5#
+216: "WAC.216"       OK  202 score= +1.05    pv [D= 9, T=   2.20s, N=  1715k] =Nxf7 Qb6 N7g5 Nf8 Rae1 Bd6 Bxd6 Qxd6 Qe5
+217: "WAC.217"       OK  203 score=+99.91    pv [D=11, T=   2.65s, N=  3505k] =Qd7+ Bxd7 Nd6+ Kd8 Nf7+ Kc8 Re8+ Bxe8 Rd8#
+218: "WAC.218"       OK  204 score=+99.89    pv [D=10, T=   3.83s, N=  4547k] =Bh6 Re2 hxg6 Rxf2+ Kh3 Rh2+ Kxh2 hxg6 Qxg6+ Kh8 Qg7#
+219: "WAC.219"       OK  205 score=+99.95    pv [D=63, T=   0.75s, N=  1107k] =Qf1+ Bg1 Qf3+ Bxf3 Bxf3#
+220: "WAC.220"       OK  206 score= +6.24    pv [D= 8, T=   5.04s, N=  3866k] =Qxf1+ Kh2 Nf6 Rc3 Qa6 f4 g6 Qc5 Ne4
+221: "WAC.221"       OK  207 score= +3.67    pv [D=12, T=   3.43s, N=  3687k] =Rd8+ Rxd8 Nxd8 Bd5 Ne6 Kf7 Nc7 Bc6 a8=Q Bxa8 Nxa8 Kg8
+222: "WAC.222"       OK  208 score= +1.96    pv [D= 9, T=   3.47s, N=  3109k] =Bf6 gxf6 exf6 Rg8 Rd8 Rcxd8 Rxd8 Qxg2+ Qxg2 Rxd8 bxa3
+223: "WAC.223"       OK  209 score= -0.78    pv [D= 8, T=   2.48s, N=  1782k] =Nxe4 Bf5 Qxb4 Bxe4+ Bd3 Qd5 Nf3 Nxf3 Bxe4 Nxe4 gxf3
+224: "WAC.224"       OK  210 score= +3.64    pv [D= 8, T=   5.01s, N=  4653k] =Rh6 Qg5 exf4 Re1 Nf3+ gxf3 Rg6 Qxg6 hxg6
+225: "WAC.225"       OK  211 score=+99.95    pv [D=63, T=   1.56s, N=  2242k] =Qh4+ Kxh4 Bf2+ Kg5 h6#
+226: "WAC.226"       OK  212 score= +1.93    pv [D= 8, T=   5.05s, N=  4325k] =Nf7 e5 Nh6+ Kg7 Qe7+ Kxh6 Qxf8+ Kh5 Qxc8 Kh6 Qe6
+227: "WAC.227"       OK  213 score= +2.03    pv [D=10, T=   4.60s, N=  3659k] =d5 Bd4 Nxd4 cxd4 dxc4 Nxc4 Kb8 Rhg1 Be4
+228: "WAC.228"       OK  214 score= +1.72    pv [D= 8, T=   3.53s, N=  2599k] =Bxe4 Qxf4 Bd3 a4 Rf3 Qc7 Nd2 Rad8
+229: "WAC.229"       --  214 score= +1.27    pv [D=12, T=   2.48s, N=  2318k] =Ke5 Ng6+ Kf6 Nf4 Rf5 Kc1 Kf7 Bd4 Kg8 Kb1 Rg5 Ne6 Rd5
+230: "WAC.230"       --  214 score= +0.88    pv [D=10, T=   4.19s, N=  3646k] =Rh7 Rb1 Rf7 Ra1 Kb6 Bc5+ Kb5 f4 Bb7 Rd1 Ka6
+231: "WAC.231"       OK  215 score= +0.31    pv [D=10, T=   2.18s, N=  2062k] =Bg5 gxf5 Bxe7 Bxf3 gxf3 Nxe5 Bxf8 Rxf8 f4 Nf3+ Kh1
+232: "WAC.232"       OK  216 score= +4.66    pv [D=10, T=   2.29s, N=  2152k] =Qb5 Rc1+ Kf2 Rc2+ Ke3 Rxb8 Qxb8 Kg8 Qb3+ d5 Qxc2 Qe8 Rd1 Qxe4+ Qxe4 dxe4 Kxe4
+233: "WAC.233"       OK  217 score= +6.17    pv [D=11, T=   3.52s, N=  3486k] =Nb3 Kg2 Nxd2 Rxd2 Qxe1 Kh3 Rf2 Rxf2 Rxf2 Qb3 Qf1+ Kg4 Rxh2
+234: "WAC.234"       OK  218 score= +4.77    pv [D=10, T=   2.98s, N=  3041k] =Rb3 Rxf6 Qg4+ Kb8 Rxb4+ cxb4 Qxc4 Rfd6 Qxb4+ Rb6 Qf4+ Rbd6 b4
+235: "WAC.235"       --  218 score= +2.36    pv [D= 9, T=   2.78s, N=  2840k] =Qe4 Be5 Rxf7+ Rxf7 Qxb7 Rxd7 Qxd7+ Kf8 Qc6 Kg8 Qd5+ Kg7
+236: "WAC.236"       OK  219 score= +1.03    pv [D=11, T=   2.91s, N=  3163k] =Rc1 Qxc1 Bf3+ Kf1 Bxe2+ Kxe2 Qxe5+ Qe3 Qxb8 Qxe6 Kh8 Kd1 Qd8+ Kc1 Qd4
+237: "WAC.237"       OK  220 score= +2.04    pv [D= 9, T=   2.85s, N=  2768k] =Rc1+ Kxc1 Qc4+ Kd2 Qd3+ Ke1 Qe3+ Kf1 Rf8 Kg2 Qe2+ Kg1 Qxd1+ Kg2 Qd2+ Kg1 Qxg5 dxe5
+238: "WAC.238"       OK  221 score= +3.73    pv [D=11, T=   2.99s, N=  2719k] =Bxb7 Rxb7 Rxb7+ Ka8 Qxf4 Nxf4 Rxf7 Nxd3 Ra5 Kb8 Rb5+ Ka8 Rxg7
+239: "WAC.239"       OK  222 score= -0.62    pv [D=10, T=   2.90s, N=  2787k] =Qf1+ Kh4 Qe2 Kh3 Qf1+ Kh4 Qe2 Kh3 Qf1+ Kh4 Qg2 h3 Kg8
+240: "WAC.240"       OK  223 score= +7.49    pv [D=10, T=   5.04s, N=  5177k] =Qxc6 Re6 fxe6 hxg4 Qe8+ Kg7 e7 Bf5 Qf8+ Kg6 e8=Q Bxd3 Qexf7+ Qxf7 Qxf7+
+241: "WAC.241"       OK  224 score=+99.89    pv [D= 9, T=   3.61s, N=  3144k] =Qxh7+ Kxh7 Rh5+ Kg8 Ng6 Bxd4+ Kh1 Qh4 Rxh4 Bxb2 Rh8#
+242: "WAC.242"       OK  225 score= +3.77    pv [D=11, T=   2.62s, N=  2410k] =Rxd7 Bxd7 Nf6+ Qxf6 Qxf6 e5 Bxg6 fxg6 Qxg6+ Kh8 Qxh6+ Kg8 Qg5+ Kf7 e4
+243: "WAC.243"       --  225 score= +1.09    pv [D= 9, T=   3.33s, N=  3065k] =b5 Kh7 Nc4 h3 R6g3 Qh6 Nxb6 Nxf4 Nxd7
+244: "WAC.244"       OK  226 score=+99.93    pv [D=14, T=   2.34s, N=  2933k] =Qxc5+ Kxc5 Ba3+ Kc4 Bb5+ Kxc3 Rbc1#
+245: "WAC.245"       OK  227 score= +3.49    pv [D= 9, T=   3.86s, N=  3010k] =Qxg6+ Kh8 Rxf6 Bxf6 Bxf6+ Nxf6 Rxf6 Qh7 Qxh6 Rxf6 Qxf6+ Kg8
+246: "WAC.246"       OK  228 score=+99.97    pv [D=63, T=   0.08s, N=    75k] =Qh5+ gxh5 Nf5#
+247: "WAC.247"       --  228 score= +0.14    pv [D=10, T=   3.24s, N=  2897k] =Qc5+ Kb8 Bd6+ Ka8 Re1 Ba4 h6 Bxc2 Kg1 Be4 Be5
+248: "WAC.248"       OK  229 score= +0.36    pv [D=10, T=   2.58s, N=  2500k] =Qc5+ Kh1 Qc4 Kg1 Qd4+ Kh1 Qc4 Kg1 Qd4+ Kh1 Qxd5 b4 Re8
+249: "WAC.249"       OK  230 score= +0.92    pv [D= 8, T=   4.32s, N=  3273k] =d5 e5 Nxe5 cxd5 Ng4 Rfc8 Bxf6 gxf6 Nxf6+
+250: "WAC.250"       OK  231 score=+99.85    pv [D=12, T=   5.00s, N=  4915k] =Re8+ Nxe8 Qc3+ Ng7 Qxg7+ Kxg7 h8=Q+ Kf7 Rh7+ Ke6 Qg8+ Kf6 Qg7+ Ke6 Qf7#
+251: "WAC.251"       OK  232 score=+99.89    pv [D=11, T=   5.00s, N=  5373k] =Qf4 Qc8 Qd6 Bd7 Rb8+ Qxb8 Qxd5+ Bc6 Qxc6+ Qb7 Qxb7#
+252: "WAC.252"       OK  233 score=+99.91    pv [D=10, T=   2.14s, N=  2116k] =Re2 Bxe2 Ne4 Qxg7+ Kxg7 Bc3+ Kg8 Bg7 Qa1#
+253: "WAC.253"       OK  234 score=+99.93    pv [D=22, T=   2.19s, N=  3090k] =Qe8+ Rxe8 Rxe8+ Bxe8 c7+ Bc6 c8=Q#
+254: "WAC.254"       OK  235 score= +3.43    pv [D=10, T=   2.75s, N=  2294k] =Nxh3 gxh3 Qxd2 Bxg4 Qxb2 c4 Bb6 Rgf1 Bxf2 Nf5
+255: "WAC.255"       OK  236 score= +4.97    pv [D=11, T=   4.54s, N=  4418k] =Rfxg6+ fxg6 Qe7+ Qf7 Rxg6+ Kxg6 Ne5+ Kf5 Nxf7 Rhe8 Qc5+ Ke6 Nxd8+ Rxd8 Qc4+ Kd6 Qxb4+ Kc7
+256: "WAC.256"       OK  237 score= +1.65    pv [D= 7, T=   5.05s, N=  3866k] =Nf5 Qg5 Nh6+ Qxh6 Qxd8 Rxd8 Rxh6 f5
+257: "WAC.257"       OK  238 score= +3.11    pv [D= 9, T=   3.76s, N=  3143k] =Rxd4 Qb6 Rd7 Qxc5 Nxc5 R6e7 Rd6 Rc8 f4
+258: "WAC.258"       OK  239 score= -0.53    pv [D=10, T=   2.96s, N=  2683k] =Bxg6 Qxg6 Kg1 Rd8 Qf4 Bf7 Re1 Be6 Rxg6+ Nxg6
+259: "WAC.259"       OK  240 score= -2.13    pv [D= 8, T=   2.85s, N=  2043k] =Qh5 h6 Ne3 Qxg5 Qxg5 hxg5 Kxf2 dxc2 Kg1
+260: "WAC.260"       OK  241 score=+99.91    pv [D=12, T=   2.58s, N=  3019k] =Qe6+ Kxc7 Rb7+ Kd8 Nc6+ Rxc6 Rb8+ Kc7 Qc8#
+261: "WAC.261"       OK  242 score=+10.09    pv [D=11, T=   3.47s, N=  3451k] =Nd4 Rf2 Bxg2+ Rxg2 Qxh3+ Kg1 f3 Rh2 Ne2+ Rxe2 Qg4+ Kh1 fxe2 Re1 Rd8
+262: "WAC.262"       OK  243 score= -0.80    pv [D= 8, T=   2.33s, N=  2149k] =Rh6 Qg4+ Qxg4 Nxg4 Rg6 Ne5 Re6 Bd6 Rxd6 Rxd6 Bxd6 Nxc6
+263: "WAC.263"       OK  244 score=+99.93    pv [D=11, T=   5.06s, N=  4587k] =Qg8+ Kxg8 Ne7+ Kf8 N7g6+ hxg6 Nxg6#
+264: "WAC.264"       --  244 score= +1.08    pv [D= 9, T=   2.87s, N=  2618k] =Qe5 Bc2 Bxc2 Qxc2 Rxd4 g3 Rxd1+ Qxd1 Qe4
+265: "WAC.265"       --  244 score= +0.09    pv [D= 9, T=   2.63s, N=  2204k] =Qxe4 Nxe4 Rfe1 O-O e6 fxe6 fxe6 Ndc5 Be7
+266: "WAC.266"       OK  245 score=+99.89    pv [D=11, T=   2.60s, N=  3446k] =Rxh2+ Bxh2 Ng3+ Bxg3 Qh8+ Qh5 Qxh5+ Bh2 Qxh2+ Kxh2 Rh8#
+267: "WAC.267"       OK  246 score=+99.91    pv [D=10, T=   5.04s, N=  3997k] =Nc7+ Rxc7 Qxc6+ Bd7 Qe4+ Qe5 Qxe5+ Be6 Rd8#
+268: "WAC.268"       OK  247 score=+12.37    pv [D=10, T=   2.60s, N=  2786k] =Re8+ Rxe8 Qg4+ Ng5 Qxf5 Be7 Bxg5 Bd6 Qd7 Re7 Qc8+ Kf7 Qxh8
+269: "WAC.269"       --  247 score= +0.31    pv [D= 9, T=   2.80s, N=  2047k] =O-O Bxc3 Qxc3 Qxc3 bxc3 Ngf6 c4 Rhe8 Rad1
+270: "WAC.270"       OK  248 score= +1.62    pv [D=10, T=   4.78s, N=  4393k] =Qg4 Qb5 Qc4 Qd7 Qg4 Qb5 a4 Qxe2 Rxe2 Rc1+ Ne1 Rxe1+
+271: "WAC.271"       OK  249 score= +2.09    pv [D=10, T=   2.04s, N=  1730k] =Rd6 Rxd6 g8=Q+ Rd8 Qxd8+ Kxd8 f7 Rf5 f8=Q+ Rxf8 Bxf8 Kc8 Bb4 Kb8 Kxd2
+272: "WAC.272"       OK  250 score= +1.92    pv [D= 8, T=   2.97s, N=  2136k] =Bxc5 Re8 Bd4 Rg8 Qe3
+273: "WAC.273"       OK  251 score= +6.01    pv [D=10, T=   3.60s, N=  3624k] =Ng3+ Qxg3 Rxg3 hxg3 Qe4 Rg1 Bxg1 Rxg1 Qxc4 a3
+274: "WAC.274"       OK  252 score= +3.05    pv [D=15, T=   2.56s, N=  3046k] =Rb6 Kxb6 Kxb4 c3 Nd3 Kc7 Kc4 b6 Kxd4 b5 a5 Kb7 Kxc3 Kb8 Kb2
+275: "WAC.275"       OK  253 score= +2.11    pv [D=10, T=   4.17s, N=  3457k] =b5 axb5 axb5 Nxb5 cxb5 Bxb5 Qg6 g3 Nh3+ Kh1
+276: "WAC.276"       OK  254 score= +9.59    pv [D=11, T=   3.69s, N=  4406k] =Qd5+ Kh8 Rd8+ Qf8 Rxf8+ Rxf8 Qxg5 Bd4 Qd5 Bf6 Rxb7 Rd8 Qxc4 Bd4
+277: "WAC.277"       OK  255 score= +1.65    pv [D=10, T=   2.62s, N=  2937k] =Rg3 Qxg3 Bh4 Bxa6 Bxg3+ hxg3 Qxa6 Rh1 Qxa2 Rxh7+ Kc8
+278: "WAC.278"       OK  256 score=+99.91    pv [D=11, T=   2.11s, N=  2248k] =Bf7+ Ke7 Qxf6+ Kxf6 Nd5+ Ke5 Nf3+ Kxe4 Nc3#
+279: "WAC.279"       OK  257 score= +2.45    pv [D=10, T=   3.54s, N=  2838k] =Nxf5 Kf7 Ne3 Ra6 f5 Rh6 e6+ Kg8 Nxd5 Qg5 Nc3
+280: "WAC.280"       OK  258 score= +1.80    pv [D= 9, T=   3.60s, N=  3090k] =Bxa3 Bg4 f5 Qxb6 Qc3 Be2 Rcb8 Rxa3 Qxa3
+281: "WAC.281"       OK  259 score=+11.27    pv [D=10, T=   2.88s, N=  2939k] =Rxh7+ Kxh7 Qe7+ Kg6 Rg8+ Kf5 g4+ Qxg4+ fxg4+ Kxg4 Qxf6 Ra5 Qe6+ Rf5 Qe4+ Rf4 Qg2+ Kh4 Qxg5+ Kh3
+282: "WAC.282"       OK  260 score=+99.93    pv [D=27, T=   2.03s, N=  3017k] =Rh8+ Kf7 Be8+ Nxe8 Kg5 Bxe4 Rf8#
+283: "WAC.283"       OK  261 score=+99.93    pv [D=14, T=   2.34s, N=  2780k] =Ng5 Rxg5 Rh3 Re8 Qxh7+ Kf8 Qxf7#
+284: "WAC.284"       OK  262 score= +2.46    pv [D=10, T=   5.02s, N=  4718k] =Nf5 Nxd2 Nxg3 Bxg2 Kxg2 Kg8 Rc7 Nc4 Rxc4 Rd2+ Kg1 Rxb2
+285: "WAC.285"       OK  263 score=+99.91    pv [D=14, T=   2.74s, N=  3771k] =Qxg7+ Kxg7 h8=Q+ Rxh8 Rg5+ Kf8 Rxh8+ Ng8 Rgxg8#
+286: "WAC.286"       OK  264 score= +1.94    pv [D= 8, T=   5.00s, N=  5111k] =Rxd5+ Qxd5 Bg6+ Qe4 Bxe4+ Kxe4 Rh5 Bf4 Kg8 Kd3 Rf5
+287: "WAC.287"       OK  265 score= +3.34    pv [D= 8, T=   2.64s, N=  1995k] =Qh5 Bc5 Bc4 Bxd4+ Kh1 Ke7 Qf7+ Kd8 Ne6+ Kc8 Nxd4
+288: "WAC.288"       OK  266 score= +4.07    pv [D=11, T=   4.68s, N=  4253k] =Nf6+ gxf6 exf6 Qxf1+ Rxf1 e5 Qxe5 Kh8 Qg3 Rg8 Qe5 Be6
+289: "WAC.289"       OK  267 score= +3.43    pv [D=11, T=   2.15s, N=  2239k] =Qe5 Rd1 Qxg3 e5 Ne6 Qxb4 Qxe5+ Kb1 Qf5+ Ka1 Qe5+ Kb1 Qf5+ Ka1 f6
+290: "WAC.290"       OK  268 score=+99.93    pv [D=15, T=   2.03s, N=  3272k] =Ne2+ Rxe2 Rf1+ Kxf1 Qh1+ Kf2 Ng4#
+291: "WAC.291"       --  268 score= +1.80    pv [D= 8, T=   2.55s, N=  1883k] =Kh1 Be6 Ba2 Rf6 Bxd5 Bxd5 Rcxd5 Kg8
+292: "WAC.292"       OK  269 score= +2.58    pv [D= 9, T=   5.06s, N=  4653k] =d6+ Ke6 Qb3+ Kf5 Qc2+ Kg5 Qc1+ Kf5 g4+ Ke6 Qc4+ Kxd6 Rd1+ Ke7 Rxd7+ Kxd7 Qxa6
+293: "WAC.293"       --  269 score= -0.86    pv [D= 8, T=   2.53s, N=  2033k] =e3 Kg8 Rac1 f5 Nfg5 Bxg5 Nxg5 bxa4 Rxc4
+294: "WAC.294"       OK  270 score= +8.07    pv [D= 9, T=   3.30s, N=  3374k] =Bf8 Rxf8 Nf5 Qf1+ Rxf1 Rg8 Qe2 Rb6 Qc2 Re8 Qxa4
+295: "WAC.295"       OK  271 score=+99.95    pv [D=63, T=   0.89s, N=  1041k] =Rxd5+ cxd5 Nd3+ exd3 f4#
+296: "WAC.296"       OK  272 score= +4.89    pv [D= 9, T=   2.81s, N=  2126k] =Rf8 Qxe3 Rf4+ Qxf4 Nxf4 Kxf4 Qd4+ Kg3 Qxc4 Nf4
+297: "WAC.297"       OK  273 score= -0.92    pv [D= 8, T=   2.46s, N=  2109k] =Bxg2 Kxg2 Qg5+ Kf3 Bxh2 Ne4 Qf4+ Kg2 cxd4 f3
+298: "WAC.298"       OK  274 score=+99.93    pv [D=25, T=   2.09s, N=  3343k] =Qh8+ Kxh8 g7+ Kg8 Bh7+ Kxh7 g8=Q#
+299: "WAC.299"       OK  275 score= +7.12    pv [D=10, T=   2.17s, N=  2414k] =Nca4 Nd7 Rxd7+ Kb8 Rxc6 Rd8 Nc5 Rxd7 Nbxd7+ Ka7 Rc7 Re8 Rxb7+
+300: "WAC.300"       OK  276 score= +2.59    pv [D=11, T=   3.17s, N=  3529k] =g6 h6 Qxh6+ gxh6 g7+ Kg8 gxf8=Q+ Kxf8 Rxd8+ Qe8 Rxe8+ Kxe8 Kg1 Bc6 Nc3 Kd7
+
+score=276/300 [averages on correct positions: depth=17.2 time=2.94 nodes=2895265]

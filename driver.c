@@ -1,7 +1,8 @@
 
+#include "daydreamer.h"
+#include <string.h>
 #include <strings.h>
 #include <stdio.h>
-#include "daydreamer.h"
 
 int main(void)
 {

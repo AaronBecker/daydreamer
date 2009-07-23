@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "compatibility.h"
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -206,7 +207,7 @@ typedef struct {
     struct timeval tv_start;
     int elapsed_millis;
     bool running;
-} timer_t;
+} milli_timer_t;
 
 /*
  * Position evaluation.
@@ -244,9 +245,6 @@ typedef struct {
 
     // search state info
     move_t root_moves[256];
-    int root_move_scores[256];
-    int root_move_depths[256];
-    score_type_t root_move_types[256];
     move_t best_move; // FIXME: shouldn't this be redundant with pv[0]?
     int best_score;
     move_t pv[MAX_SEARCH_DEPTH];
@@ -256,7 +254,7 @@ typedef struct {
     engine_status_t engine_status;
 
     // when should we stop?
-    timer_t timer;
+    milli_timer_t timer;
     uint64_t node_limit;
     int depth_limit;
     int time_limit;
@@ -399,10 +397,10 @@ void deepening_search(search_data_t* search_data);
 int static_exchange_eval(position_t* pos, move_t move);
 
 // timer.c
-void init_timer(timer_t* timer);
-void start_timer(timer_t* timer);
-int stop_timer(timer_t* timer);
-int elapsed_time(timer_t* timer);
+void init_timer(milli_timer_t* timer);
+void start_timer(milli_timer_t* timer);
+int stop_timer(milli_timer_t* timer);
+int elapsed_time(milli_timer_t* timer);
 
 // trans_table.c
 void init_transposition_table(const int max_bytes);
