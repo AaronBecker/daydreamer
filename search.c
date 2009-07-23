@@ -95,7 +95,7 @@ static bool should_stop_searching(search_data_t* data)
 /*
  * Should the search depth be extended? Note that our move has
  * already been played in |pos|. For now, just extend one ply on checks
- * and pawn pushes to the 7th rank.
+ * and pawn pushes to the 7th (relative) rank.
  * Note: |move| has already been made in |pos|. We need both anyway for
  * efficiency.
  */
@@ -104,7 +104,7 @@ static int extend(position_t* pos, move_t move)
     if (is_check(pos)) return 1;
     square_t sq = get_move_to(move);
     if (piece_type(pos->board[sq]->piece) == PAWN &&
-            square_rank(sq) == RANK_7) return 1;
+            (square_rank(sq) == RANK_7 || square_rank(sq) == RANK_2)) return 1;
     return 0;
 }
 
