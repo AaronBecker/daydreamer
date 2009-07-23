@@ -310,15 +310,18 @@ extern transposition_entry_t* transposition_table;
 void _check_board_validity(const position_t* pos);
 void _check_move_validity(const position_t* pos, const move_t move);
 void _check_position_hash(const position_t* pos);
+void _check_line(position_t* pos, move_t* line);
 
 #ifdef OMIT_CHECKS
 #define check_board_validity(x)                 ((void)0)
 #define check_move_validity(x,y)                ((void)0,(void)0)
 #define check_position_hash(x)                  ((void)0)
+#define check_line(x,y)                         ((void)0)
 #else
 #define check_board_validity(x)                 _check_board_validity(x)
 #define check_move_validity(x,y)                _check_move_validity(x,y)
 #define check_position_hash(x)                  _check_position_hash(x)
+#define check_line(x,y)                         _check_line(x,y)
 #endif
 
 /**
@@ -386,7 +389,7 @@ bool is_square_attacked(const position_t* position,
         const color_t side);
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_check(const position_t* pos);
-bool is_repetition(const position_t* pos);
+bool is_repetition(const position_t* pos, int n);
 
 // search.c
 void init_search_data(search_data_t* data);
