@@ -57,3 +57,15 @@ void _check_position_hash(const position_t* pos)
     (void)pos; // Avoid warning when NDEBUG is defined.
     assert(hash_position(pos) == pos->hash);
 }
+
+/*
+ * Verify that a given list of moves in valid in the given position.
+ */
+void _check_line(position_t* pos, move_t* moves)
+{
+    if (moves[0] == NO_MOVE) return;
+    undo_info_t undo;
+    do_move(pos, moves[0], &undo);
+    _check_line(pos, moves+1);
+    undo_move(pos, moves[0], &undo);
+}
