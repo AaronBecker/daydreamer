@@ -1,9 +1,10 @@
 
+#include "daydreamer.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "daydreamer.h"
+#include <strings.h>
     
 static const char glyphs[] = ".PNBRQK  pnbrqk";
 

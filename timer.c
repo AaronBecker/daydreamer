@@ -4,7 +4,7 @@
 /*
  * Initialize a timer.
  */
-void init_timer(timer_t* timer)
+void init_timer(milli_timer_t* timer)
 {
     timer->elapsed_millis = 0;
     timer->running = false;
@@ -13,7 +13,7 @@ void init_timer(timer_t* timer)
 /*
  * Start up a timer with a new clock.
  */
-void start_timer(timer_t* timer)
+void start_timer(milli_timer_t* timer)
 {
     timer->running = true;
     gettimeofday(&timer->tv_start, NULL);
@@ -23,7 +23,7 @@ void start_timer(timer_t* timer)
  * Stop a running timer, returning the elapsed milliseconds since it was
  * last started. The timer can be resumed using resume_timer.
  */
-int stop_timer(timer_t* timer)
+int stop_timer(milli_timer_t* timer)
 {
     struct timeval tv_end;
     gettimeofday(&tv_end, NULL);
@@ -38,7 +38,7 @@ int stop_timer(timer_t* timer)
  * Get the number of milliseconds elapsed over all the intervals during which
  * this timer has been running since it was last reset.
  */
-int elapsed_time(timer_t* timer)
+int elapsed_time(milli_timer_t* timer)
 {
     if (timer->running) {
         struct timeval tv_end;

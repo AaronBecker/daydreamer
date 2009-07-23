@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <string.h>
 #include <strings.h>
 #include "daydreamer.h"
 
@@ -31,9 +32,6 @@ static int quiesce(position_t* pos,
 void init_search_data(search_data_t* data)
 {
     memset(data->root_moves, 0, sizeof(move_t) * 256);
-    memset(data->root_move_scores, 0, sizeof(int) * 256);
-    memset(data->root_move_depths, 0, sizeof(int) * 256);
-    memset(data->root_move_types, 0, sizeof(score_type_t) * 256);
     data->best_move = NO_MOVE;
     data->best_score = 0;
     memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
@@ -97,7 +95,7 @@ static bool should_stop_searching(search_data_t* data)
 /*
  * Should the search depth be extended? Note that our move has
  * already been played in |pos|. For now, just extend one ply on checks
- * and pawn pushes to the 7th rank.
+ * and pawn pushes to the 7th (relative) rank.
  * Note: |move| has already been made in |pos|. We need both anyway for
  * efficiency.
  */
@@ -106,7 +104,7 @@ static int extend(position_t* pos, move_t move)
     if (is_check(pos)) return 1;
     square_t sq = get_move_to(move);
     if (piece_type(pos->board[sq]->piece) == PAWN &&
-            square_rank(sq) == RANK_7) return 1;
+            (square_rank(sq) == RANK_7 || square_rank(sq) == RANK_2)) return 1;
     return 0;
 }
 
@@ -141,6 +139,35 @@ static bool is_nullmove_allowed(position_t* pos)
     return piece_value != 0;
 }
 
+static void order_moves(position_t* pos, move_t* moves)
+{
+    const int hash_score = 1000;
+    const int promote_score = 900;
+    int scores[256];
+    move_t hash_move = NO_MOVE;
+    get_transposition(pos, MAX_SEARCH_DEPTH+1, 0, 0, &hash_move);
+    for (int i=0; moves[i] != NO_MOVE; ++i) {
+        const move_t move = moves[i];
+        int score = 0;
+        if (move == hash_move) score = hash_score;
+        else if (get_move_promote(move) == QUEEN) {
+            score = promote_score;
+        } else if (get_move_capture(move)) {
+            score = static_exchange_eval(pos, move);
+        }
+        // Insert the score into the right place in the list. The list is never
+        // long enough to requre and n log n algorithm.
+        int j = i-1;
+        while (j >= 0 && scores[j] < score) {
+            scores[j+1] = scores[j];
+            moves[j+1] = moves[j];
+            --j;
+        }
+        scores[j+1] = score;
+        moves[j+1] = move;
+    }
+}
+
 /*
  * Iterative deepening search of the root position. This is the external
  * function that is called by the console interface. For each depth,
@@ -158,8 +185,8 @@ void deepening_search(search_data_t* search_data)
         generate_legal_moves(&search_data->root_pos, search_data->root_moves);
     }
 
-    // iterative deepening loop
-    root_data.best_score = -MATE_VALUE-1;
+    move_t id_pv[MAX_SEARCH_DEPTH];
+    int id_score = root_data.best_score = -MATE_VALUE-1;
     for (search_data->current_depth=1;
             !search_data->depth_limit ||
             search_data->current_depth <= search_data->depth_limit;
@@ -169,14 +196,19 @@ void deepening_search(search_data_t* search_data)
             printf("info depth %d\n", search_data->current_depth);
         }
         bool no_abort = root_search(search_data);
-        if (!no_abort || !should_deepen(search_data)) {
+        if (!no_abort) break;
+        memcpy(id_pv, search_data->pv, MAX_SEARCH_DEPTH * sizeof(int));
+        id_score = search_data->best_score;
+        if (!should_deepen(search_data)) {
             ++search_data->current_depth;
             break;
         }
     }
     stop_timer(&search_data->timer);
-    
+
     --search_data->current_depth;
+    search_data->best_score = id_score;
+    memcpy(search_data->pv, id_pv, MAX_SEARCH_DEPTH * sizeof(int));
     print_pv(search_data);
     printf("info string targettime %d elapsedtime %d\n",
             search_data->time_target, elapsed_time(&search_data->timer));
@@ -194,11 +226,12 @@ void deepening_search(search_data_t* search_data)
 static bool root_search(search_data_t* search_data)
 {
     int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
-    int best_depth_score = -MATE_VALUE-1;
+    search_data->best_score = -MATE_VALUE-1;
     bool pv = true;
     int best_index = 0, move_index = 0;
     position_t* pos = &search_data->root_pos;
     // TODO: proper move scoring/ordering
+    order_moves(&search_data->root_pos, search_data->root_moves);
     for (move_t* move=search_data->root_moves; *move;
             ++move, ++move_index) {
         if (should_output(search_data)) {
@@ -227,14 +260,10 @@ static bool root_search(search_data_t* search_data)
         if (score > alpha) {
             alpha = score;
             pv = false;
-            if (score > best_depth_score) {
-                best_depth_score = score;
-                if (score > search_data->best_score ||
-                        *move == search_data->best_move) {
-                    search_data->best_score = score;
-                    search_data->best_move = *move;
-                    best_index = move_index;
-                }
+            if (score > search_data->best_score) {
+                search_data->best_score = score;
+                search_data->best_move = *move;
+                best_index = move_index;
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, *move);
             if (should_output(search_data)) {
@@ -246,7 +275,6 @@ static bool root_search(search_data_t* search_data)
         // swap the pv move to the front of the list
         search_data->root_moves[best_index] = search_data->root_moves[0];
         search_data->root_moves[0] = search_data->best_move;
-        search_data->best_score = best_depth_score;
         put_transposition(pos, search_data->best_move,
                 search_data->current_depth,
                 search_data->best_score, SCORE_EXACT);
@@ -307,9 +335,8 @@ static int search(position_t* pos,
     generate_pseudo_moves(pos, moves);
     int num_legal_moves = 0;
     int orig_alpha = alpha;
-    // TODO: proper move scoring/ordering
-    // TODO: extensions
     // TODO: late move reductions
+    order_moves(pos, moves);
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;

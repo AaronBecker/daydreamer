@@ -2,9 +2,9 @@
 CLANGHOME = $(HOME)/local/clang
 SCANVIEW = $(CLANGHOME)/scan-build
 ANALYZER = $(CLANGHOME)/libexec/ccc-analyzer
+CC = $(CLANGHOME)/bin/clang
 #CC = /opt/local/bin/gcc-mp-4.3
 #CC = /usr/bin/gcc-4.2
-CC = $(CLANGHOME)/bin/clang
 CTAGS = ctags
 
 CLANGFLAGS =
