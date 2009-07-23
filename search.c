@@ -139,13 +139,11 @@ static bool is_nullmove_allowed(position_t* pos)
     return piece_value != 0;
 }
 
-static void order_moves(position_t* pos, move_t* moves)
+static void order_moves(position_t* pos, move_t* moves, move_t hash_move)
 {
     const int hash_score = 1000;
     const int promote_score = 900;
     int scores[256];
-    move_t hash_move = NO_MOVE;
-    get_transposition(pos, MAX_SEARCH_DEPTH+1, 0, 0, &hash_move);
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
         int score = 0;
@@ -156,7 +154,7 @@ static void order_moves(position_t* pos, move_t* moves)
             score = static_exchange_eval(pos, move);
         }
         // Insert the score into the right place in the list. The list is never
-        // long enough to requre and n log n algorithm.
+        // long enough to requre an n log n algorithm.
         int j = i-1;
         while (j >= 0 && scores[j] < score) {
             scores[j+1] = scores[j];
@@ -186,6 +184,7 @@ void deepening_search(search_data_t* search_data)
     }
 
     move_t id_pv[MAX_SEARCH_DEPTH];
+    id_pv[0] = NO_MOVE;
     int id_score = root_data.best_score = -MATE_VALUE-1;
     if (!search_data->depth_limit) search_data->depth_limit = MAX_SEARCH_DEPTH;
     for (search_data->current_depth=1;
@@ -228,16 +227,17 @@ static bool root_search(search_data_t* search_data)
     int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
     search_data->best_score = -MATE_VALUE-1;
     bool pv = true;
-    int best_index = 0, move_index = 0;
     position_t* pos = &search_data->root_pos;
-    // TODO: proper move scoring/ordering
-    order_moves(&search_data->root_pos, search_data->root_moves);
-    for (move_t* move=search_data->root_moves; *move;
-            ++move, ++move_index) {
+    move_t hash_move = NO_MOVE;
+    get_transposition(pos, search_data->current_depth,
+            &alpha, &beta, &hash_move);
+    order_moves(&search_data->root_pos, search_data->root_moves, hash_move);
+    for (move_t* move=search_data->root_moves; *move; ++move) {
         if (should_output(search_data)) {
             char la_move[6];
             move_to_la_str(*move, la_move);
-            printf("info currmove %s currmovenumber %d\n", la_move, move_index);
+            printf("info currmove %s currmovenumber %d\n",
+                    la_move, move - search_data->root_moves);
         }
         undo_info_t undo;
         do_move(pos, *move, &undo);
@@ -254,6 +254,7 @@ static bool root_search(search_data_t* search_data)
                     1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
+        check_line(pos, search_data->search_stack->pv+1);
         undo_move(pos, *move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
         // update score
@@ -263,18 +264,15 @@ static bool root_search(search_data_t* search_data)
             if (score > search_data->best_score) {
                 search_data->best_score = score;
                 search_data->best_move = *move;
-                best_index = move_index;
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, *move);
+            check_line(pos, search_data->pv);
             if (should_output(search_data)) {
                 print_pv(search_data);
             }
         }
     }
     if (alpha != -MATE_VALUE-1) {
-        // swap the pv move to the front of the list
-        search_data->root_moves[best_index] = search_data->root_moves[0];
-        search_data->root_moves[0] = search_data->best_move;
         put_transposition(pos, search_data->best_move,
                 search_data->current_depth,
                 search_data->best_score, SCORE_EXACT);
@@ -289,27 +287,23 @@ static int search(position_t* pos,
         int beta,
         int depth)
 {
+    search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
     if (depth <= 0) {
-        search_node->pv[ply] = NO_MOVE;
         return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
     if (is_draw(pos)) return DRAW_VALUE;
     open_node(&root_data);
     bool full_window = (beta-alpha > 1);
+    move_t hash_move = NO_MOVE;
+    bool hash_hit = get_transposition(pos, depth, &alpha, &beta, &hash_move);
 
-    // check transposition table
-    // TODO: maybe factor into its own function
-    if (!full_window) { // TODO: use hash for move ordering
-        move_t hash_move;
-        bool hash_hit = get_transposition(
-                pos, depth, &alpha, &beta, &hash_move);
-        if (hash_hit && alpha >= beta) {
-            search_node->pv[ply] = hash_move;
-            search_node->pv[ply+1] = 0;
-            return alpha;
-        }
+    // If our hash move is good enough, we're done.
+    if (!full_window && hash_hit && alpha >= beta) {
+        search_node->pv[ply] = hash_move;
+        search_node->pv[ply+1] = NO_MOVE;
+        return alpha;
     }
 
     bool pv = true;
@@ -336,7 +330,7 @@ static int search(position_t* pos,
     int num_legal_moves = 0;
     int orig_alpha = alpha;
     // TODO: late move reductions
-    order_moves(pos, moves);
+    order_moves(pos, moves, hash_move);
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;
@@ -353,6 +347,7 @@ static int search(position_t* pos,
                         -beta, -alpha, depth+ext-1);
             }
         }
+        check_line(pos, (search_node+1)->pv+1);
         undo_move(pos, *move, &undo);
         if (score >= beta) {
             // TODO: killer move heuristic
@@ -360,9 +355,10 @@ static int search(position_t* pos,
             return beta;
         }
         if (score > alpha) {
-            alpha = score;
             pv = false;
+            alpha = score;
             update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
+            check_line(pos, search_node->pv);
         }
     }
     if (!num_legal_moves) {
@@ -410,11 +406,13 @@ static int quiesce(position_t* pos,
         undo_info_t undo;
         do_move(pos, *move, &undo);
         score = -quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-1);
+        check_line(pos, (search_node+1)->pv+1);
         undo_move(pos, *move, &undo);
         if (score >= beta) return beta;
         if (score > alpha) {
             alpha = score;
             update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
+            check_line(pos, search_node->pv);
         }
     }
     if (!num_legal_captures) {
@@ -461,6 +459,7 @@ static int minimax(position_t* pos,
         if (score > best_score) {
             best_score = score;
             update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
+            check_line(pos, search_node->pv);
         }
     }
     if (!num_moves) {
@@ -499,6 +498,7 @@ void root_search_minimax(void)
             root_data.best_score = score;
             root_data.best_move = *move;
             update_pv(root_data.pv, root_data.search_stack->pv, 0, *move);
+            check_line(pos, root_data.pv);
             print_pv(&root_data);
         }
     }
