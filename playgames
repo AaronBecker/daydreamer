@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+import os
+import sys
+import optparse
+
+engine_prefix = '/Users/abecker/misc_code/'
+cutechess_path = engine_prefix + 'cutechess-cli/cutechess-cli.sh'
+daydreamer_path = '/Users/abecker/code/daydreamer/daydreamer'
+programs = {
+    'roce' : 'cmd=' + engine_prefix + 'roce38m/roce38_32' + ' proto=uci',
+    'mediocre' : 'cmd=' + '"java -Xmx1024M ' + engine_prefix + \
+            'mediocre_v0/mediocre/main/Mediocre"' + ' proto=uci',
+    'daydreamer' : 'cmd=' + daydreamer_path + ' proto=uci'
+    }
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+
+    parser = optparse.OptionParser(
+        formatter=optparse.TitledHelpFormatter(width=78),
+        add_help_option=None)
+
+    # define options here:
+    #parser.add_option(
+    #    '-h', '--help', action='help',
+    #    help='Show this help message and exit.')
+
+    settings, args = parser.parse_args(argv)
+
+    command = cutechess_path + ' -debug  -book tests/performance.bin -bookdepth 12 ' + \
+            '-fcp ' + programs[args[0]] + ' -scp ' + \
+            programs[args[1]] + ' -both tc=' + \
+            args[2] + ' -games ' + args[3] + ' -pgnout ' + args[4]
+    print command
+    os.system(command)
+
+if __name__ == "__main__":
+    status = main()
+    sys.exit(status)
