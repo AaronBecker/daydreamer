@@ -124,6 +124,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
         place_piece(pos, create_piece(side, promote_type), to);
     }
 
+    ++pos->fifty_move_counter;
     pos->hash_history[pos->ply++] = undo->hash;
     pos->side_to_move ^= 1;
     pos->prev_move = move;
