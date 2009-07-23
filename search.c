@@ -139,6 +139,35 @@ static bool is_nullmove_allowed(position_t* pos)
     return piece_value != 0;
 }
 
+static void order_moves(position_t* pos, move_t* moves)
+{
+    const int hash_score = 1000;
+    const int promote_score = 900;
+    int scores[256];
+    move_t hash_move = NO_MOVE;
+    get_transposition(pos, MAX_SEARCH_DEPTH+1, 0, 0, &hash_move);
+    for (int i=0; moves[i] != NO_MOVE; ++i) {
+        const move_t move = moves[i];
+        int score = 0;
+        if (move == hash_move) score = hash_score;
+        else if (get_move_promote(move) == QUEEN) {
+            score = promote_score;
+        } else if (get_move_capture(move)) {
+            score = static_exchange_eval(pos, move);
+        }
+        // Insert the score into the right place in the list. The list is never
+        // long enough to requre and n log n algorithm.
+        int j = i-1;
+        while (j >= 0 && scores[j] < score) {
+            scores[j+1] = scores[j];
+            moves[j+1] = moves[j];
+            --j;
+        }
+        scores[j+1] = score;
+        moves[j+1] = move;
+    }
+}
+
 /*
  * Iterative deepening search of the root position. This is the external
  * function that is called by the console interface. For each depth,
@@ -202,6 +231,7 @@ static bool root_search(search_data_t* search_data)
     int best_index = 0, move_index = 0;
     position_t* pos = &search_data->root_pos;
     // TODO: proper move scoring/ordering
+    order_moves(&search_data->root_pos, search_data->root_moves);
     for (move_t* move=search_data->root_moves; *move;
             ++move, ++move_index) {
         if (should_output(search_data)) {
@@ -305,9 +335,8 @@ static int search(position_t* pos,
     generate_pseudo_moves(pos, moves);
     int num_legal_moves = 0;
     int orig_alpha = alpha;
-    // TODO: proper move scoring/ordering
-    // TODO: extensions
     // TODO: late move reductions
+    order_moves(pos, moves);
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;
