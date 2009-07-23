@@ -187,8 +187,8 @@ void deepening_search(search_data_t* search_data)
 
     move_t id_pv[MAX_SEARCH_DEPTH];
     int id_score = root_data.best_score = -MATE_VALUE-1;
+    if (!search_data->depth_limit) search_data->depth_limit = MAX_SEARCH_DEPTH;
     for (search_data->current_depth=1;
-            !search_data->depth_limit ||
             search_data->current_depth <= search_data->depth_limit;
             ++search_data->current_depth) {
         if (should_output(search_data)) {
