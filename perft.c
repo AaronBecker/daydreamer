@@ -22,7 +22,7 @@ static uint64_t divide(position_t* pos, int depth);
  */
 void perft_testsuite(char* filename)
 {
-    char test_storage[1024];
+    char test_storage[4096];
     char* test = test_storage;
     position_t pos;
     milli_timer_t perft_timer;
@@ -34,7 +34,7 @@ void perft_testsuite(char* filename)
         return;
     }
     int total_tests = 0, correct_tests = 0;
-    while (fgets(test, 1024, test_file)) {
+    while (fgets(test, 4096, test_file)) {
         char* fen = strsep(&test, ";");
         set_position(&pos, fen);
         printf("Test %d: %s\n", total_tests+1, fen);

@@ -28,8 +28,8 @@ void uci_main(void)
 
 static void uci_get_input(void)
 {
-    static char command[1024];
-    if (!fgets(command, 1024, stdin)) strcpy(command, "quit\n");
+    static char command[4096];
+    if (!fgets(command, 4096, stdin)) strcpy(command, "quit\n");
     uci_handle_command(command);
 }
 

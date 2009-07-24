@@ -418,10 +418,10 @@ void print_board(const position_t* pos)
  */
 void check_for_input(search_data_t* search_data)
 {
-    char input[1024];
+    char input[4096];
     int data = bios_key();
     if (data) {
-        if (!fgets(input, 1024, stdin))
+        if (!fgets(input, 4096, stdin))
             strcpy(input, "quit\n");
         if (!strncasecmp(input, "quit", 4)) {
             search_data->engine_status = ENGINE_ABORTED;

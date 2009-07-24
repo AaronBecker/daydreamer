@@ -11,11 +11,11 @@ int main(void)
     setbuf(stdin, NULL);
 
     init_daydreamer();
-    char command[1024];
+    char command[4096];
     position_t position;
     set_position(&position, FEN_STARTPOS);
     printf("daydreamer > ");
-    while (fgets(command, 1024, stdin) != NULL) {
+    while (fgets(command, 4096, stdin) != NULL) {
         char* strip = strrchr(command, '\n');
         if (strip) *strip = '\0';
         handle_console(&position, command);
