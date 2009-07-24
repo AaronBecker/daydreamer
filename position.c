@@ -244,9 +244,10 @@ bool is_repetition(const position_t* pos, int n)
     while (ply_distance <= pos->fifty_move_counter) {
         assert(pos->ply >= ply_distance);
         if (pos->hash_history[pos->ply-ply_distance] == pos->hash) {
-            if (++repeat_counter == n) return true;
+            if (++repeat_counter >= n-1) return true;
         }
         ply_distance += 2;
     }
     return false;
 }
+
