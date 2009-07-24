@@ -297,13 +297,19 @@ static int search(position_t* pos,
     open_node(&root_data);
     bool full_window = (beta-alpha > 1);
     move_t hash_move = NO_MOVE;
-    bool hash_hit = get_transposition(pos, depth, &alpha, &beta, &hash_move);
-
-    // If our hash move is good enough, we're done.
-    if (!full_window && hash_hit && alpha >= beta) {
-        search_node->pv[ply] = hash_move;
-        search_node->pv[ply+1] = NO_MOVE;
-        return alpha;
+    if (full_window) {
+        // Get hash move, but keep full alpha-beta window.
+        int a,b;
+        get_transposition(pos, depth, &a, &b, &hash_move);
+    } else {
+        // Get hash move and let the table update alpha and beta. If the result
+        // is good enough, we're done.
+        if (get_transposition(pos, depth, &alpha, &beta, &hash_move) &&
+                alpha >= beta) {
+            search_node->pv[ply] = hash_move;
+            search_node->pv[ply+1] = NO_MOVE;
+            return alpha;
+        }
     }
 
     bool pv = true;
