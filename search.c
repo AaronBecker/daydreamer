@@ -179,7 +179,7 @@ void deepening_search(search_data_t* search_data)
     // If |search_data| already has a list of root moves, we search only
     // those moves. Otherwise, search everything. This allows support for the
     // uci searchmoves command.
-    if (!*search_data->root_moves) {
+    if (search_data->root_moves[0] == NO_MOVE) {
         generate_legal_moves(&search_data->root_pos, search_data->root_moves);
     }
 
@@ -215,7 +215,7 @@ void deepening_search(search_data_t* search_data)
     char la_move[6];
     move_to_la_str(search_data->best_move, la_move);
     printf("bestmove %s\n", la_move);
-    root_data.engine_status = ENGINE_IDLE;
+    search_data->engine_status = ENGINE_IDLE;
 }
 
 /*
