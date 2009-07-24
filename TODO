@@ -1,21 +1,19 @@
 
 Search
-    Move ordering/scoring
-    Extensions
-    Refactor ID loop and nullmove handling
     Internal ID
+    Late move reductions
+    Futility
+    Aspiration
     Better statistics gathering/reporting
-    Unified handling of search options
     TBB?
     Ponder
     Checks in quiescence
     Identify "tough" moves and take more time on them
 
-Transposition Table
+buckets for transposition table
 
 Check flag in position
 Track pinned pieces in SEE
-Special standalone PSQ
     
 Interface
     SAN translation
