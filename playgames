@@ -28,7 +28,7 @@ def main(argv=None):
 
     settings, args = parser.parse_args(argv)
 
-    command = cutechess_path + ' -debug  -book tests/performance.bin -bookdepth 12 ' + \
+    command = cutechess_path + ' -book tests/performance.bin -bookdepth 12 ' + \
             '-fcp ' + programs[args[0]] + ' -scp ' + \
             programs[args[1]] + ' -both tc=' + \
             args[2] + ' -games ' + args[3] + ' -pgnout ' + args[4]
