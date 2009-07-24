@@ -342,7 +342,7 @@ static int search(position_t* pos,
         else {
             score = -search(pos, search_node+1, ply+1,
                     -alpha-1, -alpha, depth+ext-1);
-            if (score > alpha && score < beta) {
+            if (score > alpha) {
                 score = -search(pos, search_node+1, ply+1,
                         -beta, -alpha, depth+ext-1);
             }
@@ -391,6 +391,7 @@ static int quiesce(position_t* pos,
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
     open_node(&root_data);
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
+    if (is_draw(pos)) return DRAW_VALUE;
     int eval = simple_eval(pos);
     int score = eval;
     if (score >= beta) return beta;
