@@ -71,6 +71,7 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
  * Modify |pos| by performing the given |move|. The information needed to undo
  * this move is preserved in |undo|.
  */
+#include <stdio.h>
 void do_move(position_t* pos, const move_t move, undo_info_t* undo)
 {
     check_move_validity(pos, move);
@@ -99,7 +100,9 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
             pos->ep_square = from + pawn_push[side];
         }
         pos->fifty_move_counter = 0;
-    } else if (get_move_capture(move) != EMPTY) pos->fifty_move_counter = 0;
+    } else if (get_move_capture(move) != EMPTY) {
+        pos->fifty_move_counter = 0;
+    }
     
     // Remove castling rights as necessary.
     if (from == A1 + side*A8) remove_ooo_rights(pos, side);
