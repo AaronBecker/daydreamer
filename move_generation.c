@@ -1,6 +1,5 @@
 
 #include "daydreamer.h"
-#include <assert.h>
 
 static void generate_pawn_captures(const position_t* pos,
         const piece_entry_t* piece_entry,

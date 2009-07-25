@@ -1,5 +1,4 @@
 
-#include <assert.h>
 #include <ctype.h>
 #include "daydreamer.h"
 

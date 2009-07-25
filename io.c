@@ -1,11 +1,11 @@
 
 #include "daydreamer.h"
-#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
     
+extern search_data_t root_data;
 static const char glyphs[] = ".PNBRQK  pnbrqk";
 
 /**

@@ -22,7 +22,6 @@ Interface
     Improve non-UCI console interface
     FEN output
 
-Split out monolithic header
 Expand evaluation function
 Chess960 support
 

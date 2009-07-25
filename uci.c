@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern search_data_t root_data;
+
 static void uci_get_input(void);
 static void uci_handle_command(char* command);
 static void uci_position(char* uci_pos);
