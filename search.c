@@ -4,10 +4,6 @@
 #include <strings.h>
 #include "daydreamer.h"
 
-#define should_output(s)    \
-    (elapsed_time(&((s)->timer)) > (s)->options.output_delay)
-
-
 search_data_t root_data;
 
 static bool should_stop_searching(search_data_t* data);

@@ -7,13 +7,6 @@
  * Thanks to its originator, Tomasz Michniewski.
  */
 
-#define PAWN_VAL      100
-#define KNIGHT_VAL    320
-#define BISHOP_VAL    330
-#define ROOK_VAL      500
-#define QUEEN_VAL     900
-#define KING_VAL      20000
-
 const int material_values[] = {
     0, PAWN_VAL, KNIGHT_VAL, BISHOP_VAL, ROOK_VAL, QUEEN_VAL, KING_VAL, 0,
     0, PAWN_VAL, KNIGHT_VAL, BISHOP_VAL, ROOK_VAL, QUEEN_VAL, KING_VAL, 0, 0
