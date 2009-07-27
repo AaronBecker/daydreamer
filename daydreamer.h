@@ -109,6 +109,7 @@ int elapsed_time(milli_timer_t* timer);
 // trans_table.c
 void init_transposition_table(const int max_bytes);
 void clear_transposition_table(void);
+void increment_transposition_age(void);
 bool get_transposition(position_t* pos,
         int depth,
         int* lb,

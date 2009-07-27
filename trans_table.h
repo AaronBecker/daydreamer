@@ -10,6 +10,7 @@ typedef struct {
     move_t move;
     uint16_t depth;
     int32_t score;
+    uint8_t age;
     score_type_t score_type;
 } transposition_entry_t;
 extern transposition_entry_t* transposition_table;

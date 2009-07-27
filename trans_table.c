@@ -4,8 +4,11 @@
 #include <string.h>
 #include "daydreamer.h"
 
-static const int bucket_size = 1;
+static const int bucket_size = 4;
 static int num_buckets;
+static int generation;
+static const int generation_limit = 8;
+static int age_score_table[8];
 transposition_entry_t* transposition_table = NULL;
 
 static struct {
@@ -18,6 +21,11 @@ static struct {
     int evictions;
     int collisions;
 } hash_stats;
+
+#define entry_replace_score(entry) \
+    (age_score_table[(entry)->age] - (entry)->depth)
+
+static void set_transposition_age(int age);
 
 void init_transposition_table(const int max_bytes)
 {
@@ -32,12 +40,30 @@ void init_transposition_table(const int max_bytes)
     transposition_table = malloc(size);
     assert(transposition_table);
     clear_transposition_table();
+    set_transposition_age(0);
 }
 
 void clear_transposition_table(void)
 {
-    memset(transposition_table, 0, sizeof(transposition_entry_t)*bucket_size);
+    memset(transposition_table, 0,
+            sizeof(transposition_entry_t)*bucket_size*num_buckets);
     memset(&hash_stats, 0, sizeof(hash_stats));
+}
+
+static void set_transposition_age(int age)
+{
+    assert(age >= 0 && age < generation_limit);
+    generation = age;
+    for (int i=0; i<generation_limit; ++i) {
+        int age = generation - i;
+        if (age < 0) age += generation_limit;
+        age_score_table[i] = age * 128;
+    }
+}
+
+void increment_transposition_age(void)
+{
+    set_transposition_age((generation + 1) % generation_limit);
 }
 
 bool get_transposition(position_t* pos,
@@ -48,21 +74,24 @@ bool get_transposition(position_t* pos,
 {
     transposition_entry_t* entry;
     entry = &transposition_table[(pos->hash % num_buckets) * bucket_size];
-    if (!entry->key || entry->key != pos->hash) {
-        hash_stats.misses++;
-        return false;
+    for (int i=0; i<bucket_size; ++i, ++entry) {
+        if (!entry->key || entry->key != pos->hash) continue;
+        // found it
+        entry->age = generation;
+        hash_stats.hits++;
+        *move = entry->move;
+        if (depth <= entry->depth) {
+            if ((entry->score_type == SCORE_UPPERBOUND ||
+                        entry->score_type == SCORE_EXACT) &&
+                    entry->score < *ub) *ub = entry->score;
+            if ((entry->score_type == SCORE_LOWERBOUND ||
+                        entry->score_type == SCORE_EXACT) &&
+                    entry->score > *lb) *lb = entry->score;
+        }
+        return true;
     }
-    hash_stats.hits++;
-    *move = entry->move;
-    if (depth <= entry->depth) {
-        if ((entry->score_type == SCORE_UPPERBOUND ||
-                entry->score_type == SCORE_EXACT) &&
-                entry->score < *ub) *ub = entry->score;
-        if ((entry->score_type == SCORE_LOWERBOUND ||
-                entry->score_type == SCORE_EXACT) &&
-                entry->score > *lb) *lb = entry->score;
-    }
-    return true;
+    hash_stats.misses++;
+    return false;
 }
 
 void put_transposition(position_t* pos,
@@ -71,21 +100,42 @@ void put_transposition(position_t* pos,
         int score,
         score_type_t score_type)
 {
-    transposition_entry_t* entry;
+    transposition_entry_t* entry, *best_entry = NULL;
+    int replace_score, best_replace_score = INT_MIN;
     entry = &transposition_table[(pos->hash % num_buckets) * bucket_size];
-    if (!entry->key) hash_stats.occupied++;
-    else if (entry->key != pos->hash) ++hash_stats.evictions;
-    // simple, always-replace policy for now; ignore the buckets
-    entry->key = pos->hash;
-    entry->move = move;
-    entry->depth = depth;
-    entry->score = score;
-    entry->score_type = score_type;
+    for (int i=0; i<bucket_size; ++i, ++entry) {
+        if (entry->key == pos->hash) {
+            // Update an existing entry
+            entry->age = generation;
+            if (entry->depth <= depth) {
+                entry->depth = depth;
+                entry->move = move;
+                entry->score = score;
+                entry->score_type = score_type;
+            }
+            return;
+        }
+        replace_score = entry_replace_score(entry);
+        if (replace_score > best_replace_score) {
+            best_entry = entry;
+            best_replace_score = replace_score;
+        }
+    }
+    // Replace the entry with the highest replace score.
+    entry = best_entry;
+    if (!entry->key || entry->age != generation) hash_stats.occupied++;
+    else ++hash_stats.evictions;
     switch (score_type) {
         case SCORE_LOWERBOUND: hash_stats.beta++; break;
         case SCORE_UPPERBOUND: hash_stats.alpha++; break;
         case SCORE_EXACT: hash_stats.exact++;
     }
+    entry->age = generation;
+    entry->key = pos->hash;
+    entry->move = move;
+    entry->depth = depth;
+    entry->score = score;
+    entry->score_type = score_type;
 }
 
 void print_transposition_stats(void)

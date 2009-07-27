@@ -170,6 +170,7 @@ static void order_moves(position_t* pos, move_t* moves, move_t hash_move)
 void deepening_search(search_data_t* search_data)
 {
     search_data->engine_status = ENGINE_THINKING;
+    increment_transposition_age();
     init_timer(&search_data->timer);
     start_timer(&search_data->timer);
     // If |search_data| already has a list of root moves, we search only
@@ -263,9 +264,7 @@ static bool root_search(search_data_t* search_data)
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, *move);
             check_line(pos, search_data->pv);
-            if (should_output(search_data)) {
-                print_pv(search_data);
-            }
+            print_pv(search_data);
         }
     }
     if (alpha != -MATE_VALUE-1) {
