@@ -81,11 +81,9 @@ bool get_transposition(position_t* pos,
         hash_stats.hits++;
         *move = entry->move;
         if (depth <= entry->depth) {
-            if ((entry->score_type == SCORE_UPPERBOUND ||
-                        entry->score_type == SCORE_EXACT) &&
+            if (entry->score_type != SCORE_LOWERBOUND &&
                     entry->score < *ub) *ub = entry->score;
-            if ((entry->score_type == SCORE_LOWERBOUND ||
-                        entry->score_type == SCORE_EXACT) &&
+            if (entry->score_type != SCORE_UPPERBOUND &&
                     entry->score > *lb) *lb = entry->score;
         }
         return true;
