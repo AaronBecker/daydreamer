@@ -294,7 +294,7 @@ static int search(position_t* pos,
     move_t hash_move = NO_MOVE;
     if (full_window) {
         // Get hash move, but keep full alpha-beta window.
-        int a,b;
+        int a=0, b=0;
         get_transposition(pos, depth, &a, &b, &hash_move);
     } else {
         // Get hash move and let the table update alpha and beta. If the result
