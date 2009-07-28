@@ -346,7 +346,6 @@ int print_la_move_list(const move_t* move)
         print_la_move(*move++);
         ++moves;
     }
-    printf("\n");
     return moves;
 }
 
@@ -387,12 +386,13 @@ void print_pv(search_data_t* search_data)
         move_t hash_move;
         while (moves < depth) {
             if (!get_transposition(&pos, depth, &alpha, &beta, &hash_move) ||
-                    !is_move_legal(&pos, hash_move)) return;
+                    !is_move_legal(&pos, hash_move)) break;
             print_la_move(hash_move);
             do_move(&pos, hash_move, &undo);
             ++moves;
         }
     }
+    printf("\n");
 }
 
 /*
