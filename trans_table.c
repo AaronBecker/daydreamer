@@ -105,12 +105,20 @@ void put_transposition(position_t* pos,
         if (entry->key == pos->hash) {
             // Update an existing entry
             entry->age = generation;
-            if (entry->depth <= depth) {
-                entry->depth = depth;
-                entry->move = move;
-                entry->score = score;
-                entry->score_type = score_type;
+            entry->depth = depth;
+            entry->move = move;
+            entry->score = score;
+            switch (score_type) {
+                case SCORE_LOWERBOUND: hash_stats.beta++; break;
+                case SCORE_UPPERBOUND: hash_stats.alpha++; break;
+                case SCORE_EXACT: hash_stats.exact++;
             }
+            switch (entry->score_type) {
+                case SCORE_LOWERBOUND: hash_stats.beta--; break;
+                case SCORE_UPPERBOUND: hash_stats.alpha--; break;
+                case SCORE_EXACT: hash_stats.exact--;
+            }
+            entry->score_type = score_type;
             return;
         }
         replace_score = entry_replace_score(entry);
