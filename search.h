@@ -25,8 +25,13 @@ typedef struct {
 } search_options_t;
 
 typedef struct {
+    int cutoffs[MAX_SEARCH_DEPTH];
+} search_stats_t;
+
+typedef struct {
     position_t root_pos;
     search_options_t options;
+    search_stats_t stats;
 
     // search state info
     move_t root_moves[256];

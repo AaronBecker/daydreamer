@@ -45,6 +45,15 @@ void init_search_data(search_data_t* data)
     data->ponder = 0;
 }
 
+static void print_search_stats(search_data_t* search_data)
+{
+    printf("info string cutoffs ");
+    for (int i=0; i<=search_data->current_depth; ++i) {
+        printf("%d ", search_data->stats.cutoffs[i]);
+    }
+    printf("\n");
+}
+
 /*
  * Copy pv from a deeper search node, adding a new move at the current ply.
  */
@@ -199,6 +208,7 @@ void deepening_search(search_data_t* search_data)
             ++search_data->current_depth;
             break;
         }
+        print_pv(search_data);
     }
     stop_timer(&search_data->timer);
 
@@ -206,6 +216,7 @@ void deepening_search(search_data_t* search_data)
     search_data->best_score = id_score;
     memcpy(search_data->pv, id_pv, MAX_SEARCH_DEPTH * sizeof(int));
     print_pv(search_data);
+    print_search_stats(search_data);
     printf("info string targettime %d elapsedtime %d\n",
             search_data->time_target, elapsed_time(&search_data->timer));
     print_transposition_stats();
@@ -240,13 +251,18 @@ static bool root_search(search_data_t* search_data)
         do_move(pos, *move, &undo);
         int ext = extend(pos, *move);
         int score;
-        if (pv) {
+        if (first_move) {
             score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-1);
         } else {
             score = -search(pos, search_data->search_stack,
                     1, -alpha-1, -alpha, search_data->current_depth+ext-1);
             if (score > alpha) {
+                if (should_output(search_data)) {
+                    char la_move[6];
+                    move_to_la_str(*move, la_move);
+                    printf("info string fail high, research %s\n", la_move);
+                }
                 score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-1);
             }
@@ -264,7 +280,9 @@ static bool root_search(search_data_t* search_data)
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, *move);
             check_line(pos, search_data->pv);
-            print_pv(search_data);
+            if (should_output(search_data)) {
+                print_pv(search_data);
+            }
         }
     }
     if (alpha != -MATE_VALUE-1) {
@@ -303,11 +321,11 @@ static int search(position_t* pos,
                 alpha >= beta) {
             search_node->pv[ply] = hash_move;
             search_node->pv[ply+1] = NO_MOVE;
+            root_data.stats.cutoffs[root_data.current_depth]++;
             return alpha;
         }
     }
 
-    bool pv = true;
     int score = -MATE_VALUE-1;
     move_t moves[256];
     // nullmove reduction, just check for beta cutoff
