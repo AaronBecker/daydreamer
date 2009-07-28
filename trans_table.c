@@ -128,6 +128,7 @@ void put_transposition(position_t* pos,
         }
     }
     // Replace the entry with the highest replace score.
+    assert(best_entry != NULL);
     entry = best_entry;
     if (!entry->key || entry->age != generation) hash_stats.occupied++;
     else ++hash_stats.evictions;
