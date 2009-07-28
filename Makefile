@@ -25,7 +25,7 @@ OBJFILES := $(patsubst %.c,%.o,$(wildcard *.c))
 .DEFAULT_GOAL := default
 
 analyze:
-	$(SCANVIEW) -k -v $(MAKE) daydreamer \
+	$(SCANVIEW) -k -v $(MAKE) clean daydreamer \
 	    CC="$(ANALYZER)" CFLAGS="$(ANALYZEFLAGS)"
 
 debug:
