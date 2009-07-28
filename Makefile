@@ -22,7 +22,7 @@ HEADERS  := $(wildcard *.h)
 OBJFILES := $(patsubst %.c,%.o,$(wildcard *.c))
 
 .PHONY: all clean tags debug opt
-.DEFAULT_GOAL := opt
+.DEFAULT_GOAL := default
 
 analyze:
 	$(SCANVIEW) -k -v $(MAKE) daydreamer \
@@ -31,10 +31,10 @@ analyze:
 debug:
 	$(MAKE) daydreamer CFLAGS="$(DEBUGFLAGS)"
 
-opt:
+default:
 	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS)"
 
-extraopt:
+opt:
 	$(MAKE) daydreamer CFLAGS="$(EXTRAOPTFLAGS)"
 
 all: daydreamer
