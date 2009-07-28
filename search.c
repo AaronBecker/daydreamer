@@ -148,6 +148,7 @@ static void order_moves(position_t* pos, move_t* moves, move_t hash_move)
 {
     const int hash_score = 1000;
     const int promote_score = 900;
+    const int underpromote_score = -600;
     int scores[256];
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
@@ -155,6 +156,8 @@ static void order_moves(position_t* pos, move_t* moves, move_t hash_move)
         if (move == hash_move) score = hash_score;
         else if (get_move_promote(move) == QUEEN) {
             score = promote_score;
+        } else if (get_move_promote(move) != NONE) {
+            score = underpromote_score;
         } else if (get_move_capture(move)) {
             score = static_exchange_eval(pos, move);
         }
