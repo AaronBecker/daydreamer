@@ -70,7 +70,6 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
  * Modify |pos| by performing the given |move|. The information needed to undo
  * this move is preserved in |undo|.
  */
-#include <stdio.h>
 void do_move(position_t* pos, const move_t move, undo_info_t* undo)
 {
     check_move_validity(pos, move);
