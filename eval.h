@@ -13,9 +13,12 @@ extern "C" {
 #define KING_VAL      20000
 
 extern int piece_square_values[BK+1][0x80];
+extern int endgame_piece_square_values[BK+1][0x80];
 extern const int material_values[];
 #define material_value(piece)               material_values[piece]
 #define piece_square_value(piece, square)   piece_square_values[piece][square]
+#define endgame_piece_square_value(piece, square) \
+    endgame_piece_square_values[piece][square]
 
 #ifdef __cplusplus
 } // extern "C"

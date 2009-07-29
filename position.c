@@ -26,6 +26,7 @@ static void init_position(position_t* position)
         }
         position->material_eval[color] = 0;
         position->piece_square_eval[color] = 0;
+        position->endgame_piece_square_eval[color] = 0;
     }
 
     position->fifty_move_counter = 0;

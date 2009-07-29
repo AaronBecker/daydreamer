@@ -24,6 +24,8 @@ void place_piece(position_t* pos, const piece_t piece, const square_t square)
     pos->board[square] = entry;
     pos->material_eval[color] += material_value(piece);
     pos->piece_square_eval[color] += piece_square_value(piece, square);
+    pos->endgame_piece_square_eval[color] +=
+        endgame_piece_square_value(piece, square);
 }
 
 /*
@@ -44,6 +46,8 @@ void remove_piece(position_t* pos, const square_t square)
     pos->board[square] = NULL;
     pos->material_eval[color] -= material_value(piece);
     pos->piece_square_eval[color] -= piece_square_value(piece, square);
+    pos->endgame_piece_square_eval[color] -=
+        endgame_piece_square_value(piece, square);
 }
 
 /*
@@ -62,6 +66,10 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
     piece_t p = pos->board[to]->piece;
     pos->piece_square_eval[piece_color(p)] -= piece_square_value(p, from);
     pos->piece_square_eval[piece_color(p)] += piece_square_value(p, to);
+    pos->endgame_piece_square_eval[piece_color(p)] -=
+        endgame_piece_square_value(p, from);
+    pos->endgame_piece_square_eval[piece_color(p)] +=
+        endgame_piece_square_value(p, to);
     pos->hash ^= piece_hash(p, from);
     pos->hash ^= piece_hash(p, to);
 }
