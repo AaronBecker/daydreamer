@@ -27,6 +27,7 @@ static int quiesce(position_t* pos,
  */
 void init_search_data(search_data_t* data)
 {
+    memset(&data->stats, 0, sizeof(search_stats_t));
     memset(data->root_moves, 0, sizeof(move_t) * 256);
     data->best_move = NO_MOVE;
     data->best_score = 0;
@@ -142,6 +143,20 @@ static bool is_nullmove_allowed(position_t* pos)
         material_value(WK) -
         material_value(WP)*pos->piece_count[pos->side_to_move][PAWN];
     return piece_value != 0;
+}
+
+static bool is_iid_allowed(bool full_window, int depth)
+{
+    search_options_t* options = &root_data.options;
+    if (full_window) {
+        if (!options->enable_pv_iid ||
+                options->iid_pv_depth_cutoff >= depth) return false;
+    }
+    if (!full_window) {
+        if (!options->enable_non_pv_iid ||
+                options->iid_non_pv_depth_cutoff >= depth) return false;
+    }
+    return true;
 }
 
 static void order_moves(position_t* pos, move_t* moves, move_t hash_move)
@@ -331,7 +346,6 @@ static int search(position_t* pos,
     }
 
     int score = -MATE_VALUE-1;
-    move_t moves[256];
     // nullmove reduction, just check for beta cutoff
     // TODO: factor into its own function
     if (is_nullmove_allowed(pos)) {
@@ -349,6 +363,17 @@ static int search(position_t* pos,
             }
         }
     }
+
+    if (hash_move == NO_MOVE && is_iid_allowed(full_window, depth)) {
+        const int iid_depth = depth -
+            (full_window ? root_data.options.iid_pv_depth_reduction :
+                           root_data.options.iid_non_pv_depth_reduction);
+        assert(iid_depth > 0);
+        search(pos, search_node, ply, alpha, beta, iid_depth);
+        hash_move = search_node->pv[ply];
+    }
+
+    move_t moves[256];
     generate_pseudo_moves(pos, moves);
     int num_legal_moves = 0;
     // TODO: late move reductions

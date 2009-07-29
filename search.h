@@ -22,6 +22,12 @@ typedef enum {
 typedef struct {
     int poll_interval;
     int output_delay;
+    bool enable_pv_iid;
+    bool enable_non_pv_iid;
+    int iid_pv_depth_reduction;
+    int iid_non_pv_depth_reduction;
+    int iid_pv_depth_cutoff;
+    int iid_non_pv_depth_cutoff;
 } search_options_t;
 
 typedef struct {
