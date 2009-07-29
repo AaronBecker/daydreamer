@@ -21,7 +21,6 @@ void uci_main(void)
 {
     printf("\nid name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
     printf("id author %s\n", ENGINE_AUTHOR);
-    init_uci_options(&root_data.options);
     print_uci_options();
     set_position(&root_data.root_pos, FEN_STARTPOS);
     printf("uciok\n");
