@@ -102,6 +102,7 @@ typedef struct {
     int ply;
     int material_eval[2];
     int piece_square_eval[2];
+    int endgame_piece_square_eval[2];
     castle_rights_t castle_rights;
     hashkey_t hash;
     hashkey_t hash_history[HASH_HISTORY_LENGTH];

@@ -37,6 +37,7 @@ void generate_attack_data(void);
 int simple_eval(const position_t* pos);
 bool insufficient_material(const position_t* pos);
 bool is_draw(const position_t* pos);
+bool is_endgame(const position_t* pos);
 
 // hash.c
 hashkey_t hash_position(const position_t* pos);
