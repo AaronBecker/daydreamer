@@ -91,7 +91,7 @@ bool is_square_attacked(const position_t* position,
         const color_t side);
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_check(const position_t* pos);
-bool is_repetition(const position_t* pos, int n);
+bool is_repetition(const position_t* pos);
 
 // search.c
 void init_search_data(search_data_t* data);

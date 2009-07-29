@@ -233,20 +233,14 @@ bool is_move_legal(position_t* pos, const move_t move)
 }
 
 /*
- * Detect if the current position is an n-fold repetion of earlier game
+ * Detect if the current position is a repetition of earlier game
  * positions.
  */
-bool is_repetition(const position_t* pos, int n)
+bool is_repetition(const position_t* pos)
 {
-    if (pos->fifty_move_counter < 2) return false;
-    int ply_distance = 2;
-    int repeat_counter = 0;
-    while (ply_distance <= pos->fifty_move_counter) {
-        assert(pos->ply >= ply_distance);
-        if (pos->hash_history[pos->ply-ply_distance] == pos->hash) {
-            if (++repeat_counter >= n-1) return true;
-        }
-        ply_distance += 2;
+    for (int age = 2; age <= pos->fifty_move_counter; age += 2) {
+        assert(pos->ply >= age);
+        if (pos->hash_history[pos->ply - age] == pos->hash) return true;
     }
     return false;
 }

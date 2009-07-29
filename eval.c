@@ -194,7 +194,7 @@ bool is_draw(const position_t* pos)
 {
     return pos->fifty_move_counter >= 100 ||
         insufficient_material(pos) ||
-        is_repetition(pos, 3);
+        is_repetition(pos);
 }
 
 /*
@@ -208,5 +208,5 @@ bool is_endgame(const position_t* pos)
     return (pos->material_eval[WHITE] + pos->material_eval[BLACK] -
             (PAWN_VAL * (pos->piece_count[WHITE][PAWN] +
                          pos->piece_count[BLACK][PAWN]))) <=
-        2 * KING_VAL + 2 * QUEEN_VAL;
+        2 * KING_VAL + 4 * QUEEN_VAL;
 }
