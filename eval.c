@@ -169,9 +169,9 @@ int simple_eval(const position_t* pos)
     color_t side = pos->side_to_move;
     int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
     int piece_square_eval = is_endgame(pos) ?
-        pos->piece_square_eval[side] - pos->piece_square_eval[side^1] :
         pos->endgame_piece_square_eval[side] -
-        pos->endgame_piece_square_eval[side^1];
+        pos->endgame_piece_square_eval[side^1] :
+        pos->piece_square_eval[side] - pos->piece_square_eval[side^1];
     return material_eval + piece_square_eval;
 }
 
