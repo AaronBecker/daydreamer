@@ -1,17 +1,28 @@
 #!/usr/bin/env python
 import os
+from subprocess import Popen, PIPE
 import sys
 import optparse
 
-engine_prefix = '/Users/abecker/work/misc_code/'
-cutechess_path = engine_prefix + 'cutechess-cli/cutechess-cli.sh'
+engine_prefix = '/Users/abecker/work/misc_code/chess_engines/'
+cutechess_path = '/Users/abecker/work/misc_code/cutechess-cli/cutechess-cli.sh'
 daydreamer_path = '/Users/abecker/work/code/daydreamer/daydreamer'
 programs = {
     'roce' : 'cmd=' + engine_prefix + 'roce38m/roce38_32' + ' proto=uci',
-    'tscp' : 'cmd=' + engine_prefix + 'tscp181/tscp' + ' proto=xboard',
-    'gnuchess' : 'cmd=gnuchess' + ' proto=xboard',
-    'mediocre' : 'cmd=' + '"java -Xmx1024M ' + engine_prefix + \
-            'mediocre_v0/mediocre/main/Mediocre"' + ' proto=uci',
+    'tscp' : 'cmd=' + engine_prefix + 'tscp181/tscp' + ' proto=xboard' + \
+            ' name=tscp',
+    'gnuchess' : 'cmd=gnuchess' + ' proto=xboard' + ' name=gnuchess',
+    'mediocre' : 'cmd=' + engine_prefix + \
+            'mediocre_v0/mediocre.sh' + ' proto=uci',
+    'clarabit' : 'cmd=' + engine_prefix + 'Clarabit_x32_win/clarabit.sh' \
+            + ' proto uci',
+    'amundsen' : 'cmd=' + engine_prefix + 'amundsen-0.80/amundsen' + \
+            ' proto=xboard' + ' name=Amundsen 0.80',
+    'bikjump' : 'cmd=' + engine_prefix + 'bikjump32/bikjump.sh' + ' proto=uci',
+    'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh' + ' proto=uci',
+    'greko' : 'cmd=' + engine_prefix + 'greko-6.5/bin/greko' + ' proto=uci',
+    'vicki' : 'cmd=' + engine_prefix + 'vicki0.041a/vicki.sh' + \
+            ' proto=xboard name=Vicki',
     'daydreamer' : 'cmd=' + daydreamer_path + ' proto=uci'
     }
 
@@ -30,12 +41,23 @@ def main(argv=None):
 
     settings, args = parser.parse_args(argv)
 
-    command = cutechess_path + ' -book tests/performance.bin -bookdepth 12 ' + \
-            '-fcp ' + programs[args[0]] + ' -scp ' + \
-            programs[args[1]] + ' -both tc=' + \
-            args[2] + ' -games ' + args[3] + ' -pgnout ' + args[4]
-    print command
-    os.system(command)
+    logfile = open('playgames.log', 'w')
+    summary = open('playgames.summary', 'w')
+    engines = args[0].split(',')
+    primary_engine, engines = engines[0], engines[1:]
+    for engine in engines:
+        cutechess_args = '-pgnin tests/NoomenTestsuite2008.pgn ' + \
+                '-fcp ' + programs[primary_engine] + ' -scp ' + \
+                programs[engine] + ' -both tc=' + \
+                args[1] + ' -games ' + args[2] + ' -pgnout ' + args[3]
+        #'-book tests/performance.bin -bookdepth 12 ' + \
+        command = cutechess_path + " " + cutechess_args
+        print command
+        logfile.write(command)
+        output = Popen(command, shell=True, stdout=PIPE).communicate()[0]
+        print output
+        logfile.write(output)
+        summary.write(output.split('\n')[-2])
 
 if __name__ == "__main__":
     status = main()
