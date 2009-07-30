@@ -29,13 +29,16 @@ analyze:
 	    CC="$(ANALYZER)" CFLAGS="$(ANALYZEFLAGS)"
 
 debug:
-	$(MAKE) daydreamer CFLAGS="$(DEBUGFLAGS)"
+	$(MAKE) daydreamer CFLAGS="$(DEBUGFLAGS) \
+	    -DCOMPILE_COMMAND=\"\\\"$(CC) $(DEBUGFLAGS)\\\"\""
 
 default:
-	$(MAKE) daydreamer CFLAGS="$(DEFAULTFLAGS)"
+	$(MAKE) daydreamer CFLAGS="$(DEFAULTFLAGS) \
+	    -DCOMPILE_COMMAND=\"\\\"$(CC) $(DEFAULTFLAGS)\\\"\""
 
 opt:
-	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS)"
+	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS) \
+	    -DCOMPILE_COMMAND=\"\\\"$(CC) $(OPTFLAGS)\\\"\""
 
 all: daydreamer
 
