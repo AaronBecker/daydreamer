@@ -269,6 +269,17 @@ static const command_handler handlers[] = {
  */
 
 /*
+ * Convert a square into ascii coordinates.
+ */
+int square_to_coord_str(square_t sq, char* str)
+{
+    *str++ = (char)square_file(sq) + 'a';
+    *str++ = (char)square_rank(sq) + '1';
+    *str = '\0';
+    return 2;
+}
+
+/*
  * Convert a move to its long algebraic string form.
  */
 void move_to_la_str(move_t move, char* str)
@@ -287,7 +298,7 @@ void move_to_la_str(move_t move, char* str)
  * Convert a position to its FEN form.
  * (see wikipedia.org/wiki/Forsyth-Edwards_Notation)
  */
-void position_to_fen_str(position_t* pos, char* fen)
+void position_to_fen_str(const position_t* pos, char* fen)
 {
     int empty_run=0;
     for (square_t square=A8;; ++square) {
@@ -314,7 +325,7 @@ void position_to_fen_str(position_t* pos, char* fen)
         if (has_ooo_rights(pos, BLACK)) *fen++ = 'q';
     }
     *fen++ = ' ';
-    if (valid_board_index(pos->ep_square)) {
+    if (pos->ep_square != EMPTY && valid_board_index(pos->ep_square)) {
         *fen++ = square_file(pos->ep_square) + 'a';
         *fen++ = square_rank(pos->ep_square) + '1';
     } else *fen++ = '-';
@@ -393,6 +404,9 @@ void print_pv(search_data_t* search_data)
         }
     }
     printf("\n");
+    char sanpv[1024];
+    line_to_san_str(&search_data->root_pos, (move_t*)pv, sanpv);
+    printf("info string sanpv %s\n", sanpv);
 }
 
 /*
@@ -400,6 +414,9 @@ void print_pv(search_data_t* search_data)
  */
 void print_board(const position_t* pos)
 {
+    char fen_str[256];
+    position_to_fen_str(pos, fen_str);
+    printf("fen: %s\n", fen_str);
     printf("hash: %llx\n", pos->hash);
     for (square_t sq = A8; sq != INVALID_SQUARE; ++sq) {
         if (!valid_board_index(sq)) {
@@ -494,6 +511,4 @@ int bios_key(void)
 }
 #endif
 
-// unimplemented
-void move_to_san_str(position_t* pos, move_t move, char* str);
 

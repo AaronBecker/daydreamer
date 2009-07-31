@@ -44,15 +44,14 @@ hashkey_t hash_position(const position_t* pos);
 
 // io.c
 void handle_console(position_t* pos, char* command);
+int square_to_coord_str(square_t sq, char* str);
 void move_to_la_str(move_t move, char* str);
-void position_to_fen_str(position_t* pos, char* fen);
+void position_to_fen_str(const position_t* pos, char* fen);
 void print_la_move(move_t move);
 int print_la_move_list(const move_t* move);
 void print_board(const position_t* pos);
 void print_pv(search_data_t* search_data);
 void check_for_input(search_data_t* search_data);
-// unimplemented
-void move_to_san_str(position_t* pos, move_t move, char* str);
 
 // move.c
 void place_piece(position_t* position,
@@ -85,13 +84,17 @@ uint64_t perft(position_t* position, int depth, bool divide);
 
 // position.c
 char* set_position(position_t* position, const char* fen);
-void copy_position(position_t* dst, position_t* src);
+void copy_position(position_t* dst, const position_t* src);
 bool is_square_attacked(const position_t* position,
         const square_t square,
         const color_t side);
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_check(const position_t* pos);
 bool is_repetition(const position_t* pos);
+
+// san.c
+int move_to_san_str(position_t* pos, move_t move, char* str);
+int line_to_san_str(position_t* pos, move_t* line, char* san);
 
 // search.c
 void init_search_data(search_data_t* data);
