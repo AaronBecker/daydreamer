@@ -285,7 +285,6 @@ static bool root_search(search_data_t* search_data)
                     1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
-        check_line(pos, search_data->search_stack->pv+1);
         undo_move(pos, *move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
         // update score
@@ -395,12 +394,11 @@ static int search(position_t* pos,
                         -beta, -alpha, depth+ext-1);
             }
         }
-        check_line(pos, (search_node+1)->pv+1);
         undo_move(pos, *move, &undo);
         if (score > alpha) {
             alpha = score;
             update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
-            check_line(pos, search_node->pv);
+            check_line(pos, search_node->pv+ply);
             if (score >= beta) {
                 // TODO: killer move heuristic
                 put_transposition(pos, *move, depth, beta, SCORE_LOWERBOUND);
@@ -436,6 +434,7 @@ static int quiesce(position_t* pos,
         int beta,
         int depth)
 {
+    search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
     open_node(&root_data);
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
@@ -455,13 +454,12 @@ static int quiesce(position_t* pos,
         undo_info_t undo;
         do_move(pos, *move, &undo);
         score = -quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-1);
-        check_line(pos, (search_node+1)->pv+1);
         undo_move(pos, *move, &undo);
-        if (score >= beta) return beta;
         if (score > alpha) {
             alpha = score;
             update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
-            check_line(pos, search_node->pv);
+            check_line(pos, search_node->pv+ply);
+            if (score >= beta) return beta;
         }
     }
     if (!num_legal_captures) {
