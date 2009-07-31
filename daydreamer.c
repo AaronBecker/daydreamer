@@ -125,7 +125,7 @@ const attack_data_t* board_attack_data = board_attack_data_storage + 128;
 #include <stdio.h>
 void generate_attack_data(void)
 {
-    bzero((char*)board_attack_data_storage, sizeof(attack_data_t)*256);
+    memset((char*)board_attack_data_storage, 0, sizeof(attack_data_t)*256);
     attack_data_t* mutable_attack_data = (attack_data_t*)board_attack_data;
     for (square_t from=A1; from<=H8; ++from) {
         if (!valid_board_index(from)) continue;
