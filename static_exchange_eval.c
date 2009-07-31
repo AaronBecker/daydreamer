@@ -45,7 +45,7 @@ int static_exchange_eval(position_t* pos, move_t move)
     }
     // At this point, all unblocked attackers other than |attacker| have been
     // added to |attackers|. Now play out all possible captures in order of
-    // increasing piece value (but starting with |attacker) while alternating
+    // increasing piece value (but starting with |attacker|) while alternating
     // colors. Whenever a capture is made, add any x-ray attackers that removal
     // of the piece would reveal.
     color_t side = piece_color(attacker);
@@ -76,6 +76,8 @@ int static_exchange_eval(position_t* pos, move_t move)
 
         // score the capture under the assumption that it's defended.
         gain[gain_index] = capture_value - gain[gain_index - 1];
+        //printf("%d ", gain[gain_index]);
+        //printf("(%c%c) ", (char)square_file(attacker_sq) + 'a', (char)square_rank(attacker_sq) + '1');
         ++gain_index;
         side ^= 1;
 
@@ -96,6 +98,7 @@ int static_exchange_eval(position_t* pos, move_t move)
         attacker = attackers[side][att_index]->piece;
         attacker_sq = attackers[side][att_index]->location;
         attackers[side][att_index] = attackers[side][--num_attackers[side]];
+        capture_value = least_value;
         if (piece_type(attacker) == KING && num_attackers[side^1]) break;
     }
 
@@ -105,5 +108,6 @@ int static_exchange_eval(position_t* pos, move_t move)
         gain[gain_index-1] = -gain[gain_index-1] < gain[gain_index] ?
             -gain[gain_index] : gain[gain_index-1];
     }
+    printf("\n");
     return gain[0];
 }
