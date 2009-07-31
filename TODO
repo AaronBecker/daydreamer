@@ -1,6 +1,5 @@
 
 Search
-    Internal ID
     Late move reductions
     Futility
     Aspiration
@@ -11,13 +10,12 @@ Search
     Identify "tough" moves and take more time on them
     More accurate time management
 
-buckets for transposition table
+test buckets for transposition table
 
 Check flag in position
 Track pinned pieces in SEE
     
 Interface
-    SAN translation
     Basic Winboard interface?
     ECO classification
     Improve non-UCI console interface
