@@ -76,8 +76,6 @@ int static_exchange_eval(position_t* pos, move_t move)
 
         // score the capture under the assumption that it's defended.
         gain[gain_index] = capture_value - gain[gain_index - 1];
-        //printf("%d ", gain[gain_index]);
-        //printf("(%c%c) ", (char)square_file(attacker_sq) + 'a', (char)square_rank(attacker_sq) + '1');
         ++gain_index;
         side ^= 1;
 
@@ -108,6 +106,5 @@ int static_exchange_eval(position_t* pos, move_t move)
         gain[gain_index-1] = -gain[gain_index-1] < gain[gain_index] ?
             -gain[gain_index] : gain[gain_index-1];
     }
-    printf("\n");
     return gain[0];
 }
