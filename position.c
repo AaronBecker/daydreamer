@@ -42,7 +42,7 @@ static void init_position(position_t* position)
 /*
  * Create a copy of |src| in |dst|.
  */
-void copy_position(position_t* dst, position_t* src)
+void copy_position(position_t* dst, const position_t* src)
 {
     check_board_validity(src);
     memcpy(dst, src, sizeof(position_t));
