@@ -457,7 +457,7 @@ void check_for_input(search_data_t* search_data)
  * Beowulf, Olithink, and others, so I don't know where it's from originally.
  */
 #ifndef _WIN32
-/* unix version */
+/* Unix version */
 int bios_key(void)
 {
     fd_set readfds;
@@ -474,8 +474,7 @@ int bios_key(void)
 }
 
 #else
-/* Windows-version */
-#include <windows.h>
+/* Windows version */
 #include <conio.h>
 int bios_key(void)
 {
