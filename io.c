@@ -374,14 +374,16 @@ void print_pv(search_data_t* search_data)
     // note: use time+1 avoid divide-by-zero
     // mate scores are given as MATE_VALUE-ply, so we can calculate depth
     if (is_mate_score(score)) {
-        printf("info depth %d score mate %d time %d nodes %llu nps %llu pv ",
+        printf("info depth %d score mate %d time %d nodes %" PRIu64 \
+                " nps %"PRIu64" pv ",
                 depth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),
                 time,
                 nodes,
                 nodes/(time+1)*1000);
     } else {
-        printf("info depth %d score cp %d time %d nodes %llu nps %llu pv ",
+        printf("info depth %d score cp %d time %d nodes %"PRIu64\
+                " nps %"PRIu64" pv ",
                 depth, score, time, nodes, nodes/(time+1)*1000);
     }
     int moves = print_la_move_list(pv);
@@ -417,7 +419,7 @@ void print_board(const position_t* pos)
     char fen_str[256];
     position_to_fen_str(pos, fen_str);
     printf("fen: %s\n", fen_str);
-    printf("hash: %llx\n", pos->hash);
+    printf("hash: %"PRIx64"\n", pos->hash);
     for (square_t sq = A8; sq != INVALID_SQUARE; ++sq) {
         if (!valid_board_index(sq)) {
             printf("\n");

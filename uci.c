@@ -121,7 +121,7 @@ static void uci_go(char* command)
         sscanf(info+5, " %d", &root_data.depth_limit);
     }
     if ((info = strcasestr(command, "nodes"))) {
-        sscanf(info+5, " %llu", &root_data.node_limit);
+        sscanf(info+5, " %"PRIu64, &root_data.node_limit);
     }
     if ((info = strcasestr(command, "mate"))) {
         sscanf(info+4, " %d", &root_data.mate_search);
