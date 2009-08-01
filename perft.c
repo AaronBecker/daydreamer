@@ -41,14 +41,14 @@ void perft_testsuite(char* filename)
         do {
             int depth;
             uint64_t correct_answer;
-            sscanf(test, "D%d %llu", &depth, &correct_answer);
+            sscanf(test, "D%d %"PRIu64, &depth, &correct_answer);
             start_timer(&perft_timer);
             uint64_t result = full_search(&pos, depth);
             int time = stop_timer(&perft_timer);
-            printf("\tDepth %d: %15llu", depth, result);
+            printf("\tDepth %d: %15"PRIu64, depth, result);
             if (result != correct_answer) {
                 failure = true;
-                printf(" expected %15llu -- FAIL",
+                printf(" expected %15"PRIu64" -- FAIL",
                         correct_answer);
             } else printf(" -- SUCCESS");
             printf(" / %.2fs\n", time/1000.0);
@@ -76,7 +76,7 @@ uint64_t perft(position_t* position, int depth, bool div)
         nodes = divide(position, depth);
     } else {
         nodes = full_search(position, depth);
-        printf("%llu nodes", nodes);
+        printf("%"PRIu64" nodes", nodes);
     }
     stop_timer(&perft_timer);
     printf(", elapsed time %d ms\n", elapsed_time(&perft_timer));
@@ -102,10 +102,10 @@ static uint64_t divide(position_t* pos, int depth)
         total_nodes += child_nodes;
         undo_move(pos, *current_move, &undo);
         move_to_la_str(*current_move, la_move);
-        printf("%s: %llu\n", la_move, child_nodes);
+        printf("%s: %"PRIu64"\n", la_move, child_nodes);
         ++current_move;
     }
-    printf("%d moves, %llu nodes", num_moves, total_nodes);
+    printf("%d moves, %"PRIu64" nodes", num_moves, total_nodes);
     return total_nodes;
 }
 
