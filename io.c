@@ -374,7 +374,7 @@ void print_pv(search_data_t* search_data)
     // note: use time+1 avoid divide-by-zero
     // mate scores are given as MATE_VALUE-ply, so we can calculate depth
     if (is_mate_score(score)) {
-        printf("info depth %d score mate %d time %d nodes %" PRIu64 \
+        printf("info depth %d score mate %d time %d nodes %"PRIu64\
                 " nps %"PRIu64" pv ",
                 depth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),
@@ -455,8 +455,10 @@ void check_for_input(search_data_t* search_data)
 /*
  * Boilerplate code to see if data is available to be read on stdin.
  * Cross-platform for unix/windows.
- * Many thanks to the original author(s). I've seen this in Scorpio, Viper,
- * Beowulf, Olithink, and others, so I don't know where it's from originally.
+ *
+ * Many thanks to the original author(s). I've seen minor variations on this
+ * in Scorpio, Viper, Beowulf, Olithink, and others, so I don't know where
+ * it's from originally.
  */
 #ifndef _WIN32
 /* Unix version */
