@@ -11,7 +11,7 @@ typedef int ambiguity_t;
 static char piece_chars[] = " PNBRQK";
 #define piece_type_char(x) piece_chars[x]
 
-static ambiguity_t move_ambiguity(position_t* pos, move_t move)
+static ambiguity_t determine_move_ambiguity(position_t* pos, move_t move)
 {
     square_t dest = get_move_to(move);
     rank_t from_rank = square_rank(get_move_from(move));
@@ -48,7 +48,7 @@ int move_to_san_str(position_t* pos, move_t move, char* san)
         piece_type_t type = get_move_piece_type(move);
         if (type != PAWN) *san++ = piece_type_char(type);
         // source
-        ambiguity_t ambiguity = move_ambiguity(pos, move);
+        ambiguity_t ambiguity = determine_move_ambiguity(pos, move);
         square_t from = get_move_from(move);
         if (ambiguity & AMBIG_FILE) *san++ = square_file(from) + 'a';
         if (ambiguity & AMBIG_RANK) *san++ = square_rank(from) + '1';
