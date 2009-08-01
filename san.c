@@ -50,8 +50,8 @@ int move_to_san_str(position_t* pos, move_t move, char* san)
         // source
         ambiguity_t ambiguity = determine_move_ambiguity(pos, move);
         square_t from = get_move_from(move);
-        if (ambiguity & AMBIG_FILE) *san++ = square_file(from) + 'a';
-        if (ambiguity & AMBIG_RANK) *san++ = square_rank(from) + '1';
+        if (ambiguity & AMBIG_RANK) *san++ = square_file(from) + 'a';
+        if (ambiguity & AMBIG_FILE) *san++ = square_rank(from) + '1';
         // destination
         if (get_move_capture(move)) *san++ = 'x';
         san += square_to_coord_str(get_move_to(move), san);
