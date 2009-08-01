@@ -9,8 +9,10 @@ Search
     Checks in quiescence
     Identify "tough" moves and take more time on them
     More accurate time management
+    More nullmove experimentation
 
 test buckets for transposition table
+shrink trans table entry size
 
 Check flag in position
 Track pinned pieces in SEE
