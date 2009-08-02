@@ -355,8 +355,9 @@ static int search(position_t* pos,
         undo_nullmove(pos, &undo);
         if (score >= beta) {
             depth -= NULLMOVE_DEPTH_REDUCTION;
-            if (depth <= 0) {
-                return quiesce(pos, search_node, ply, alpha, beta, depth);
+            if (depth >= 0) {
+                score = search(pos, search_node, ply, alpha, beta, depth);
+                if (score >= beta) return beta;
             } else {
                 return beta;
             }
