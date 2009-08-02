@@ -46,7 +46,9 @@ int move_to_san_str(position_t* pos, move_t move, char* san)
     } else {
         // type
         piece_type_t type = get_move_piece_type(move);
-        if (type != PAWN) *san++ = piece_type_char(type);
+        if (type != PAWN || get_move_capture(move)) {
+            *san++ = piece_type_char(type);
+        }
         // source
         ambiguity_t ambiguity = determine_move_ambiguity(pos, move);
         square_t from = get_move_from(move);
