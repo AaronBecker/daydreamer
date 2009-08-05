@@ -9,7 +9,7 @@
 square_t parse_la_square(const char* alg_square)
 {
     if (tolower(alg_square[0]) < 'a' || tolower(alg_square[0]) > 'h' ||
-        alg_square[1] < '0' || alg_square[1] > '9') return INVALID_SQUARE; 
+        alg_square[1] < '0' || alg_square[1] > '9') return EMPTY;
     return create_square(tolower(alg_square[0])-'a', alg_square[1]-'1');
 }
 

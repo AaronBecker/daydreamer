@@ -140,6 +140,7 @@ char* set_position(position_t* pos, const char* fen)
     // Read en-passant square
     if (*fen != '-') {
         pos->ep_square = parse_la_square(fen++);
+        if (*fen) ++fen;
     }
     while (*fen && isspace(*(++fen))) {}
     if (!*fen) {
