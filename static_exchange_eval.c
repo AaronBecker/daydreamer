@@ -3,7 +3,7 @@
 
 /*
  * Count all attackers and defenders of a square to determine whether or not
- * a capture is advantageous. Captures with a positvie static eval are
+ * a capture is advantageous. Captures with a positive static eval are
  * favorable. Note: this implementation does not account for pinned pieces.
  */
 int static_exchange_eval(position_t* pos, move_t move)
