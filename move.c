@@ -103,7 +103,11 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     if (piece_type(get_move_piece(move)) == PAWN) {
         if (relative_pawn_rank[side][square_rank(to)] -
                 relative_pawn_rank[side][square_rank(from)] != 1) {
-            pos->ep_square = from + pawn_push[side];
+            piece_t opp_pawn = create_piece(other_side, PAWN);
+            if ((pos->board[to-1] && pos->board[to-1]->piece == opp_pawn) ||
+                    (pos->board[to+1] && pos->board[to+1]->piece == opp_pawn)) {
+                pos->ep_square = from + pawn_push[side];
+            }
         }
         pos->fifty_move_counter = 0;
     } else if (get_move_capture(move) != EMPTY) {
