@@ -81,7 +81,7 @@ static void update_pv(move_t* dst, move_t* src, int ply, move_t move)
  * Every time a node is expanded, this function increments the node counter.
  * Every POLL_INTERVAL nodes, user input, is checked.
  */
-static void open_node(search_data_t* data)
+static void open_node(search_data_t* data, int ply)
 {
     if ((++data->nodes_searched & POLL_INTERVAL) == 0) {
         if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
@@ -90,6 +90,11 @@ static void open_node(search_data_t* data)
     data->search_stack[ply].killers[0] = NO_MOVE;
     data->search_stack[ply].killers[1] = NO_MOVE;
 }
+
+static void open_qnode(search_data_t* data, int ply)
+{
+    open_node(data, ply);
+    ++data->qnodes_searched;
 }
 
 /*
@@ -171,11 +176,16 @@ static bool is_iid_allowed(bool full_window, int depth)
     return true;
 }
 
-static void order_moves(position_t* pos, move_t* moves, move_t hash_move)
+static void order_moves(position_t* pos,
+        search_node_t* search_node,
+        move_t* moves,
+        move_t hash_move,
+        int ply)
 {
     const int hash_score = 1000;
     const int promote_score = 900;
     const int underpromote_score = -600;
+    const int killer_score = 800;
     int scores[256];
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
@@ -187,6 +197,14 @@ static void order_moves(position_t* pos, move_t* moves, move_t hash_move)
             score = underpromote_score;
         } else if (get_move_capture(move)) {
             score = static_exchange_eval(pos, move);
+        } else if (move == search_node->killers[0]) {
+            score = killer_score;
+        } else if (move == search_node->killers[1]) {
+            score = killer_score-1;
+        } else if (ply >=2 && move == (search_node-1)->killers[0]) {
+            score = killer_score-2;
+        } else if (ply >=2 && move == (search_node-1)->killers[1]) {
+            score = killer_score-3;
         }
         // Insert the score into the right place in the list. The list is never
         // long enough to requre an n log n algorithm.
@@ -268,7 +286,8 @@ static bool root_search(search_data_t* search_data)
     move_t hash_move = NO_MOVE;
     get_transposition(pos, search_data->current_depth,
             &alpha, &beta, &hash_move);
-    order_moves(&search_data->root_pos, search_data->root_moves, hash_move);
+    order_moves(&search_data->root_pos, search_data->search_stack,
+            search_data->root_moves, hash_move, 0);
     bool first_move = true;
     for (move_t* move=search_data->root_moves; *move; ++move) {
         if (should_output(search_data)) {
@@ -336,7 +355,7 @@ static int search(position_t* pos,
         return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
     if (is_draw(pos)) return DRAW_VALUE;
-    open_node(&root_data);
+    open_node(&root_data, ply);
     bool full_window = (beta-alpha > 1);
     int orig_alpha = alpha;
     move_t hash_move = NO_MOVE;
@@ -388,12 +407,12 @@ static int search(position_t* pos,
     move_t moves[256];
     generate_pseudo_moves(pos, moves);
     int num_legal_moves = 0;
-    // TODO: late move reductions
-    order_moves(pos, moves, hash_move);
+    order_moves(pos, search_node, moves, hash_move, ply);
     bool first_move = true;
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;
+        // TODO: late move reductions
         undo_info_t undo;
         do_move(pos, *move, &undo);
         int ext = extend(pos, *move);
@@ -413,8 +432,13 @@ static int search(position_t* pos,
             update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
-                // TODO: killer move heuristic
+                if (!get_move_capture(*move) && !get_move_promote(*move)) {
+                    search_node->killers[1] = search_node->killers[0];
+                    search_node->killers[0] = *move;
+                }
                 put_transposition(pos, *move, depth, beta, SCORE_LOWERBOUND);
+                root_data.stats.move_selection[MIN(move-moves, HIST_BUCKETS)]++;
+                search_node->pv[ply] = NO_MOVE;
                 return beta;
             }
         }
@@ -463,7 +487,8 @@ static int quiesce(position_t* pos,
     if (alpha >= beta) return beta;
     
     move_t moves[256];
-    generate_pseudo_captures(pos, moves);
+    if (!generate_pseudo_captures(pos, moves)) return alpha;
+    order_moves(pos, search_node, moves, NO_MOVE, ply);
     int num_legal_captures = 0;
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
@@ -499,7 +524,7 @@ static int minimax(position_t* pos,
         search_node->pv[ply] = NO_MOVE;
         return simple_eval(pos);
     }
-    open_node(&root_data);
+    open_node(&root_data, ply);
     int score, best_score = -MATE_VALUE-1;
     move_t moves[256];
     int num_moves = generate_legal_moves(pos, moves);
