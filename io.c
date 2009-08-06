@@ -375,16 +375,17 @@ void print_pv(search_data_t* search_data)
     // mate scores are given as MATE_VALUE-ply, so we can calculate depth
     if (is_mate_score(score)) {
         printf("info depth %d score mate %d time %d nodes %"PRIu64\
-                " nps %"PRIu64" pv ",
+                " qnodes %"PRIu64" nps %"PRIu64" pv ",
                 depth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),
                 time,
                 nodes,
+                search_data->qnodes_searched,
                 nodes/(time+1)*1000);
     } else {
         printf("info depth %d score cp %d time %d nodes %"PRIu64\
-                " nps %"PRIu64" pv ",
-                depth, score, time, nodes, nodes/(time+1)*1000);
+                " qnodes %"PRIu64" nps %"PRIu64" pv ",
+                depth, score, time, nodes, search_data->qnodes_searched, nodes/(time+1)*1000);
     }
     int moves = print_la_move_list(pv);
     if (moves < depth) {

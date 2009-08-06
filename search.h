@@ -30,8 +30,11 @@ typedef struct {
     int iid_non_pv_depth_cutoff;
 } search_options_t;
 
+#define HIST_BUCKETS    15
+
 typedef struct {
     int cutoffs[MAX_SEARCH_DEPTH];
+    int move_selection[HIST_BUCKETS + 1];
 } search_stats_t;
 
 typedef struct {
@@ -46,6 +49,7 @@ typedef struct {
     move_t pv[MAX_SEARCH_DEPTH];
     search_node_t search_stack[MAX_SEARCH_DEPTH];
     uint64_t nodes_searched;
+    uint64_t qnodes_searched;
     int current_depth;
     engine_status_t engine_status;
 

@@ -34,6 +34,7 @@ void init_search_data(search_data_t* data)
     memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
     memset(data->search_stack, 0, sizeof(search_node_t) * MAX_SEARCH_DEPTH);
     data->nodes_searched = 0;
+    data->qnodes_searched = 0;
     data->current_depth = 0;
     data->engine_status = ENGINE_IDLE;
     init_timer(&data->timer);
@@ -51,6 +52,14 @@ static void print_search_stats(search_data_t* search_data)
     printf("info string cutoffs ");
     for (int i=0; i<=search_data->current_depth; ++i) {
         printf("%d ", search_data->stats.cutoffs[i]);
+    }
+    printf("\ninfo string move selection ");
+    int total_moves = 0;
+    for (int i=0; i<HIST_BUCKETS; ++i) {
+        total_moves += search_data->stats.move_selection[i];
+    }
+    for (int i=0; i<HIST_BUCKETS; ++i) {
+        printf("%.2f ", (float)search_data->stats.move_selection[i]/total_moves);
     }
     printf("\n");
 }
@@ -78,6 +87,9 @@ static void open_node(search_data_t* data)
         if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
         check_for_input(data);
     }
+    data->search_stack[ply].killers[0] = NO_MOVE;
+    data->search_stack[ply].killers[1] = NO_MOVE;
+}
 }
 
 /*
@@ -212,7 +224,7 @@ void deepening_search(search_data_t* search_data)
     int id_score = root_data.best_score = -MATE_VALUE-1;
     if (!search_data->depth_limit) search_data->depth_limit = MAX_SEARCH_DEPTH;
     for (search_data->current_depth=1;
-            search_data->current_depth < search_data->depth_limit;
+            search_data->current_depth <= search_data->depth_limit;
             ++search_data->current_depth) {
         if (should_output(search_data)) {
             print_transposition_stats();
@@ -351,11 +363,11 @@ static int search(position_t* pos,
         undo_info_t undo;
         do_nullmove(pos, &undo);
         score = -search(pos, search_node+1, ply+1,
-                -beta, -beta+1, depth-NULL_R);
+                -beta, -beta+1, MAX(depth-NULL_R, 0));
         undo_nullmove(pos, &undo);
         if (score >= beta) {
             depth -= NULLMOVE_DEPTH_REDUCTION;
-            if (depth >= 0) {
+            if (depth > 0) {
                 score = search(pos, search_node, ply, alpha, beta, depth);
                 if (score >= beta) return beta;
             } else {
@@ -417,6 +429,8 @@ static int search(position_t* pos,
         }
         return DRAW_VALUE;
     }
+
+    root_data.stats.move_selection[MIN(num_legal_moves-1, HIST_BUCKETS)]++;
     score_type_t score_type = (alpha == orig_alpha) ?
         SCORE_UPPERBOUND : SCORE_EXACT;
     put_transposition(pos, search_node->pv[ply], depth, alpha, score_type);
@@ -437,13 +451,16 @@ static int quiesce(position_t* pos,
 {
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    open_node(&root_data);
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
+    open_qnode(&root_data, ply);
     if (is_draw(pos)) return DRAW_VALUE;
     int eval = simple_eval(pos);
     int score = eval;
-    if (score >= beta) return beta;
-    if (alpha < score) alpha = score;
+    if (ply >= MAX_SEARCH_DEPTH-1) return score;
+    if (!is_check(pos) && alpha < score) {
+        alpha = score;
+    }
+    if (alpha >= beta) return beta;
     
     move_t moves[256];
     generate_pseudo_captures(pos, moves);
@@ -460,23 +477,10 @@ static int quiesce(position_t* pos,
             alpha = score;
             update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
             check_line(pos, search_node->pv+ply);
-            if (score >= beta) return beta;
+            if (score >= beta) {
+                return beta;
+            }
         }
-    }
-    if (!num_legal_captures) {
-        search_node->pv[ply] = NO_MOVE;
-        int num_legal_noncaptures = generate_legal_noncaptures(pos, moves);
-        if (num_legal_noncaptures) {
-            // TODO: if we're in check, we haven't quiesced yet--handle this
-            // we've reached quiescence
-            return eval;
-        }
-        // No legal moves, this is either stalemate or checkmate.
-        // note: adjust MATE_VALUE by ply so that we favor shorter mates
-        if (is_check(pos)) {
-            return -(MATE_VALUE-ply);
-        }
-        return DRAW_VALUE;
     }
     return alpha;
 }
