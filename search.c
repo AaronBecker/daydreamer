@@ -432,7 +432,9 @@ static int search(position_t* pos,
             update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
-                if (!get_move_capture(*move) && !get_move_promote(*move)) {
+                if (!get_move_capture(*move) &&
+                        !get_move_promote(*move) &&
+                        *move != search_node->killers[0]) {
                     search_node->killers[1] = search_node->killers[0];
                     search_node->killers[0] = *move;
                 }
