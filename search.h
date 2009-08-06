@@ -9,6 +9,7 @@ extern "C" {
 
 typedef struct {
     move_t pv[MAX_SEARCH_DEPTH];
+    move_t killers[2];
 } search_node_t;
 
 typedef enum {
