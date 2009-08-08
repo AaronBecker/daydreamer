@@ -4,7 +4,7 @@
 #include <string.h>
 #include "daydreamer.h"
 
-static const int bucket_size = 1;
+static const int bucket_size = 4;
 static int num_buckets;
 static int generation;
 static const int generation_limit = 8;
