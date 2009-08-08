@@ -11,18 +11,21 @@ Search
     More accurate time management
     More nullmove experimentation
 
-test buckets for transposition table
+more transposition table testing
 shrink trans table entry size
 
 Check flag in position
-Track pinned pieces in SEE
+Track pinned pieces in SEE, test for improvement
+
+remove pre-generated attack table; generate at startup
+separate out ufo vs normal eval
     
+Expand evaluation function
+Chess960 support
+
 Interface
     Basic Winboard interface?
     ECO classification
     Improve non-UCI console interface
-    FEN output
-
-Expand evaluation function
-Chess960 support
+    non-standard uci commands? (perft, etc)
 
