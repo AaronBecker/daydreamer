@@ -288,7 +288,6 @@ static bool root_search(search_data_t* search_data)
             &alpha, &beta, &hash_move);
     order_moves(&search_data->root_pos, search_data->search_stack,
             search_data->root_moves, hash_move, 0);
-    bool first_move = true;
     for (move_t* move=search_data->root_moves; *move; ++move) {
         if (should_output(search_data)) {
             char la_move[6];
@@ -300,7 +299,8 @@ static bool root_search(search_data_t* search_data)
         do_move(pos, *move, &undo);
         int ext = extend(pos, *move);
         int score;
-        if (first_move) {
+        if (move == search_data->root_moves) {
+            // First move, use full window search.
             score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-1);
         } else {
@@ -331,7 +331,6 @@ static bool root_search(search_data_t* search_data)
                 print_pv(search_data);
             }
         }
-        first_move = false;
     }
     if (alpha != -MATE_VALUE-1) {
         put_transposition(pos, search_data->best_move,
@@ -408,7 +407,6 @@ static int search(position_t* pos,
     generate_pseudo_moves(pos, moves);
     int num_legal_moves = 0;
     order_moves(pos, search_node, moves, hash_move, ply);
-    bool first_move = true;
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;
@@ -416,9 +414,11 @@ static int search(position_t* pos,
         undo_info_t undo;
         do_move(pos, *move, &undo);
         int ext = extend(pos, *move);
-        if (first_move) score = -search(pos, search_node+1, ply+1,
-                -beta, -alpha, depth+ext-1);
-        else {
+        if (move == moves) {
+            // First move, use full window search.
+            score = -search(pos, search_node+1, ply+1,
+                    -beta, -alpha, depth+ext-1);
+        } else {
             score = -search(pos, search_node+1, ply+1,
                     -alpha-1, -alpha, depth+ext-1);
             if (score > alpha) {
@@ -444,7 +444,6 @@ static int search(position_t* pos,
                 return beta;
             }
         }
-        first_move = false;
     }
     if (!num_legal_moves) {
         // No legal moves, this is either stalemate or checkmate.
