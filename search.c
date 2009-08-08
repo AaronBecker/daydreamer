@@ -385,9 +385,9 @@ static int search(position_t* pos,
                 -beta, -beta+1, MAX(depth-NULL_R, 0));
         undo_nullmove(pos, &undo);
         if (score >= beta) {
-            depth -= NULLMOVE_DEPTH_REDUCTION;
-            if (depth > 0) {
-                score = search(pos, search_node, ply, alpha, beta, depth);
+            int rdepth = depth - NULLMOVE_DEPTH_REDUCTION;
+            if (rdepth > 0) {
+                score = search(pos, search_node, ply, alpha, beta, rdepth);
                 if (score >= beta) return beta;
             } else {
                 return beta;
