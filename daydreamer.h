@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #ifndef ENGINE_VERSION
-#define ENGINE_VERSION_NUMBER   "0.6"
+#define ENGINE_VERSION_NUMBER   "0.7"
 #define ENGINE_VERSION_NAME
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #endif
