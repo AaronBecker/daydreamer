@@ -410,7 +410,6 @@ static int search(position_t* pos,
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;
-        // TODO: late move reductions
         undo_info_t undo;
         do_move(pos, *move, &undo);
         int ext = extend(pos, *move);
@@ -419,6 +418,9 @@ static int search(position_t* pos,
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1);
         } else {
+            // Late move reduction (LMR), as described by Tord Romstad at
+            // http://www.glaurungchess.com/lmr.html
+            // TODO: implement
             score = -search(pos, search_node+1, ply+1,
                     -alpha-1, -alpha, depth+ext-1);
             if (score > alpha) {

@@ -1,10 +1,14 @@
 
 #include "daydreamer.h"
+#include <strings.h>
 
 extern void init_eval(void);
 extern search_data_t root_data;
+static void generate_attack_data(void);
+
 void init_daydreamer(void)
 {
+    generate_attack_data();
     init_eval();
     init_transposition_table(64 * 1<<20);
     init_uci_options(&root_data.options);
@@ -46,84 +50,16 @@ const piece_flag_t piece_flags[] = {
     0, BP_FLAG, N_FLAG, B_FLAG, R_FLAG, Q_FLAG, K_FLAG, 0, 0
 };
 
-// Precomputed data for each (from,to) pair on what pieces can attack there.
-// Originally computed in generate_attack_data().
-const attack_data_t board_attack_data_storage[256] = {
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, { 40,  17}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 48,  16}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, { 40,  15},
-    {  0,   0}, {  0,   0}, { 40,  17}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 48,  16}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, { 40,  15}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, { 40,  17},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 48,  16}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, { 40,  15}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 40,  17}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 48,  16}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 40,  15}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, { 40,  17}, {  0,   0}, {  0,   0},
-    { 48,  16}, {  0,   0}, {  0,   0}, { 40,  15},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, { 40,  17}, {  4,  33},
-    { 48,  16}, {  4,  31}, { 40,  15}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  4,  18}, {105,  17},
-    {112,  16}, {105,  15}, {  4,  14}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, { 48,   1}, { 48,   1}, { 48,   1},
-    { 48,   1}, { 48,   1}, { 48,   1}, {112,   1},
-    {  0,   0}, {112,  -1}, { 48,  -1}, { 48,  -1},
-    { 48,  -1}, { 48,  -1}, { 48,  -1}, { 48,  -1},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  4, -14}, {106, -15},
-    {112, -16}, {106, -17}, {  4, -18}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, { 40, -15}, {  4, -31},
-    { 48, -16}, {  4, -33}, { 40, -17}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, { 40, -15}, {  0,   0}, {  0,   0},
-    { 48, -16}, {  0,   0}, {  0,   0}, { 40, -17},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 40, -15}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 48, -16}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 40, -17}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, { 40, -15},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 48, -16}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, { 40, -17}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, { 40, -15}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 48, -16}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, { 40, -17}, {  0,   0},
-    {  0,   0}, { 40, -15}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    { 48, -16}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, { 40, -17},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-    {  0,   0}, {  0,   0}, {  0,   0}, {  0,   0},
-};
+// Data for each (from,to) pair on what pieces can attack there.
+// Computed in generate_attack_data().
+const attack_data_t board_attack_data_storage[256];
 const attack_data_t* board_attack_data = board_attack_data_storage + 128;
 
 /**
- * This is the function originally used to generate the static board attack
- * data. It's not used for anything now, but if the attack data structures are
- * changed and this data needs to be regenerated, this could come in handy.
+ * Calculate which pieces can attack from a given square to another square
+ * for each possible (from,to) pair.
  */
-#include <strings.h>
-#include <stdio.h>
-void generate_attack_data(void)
+static void generate_attack_data(void)
 {
     memset((char*)board_attack_data_storage, 0, sizeof(attack_data_t)*256);
     attack_data_t* mutable_attack_data = (attack_data_t*)board_attack_data;
@@ -140,13 +76,4 @@ void generate_attack_data(void)
             }
         }
     }
-
-    printf("{\n\t");
-    for (int i=0; i<256; ++i) {
-        printf("{%3d, %3d}, ",
-                board_attack_data_storage[i].possible_attackers,
-                board_attack_data_storage[i].relative_direction);
-        if ((i+1)%4 == 0) printf("\n    ");
-    }
-    printf("}\n");
 }

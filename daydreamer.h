@@ -44,7 +44,6 @@ extern "C" {
 
 // daydreamer.c
 void init_daydreamer(void);
-void generate_attack_data(void);
 
 // eval.c
 int simple_eval(const position_t* pos);
