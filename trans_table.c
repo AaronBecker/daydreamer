@@ -66,6 +66,18 @@ void increment_transposition_age(void)
     set_transposition_age((generation + 1) % generation_limit);
 }
 
+transposition_entry_t* get_transposition_entry(position_t* pos)
+{
+    transposition_entry_t* entry;
+    entry = &transposition_table[(pos->hash % num_buckets) * bucket_size];
+    for (int i=0; i<bucket_size; ++i, ++entry) {
+        if (!entry->key || entry->key != pos->hash) continue;
+        return entry;
+    }
+    hash_stats.misses++;
+    return NULL;
+}
+
 bool get_transposition(position_t* pos,
         int depth,
         int* lb,

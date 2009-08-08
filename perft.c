@@ -121,16 +121,20 @@ static uint64_t divide(position_t* pos, int depth)
 static uint64_t full_search(position_t* pos, int depth)
 {
     if (depth <= 0) return 1;
-    int a,b; move_t m; // dummies
-    if (get_transposition(pos, 0, &a, &b, &m)) {
-        transpositions++;
-    } else {
-        put_transposition(pos, 0, 0, 0, NO_MOVE);
+    transposition_entry_t* entry;
+    if ((entry = get_transposition_entry(pos))) {
+        if (depth == entry->depth) {
+            transpositions++;
+            return entry->score;
+        }
     }
     move_t move_list[256];
     move_t* current_move = move_list;
     int move_count = generate_legal_moves(pos, move_list);
-    if (depth == 1) return move_count;
+    if (depth == 1) {
+        put_transposition(pos, NO_MOVE, depth, move_count, SCORE_EXACT);
+        return move_count;
+    }
 
     uint64_t nodes = 0;
     while (*current_move) {
@@ -140,5 +144,6 @@ static uint64_t full_search(position_t* pos, int depth)
         undo_move(pos, *current_move, &undo);
         ++current_move;
     }
+    put_transposition(pos, NO_MOVE, depth, nodes, SCORE_EXACT);
     return nodes;
 }
