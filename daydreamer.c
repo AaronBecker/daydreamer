@@ -6,7 +6,7 @@ extern search_data_t root_data;
 void init_daydreamer(void)
 {
     init_eval();
-    init_transposition_table(32 * 1<<20);
+    init_transposition_table(64 * 1<<20);
     init_uci_options(&root_data.options);
 }
 
