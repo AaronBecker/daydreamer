@@ -436,12 +436,25 @@ static int search(position_t* pos,
         } else {
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
-            // TODO: implement
-            score = -search(pos, search_node+1, ply+1,
-                    -alpha-1, -alpha, depth+ext-1);
+            bool do_lmr = num_legal_moves > LMR_EARLY_MOVES &&
+                depth > LMR_DEPTH_LIMIT &&
+                !ext &&
+                !get_move_promote(*move) &&
+                !get_move_capture(*move) &&
+                !is_move_castle(*move);
+            if (do_lmr) {
+                score = -search(pos, search_node+1, ply+1,
+                        -alpha-1, -alpha, depth-LMR_REDUCTION-1);
+            } else {
+                score = alpha+1;
+            }
             if (score > alpha) {
                 score = -search(pos, search_node+1, ply+1,
-                        -beta, -alpha, depth+ext-1);
+                        -alpha-1, -alpha, depth+ext-1);
+                if (score > alpha && score < beta) {
+                    score = -search(pos, search_node+1, ply+1,
+                            -beta, -alpha, depth+ext-1);
+                }
             }
         }
         undo_move(pos, *move, &undo);
