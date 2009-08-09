@@ -415,7 +415,7 @@ static int search(position_t* pos,
         undo_info_t undo;
         do_move(pos, *move, &undo);
         int ext = extend(pos, *move);
-        if (move == moves) {
+        if (num_legal_moves == 1) {
             // First move, use full window search.
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1);
