@@ -83,6 +83,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     check_move_validity(pos, move);
     check_board_validity(pos);
     // Set undo info, so we can roll back later.
+    undo->is_check = pos->is_check;
     undo->prev_move = pos->prev_move;
     undo->ep_square = pos->ep_square;
     undo->fifty_move_counter = pos->fifty_move_counter;
@@ -137,6 +138,8 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
         place_piece(pos, create_piece(side, promote_type), to);
     }
 
+    square_t king_square = pos->pieces[other_side][KING][0].location;
+    pos->is_check = is_square_attacked(pos, king_square, side);
     ++pos->fifty_move_counter;
     pos->hash_history[pos->ply++] = undo->hash;
     pos->side_to_move ^= 1;
@@ -182,6 +185,7 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
     // Reset non-board state information.
     pos->side_to_move ^= 1;
     pos->ply--;
+    pos->is_check = undo->is_check;
     pos->ep_square = undo->ep_square;
     pos->fifty_move_counter = undo->fifty_move_counter;
     pos->castle_rights = undo->castle_rights;
@@ -196,6 +200,7 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
  */
 void do_nullmove(position_t* pos, undo_info_t* undo)
 {
+    assert(!pos->is_check);
     check_board_validity(pos);
     undo->ep_square = pos->ep_square;
     undo->castle_rights = pos->castle_rights;
@@ -218,6 +223,7 @@ void do_nullmove(position_t* pos, undo_info_t* undo)
  */
 void undo_nullmove(position_t* pos, undo_info_t* undo)
 {
+    assert(!pos->is_check);
     check_board_validity(pos);
     pos->ep_square = undo->ep_square;
     pos->castle_rights = undo->castle_rights;

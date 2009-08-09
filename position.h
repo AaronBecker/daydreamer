@@ -104,11 +104,13 @@ typedef struct {
     int piece_square_eval[2];
     int endgame_piece_square_eval[2];
     castle_rights_t castle_rights;
+    bool is_check;
     hashkey_t hash;
     hashkey_t hash_history[HASH_HISTORY_LENGTH];
 } position_t;
 
 typedef struct {
+    bool is_check;
     move_t prev_move;
     square_t ep_square;
     int fifty_move_counter;

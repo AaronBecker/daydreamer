@@ -36,6 +36,7 @@ static void init_position(position_t* position)
     position->castle_rights = CASTLE_NONE;
     position->prev_move = NO_MOVE;
     position->hash = 0;
+    position->is_check = false;
     memset(position->hash_history, 0, HASH_HISTORY_LENGTH * sizeof(hashkey_t));
 }
 
@@ -96,6 +97,8 @@ char* set_position(position_t* pos, const char* fen)
             case '\0':
             case '\n':check_board_validity(pos);
                       pos->hash = hash_position(pos);
+                      square_t king_sq = pos->pieces[WHITE][KING][0].location;
+                      pos->is_check = is_square_attacked(pos, king_sq, BLACK);
                       return (char*)fen;
             default: assert(false);
         }
@@ -109,6 +112,8 @@ char* set_position(position_t* pos, const char* fen)
         default: assert(false);
     }
     while (*fen && isspace(*(++fen))) {}
+    square_t king_sq = pos->pieces[pos->side_to_move][KING][0].location;
+    pos->is_check = is_square_attacked(pos, king_sq, pos->side_to_move^1);
 
     // Read castling rights.
     while (*fen && !isspace(*fen)) {
@@ -186,8 +191,7 @@ bool is_square_attacked(const position_t* pos,
 
 bool is_check(const position_t* pos)
 {
-    square_t king_square = pos->pieces[pos->side_to_move][KING][0].location;
-    return is_square_attacked(pos, king_square, pos->side_to_move^1);
+    return pos->is_check;
 }
 
 bool is_move_legal(position_t* pos, const move_t move)
@@ -223,7 +227,8 @@ bool is_move_legal(position_t* pos, const move_t move)
 
     // Just try the move and see if the king is being attacked afterwards.
     // This is sort of inefficient--actually making and unmaking the move
-    // isn't strictly necessary.
+    // isn't strictly necessary, so this could be optimized if it turns out
+    // to be a significant cost.
     undo_info_t undo;
     do_move(pos, move, &undo);
     bool legal = !is_square_attacked(pos,
