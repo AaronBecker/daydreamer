@@ -186,23 +186,6 @@ static void handle_search(position_t* pos, char* command)
 }
 
 /*
- * Command: minimax <depth>
- * Search the current position to the given depth.
- */
-static void handle_minimax(position_t* pos, char* command)
-{
-    while(isspace(*command)) ++command;
-    int depth;
-    sscanf(command, "%d", &depth);
-    init_search_data(&root_data);
-    extern search_data_t root_data;
-    copy_position(&root_data.root_pos, pos);
-    root_data.depth_limit = depth;
-    root_data.infinite = true;
-    root_search_minimax();
-}
-
-/*
  * Command: see <move>
  * Print the static exchange evaluation for the given capturing move.
  */
@@ -229,7 +212,6 @@ static const char* command_prefixes[] = {
     "perftsuite",
     "setboard",
     "showfen",
-    "minimax",
     "divide",
     "search",
     "moves",
@@ -244,14 +226,13 @@ static const char* command_prefixes[] = {
 };
 
 static const int command_prefix_lengths[] = {
-    10, 8, 7, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 0
+    10, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 0
 };
 
 static const command_handler handlers[] = {
     &handle_perftsuite,
     &handle_setboard,
     &handle_showfen,
-    &handle_minimax,
     &handle_divide,
     &handle_search,
     &handle_moves,
