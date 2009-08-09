@@ -5,6 +5,9 @@
 #include "daydreamer.h"
 
 search_data_t root_data;
+static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
+    300, 500, 800, 900, 1000
+};
 
 static bool should_stop_searching(search_data_t* data);
 static bool root_search(search_data_t* search_data);
@@ -415,6 +418,14 @@ static int search(position_t* pos,
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;
+        // Futility pruning.
+        // TODO: better determination of which moves are tactical and shouldn't
+        // be pruned (e.g. checks, certain pawn pushes)
+        if (!full_window && !is_check(pos) &&
+                depth <= FUTILITY_DEPTH_LIMIT &&
+                !get_move_capture(*move) && !get_move_promote(*move) &&
+                lazy_score + futility_margin[depth-1] < alpha) continue;
+
         undo_info_t undo;
         do_move(pos, *move, &undo);
         int ext = extend(pos, *move);
