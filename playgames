@@ -6,7 +6,7 @@ import optparse
 
 engine_prefix = '/Users/abecker/work/misc_code/chess_engines/'
 cutechess_path = '/Users/abecker/work/misc_code/cutechess-cli/cutechess-cli.sh'
-daydreamer_path = '/Users/abecker/work/code/daydreamer/daydreamer'
+daydreamer_path = '/Users/abecker/work/code/daydreamer/'
 programs = {
     'roce' : 'cmd=' + engine_prefix + 'roce38m/roce38_32 proto=uci',
     'tscp' : 'cmd=' + engine_prefix + 'tscp181/tscp proto=xboard name=tscp',
@@ -20,8 +20,7 @@ programs = {
     'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
     'greko' : 'cmd=' + engine_prefix + 'greko-6.5/bin/greko proto=uci name=greko',
     'vicki' : 'cmd=' + engine_prefix + 'vicki0.041a/vicki.sh' + \
-            ' proto=xboard name=Vicki',
-    'daydreamer' : 'cmd=' + daydreamer_path + ' proto=uci'
+            ' proto=xboard name=Vicki'
     }
 
 def main(argv=None):
@@ -46,10 +45,18 @@ def main(argv=None):
     outfile_base = args[3]
     logfile = open(outfile_base + '.log', 'w')
     summary = open(outfile_base + '.summary', 'w')
+    if not programs.has_key(primary_engine):
+        pr_eng_str = 'cmd=' + daydreamer_path + primary_engine + ' proto=uci'
+    else:
+        pr_eng_str = programs[primary_engine]
     for engine in engines:
+        if not programs.has_key(engine):
+            sec_eng_str = 'cmd=' + daydreamer_path + engine + ' proto=uci'
+        else:
+            sec_eng_str = programs[engine]
         cutechess_args = '-pgnin tests/NoomenTestsuite2008.pgn ' + \
-                '-fcp ' + programs[primary_engine] + ' -scp ' + \
-                programs[engine] + ' -both tc=' + timecontrol + \
+                '-fcp ' + pr_eng_str + ' -scp ' + \
+                sec_eng_str + ' -both tc=' + timecontrol + \
                 ' -games ' + gamecount + ' -pgnout ' + outfile_base + '.pgn'
         if settings.debug:
             cutechess_args += ' -debug'
