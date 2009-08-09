@@ -377,9 +377,10 @@ static int search(position_t* pos,
     }
 
     int score = -MATE_VALUE-1;
-    // nullmove reduction, just check for beta cutoff
-    // TODO: factor into its own function
-    if (is_nullmove_allowed(pos)) {
+    int lazy_score = simple_eval(pos);
+    // Nullmove reduction.
+    if (!full_window && depth != 1 && lazy_score + NULL_EVAL_MARGIN > beta &&
+            is_nullmove_allowed(pos)) {
         undo_info_t undo;
         do_nullmove(pos, &undo);
         score = -search(pos, search_node+1, ply+1,
@@ -394,6 +395,8 @@ static int search(position_t* pos,
                 return beta;
             }
         }
+    } else if (!full_window) {
+        // TODO: razoring
     }
 
     if (hash_move == NO_MOVE && is_iid_allowed(full_window, depth)) {
