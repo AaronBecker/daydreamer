@@ -342,11 +342,10 @@ static bool root_search(search_data_t* search_data)
             }
         }
     }
-    if (alpha != -MATE_VALUE-1) {
-        put_transposition(pos, search_data->best_move,
-                search_data->current_depth,
-                search_data->best_score, SCORE_EXACT);
-    }
+    assert(alpha != -MATE_VALUE-1);
+    put_transposition(pos, search_data->best_move,
+            search_data->current_depth,
+            search_data->best_score, SCORE_EXACT);
     return true;
 }
 
@@ -489,9 +488,7 @@ static int quiesce(position_t* pos,
     int eval = simple_eval(pos);
     int score = eval;
     if (ply >= MAX_SEARCH_DEPTH-1) return score;
-    if (!is_check(pos) && alpha < score) {
-        alpha = score;
-    }
+    if (alpha < score) alpha = score;
     if (alpha >= beta) return beta;
     
     move_t moves[256];
