@@ -72,6 +72,7 @@ transposition_entry_t* get_transposition_entry(position_t* pos)
     entry = &transposition_table[(pos->hash % num_buckets) * bucket_size];
     for (int i=0; i<bucket_size; ++i, ++entry) {
         if (!entry->key || entry->key != pos->hash) continue;
+        hash_stats.hits++;
         return entry;
     }
     hash_stats.misses++;
