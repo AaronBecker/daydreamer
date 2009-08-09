@@ -70,6 +70,11 @@ typedef struct {
 #define DRAW_VALUE      0
 #define NULL_R          3
 #define NULLMOVE_DEPTH_REDUCTION    4
+#define NULL_EVAL_MARGIN            800
+#define FUTILITY_DEPTH_LIMIT        5
+#define LMR_EARLY_MOVES             3
+#define LMR_DEPTH_LIMIT             1
+#define LMR_REDUCTION               1
 
 #define is_mate_score(score)       (abs(score) + 256 > MATE_VALUE)
 #define should_output(s)    \
