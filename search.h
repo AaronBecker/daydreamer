@@ -71,6 +71,7 @@ typedef struct {
 #define NULL_R          3
 #define NULLMOVE_DEPTH_REDUCTION    4
 #define NULL_EVAL_MARGIN            800
+#define RAZOR_DEPTH_LIMIT           3
 #define FUTILITY_DEPTH_LIMIT        5
 #define LMR_EARLY_MOVES             3
 #define LMR_DEPTH_LIMIT             1

@@ -8,6 +8,12 @@ search_data_t root_data;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
     300, 500, 800, 900, 1000
 };
+static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
+    300, 300, 300
+};
+static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
+    250, 700, 1000
+};
 
 static bool should_stop_searching(search_data_t* data);
 static bool root_search(search_data_t* search_data);
@@ -398,8 +404,17 @@ static int search(position_t* pos,
                 return beta;
             }
         }
-    } else if (!full_window) {
-        // TODO: razoring
+    } else if (!full_window &&
+            depth <= RAZOR_DEPTH_LIMIT &&
+            hash_move == NO_MOVE &&
+            beta < MATE_VALUE - MAX_SEARCH_DEPTH &&
+            lazy_score + razor_attempt_margin[depth-1] < beta) {
+        // Razoring. The two-level depth-sensitive margin idea comes
+        // from Stockfish.
+        // TODO: seems dangerous to prune after a null move; investigate
+        // whether this should be prevented.
+        int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
+        if (qscore + razor_cutoff_margin[depth-1] < beta) return qscore;
     }
 
     if (hash_move == NO_MOVE && is_iid_allowed(full_window, depth)) {
@@ -520,6 +535,9 @@ static int quiesce(position_t* pos,
     
     move_t moves[256];
     if (!generate_pseudo_captures(pos, moves)) return alpha;
+    // TODO: generate more moves to search. Good candidates are checks that
+    // don't lose material (up to a certain number of consecutive checks, to
+    // prevent a runaway) and promotions to queen.
     order_moves(pos, search_node, moves, NO_MOVE, ply);
     int num_legal_captures = 0;
     for (move_t* move = moves; *move; ++move) {
