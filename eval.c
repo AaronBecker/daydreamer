@@ -176,6 +176,15 @@ int simple_eval(const position_t* pos)
 }
 
 /*
+ * Do full, more expensive evaluation of the position. Not implemented yet,
+ * so just return the simple evaluation.
+ */
+int full_eval(const position_t* pos)
+{
+    return simple_eval(pos);
+}
+
+/*
  * Is there enough material left for either side to conceivably win?
  */
 bool insufficient_material(const position_t* pos)

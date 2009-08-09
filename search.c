@@ -485,7 +485,7 @@ static int quiesce(position_t* pos,
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
     open_qnode(&root_data, ply);
     if (is_draw(pos)) return DRAW_VALUE;
-    int eval = simple_eval(pos);
+    int eval = full_eval(pos);
     int score = eval;
     if (ply >= MAX_SEARCH_DEPTH-1) return score;
     if (alpha < score) alpha = score;

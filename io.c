@@ -73,7 +73,7 @@ static void handle_print(position_t* pos, char* command)
 static void handle_eval(position_t* pos, char* command)
 {
     (void)command;
-    int eval = simple_eval(pos);
+    int eval = full_eval(pos);
     printf("evaluation: %d\n", eval);
     printf("material: (%d,%d)\npiece square: (%d,%d)\n",
             pos->material_eval[WHITE],
@@ -82,7 +82,7 @@ static void handle_eval(position_t* pos, char* command)
             pos->piece_square_eval[BLACK]);
     // make sure black eval is inverse of white
     pos->side_to_move ^=1;
-    assert(simple_eval(pos) == -eval);
+    assert(full_eval(pos) == -eval);
     pos->side_to_move ^=1;
 }
 
