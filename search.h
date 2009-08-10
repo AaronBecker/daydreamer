@@ -36,6 +36,8 @@ typedef struct {
 typedef struct {
     int cutoffs[MAX_SEARCH_DEPTH];
     int move_selection[HIST_BUCKETS + 1];
+    int razor_attempts[3];
+    int razor_prunes[3];
 } search_stats_t;
 
 typedef struct {

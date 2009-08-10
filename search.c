@@ -70,7 +70,13 @@ static void print_search_stats(search_data_t* search_data)
     for (int i=0; i<HIST_BUCKETS; ++i) {
         printf("%.2f ", (float)search_data->stats.move_selection[i]/total_moves);
     }
-    printf("\n");
+    printf("\nrazoring attempts/cutoffs by depth %d/%d %d/%d %d/%d\n",
+        search_data->stats.razor_attempts[0],
+        search_data->stats.razor_prunes[0],
+        search_data->stats.razor_attempts[1],
+        search_data->stats.razor_prunes[1],
+        search_data->stats.razor_attempts[2],
+        search_data->stats.razor_prunes[2]);
 }
 
 /*
@@ -413,8 +419,12 @@ static int search(position_t* pos,
         // from Stockfish.
         // TODO: seems dangerous to prune after a null move; investigate
         // whether this should be prevented.
+        root_data.stats.razor_attempts[depth-1]++;
         int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
-        if (qscore + razor_cutoff_margin[depth-1] < beta) return qscore;
+        if (qscore + razor_cutoff_margin[depth-1] < beta) {
+            root_data.stats.razor_prunes[depth-1]++;
+            return qscore;
+        }
     }
 
     if (hash_move == NO_MOVE && is_iid_allowed(full_window, depth)) {
