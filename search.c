@@ -5,6 +5,9 @@
 #include "daydreamer.h"
 
 search_data_t root_data;
+static const bool razoring_enabled = true;
+static const bool futility_enabled = true;
+static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
     300, 500, 800, 900, 1000
 };
@@ -410,7 +413,8 @@ static int search(position_t* pos,
                 return beta;
             }
         }
-    } else if (!full_window &&
+    } else if (razoring_enabled &&
+            !full_window &&
             depth <= RAZOR_DEPTH_LIMIT &&
             hash_move == NO_MOVE &&
             beta < MATE_VALUE - MAX_SEARCH_DEPTH &&
@@ -446,9 +450,12 @@ static int search(position_t* pos,
         // Futility pruning.
         // TODO: better determination of which moves are tactical and shouldn't
         // be pruned (e.g. checks, certain pawn pushes)
-        if (!full_window && !is_check(pos) &&
+        if (futility_enabled &&
+                !full_window &&
+                !is_check(pos) &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
-                !get_move_capture(*move) && !get_move_promote(*move) &&
+                !get_move_capture(*move) &&
+                !get_move_promote(*move) &&
                 lazy_score + futility_margin[depth-1] < alpha) continue;
 
         undo_info_t undo;
@@ -461,7 +468,8 @@ static int search(position_t* pos,
         } else {
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
-            bool do_lmr = num_legal_moves > LMR_EARLY_MOVES &&
+            bool do_lmr = lmr_enabled &&
+                num_legal_moves > LMR_EARLY_MOVES &&
                 depth > LMR_DEPTH_LIMIT &&
                 !ext &&
                 !get_move_promote(*move) &&
