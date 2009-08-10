@@ -377,13 +377,12 @@ void print_pv(search_data_t* search_data)
         copy_position(&pos, &search_data->root_pos);
         for (int i=0; pv[i] != NO_MOVE; ++i) do_move(&pos, pv[i], &undo);
 
-        move_t hash_move;
         transposition_entry_t* entry;
         while (moves < depth) {
             if (!(entry = get_transposition(&pos)) ||
-                    !is_move_legal(&pos, hash_move)) break;
-            print_la_move(hash_move);
-            do_move(&pos, hash_move, &undo);
+                    !is_move_legal(&pos, entry->move)) break;
+            print_la_move(entry->move);
+            do_move(&pos, entry->move, &undo);
             ++moves;
         }
     }
