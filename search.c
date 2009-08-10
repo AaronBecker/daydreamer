@@ -139,6 +139,8 @@ static bool should_stop_searching(search_data_t* data)
  * and pawn pushes to the 7th (relative) rank.
  * Note: |move| has already been made in |pos|. We need both anyway for
  * efficiency.
+ * TODO: recapture extensions would be good. Also, fractional extensions,
+ * and fractional plies in general.
  */
 static int extend(position_t* pos, move_t move)
 {
@@ -305,6 +307,7 @@ void deepening_search(search_data_t* search_data)
 /*
  * Perform search at the root position. |search_data| contains all relevant
  * search information, which is set in |deepening_search|.
+ * TODO: use an aspiration window.
  */
 static bool root_search(search_data_t* search_data)
 {
@@ -552,7 +555,7 @@ static int quiesce(position_t* pos,
     if (alpha >= beta) return beta;
     
     move_t moves[256];
-    if (!generate_pseudo_captures(pos, moves)) return alpha;
+    if (!generate_quiescence_moves(pos, moves)) return alpha;
     // TODO: generate more moves to search. Good candidates are checks that
     // don't lose material (up to a certain number of consecutive checks, to
     // prevent a runaway) and promotions to queen.

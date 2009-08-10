@@ -84,6 +84,7 @@ int generate_legal_noncaptures(const position_t* pos, move_t* moves);
 int generate_pseudo_moves(const position_t* position, move_t* move_list);
 int generate_pseudo_captures(const position_t* position, move_t* move_list);
 int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);
+int generate_quiescence_moves(const position_t* pos, move_t* moves);
 
 // parse.c
 move_t parse_la_move(position_t* pos, const char* la_move);
