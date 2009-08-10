@@ -447,25 +447,25 @@ static int search(position_t* pos,
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
         ++num_legal_moves;
-        // Futility pruning.
-        // TODO: better determination of which moves are tactical and shouldn't
-        // be pruned (e.g. checks, certain pawn pushes)
-        if (futility_enabled &&
-                !full_window &&
-                !is_check(pos) &&
-                depth <= FUTILITY_DEPTH_LIMIT &&
-                !get_move_capture(*move) &&
-                !get_move_promote(*move) &&
-                lazy_score + futility_margin[depth-1] < alpha) continue;
-
         undo_info_t undo;
         do_move(pos, *move, &undo);
         int ext = extend(pos, *move);
+        // Futility pruning. Note: it would be nice to do extensions and
+        // futility before calling do_move, but this would require more
+        // efficient ways of identifying important moves without actually
+        // making them.
+        bool prune_futile = futility_enabled &&
+                !full_window &&
+                !ext &&
+                depth <= FUTILITY_DEPTH_LIMIT &&
+                !get_move_capture(*move) &&
+                !get_move_promote(*move) &&
+                lazy_score + futility_margin[depth-1] < alpha;
         if (num_legal_moves == 1) {
             // First move, use full window search.
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1);
-        } else {
+        } else if (!prune_futile) {
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
             bool do_lmr = lmr_enabled &&
