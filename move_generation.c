@@ -1,6 +1,7 @@
 
 #include "daydreamer.h"
 
+static int generate_queen_promotions(const position_t* pos, move_t* moves);
 static void generate_pawn_captures(const position_t* pos,
         const piece_entry_t* piece_entry,
         move_t** moves);
@@ -76,6 +77,19 @@ int generate_pseudo_moves(const position_t* pos, move_t* moves)
     move_t* moves_head = moves;
     moves += generate_pseudo_captures(pos, moves);
     moves += generate_pseudo_noncaptures(pos, moves);
+    return moves-moves_head;
+}
+
+/*
+ * Generate all pseudolegal moves that should be considered during quiescence
+ * search. Currently this is just captures and promotions to queen.
+ */
+int generate_quiescence_moves(const position_t* pos, move_t* moves)
+{
+    move_t* moves_head = moves;
+    moves += generate_pseudo_captures(pos, moves);
+    moves += generate_queen_promotions(pos, moves);
+    // TODO: optionally generate checks for depth 0 quiescence
     return moves-moves_head;
 }
 
@@ -232,6 +246,31 @@ int generate_pseudo_noncaptures(const position_t* pos, move_t* moves)
         moves = add_move(pos,
                 create_move_castle(king_home, king_home-2,
                     create_piece(side, KING)),
+                moves);
+    }
+    *moves = 0;
+    return (moves-moves_head);
+}
+
+/*
+ * Add all pseudo-legal non-capturing promotions to queen. Used for
+ * quiescence search.
+ */
+static int generate_queen_promotions(const position_t* pos, move_t* moves)
+{
+    move_t* moves_head = moves;
+    color_t side = pos->side_to_move;
+    piece_t piece = create_piece(side, PAWN);
+    for (int i = 0; i < pos->piece_count[side][PAWN]; ++i) {
+        const piece_entry_t* piece_entry = &pos->pieces[side][PAWN][i];
+        assert(piece_entry->piece == piece);
+        square_t from = piece_entry->location;
+        rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
+        if (relative_rank < RANK_7) continue;
+        square_t to = from + pawn_push[side];
+        if (pos->board[to]) continue;
+        moves = add_move(pos,
+                create_move_promote(from, to, piece, EMPTY, QUEEN),
                 moves);
     }
     *moves = 0;

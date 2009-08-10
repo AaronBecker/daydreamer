@@ -552,7 +552,7 @@ static int quiesce(position_t* pos,
     if (alpha >= beta) return beta;
     
     move_t moves[256];
-    if (!generate_pseudo_captures(pos, moves)) return alpha;
+    if (!generate_quiescence_moves(pos, moves)) return alpha;
     // TODO: generate more moves to search. Good candidates are checks that
     // don't lose material (up to a certain number of consecutive checks, to
     // prevent a runaway) and promotions to queen.
