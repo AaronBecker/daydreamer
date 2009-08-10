@@ -1,7 +1,5 @@
 
 Search
-    Late move reductions
-    Futility
     Aspiration
     Better statistics gathering/reporting
     TBB?
@@ -9,18 +7,16 @@ Search
     Checks in quiescence
     Identify "tough" moves and take more time on them
     More accurate time management
-    More nullmove experimentation
+    Experiment with nullmove, razoring, futility, and LMR
+    history counters
 
 more transposition table testing
 shrink trans table entry size
 
-Check flag in position
 Track pinned pieces in SEE, test for improvement
 
-remove pre-generated attack table; generate at startup
 separate out ufo vs normal eval
-    
-Expand evaluation function
+Expand evaluation function: start with pawn eval + hash
 Chess960 support
 
 Interface
