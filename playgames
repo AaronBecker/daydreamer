@@ -4,13 +4,12 @@ from subprocess import Popen, PIPE
 import sys
 import optparse
 
-engine_prefix = '/Users/abecker/work/misc_code/chess_engines/'
-cutechess_path = '/Users/abecker/work/misc_code/cutechess-cli/cutechess-cli.sh'
-daydreamer_path = '/Users/abecker/work/code/daydreamer/'
+engine_prefix = '/Users/abecker/misc_code/chess_engines/'
+cutechess_path = '/Users/abecker/misc_code/cutechess-cli/cutechess-cli.sh'
+daydreamer_path = '/Users/abecker/code/daydreamer/'
 programs = {
     'roce' : 'cmd=' + engine_prefix + 'roce38m/roce38_32 proto=uci',
     'tscp' : 'cmd=' + engine_prefix + 'tscp181/tscp proto=xboard name=tscp',
-    #'gnuchess' : 'cmd=gnuchess' + ' proto=xboard' + ' name=gnuchess',
     'mediocre' : 'cmd=' + engine_prefix + \
             'mediocre_v0/mediocre.sh proto=uci',
     'clarabit' : 'cmd=' + engine_prefix + 'Clarabit_x32_win/clarabit.sh proto=uci',
@@ -20,7 +19,10 @@ programs = {
     'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
     'greko' : 'cmd=' + engine_prefix + 'greko-6.5/bin/greko proto=uci name=greko',
     'vicki' : 'cmd=' + engine_prefix + 'vicki0.041a/vicki.sh' + \
-            ' proto=xboard name=Vicki'
+            ' proto=xboard name=Vicki',
+    'plisk' : 'cmd=' + engine_prefix + 'plisk_0-1/plisk_osx proto=uci',
+    'biglion' : 'cmd=' + engine_prefix + 'BigLion_223x/biglion.sh proto=uci'
+    #'gnuchess' : 'cmd=gnuchess' + ' proto=xboard' + ' name=gnuchess',
     }
 
 def main(argv=None):
@@ -58,9 +60,9 @@ def main(argv=None):
                 '-fcp ' + pr_eng_str + ' -scp ' + \
                 sec_eng_str + ' -both tc=' + timecontrol + \
                 ' -games ' + gamecount + ' -pgnout ' + outfile_base + '.pgn'
+        #'-book tests/performance.bin -bookdepth 12 ' + \
         if settings.debug:
             cutechess_args += ' -debug'
-        #'-book tests/performance.bin -bookdepth 12 ' + \
         command = cutechess_path + " " + cutechess_args
         print command
         logfile.write(command + '\n')
