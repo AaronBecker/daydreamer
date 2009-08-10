@@ -1,5 +1,6 @@
 
 #include "daydreamer.h"
+#include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -77,6 +78,35 @@ int move_to_san_str(position_t* pos, move_t move, char* san)
     undo_move(pos, move, &undo);
     *san = '\0';
     return san-orig_san;
+}
+
+move_t san_str_to_move(position_t* pos, char* san)
+{
+    assert(false); // not implemented yet.
+    move_t moves[256];
+    int legal_moves = generate_legal_moves(pos, moves);
+    if (strcasestr(san, "O-O-O") ||
+            strstr(san, "0-0-0") ||
+            strcasestr(san, "OOO")) {
+    } else if (strcasestr(san, "O-O") ||
+            strstr(san, "0-0") ||
+            strcasestr(san, "OO")) {
+    }
+    char* piece_pos = strchr(piece_chars, toupper(san[0]));
+    piece_type_t piece_type = piece_pos ? piece_pos - piece_chars : PAWN;
+    file_t from_file=FILE_NONE, to_file=FILE_NONE;
+    rank_t from_rank=RANK_NONE, to_rank=RANK_NONE;
+    bool is_capture = strcasestr(san, "x") != NULL;
+    bool is_check = strchr(san, '+') || strchr(san, '#');
+    piece_type_t promote_type = NONE;
+    char* is_promote = strchr(san, '=');
+    if (is_promote) {
+        char* promote_pos = strchr(piece_chars, toupper(*(is_promote+1)));
+        promote_type = promote_pos ? promote_pos - piece_chars : NONE;
+        assert(promote_type <= QUEEN);
+    }
+
+    return NO_MOVE;
 }
 
 int line_to_san_str(position_t* pos, move_t* line, char* san)
