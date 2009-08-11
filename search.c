@@ -5,6 +5,8 @@
 #include "daydreamer.h"
 
 search_data_t root_data;
+static const bool nullmove_enabled = true;
+static const bool iid_enabled = true;
 static const bool razoring_enabled = true;
 static const bool futility_enabled = true;
 static const bool lmr_enabled = true;
@@ -25,7 +27,8 @@ static int search(position_t* pos,
         int ply,
         int alpha,
         int beta,
-        int depth);
+        int depth,
+        bool try_nullmove);
 static int quiesce(position_t* pos,
         search_node_t* search_node,
         int ply,
@@ -184,6 +187,7 @@ static bool is_nullmove_allowed(position_t* pos)
 
 static bool is_iid_allowed(bool full_window, int depth)
 {
+    if (!iid_enabled) return false;
     search_options_t* options = &root_data.options;
     if (full_window) {
         if (!options->enable_pv_iid ||
@@ -332,11 +336,11 @@ static bool root_search(search_data_t* search_data)
         int score;
         if (move == search_data->root_moves) {
             // First move, use full window search.
-            score = -search(pos, search_data->search_stack,
-                    1, -beta, -alpha, search_data->current_depth+ext-1);
+            score = -search(pos, search_data->search_stack, 1, -beta,
+                    -alpha, search_data->current_depth+ext-1, true);
         } else {
-            score = -search(pos, search_data->search_stack,
-                    1, -alpha-1, -alpha, search_data->current_depth+ext-1);
+            score = -search(pos, search_data->search_stack, 1, -alpha-1,
+                    -alpha, search_data->current_depth+ext-1, true);
             if (score > alpha) {
                 if (should_output(search_data)) {
                     char la_move[6];
@@ -344,7 +348,7 @@ static bool root_search(search_data_t* search_data)
                     printf("info string fail high, research %s\n", la_move);
                 }
                 score = -search(pos, search_data->search_stack,
-                    1, -beta, -alpha, search_data->current_depth+ext-1);
+                    1, -beta, -alpha, search_data->current_depth+ext-1, true);
             }
         }
         undo_move(pos, *move, &undo);
@@ -400,23 +404,28 @@ static int search(position_t* pos,
     int score = -MATE_VALUE-1;
     int lazy_score = simple_eval(pos);
     // Nullmove reduction.
-    if (!full_window && depth != 1 && lazy_score + NULL_EVAL_MARGIN > beta &&
+    if (nullmove_enabled &&
+            try_nullmove &&
+            !full_window &&
+            depth != 1 &&
+            lazy_score + NULL_EVAL_MARGIN > beta &&
             is_nullmove_allowed(pos)) {
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        score = -search(pos, search_node+1, ply+1,
-                -beta, -beta+1, MAX(depth-NULL_R, 0));
+        search_node->pv[ply] = NULL_MOVE;
+        int null_score = -search(pos, search_node+1, ply+1,
+                -beta, -beta+1, MAX(depth-NULL_R, 0), false);
         undo_nullmove(pos, &undo);
-        if (score >= beta) {
-            int rdepth = depth - NULLMOVE_DEPTH_REDUCTION;
-            if (rdepth > 0) {
-                score = search(pos, search_node, ply, alpha, beta, rdepth);
-                if (score >= beta) return beta;
-            } else {
-                return beta;
-            }
+        if (null_score >= beta) {
+            return beta;
+            int rdepth = depth - NULLMOVE_VERIFICATION_REDUCTION;
+            if (rdepth <= 0) return beta;
+            null_score = search(pos, search_node, ply, alpha, beta,
+                    rdepth, false);
+            if (null_score >= beta) return beta;
         }
     } else if (razoring_enabled &&
+            try_nullmove &&
             !full_window &&
             depth <= RAZOR_DEPTH_LIMIT &&
             hash_move == NO_MOVE &&
@@ -424,8 +433,6 @@ static int search(position_t* pos,
             lazy_score + razor_attempt_margin[depth-1] < beta) {
         // Razoring. The two-level depth-sensitive margin idea comes
         // from Stockfish.
-        // TODO: seems dangerous to prune after a null move; investigate
-        // whether this should be prevented.
         root_data.stats.razor_attempts[depth-1]++;
         int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
         if (qscore + razor_cutoff_margin[depth-1] < beta) {
@@ -439,7 +446,7 @@ static int search(position_t* pos,
             (full_window ? root_data.options.iid_pv_depth_reduction :
                            root_data.options.iid_non_pv_depth_reduction);
         assert(iid_depth > 0);
-        search(pos, search_node, ply, alpha, beta, iid_depth);
+        search(pos, search_node, ply, alpha, beta, iid_depth, true);
         hash_move = search_node->pv[ply];
     }
 
@@ -467,7 +474,7 @@ static int search(position_t* pos,
         if (num_legal_moves == 1) {
             // First move, use full window search.
             score = -search(pos, search_node+1, ply+1,
-                    -beta, -alpha, depth+ext-1);
+                    -beta, -alpha, depth+ext-1, true);
         } else if (!prune_futile) {
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
@@ -480,16 +487,16 @@ static int search(position_t* pos,
                 !is_move_castle(*move);
             if (do_lmr) {
                 score = -search(pos, search_node+1, ply+1,
-                        -alpha-1, -alpha, depth-LMR_REDUCTION-1);
+                        -alpha-1, -alpha, depth-LMR_REDUCTION-1, true);
             } else {
                 score = alpha+1;
             }
             if (score > alpha) {
                 score = -search(pos, search_node+1, ply+1,
-                        -alpha-1, -alpha, depth+ext-1);
+                        -alpha-1, -alpha, depth+ext-1, true);
                 if (score > alpha && score < beta) {
                     score = -search(pos, search_node+1, ply+1,
-                            -beta, -alpha, depth+ext-1);
+                            -beta, -alpha, depth+ext-1, true);
                 }
             }
         }
