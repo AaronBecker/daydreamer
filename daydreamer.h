@@ -127,6 +127,10 @@ void init_transposition_table(const int max_bytes);
 void clear_transposition_table(void);
 void increment_transposition_age(void);
 transposition_entry_t* get_transposition(position_t* pos);
+void put_transposition_line(position_t* pos,
+        move_t* moves,
+        int depth,
+        int score);
 void put_transposition(position_t* pos,
         move_t move,
         int depth,

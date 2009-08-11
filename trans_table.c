@@ -79,6 +79,19 @@ transposition_entry_t* get_transposition(position_t* pos)
     return NULL;
 }
 
+void put_transposition_line(position_t* pos,
+        move_t* moves,
+        int depth,
+        int score)
+{
+    if (!*moves) return;
+    put_transposition(pos, *moves, depth, score, SCORE_EXACT);
+    undo_info_t undo;
+    do_move(pos, *moves, &undo);
+    put_transposition_line(pos, moves+1, depth, score);
+    undo_move(pos, *moves, &undo);
+}
+
 void put_transposition(position_t* pos,
         move_t move,
         int depth,
@@ -89,8 +102,8 @@ void put_transposition(position_t* pos,
     int replace_score, best_replace_score = INT_MIN;
     entry = &transposition_table[(pos->hash % num_buckets) * bucket_size];
     for (int i=0; i<bucket_size; ++i, ++entry) {
-        if (entry->key == pos->hash) {
-            // Update an existing entry
+        if (!entry->key || entry->key == pos->hash) {
+            // Fill empty slot or update an existing entry
             entry->age = generation;
             entry->depth = depth;
             entry->move = move;
@@ -100,10 +113,15 @@ void put_transposition(position_t* pos,
                 case SCORE_UPPERBOUND: hash_stats.alpha++; break;
                 case SCORE_EXACT: hash_stats.exact++;
             }
-            switch (entry->score_type) {
-                case SCORE_LOWERBOUND: hash_stats.beta--; break;
-                case SCORE_UPPERBOUND: hash_stats.alpha--; break;
-                case SCORE_EXACT: hash_stats.exact--;
+            if (entry->key) {
+                switch (entry->score_type) {
+                    case SCORE_LOWERBOUND: hash_stats.beta--; break;
+                    case SCORE_UPPERBOUND: hash_stats.alpha--; break;
+                    case SCORE_EXACT: hash_stats.exact--;
+                }
+            } else {
+                entry->key = pos->hash;
+                hash_stats.occupied++;
             }
             entry->score_type = score_type;
             return;
@@ -117,7 +135,7 @@ void put_transposition(position_t* pos,
     // Replace the entry with the highest replace score.
     assert(best_entry != NULL);
     entry = best_entry;
-    if (!entry->key || entry->age != generation) hash_stats.occupied++;
+    if (entry->age != generation) hash_stats.occupied++;
     else ++hash_stats.evictions;
     switch (score_type) {
         case SCORE_LOWERBOUND: hash_stats.beta++; break;
