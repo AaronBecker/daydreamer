@@ -12,6 +12,11 @@ typedef int ambiguity_t;
 static char piece_chars[] = " PNBRQK";
 #define piece_type_char(x) piece_chars[x]
 
+/*
+ * For a given move in a position, determine any ambiguities to be resolved in
+ * the move's SAN representation. These are other pieces of the same type
+ * on the same rank or file that can move to the destination square.
+ */
 static ambiguity_t determine_move_ambiguity(position_t* pos, move_t move)
 {
     square_t dest = get_move_to(move);
@@ -32,13 +37,20 @@ static ambiguity_t determine_move_ambiguity(position_t* pos, move_t move)
     return ambiguity;
 }
 
+/*
+ * Given a move in a position, produce a move string in standard algebraic
+ * notation. Uses correct disambiguation rules, at least I think it does.
+ */
 int move_to_san_str(position_t* pos, move_t move, char* san)
 {
     char* orig_san = san;
     if (move == NO_MOVE) {
         strcpy(san, "(none)");
         return 6;
-    } else if (is_move_castle_short(move)) {
+    } else if (move == NULL_MOVE) {
+        strcpy(san, "(null)");
+        return 6;
+    }else if (is_move_castle_short(move)) {
         strcpy(san, "O-O");
         san += 3;
     } else if (is_move_castle_long(move)) {
@@ -80,35 +92,75 @@ int move_to_san_str(position_t* pos, move_t move, char* san)
     return san-orig_san;
 }
 
+/*
+ * Converts the given move string in standard algebraic notation into a move
+ * in engine format.
+ */
 move_t san_str_to_move(position_t* pos, char* san)
 {
-    assert(false); // not implemented yet.
     move_t moves[256];
-    int legal_moves = generate_legal_moves(pos, moves);
+    generate_legal_moves(pos, moves);
+    // Go ahead and take care of castles; they're easy.
     if (strcasestr(san, "O-O-O") ||
             strstr(san, "0-0-0") ||
             strcasestr(san, "OOO")) {
+        for (move_t* move=moves; *move; ++move) {
+            if (is_move_castle_long(*move)) return *move;
+        }
+        return NO_MOVE;
     } else if (strcasestr(san, "O-O") ||
             strstr(san, "0-0") ||
             strcasestr(san, "OO")) {
+        for (move_t* move=moves; *move; ++move) {
+            if (is_move_castle_short(*move)) return *move;
+        }
     }
-    char* piece_pos = strchr(piece_chars, toupper(san[0]));
-    piece_type_t piece_type = piece_pos ? piece_pos - piece_chars : PAWN;
-    file_t from_file=FILE_NONE, to_file=FILE_NONE;
-    rank_t from_rank=RANK_NONE, to_rank=RANK_NONE;
-    bool is_capture = strcasestr(san, "x") != NULL;
-    bool is_check = strchr(san, '+') || strchr(san, '#');
+    char* end = san + strlen(san) - 1;
+    if (end <= san) return NO_MOVE;
     piece_type_t promote_type = NONE;
     char* is_promote = strchr(san, '=');
     if (is_promote) {
         char* promote_pos = strchr(piece_chars, toupper(*(is_promote+1)));
         promote_type = promote_pos ? promote_pos - piece_chars : NONE;
         assert(promote_type <= QUEEN);
+        end = is_promote - 1;
     }
+    file_t from_file=FILE_NONE, to_file=FILE_NONE;
+    rank_t from_rank=RANK_NONE, to_rank=RANK_NONE;
+    if (!(*end <= '8' && *end >= '1')) return NO_MOVE;
+    to_rank = *end - '1';
+    end--;
+    if (!(*end <= 'h' && *end >= 'a')) return NO_MOVE;
+    to_file = *end - 'a';
+    end--;
+    square_t to_sq = create_square(to_file, to_rank);
 
+    char* piece_pos = strchr(piece_chars, toupper(san[0]));
+    piece_type_t piece_type = piece_pos ? piece_pos - piece_chars : PAWN;
+    san++;
+    if (san <= end && *san <= 'h' && *san >= 'a') {
+        from_file = *san - 'a';
+        san++;
+    }
+    if (san <= end && *san <= '8' && *san >= '1') {
+        from_rank = *san - '1';
+    }
+    for (move_t* move = moves; *move; ++move) {
+        if (get_move_to(*move) != to_sq) continue;
+        if (get_move_piece_type(*move) != piece_type) continue;
+        if (get_move_promote(*move) != promote_type) continue;
+        square_t from = get_move_from(*move);
+        if (from_file != FILE_NONE && square_file(from) != from_file) continue;
+        if (from_rank != RANK_NONE && square_rank(from) != from_rank) continue;
+        return *move;
+    }
     return NO_MOVE;
 }
 
+/*
+ * Convert a list of moves in engine format to it's equivalent standard
+ * algebraic notation string, with each move separated by a space.
+ */
 int line_to_san_str(position_t* pos, move_t* line, char* san)
 {
     if (!*line) {
