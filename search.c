@@ -281,6 +281,10 @@ void deepening_search(search_data_t* search_data)
             printf("info depth %d\n", search_data->current_depth);
         }
         bool no_abort = root_search(search_data);
+        put_transposition_line(&search_data->root_pos,
+                search_data->pv,
+                search_data->current_depth,
+                search_data->best_score);
         if (!no_abort) break;
         id_score = search_data->best_score;
         if (!should_deepen(search_data)) {
@@ -501,10 +505,10 @@ static int search(position_t* pos,
                     search_node->killers[1] = search_node->killers[0];
                     search_node->killers[0] = *move;
                 }
-                put_transposition(pos, *move, depth, beta, SCORE_LOWERBOUND);
+                put_transposition(pos, *move, depth, score, SCORE_LOWERBOUND);
                 root_data.stats.move_selection[MIN(move-moves, HIST_BUCKETS)]++;
                 search_node->pv[ply] = NO_MOVE;
-                return beta;
+                return score;
             }
         }
     }
