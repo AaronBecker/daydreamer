@@ -271,8 +271,6 @@ void deepening_search(search_data_t* search_data)
         generate_legal_moves(&search_data->root_pos, search_data->root_moves);
     }
 
-    move_t id_pv[MAX_SEARCH_DEPTH];
-    id_pv[0] = NO_MOVE;
     int id_score = root_data.best_score = -MATE_VALUE-1;
     if (!search_data->depth_limit) search_data->depth_limit = MAX_SEARCH_DEPTH;
     for (search_data->current_depth=1;
@@ -284,20 +282,16 @@ void deepening_search(search_data_t* search_data)
         }
         bool no_abort = root_search(search_data);
         if (!no_abort) break;
-        memcpy(id_pv, search_data->pv, MAX_SEARCH_DEPTH * sizeof(int));
         id_score = search_data->best_score;
         if (!should_deepen(search_data)) {
             ++search_data->current_depth;
             break;
         }
-        print_pv(search_data);
     }
     stop_timer(&search_data->timer);
 
     --search_data->current_depth;
     search_data->best_score = id_score;
-    memcpy(search_data->pv, id_pv, MAX_SEARCH_DEPTH * sizeof(int));
-    print_pv(search_data);
     print_search_stats(search_data);
     printf("info string targettime %d elapsedtime %d\n",
             search_data->time_target, elapsed_time(&search_data->timer));
@@ -362,15 +356,10 @@ static bool root_search(search_data_t* search_data)
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, *move);
             check_line(pos, search_data->pv);
-            if (should_output(search_data)) {
-                print_pv(search_data);
-            }
+            print_pv(search_data);
         }
     }
     assert(alpha != -MATE_VALUE-1);
-    put_transposition(pos, search_data->best_move,
-            search_data->current_depth,
-            search_data->best_score, SCORE_EXACT);
     return true;
 }
 
