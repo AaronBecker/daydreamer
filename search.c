@@ -7,17 +7,17 @@
 search_data_t root_data;
 static const bool nullmove_enabled = true;
 static const bool iid_enabled = true;
-static const bool razoring_enabled = true;
-static const bool futility_enabled = true;
+static const bool razoring_enabled = false;
+static const bool futility_enabled = false;
 static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
-    300, 500, 800, 900, 1000
+    50, 100, 150, 300, 5000
 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-    300, 300, 300
+    500, 300, 300
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
-    -100, 0, 150
+    50, 150, 150
 };
 
 static bool should_stop_searching(search_data_t* data);
@@ -464,18 +464,21 @@ static int search(position_t* pos,
         // futility before calling do_move, but this would require more
         // efficient ways of identifying important moves without actually
         // making them.
+        int futility_score = lazy_score + futility_margin[depth-1];
         bool prune_futile = futility_enabled &&
                 !full_window &&
                 !ext &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !get_move_capture(*move) &&
                 !get_move_promote(*move) &&
-                lazy_score + futility_margin[depth-1] < alpha;
+                futility_score < alpha;
         if (num_legal_moves == 1) {
             // First move, use full window search.
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1, true);
-        } else if (!prune_futile) {
+        } else if (prune_futile) {
+            score = futility_score;
+        } else {
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
             bool do_lmr = lmr_enabled &&
