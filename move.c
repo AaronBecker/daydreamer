@@ -207,6 +207,7 @@ void do_nullmove(position_t* pos, undo_info_t* undo)
     undo->prev_move = pos->prev_move;
     undo->fifty_move_counter = pos->fifty_move_counter;
     undo->hash = pos->hash;
+    undo->is_check = pos->is_check;
     pos->hash ^= ep_hash(pos);
     pos->hash ^= side_hash(pos);
     pos->side_to_move ^= 1;
@@ -231,6 +232,7 @@ void undo_nullmove(position_t* pos, undo_info_t* undo)
     pos->side_to_move ^= 1;
     pos->fifty_move_counter = undo->fifty_move_counter;
     pos->hash = undo->hash;
+    pos->is_check = undo->is_check;
     pos->ply--;
     check_board_validity(pos);
 }
