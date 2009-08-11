@@ -17,7 +17,7 @@ static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
     300, 300, 300
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
-    250, 700, 1000
+    -100, 0, 150
 };
 
 static bool should_stop_searching(search_data_t* data);
