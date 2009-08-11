@@ -319,6 +319,7 @@ static bool root_search(search_data_t* search_data)
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
 
+    // TODO: sort by # of nodes expanded in previous iteration.
     order_moves(&search_data->root_pos, search_data->search_stack,
             search_data->root_moves, hash_move, 0);
     for (move_t* move=search_data->root_moves; *move; ++move) {
@@ -372,18 +373,24 @@ static int search(position_t* pos,
         int ply,
         int alpha,
         int beta,
-        int depth)
+        int depth,
+        bool try_nullmove)
 {
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
     if (depth <= 0) {
         return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
-    if (is_draw(pos)) return DRAW_VALUE;
     open_node(&root_data, ply);
+    if (is_draw(pos)) return DRAW_VALUE;
     bool full_window = (beta-alpha > 1);
+
+    // Put some bounds on how good/bad this node could turn out to be.
     int orig_alpha = alpha;
+    alpha = MAX(alpha, -(MATE_VALUE-ply));
+    beta = MIN(beta, MATE_VALUE-ply+1);
+    if (alpha >= beta) return alpha;
+
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
     if (!full_window && trans_entry &&
