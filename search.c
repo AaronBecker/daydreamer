@@ -559,10 +559,10 @@ static int quiesce(position_t* pos,
     int score = eval;
     if (ply >= MAX_SEARCH_DEPTH-1) return score;
     if (alpha < score) alpha = score;
-    if (alpha >= beta) return beta;
+    if (alpha >= beta && !is_check(pos)) return alpha;
     
     move_t moves[256];
-    if (!generate_quiescence_moves(pos, moves)) return alpha;
+    generate_quiescence_moves(pos, moves);
     // TODO: generate more moves to search. Good candidates are checks that
     // don't lose material (up to a certain number of consecutive checks, to
     // prevent a runaway) and promotions to queen.
@@ -581,9 +581,18 @@ static int quiesce(position_t* pos,
             update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
-                return beta;
+                return score;
             }
         }
+    }
+    if (!num_legal_captures) {
+        // No legal moves generated, we have to make sure this isn't game over.
+        // TODO: a proper check evasion move generator would be a much better
+        // solution to this problem. Especially since we haven't really
+        // quiesced if we're in check.
+        int num_legal_noncaptures = generate_legal_noncaptures(pos, moves);
+        if (num_legal_noncaptures) return eval;
+        return is_check(pos) ? -(MATE_VALUE-ply) : DRAW_VALUE;
     }
     return alpha;
 }
