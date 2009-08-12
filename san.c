@@ -116,7 +116,10 @@ move_t san_str_to_move(position_t* pos, char* san)
         }
     }
     char* end = san + strlen(san) - 1;
-    if (end <= san) return NO_MOVE;
+    if (end <= san) {
+        warn(false, "Unable to parse SAN input");
+        return NO_MOVE;
+    }
     piece_type_t promote_type = NONE;
     char* is_promote = strchr(san, '=');
     if (is_promote) {
@@ -124,13 +127,19 @@ move_t san_str_to_move(position_t* pos, char* san)
         promote_type = promote_pos ? promote_pos - piece_chars : NONE;
         assert(promote_type <= QUEEN);
         end = is_promote - 1;
-    }
+    } else if (*end == '+' || *end == '#') --end;
     file_t from_file=FILE_NONE, to_file=FILE_NONE;
     rank_t from_rank=RANK_NONE, to_rank=RANK_NONE;
-    if (!(*end <= '8' && *end >= '1')) return NO_MOVE;
+    if (!(*end <= '8' && *end >= '1')) {
+        warn(false, "Unable to parse SAN input");
+        return NO_MOVE;
+    }
     to_rank = *end - '1';
     end--;
-    if (!(*end <= 'h' && *end >= 'a')) return NO_MOVE;
+    if (!(*end <= 'h' && *end >= 'a')) {
+        warn(false, "Unable to parse SAN input");
+        return NO_MOVE;
+    }
     to_file = *end - 'a';
     end--;
     square_t to_sq = create_square(to_file, to_rank);
@@ -154,6 +163,7 @@ move_t san_str_to_move(position_t* pos, char* san)
         if (from_rank != RANK_NONE && square_rank(from) != from_rank) continue;
         return *move;
     }
+    warn(false, "Unable to parse SAN input");
     return NO_MOVE;
 }
 

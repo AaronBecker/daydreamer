@@ -196,6 +196,16 @@ static void handle_see(position_t* pos, char* command)
     printf("see: %d\n", static_exchange_eval(pos, capture));
 }
 
+static void handle_epd(position_t* pos, char* command)
+{
+    (void)pos;
+    char filename[256];
+    int time_per_move = 5;
+    sscanf(command, "%s %d", filename, &time_per_move);
+    time_per_move *= 1000;
+    epd_testsuite(filename, time_per_move);
+}
+
 
 /*
  * Command: uci
@@ -222,11 +232,12 @@ static const char* command_prefixes[] = {
     "quit",
     "uci",
     "see",
+    "epd",
     NULL
 };
 
 static const int command_prefix_lengths[] = {
-    10, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 0
+    10, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 0
 };
 
 static const command_handler handlers[] = {
@@ -242,7 +253,8 @@ static const command_handler handlers[] = {
     &handle_undo,
     &handle_quit,
     &handle_uci,
-    &handle_see
+    &handle_see,
+    &handle_epd
 };
 
 /**
@@ -265,6 +277,14 @@ int square_to_coord_str(square_t sq, char* str)
  */
 void move_to_la_str(move_t move, char* str)
 {
+    if (move == NO_MOVE) {
+        strcpy(str, "(none)");
+        return;
+    }
+    if (move == NULL_MOVE) {
+        strcpy(str, "(null)");
+        return;
+    }
     square_t from = get_move_from(move);
     square_t to = get_move_to(move);
     str += snprintf(str, 5, "%c%c%c%c",

@@ -43,6 +43,9 @@ extern "C" {
 // daydreamer.c
 void init_daydreamer(void);
 
+// epd.c
+void epd_testsuite(char* filename, int time_per_problem);
+
 // eval.c
 int simple_eval(const position_t* pos);
 int full_eval(const position_t* pos);
@@ -107,6 +110,7 @@ bool is_repetition(const position_t* pos);
 // san.c
 int move_to_san_str(position_t* pos, move_t move, char* str);
 int line_to_san_str(position_t* pos, move_t* line, char* san);
+move_t san_str_to_move(position_t* pos, char* san);
 
 // search.c
 void init_search_data(search_data_t* data);

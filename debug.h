@@ -6,6 +6,20 @@ extern "C" {
 #endif
 
 #include <assert.h>
+#include <stdio.h>
+#if 0
+#undef assert
+#undef __assert
+#define assert(e)  \
+        ((void) ((e) ? 0 : __assert (#e, __FILE__, __LINE__)))
+#define __assert(e, file, line) \
+        ((void)printf ("%s:%u: failed assertion `%s'\n", file, line, e))
+#endif
+
+#define warn(cond, msg)  \
+        ((void) ((cond) ? 0 : __warn (#cond, __FILE__, __LINE__, msg)))
+#define __warn(cond, file, line, msg) \
+        ((void)printf ("%s:%u: warning: %s `%s'\n", file, line, msg, cond))
 
 void _check_board_validity(const position_t* pos);
 void _check_move_validity(const position_t* pos, const move_t move);

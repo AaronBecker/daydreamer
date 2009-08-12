@@ -64,7 +64,9 @@ void _check_line(position_t* pos, move_t* moves)
 {
     if (moves[0] == NO_MOVE) return;
     undo_info_t undo;
-    do_move(pos, moves[0], &undo);
+    if (moves[0] == NULL_MOVE) do_nullmove(pos, &undo);
+    else do_move(pos, moves[0], &undo);
     _check_line(pos, moves+1);
-    undo_move(pos, moves[0], &undo);
+    if (moves[0] == NULL_MOVE) undo_nullmove(pos, &undo);
+    else undo_move(pos, moves[0], &undo);
 }
