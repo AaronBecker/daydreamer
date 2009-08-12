@@ -11,7 +11,7 @@ static const bool razoring_enabled = false;
 static const bool futility_enabled = false;
 static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
-    50, 100, 150, 300, 5000
+    110//, 150, 300, 300, 300
 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
     500, 300, 300
@@ -452,7 +452,7 @@ static int search(position_t* pos,
 
     move_t moves[256];
     generate_pseudo_moves(pos, moves);
-    int num_legal_moves = 0;
+    int num_legal_moves = 0, num_futile_moves = 0;
     order_moves(pos, search_node, moves, hash_move, ply);
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
@@ -460,29 +460,39 @@ static int search(position_t* pos,
         undo_info_t undo;
         do_move(pos, *move, &undo);
         int ext = extend(pos, *move);
-        // Futility pruning. Note: it would be nice to do extensions and
-        // futility before calling do_move, but this would require more
-        // efficient ways of identifying important moves without actually
-        // making them.
-        int futility_score = lazy_score + futility_margin[depth-1];
-        bool prune_futile = futility_enabled &&
-                !full_window &&
-                !ext &&
-                depth <= FUTILITY_DEPTH_LIMIT &&
-                !get_move_capture(*move) &&
-                !get_move_promote(*move) &&
-                futility_score < alpha;
         if (num_legal_moves == 1) {
             // First move, use full window search.
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1, true);
-        } else if (prune_futile) {
-            score = futility_score;
         } else {
+            // Futility pruning. Note: it would be nice to do extensions and
+            // futility before calling do_move, but this would require more
+            // efficient ways of identifying important moves without actually
+            // making them.
+            bool prune_futile = futility_enabled &&
+                !full_window &&
+                !ext &&
+                depth <= FUTILITY_DEPTH_LIMIT &&
+                !get_move_capture(*move) &&
+                !get_move_promote(*move);
+            if (prune_futile) {
+                // TODO: full eval?
+                if (depth == 1) {
+                    score = simple_eval(pos) + futility_margin[depth-1];
+                } else {
+                    score = quiesce(pos, search_node, ply, alpha, beta, 0) +
+                        futility_margin[depth-1];
+                }
+                if (score < alpha) {
+                    num_futile_moves++;
+                    undo_move(pos, *move, &undo);
+                    continue;
+                }
+            }
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
             bool do_lmr = lmr_enabled &&
-                num_legal_moves > LMR_EARLY_MOVES &&
+                num_legal_moves - num_futile_moves > LMR_EARLY_MOVES &&
                 depth > LMR_DEPTH_LIMIT &&
                 !ext &&
                 !get_move_promote(*move) &&
