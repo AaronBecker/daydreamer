@@ -73,7 +73,8 @@ char* set_position(position_t* pos, const char* fen)
     for (square_t square=A8; square!=INVALID_SQUARE; ++fen, ++square) {
         if (isdigit(*fen)) {
             if (*fen == '0' || *fen == '9') {
-                assert(false);
+                warn(false, "Invalid FEN string");
+                return (char*)fen;
             } else {
                 square += *fen - '1';
             }
@@ -100,7 +101,8 @@ char* set_position(position_t* pos, const char* fen)
                       square_t king_sq = pos->pieces[WHITE][KING][0].location;
                       pos->is_check = is_square_attacked(pos, king_sq, BLACK);
                       return (char*)fen;
-            default: assert(false);
+            default: warn(false, "Illegal character in FEN string");
+                     return (char*)fen;
         }
     }
     while (isspace(*fen)) ++fen;
@@ -109,7 +111,8 @@ char* set_position(position_t* pos, const char* fen)
     switch (tolower(*fen)) {
         case 'w': pos->side_to_move = WHITE; break;
         case 'b': pos->side_to_move = BLACK; break;
-        default: assert(false);
+        default:  warn(false, "Illegal en passant character in FEN string");
+                  return (char*)fen;
     }
     while (*fen && isspace(*(++fen))) {}
     square_t king_sq = pos->pieces[pos->side_to_move][KING][0].location;
