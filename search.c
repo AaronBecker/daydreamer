@@ -412,7 +412,6 @@ static int search(position_t* pos,
             is_nullmove_allowed(pos)) {
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        search_node->pv[ply] = NULL_MOVE;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, MAX(depth-NULL_R, 0), false);
         undo_nullmove(pos, &undo);
