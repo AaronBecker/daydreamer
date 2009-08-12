@@ -490,8 +490,11 @@ static int search(position_t* pos,
             }
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
-            bool do_lmr = lmr_enabled &&
-                num_legal_moves - num_futile_moves > LMR_EARLY_MOVES &&
+            const bool move_is_late = full_window ?
+                num_legal_moves - num_futile_moves > LMR_PV_EARLY_MOVES :
+                num_legal_moves - num_futile_moves > LMR_EARLY_MOVES;
+            const bool do_lmr = lmr_enabled &&
+                move_is_late &&
                 depth > LMR_DEPTH_LIMIT &&
                 !ext &&
                 !get_move_promote(*move) &&
