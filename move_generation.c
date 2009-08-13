@@ -117,9 +117,101 @@ int generate_pseudo_captures(const position_t* pos, move_t* moves)
         }
     }
     *moves = 0;
-    return (moves-moves_head);
+    return moves-moves_head;
 }
 
+/*
+ * Generate all non-capturing, non-promoting, pseudo-legal checks. Used for
+ * quiescent move generation.
+ */
+int generate_pseudo_checks(const position_t* pos, move_t* moves)
+{
+    move_t* moves_head = moves;
+    color_t side = pos->side_to_move, other_side = side^1;
+    square_t king_sq = pos->pieces[other_side][KING][0].location;
+    for (piece_type_t type = QUEEN; type != NONE; --type) {
+        for (int i = 0; i < pos->piece_count[side][type]; ++i) {
+            square_t to = INVALID_SQUARE, from = pos->pieces[side][type][i].location;
+            piece_t piece = create_piece(side, type);
+            direction_t discover_check_dir = 0;
+            bool will_discover_check;
+            const attack_data_t* king_atk = &get_attack_data(to, king_sq);
+            if ((king_atk->possible_attackers & Q_FLAG) == 0) discover_check_dir = 0;
+            else {
+                direction_t king_dir = king_atk->relative_direction;
+                square_t sq;
+                for (sq = from + king_dir;
+                        valid_board_index(sq) && !pos->board[sq];
+                        sq += king_dir) {}
+                if (sq == king_sq) {
+                    // Nothing between us and the king. Is there anything behind us
+                    // to do the check when we move?
+                    for (sq = from - king_dir;
+                            valid_board_index(sq) && !pos->board[sq];
+                            sq -= king_dir) {}
+                    if (valid_board_index(sq) &&
+                            (king_atk->possible_attackers &
+                             get_piece_flag(pos->board[sq]->piece))) {
+                        discover_check_dir = king_dir;
+                    }
+                }
+            }
+            if (type == PAWN) {
+                will_discover_check = discover_check_dir && abs(discover_check_dir) != N;
+                to = from + pawn_push[side];
+                if (pos->board[to]) continue;
+                for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
+                    if (will_discover_check || to + *delta == king_sq) {
+                        moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
+                    }
+                }
+                to += pawn_push[side];
+                rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
+                if (relative_rank == RANK_2 && !pos->board[to]) {
+                    for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
+                        if (will_discover_check || to + *delta == king_sq) {
+                            moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
+                        }
+                    }
+                }
+            } else if (type == KNIGHT) {
+                for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
+                    to = from + *delta;
+                    if (!valid_board_index(to) || pos->board[to]) continue;
+                    const attack_data_t* atk = &get_attack_data(to, king_sq);
+                    if (discover_check_dir || atk->possible_attackers & N_FLAG) {
+                        moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
+                    }
+                }
+            } else {
+                for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
+                    for (to = from + *delta; valid_board_index(to) && !pos->board[to]; to += *delta) {
+                        will_discover_check = discover_check_dir && abs(discover_check_dir) != abs(*delta);
+                        if (will_discover_check) {
+                            moves = add_move(pos, create_move(from, to, piece, NONE), moves);
+                            continue;
+                        }
+                        const attack_data_t* atk = &get_attack_data(to, king_sq);
+                        if (atk->possible_attackers & get_piece_flag(piece)) {
+                            const direction_t to_king = atk->relative_direction;
+                            for (square_t x=to + to_king; valid_board_index(x); x += to_king) {
+                                if (x == king_sq) {
+                                    moves = add_move(pos,
+                                            create_move(from, to, piece, NONE),
+                                            moves);
+                                    break;
+                                }
+                                if (pos->board[x]) break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    *moves = 0;
+    return moves-moves_head;
+}
 
 /*
  * Add all pseudo-legal captures that the given piece (N/B/Q/K) can make.
