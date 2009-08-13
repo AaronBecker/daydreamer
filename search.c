@@ -8,16 +8,16 @@ search_data_t root_data;
 static const bool nullmove_enabled = true;
 static const bool iid_enabled = true;
 static const bool razoring_enabled = false;
-static const bool futility_enabled = false;
+static const bool futility_enabled = true;
 static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
-    110//, 150, 300, 300, 300
+    125, 170, 300, 600, 600
 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-    500, 300, 300
+    300, 300, 300//, 10000, 10000
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
-    50, 150, 150
+    100, 100, 100
 };
 
 static bool should_stop_searching(search_data_t* data);
@@ -428,12 +428,12 @@ static int search(position_t* pos,
             !full_window &&
             depth <= RAZOR_DEPTH_LIMIT &&
             hash_move == NO_MOVE &&
-            beta < MATE_VALUE - MAX_SEARCH_DEPTH &&
             lazy_score + razor_attempt_margin[depth-1] < beta) {
         // Razoring. The two-level depth-sensitive margin idea comes
         // from Stockfish.
         root_data.stats.razor_attempts[depth-1]++;
         int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
+        //if (qscore < beta) return qscore;
         if (qscore + razor_cutoff_margin[depth-1] < beta) {
             root_data.stats.razor_prunes[depth-1]++;
             return qscore;
@@ -473,15 +473,11 @@ static int search(position_t* pos,
                 !ext &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !get_move_capture(*move) &&
-                !get_move_promote(*move);
+                !(get_move_promote(*move) == QUEEN);
             if (prune_futile) {
-                // TODO: full eval?
-                if (depth == 1) {
-                    score = simple_eval(pos) + futility_margin[depth-1];
-                } else {
-                    score = quiesce(pos, search_node, ply, alpha, beta, 0) +
-                        futility_margin[depth-1];
-                }
+                // TODO: full eval? Doesn't matter yet, but I think full eval
+                // should probably be used on every interior node.
+                score = lazy_score + futility_margin[depth-1];
                 if (score < alpha) {
                     num_futile_moves++;
                     undo_move(pos, *move, &undo);
@@ -497,7 +493,7 @@ static int search(position_t* pos,
                 move_is_late &&
                 depth > LMR_DEPTH_LIMIT &&
                 !ext &&
-                !get_move_promote(*move) &&
+                !(get_move_promote(*move) == QUEEN) &&
                 !get_move_capture(*move) &&
                 !is_move_castle(*move);
             if (do_lmr) {
