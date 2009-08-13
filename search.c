@@ -205,14 +205,13 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
         int* alpha,
         int* beta)
 {
-    if (depth > entry->depth) return false;
-    if (entry->score_type != SCORE_LOWERBOUND && entry->score < *alpha) {
+    if (entry->score_type != SCORE_UPPERBOUND && entry->score > *alpha) {
         *alpha = entry->score;
     }
-    if (entry->score_type != SCORE_UPPERBOUND && entry->score > *beta) {
+    if (entry->score_type != SCORE_LOWERBOUND && entry->score < *beta) {
         *beta = entry->score;
     }
-    return true;
+    return (depth <= entry->depth);
 }
 
 static void order_moves(position_t* pos,
