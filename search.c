@@ -202,12 +202,17 @@ static bool is_iid_allowed(bool full_window, int depth)
 
 static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
         int depth,
-        int alpha,
-        int beta)
+        int* alpha,
+        int* beta)
 {
-    return (depth <= entry->depth &&
-        ((entry->score_type != SCORE_LOWERBOUND && entry->score <= alpha) ||
-        (entry->score_type != SCORE_UPPERBOUND && entry->score >= beta)));
+    if (depth > entry->depth) return false;
+    if (entry->score_type != SCORE_LOWERBOUND && entry->score < *alpha) {
+        *alpha = entry->score;
+    }
+    if (entry->score_type != SCORE_UPPERBOUND && entry->score > *beta) {
+        *beta = entry->score;
+    }
+    return true;
 }
 
 static void order_moves(position_t* pos,
@@ -394,7 +399,7 @@ static int search(position_t* pos,
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
     if (!full_window && trans_entry &&
-            is_trans_cutoff_allowed(trans_entry, depth, alpha, beta)) {
+            is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
         search_node->pv[ply] = hash_move;
         search_node->pv[ply+1] = NO_MOVE;
         root_data.stats.cutoffs[root_data.current_depth]++;
