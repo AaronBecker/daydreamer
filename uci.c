@@ -65,7 +65,7 @@ static void uci_position(char* uci_pos)
             move_t move = parse_la_move(&root_data.root_pos, uci_pos);
             if (move == NO_MOVE) {
                 printf("Warning: could not parse %s\n", uci_pos);
-                print_board(&root_data.root_pos);
+                print_board(&root_data.root_pos, true);
                 return;
             }
             undo_info_t dummy_undo;
@@ -137,7 +137,7 @@ static void uci_go(char* command)
     if (!movetime && !root_data.infinite) {
         calculate_search_time(wtime, btime, winc, binc, movestogo);
     }
-    print_board(&root_data.root_pos);
+    print_board(&root_data.root_pos, true);
     deepening_search(&root_data);
 }
 

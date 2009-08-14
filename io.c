@@ -63,7 +63,7 @@ static void handle_setboard(position_t* pos, char* command)
 static void handle_print(position_t* pos, char* command)
 {
     (void)command;
-    print_board(pos);
+    print_board(pos, false);
 }
 
 /*
@@ -415,16 +415,20 @@ void print_pv(search_data_t* search_data)
 /*
  * Print an ascii representation of the current board.
  */
-void print_board(const position_t* pos)
+void print_board(const position_t* pos, bool uci_prefix)
 {
     char fen_str[256];
     position_to_fen_str(pos, fen_str);
+    if (uci_prefix) printf("info string ");
     printf("fen: %s\n", fen_str);
+    if (uci_prefix) printf("info string ");
     printf("hash: %"PRIx64"\n", pos->hash);
+    if (uci_prefix) printf("info string ");
     for (square_t sq = A8; sq != INVALID_SQUARE; ++sq) {
         if (!valid_board_index(sq)) {
             printf("\n");
             if (sq < 0x18) return;
+            if (uci_prefix) printf("info string ");
             sq -= 0x19;
             continue;
         }

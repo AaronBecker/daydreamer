@@ -63,7 +63,7 @@ void move_to_la_str(move_t move, char* str);
 void position_to_fen_str(const position_t* pos, char* fen);
 void print_la_move(move_t move);
 int print_la_move_list(const move_t* move);
-void print_board(const position_t* pos);
+void print_board(const position_t* pos, bool uci_prefix);
 void print_pv(search_data_t* search_data);
 void check_for_input(search_data_t* search_data);
 

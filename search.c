@@ -76,7 +76,8 @@ static void print_search_stats(search_data_t* search_data)
         printf("%.2f ", (float)search_data->stats.move_selection[i] /
                 total_moves);
     }
-    printf("\nrazoring attempts/cutoffs by depth %d/%d %d/%d %d/%d\n",
+    printf("\ninfo string razoring attempts/cutoffs by depth "
+            "%d/%d %d/%d %d/%d\n",
         search_data->stats.razor_attempts[0],
         search_data->stats.razor_prunes[0],
         search_data->stats.razor_attempts[1],
