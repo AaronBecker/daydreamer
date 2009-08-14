@@ -14,7 +14,7 @@ static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
     125, 300, 300, 500, 900
 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-    300, 300, 300
+    500, 300, 300
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
     50, 150, 150
@@ -479,13 +479,7 @@ static int search(position_t* pos,
                 !get_move_capture(*move) &&
                 !get_move_promote(*move);
             if (prune_futile) {
-                // TODO: full eval?
-                if (depth == 1) {
-                    score = simple_eval(pos) + futility_margin[depth-1];
-                } else {
-                    score = quiesce(pos, search_node, ply, alpha, beta, 0) +
-                        futility_margin[depth-1];
-                }
+                score = full_eval(pos) + futility_margin[depth-1];
                 if (score < alpha) {
                     num_futile_moves++;
                     undo_move(pos, *move, &undo);
