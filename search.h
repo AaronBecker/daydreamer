@@ -70,6 +70,7 @@ typedef struct {
 #define POLL_INTERVAL   0xffff
 #define MATE_VALUE      0x7fff
 #define DRAW_VALUE      0
+// TODO: replace parameters with options.
 #define NULL_R          3
 #define NULLMOVE_VERIFICATION_REDUCTION    4
 #define NULL_EVAL_MARGIN            200

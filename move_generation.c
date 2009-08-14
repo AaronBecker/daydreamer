@@ -123,6 +123,7 @@ int generate_pseudo_captures(const position_t* pos, move_t* moves)
 /*
  * Generate all non-capturing, non-promoting, pseudo-legal checks. Used for
  * quiescent move generation.
+ * FIXME: untested and unused so far.
  */
 int generate_pseudo_checks(const position_t* pos, move_t* moves)
 {

@@ -63,7 +63,7 @@ void copy_position(position_t* dst, const position_t* src)
 
 /*
  * Given an FEN position description, set the given position to match it.
- * (see wikipedia.org/wiki/Forsyth-Edwards_Notation for a description of FEN)
+ * (see wikipedia.org/wiki/Forsyth-Edwards_Notation)
  */
 char* set_position(position_t* pos, const char* fen)
 {
@@ -167,6 +167,10 @@ char* set_position(position_t* pos, const char* fen)
     return (char*)fen;
 }
 
+/*
+ * Is |sq| being directly attacked by any pieces on |side|? Works on both
+ * occupied and unoccupied squares.
+ */
 bool is_square_attacked(const position_t* pos,
         const square_t sq,
         const color_t side)
@@ -229,7 +233,7 @@ bool is_move_legal(position_t* pos, const move_t move)
     }
 
     // Just try the move and see if the king is being attacked afterwards.
-    // This is sort of inefficient--actually making and unmaking the move
+    // TODO: This is sort of inefficient--actually making and unmaking the move
     // isn't strictly necessary, so this could be optimized if it turns out
     // to be a significant cost.
     undo_info_t undo;

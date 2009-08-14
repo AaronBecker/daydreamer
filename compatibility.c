@@ -1,6 +1,12 @@
 
 #include "daydreamer.h"
 
+/*
+ * BSD implementations of functions that don't exist on all platforms.
+ * Right now this is just adding some string handling functions for
+ * the Windows build.
+ */
+
 #ifdef _WIN32
 
 /*-

@@ -351,6 +351,10 @@ const hashkey_t enpassant_random[64] = {
   0x0000000000000000ULL
 };
 
+/*
+ * Calculate the hash of a position from scratch. Used to in |set_position|,
+ * and to verify the correctness of incremental hash updates in debug mode.
+ */
 hashkey_t hash_position(const position_t* pos)
 {
     hashkey_t hash = 0;
@@ -363,3 +367,4 @@ hashkey_t hash_position(const position_t* pos)
     hash ^= side_hash(pos);
     return hash;
 }
+

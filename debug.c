@@ -70,3 +70,6 @@ void _check_line(position_t* pos, move_t* moves)
     if (moves[0] == NULL_MOVE) undo_nullmove(pos, &undo);
     else undo_move(pos, moves[0], &undo);
 }
+
+// TODO: _check_eval that makes sure white's eval is -1 * black's.
+

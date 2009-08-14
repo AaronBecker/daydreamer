@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-/**
- * Definitions for colors, pieces, and squares.
+/*
+ * Definitions for colors, pieces, squares, and attack information.
  */
 
 #define FEN_STARTPOS "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"

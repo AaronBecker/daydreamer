@@ -27,6 +27,9 @@ static struct {
 
 static void set_transposition_age(int age);
 
+/*
+ * Create a transposition table of the appropriate size.
+ */
 void init_transposition_table(const int max_bytes)
 {
     assert(max_bytes >= 1024);
@@ -43,6 +46,9 @@ void init_transposition_table(const int max_bytes)
     set_transposition_age(0);
 }
 
+/*
+ * Wipe the entire table.
+ */
 void clear_transposition_table(void)
 {
     memset(transposition_table, 0,
@@ -50,6 +56,11 @@ void clear_transposition_table(void)
     memset(&hash_stats, 0, sizeof(hash_stats));
 }
 
+/*
+ * Each search increments the age of the table. This allows us to prefer
+ * evicting results from previous searches without flushing them out
+ * entirely.
+ */
 static void set_transposition_age(int age)
 {
     assert(age >= 0 && age < generation_limit);
@@ -66,6 +77,9 @@ void increment_transposition_age(void)
     set_transposition_age((generation + 1) % generation_limit);
 }
 
+/*
+ * Get the entry for the given position, if it exists.
+ */
 transposition_entry_t* get_transposition(position_t* pos)
 {
     transposition_entry_t* entry;
@@ -80,6 +94,10 @@ transposition_entry_t* get_transposition(position_t* pos)
     return NULL;
 }
 
+/*
+ * Place a position into the table, giving the score, depth searched,
+ * and recommended move.
+ */
 void put_transposition(position_t* pos,
         move_t move,
         int depth,
@@ -133,6 +151,11 @@ void put_transposition(position_t* pos,
     entry->score_type = score_type;
 }
 
+/*
+ * Place an entire line of moves into the table. This is used to re-insert
+ * the pv at the end of each iteration of ID search, in case any of the moves
+ * were evicted.
+ */
 void put_transposition_line(position_t* pos,
         move_t* moves,
         int depth,

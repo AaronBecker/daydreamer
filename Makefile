@@ -6,9 +6,9 @@ CLANGHOME = $(HOME)/local/clang
 SCANVIEW = $(CLANGHOME)/scan-build
 ANALYZER = $(CLANGHOME)/libexec/ccc-analyzer
 #CC = $(CLANGHOME)/bin/clang $(CLANGFLAGS)
-CC = /opt/local/bin/gcc $(GCCFLAGS)
+#CC = /opt/local/bin/gcc $(GCCFLAGS)
 #CC = /usr/bin/gcc $(GCCFLAGS)
-#CC = i386-mingw32-gcc $(GCCFLAGS)
+CC = i386-mingw32-gcc $(GCCFLAGS)
 CTAGS = ctags
 
 COMMONFLAGS = -Wall -Wextra
@@ -54,3 +54,4 @@ tags: $(SRCFILES)
 
 clean:
 	rm -f $(OBJFILES) daydreamer tags
+

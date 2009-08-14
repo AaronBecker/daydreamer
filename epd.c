@@ -23,7 +23,7 @@ void epd_testsuite(char* filename, int time_per_problem)
         move_t best_move = NO_MOVE;
         init_search_data(&root_data);
         set_position(&root_data.root_pos, test);
-        print_board(&root_data.root_pos);
+        print_board(&root_data.root_pos, false);
         while ((token = strsep(&test, "; \t"))) {
             if (!*token) continue;
             if (strcasestr(token, "bm")) {

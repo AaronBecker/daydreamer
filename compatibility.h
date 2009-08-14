@@ -5,11 +5,20 @@
 extern "C" {
 #endif
 
+/*
+ * Platform-specific settings, included before we get to anything else
+ * in daydreamer.h.
+ */
+
 #ifdef __linux__
+// This is needed to give access to some of the string handling functions
+// that we use.
 #define _GNU_SOURCE
 #endif
 
 #ifdef _WIN32
+// Rename windows functions to the posix equivalent where possible,
+// provide an implementation where there is no equivalent.
 #include <windows.h>
 #define strcasecmp      _stricmp
 #define strncasecmp     _strnicmp

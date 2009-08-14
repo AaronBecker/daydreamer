@@ -6,6 +6,9 @@ extern void init_eval(void);
 extern search_data_t root_data;
 static void generate_attack_data(void);
 
+/*
+ * Set up the stuff that only needs to be done once, during initialization.
+ */
 void init_daydreamer(void)
 {
     generate_attack_data();

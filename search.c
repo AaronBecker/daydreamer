@@ -14,10 +14,10 @@ static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
     125, 300, 300, 500, 900
 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-    500, 300, 300
+    200, 250, 300
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
-    50, 150, 150
+    50, 150, 250
 };
 
 static bool should_stop_searching(search_data_t* data);
@@ -113,6 +113,9 @@ static void open_node(search_data_t* data, int ply)
     data->search_stack[ply].killers[1] = NO_MOVE;
 }
 
+/*
+ * Open a node in quiescent search.
+ */
 static void open_qnode(search_data_t* data, int ply)
 {
     open_node(data, ply);
@@ -186,6 +189,10 @@ static bool is_nullmove_allowed(position_t* pos)
     return piece_value != 0;
 }
 
+/*
+ * Can we do internal iterative deepening? Controlled by search
+ * parameters.
+ */
 static bool is_iid_allowed(bool full_window, int depth)
 {
     search_options_t* options = &root_data.options;
@@ -200,6 +207,9 @@ static bool is_iid_allowed(bool full_window, int depth)
     return true;
 }
 
+/*
+ * Does the transposition table entry we found cause a cutoff?
+ */
 static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
         int depth,
         int alpha,
@@ -215,6 +225,11 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
     return alpha >= beta;
 }
 
+/*
+ * Take an unordered list of pseudo-legal moves and order them according
+ * to how good we think they'll be. This just identifies a few key classes
+ * of moves and insertion sorts them into place.
+ */
 static void order_moves(position_t* pos,
         search_node_t* search_node,
         move_t* moves,
@@ -372,6 +387,9 @@ static bool root_search(search_data_t* search_data)
     return true;
 }
 
+/*
+ * Search an interior, non-quiescent node.
+ */
 static int search(position_t* pos,
         search_node_t* search_node,
         int ply,

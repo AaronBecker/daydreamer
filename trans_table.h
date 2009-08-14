@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+// TODO: shrink this structure.
 typedef struct {
     hashkey_t key;
     move_t move;

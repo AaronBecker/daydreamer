@@ -5,8 +5,7 @@
 extern "C" {
 #endif
 
-/**
- * Definitions for moves.
+/*
  * Each move is a 4-byte quantity that encodes source and destination
  * square, the moved piece, any captured piece, the promotion value (if any),
  * and flags to indicate en-passant capture and castling. The bit layout of
