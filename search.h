@@ -72,7 +72,7 @@ typedef struct {
 #define DRAW_VALUE      0
 #define NULL_R          3
 #define NULLMOVE_VERIFICATION_REDUCTION    4
-#define NULL_EVAL_MARGIN            500
+#define NULL_EVAL_MARGIN            200
 #define RAZOR_DEPTH_LIMIT           3
 #define FUTILITY_DEPTH_LIMIT        5
 #define LMR_PV_EARLY_MOVES          10

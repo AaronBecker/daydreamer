@@ -11,10 +11,10 @@ static const bool razoring_enabled = true;
 static const bool futility_enabled = true;
 static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
-    110, 150, 300, 300, 300
+    125, 300, 300, 500, 900
 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-    500, 300, 300
+    300, 300, 300
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
     50, 150, 150
