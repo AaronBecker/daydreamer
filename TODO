@@ -4,13 +4,13 @@ Search
     Better statistics gathering/reporting
     TBB?
     Ponder
-    Checks in quiescence
+    Checks/promotes in quiescence
     Identify "tough" moves and take more time on them
     More accurate time management
-    Experiment with nullmove, razoring, futility, and LMR
+    More experiments with nullmove, razoring, futility, and LMR
     history counters
 
-more transposition table testing
+Check evasion move generation, single reply extension
 shrink trans table entry size
 
 Track pinned pieces in SEE, test for improvement
@@ -23,5 +23,5 @@ Interface
     Basic Winboard interface?
     ECO classification
     Improve non-UCI console interface
-    non-standard uci commands? (perft, etc)
+    non-standard commands in uci? (perft, etc)
 
