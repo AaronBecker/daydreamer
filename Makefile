@@ -6,8 +6,8 @@ CLANGHOME = $(HOME)/local/clang
 SCANVIEW = $(CLANGHOME)/scan-build
 ANALYZER = $(CLANGHOME)/libexec/ccc-analyzer
 #CC = $(CLANGHOME)/bin/clang $(CLANGFLAGS)
-#CC = /opt/local/bin/gcc $(GCCFLAGS)
-CC = /usr/bin/gcc $(GCCFLAGS)
+CC = /opt/local/bin/gcc $(GCCFLAGS)
+#CC = /usr/bin/gcc $(GCCFLAGS)
 #CC = i386-mingw32-gcc $(GCCFLAGS)
 CTAGS = ctags
 
@@ -17,6 +17,9 @@ ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
 DEFAULTFLAGS = $(COMMONFLAGS) -g -O2 -DOMIT_CHECKS
 OPTFLAGS = $(COMMONFLAGS) -O3 -DOMIT_CHECKS -DNDEBUG
 CFLAGS = $(DEFAULTFLAGS)
+DBGCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEBUGFLAGS)\\\"\"
+OPTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(OPTFLAGS)\\\"\"
+DFTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEFAULTFLAGS))\\\"\"
 
 SRCFILES := $(wildcard *.c)
 HEADERS  := $(wildcard *.h)
@@ -30,16 +33,13 @@ analyze:
 	    CC="$(ANALYZER)" CFLAGS="$(ANALYZEFLAGS)"
 
 debug:
-	$(MAKE) daydreamer CFLAGS="$(DEBUGFLAGS) \
-	    -DCOMPILE_COMMAND=\"\\\"$(CC) $(DEBUGFLAGS)\\\"\""
+	$(MAKE) daydreamer CFLAGS="$(DEBUGFLAGS) $(DBGCOMPILESTR)"
 
 default:
-	$(MAKE) daydreamer CFLAGS="$(DEFAULTFLAGS) \
-	    -DCOMPILE_COMMAND=\"\\\"$(CC) $(DEFAULTFLAGS)\\\"\""
+	$(MAKE) daydreamer CFLAGS="$(DEFAULTFLAGS) $(DFTCOMPILESTR)"
 
 opt:
-	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS) \
-	    -DCOMPILE_COMMAND=\"\\\"$(CC) $(OPTFLAGS)\\\"\""
+	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS) $(OPTCOMPILESTR)"
 
 all: daydreamer
 
