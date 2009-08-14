@@ -14,10 +14,10 @@ static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
     125, 300, 300, 500, 900
 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-    200, 250, 300
+    500, 300, 300
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
-    50, 150, 250
+    50, 150, 150
 };
 
 static bool should_stop_searching(search_data_t* data);
