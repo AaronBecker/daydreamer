@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "0.9"
-#define ENGINE_VERSION_NAME     ""
+#define ENGINE_VERSION_NAME     " revamp"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -130,16 +130,21 @@ int elapsed_time(milli_timer_t* timer);
 void init_transposition_table(const int max_bytes);
 void clear_transposition_table(void);
 void increment_transposition_age(void);
-transposition_entry_t* get_transposition(position_t* pos);
-void put_transposition_line(position_t* pos,
-        move_t* moves,
+transposition_entry_t* get_transposition_entry(position_t* pos);
+bool get_transposition(position_t* pos,
         int depth,
-        int score);
+        int* lb,
+        int* ub,
+        move_t* move);
 void put_transposition(position_t* pos,
         move_t move,
         int depth,
         int score,
         score_type_t score_type);
+void put_transposition_line(position_t* pos,
+        move_t* moves,
+        int depth,
+        int score);
 void print_transposition_stats(void);
 
 // uci.c

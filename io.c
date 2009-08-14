@@ -386,8 +386,7 @@ void print_pv(search_data_t* search_data)
     } else {
         printf("info depth %d score cp %d time %d nodes %"PRIu64\
                 " qnodes %"PRIu64" nps %"PRIu64" pv ",
-                depth, score, time, nodes,
-                search_data->qnodes_searched, nodes/(time+1)*1000);
+                depth, score, time, nodes, search_data->qnodes_searched, nodes/(time+1)*1000);
     }
     int moves = print_la_move_list(pv);
     if (moves < depth) {
@@ -400,8 +399,8 @@ void print_pv(search_data_t* search_data)
 
         transposition_entry_t* entry;
         while (moves < depth) {
-            if (!(entry = get_transposition(&pos)) ||
-                    !is_move_legal(&pos, entry->move)) break;
+            entry = get_transposition_entry(&pos);
+            if (!entry || !is_move_legal(&pos, entry->move)) break;
             print_la_move(entry->move);
             do_move(&pos, entry->move, &undo);
             ++moves;

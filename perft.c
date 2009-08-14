@@ -122,7 +122,7 @@ static uint64_t full_search(position_t* pos, int depth)
 {
     if (depth <= 0) return 1;
     transposition_entry_t* entry;
-    if ((entry = get_transposition(pos))) {
+    if ((entry = get_transposition_entry(pos))) {
         if (depth == entry->depth) {
             transpositions++;
             return entry->score;

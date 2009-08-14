@@ -66,30 +66,44 @@ void increment_transposition_age(void)
     set_transposition_age((generation + 1) % generation_limit);
 }
 
-transposition_entry_t* get_transposition(position_t* pos)
+transposition_entry_t* get_transposition_entry(position_t* pos)
 {
     transposition_entry_t* entry;
     entry = &transposition_table[(pos->hash % num_buckets) * bucket_size];
     for (int i=0; i<bucket_size; ++i, ++entry) {
         if (!entry->key || entry->key != pos->hash) continue;
         hash_stats.hits++;
+        entry->age = generation;
         return entry;
     }
     hash_stats.misses++;
     return NULL;
 }
 
-void put_transposition_line(position_t* pos,
-        move_t* moves,
+bool get_transposition(position_t* pos,
         int depth,
-        int score)
+        int* lb,
+        int* ub,
+        move_t* move)
 {
-    if (!*moves) return;
-    put_transposition(pos, *moves, depth, score, SCORE_EXACT);
-    undo_info_t undo;
-    do_move(pos, *moves, &undo);
-    put_transposition_line(pos, moves+1, depth, score);
-    undo_move(pos, *moves, &undo);
+    transposition_entry_t* entry;
+    entry = &transposition_table[(pos->hash % num_buckets) * bucket_size];
+    for (int i=0; i<bucket_size; ++i, ++entry) {
+        if (!entry->key || entry->key != pos->hash) continue;
+        // found it
+        entry->age = generation;
+        hash_stats.hits++;
+        *move = entry->move;
+        if (depth <= entry->depth) {
+            if (entry->score_type != SCORE_LOWERBOUND &&
+                    entry->score < *ub) *ub = entry->score;
+            if (entry->score_type != SCORE_UPPERBOUND &&
+                    entry->score > *lb) *lb = entry->score;
+        }
+        return true;
+    }
+    hash_stats.misses++;
+    return false;
 }
 
 void put_transposition(position_t* pos,
@@ -102,8 +116,8 @@ void put_transposition(position_t* pos,
     int replace_score, best_replace_score = INT_MIN;
     entry = &transposition_table[(pos->hash % num_buckets) * bucket_size];
     for (int i=0; i<bucket_size; ++i, ++entry) {
-        if (!entry->key || entry->key == pos->hash) {
-            // Fill empty slot or update an existing entry
+        if (entry->key == pos->hash) {
+            // Update an existing entry
             entry->age = generation;
             entry->depth = depth;
             entry->move = move;
@@ -113,15 +127,10 @@ void put_transposition(position_t* pos,
                 case SCORE_UPPERBOUND: hash_stats.alpha++; break;
                 case SCORE_EXACT: hash_stats.exact++;
             }
-            if (entry->key) {
-                switch (entry->score_type) {
-                    case SCORE_LOWERBOUND: hash_stats.beta--; break;
-                    case SCORE_UPPERBOUND: hash_stats.alpha--; break;
-                    case SCORE_EXACT: hash_stats.exact--;
-                }
-            } else {
-                entry->key = pos->hash;
-                hash_stats.occupied++;
+            switch (entry->score_type) {
+                case SCORE_LOWERBOUND: hash_stats.beta--; break;
+                case SCORE_UPPERBOUND: hash_stats.alpha--; break;
+                case SCORE_EXACT: hash_stats.exact--;
             }
             entry->score_type = score_type;
             return;
@@ -135,7 +144,7 @@ void put_transposition(position_t* pos,
     // Replace the entry with the highest replace score.
     assert(best_entry != NULL);
     entry = best_entry;
-    if (entry->age != generation) hash_stats.occupied++;
+    if (!entry->key || entry->age != generation) hash_stats.occupied++;
     else ++hash_stats.evictions;
     switch (score_type) {
         case SCORE_LOWERBOUND: hash_stats.beta++; break;
@@ -148,6 +157,19 @@ void put_transposition(position_t* pos,
     entry->depth = depth;
     entry->score = score;
     entry->score_type = score_type;
+}
+
+void put_transposition_line(position_t* pos,
+        move_t* moves,
+        int depth,
+        int score)
+{
+    if (!*moves) return;
+    put_transposition(pos, *moves, depth, score, SCORE_EXACT);
+    undo_info_t undo;
+    do_move(pos, *moves, &undo);
+    put_transposition_line(pos, moves+1, depth-1, score);
+    undo_move(pos, *moves, &undo);
 }
 
 void print_transposition_stats(void)

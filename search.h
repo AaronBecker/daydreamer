@@ -70,9 +70,9 @@ typedef struct {
 #define POLL_INTERVAL   0xffff
 #define MATE_VALUE      0x7fff
 #define DRAW_VALUE      0
-#define NULL_R          4
-#define NULLMOVE_VERIFICATION_REDUCTION    5
-#define NULL_EVAL_MARGIN            300
+#define NULL_R          3
+#define NULLMOVE_VERIFICATION_REDUCTION    4
+#define NULL_EVAL_MARGIN            500
 #define RAZOR_DEPTH_LIMIT           3
 #define FUTILITY_DEPTH_LIMIT        5
 #define LMR_PV_EARLY_MOVES          10

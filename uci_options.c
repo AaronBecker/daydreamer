@@ -132,9 +132,9 @@ void init_uci_options(search_options_t* options)
             &handle_output_delay);
     set_uci_option("Output Delay value 2000", options);
     options->enable_pv_iid = true;
-    options->enable_non_pv_iid = true;
+    options->enable_non_pv_iid = false;
     options->iid_pv_depth_reduction = 2;
     options->iid_non_pv_depth_reduction = 2;
-    options->iid_pv_depth_cutoff = 4;
-    options->iid_non_pv_depth_cutoff = 7;
+    options->iid_pv_depth_cutoff = 5;
+    options->iid_non_pv_depth_cutoff = 8;
 }
