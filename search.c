@@ -321,7 +321,7 @@ static bool root_search(search_data_t* search_data)
     int alpha = -MATE_VALUE-1, beta = MATE_VALUE+1;
     search_data->best_score = -MATE_VALUE-1;
     position_t* pos = &search_data->root_pos;
-    transposition_entry_t* trans_entry = get_transposition_entry(pos);
+    transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
     // TODO: sort by # of nodes expanded in previous iteration.
     order_moves(&search_data->root_pos, search_data->search_stack,
@@ -395,7 +395,7 @@ static int search(position_t* pos,
     if (alpha >= beta) return alpha;
 
     // Get move from transposition table if possible.
-    transposition_entry_t* trans_entry = get_transposition_entry(pos);
+    transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
     if (!full_window && trans_entry &&
             is_trans_cutoff_allowed(trans_entry, depth, alpha, beta)) {

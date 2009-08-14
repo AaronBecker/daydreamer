@@ -399,7 +399,7 @@ void print_pv(search_data_t* search_data)
 
         transposition_entry_t* entry;
         while (moves < depth) {
-            entry = get_transposition_entry(&pos);
+            entry = get_transposition(&pos);
             if (!entry || !is_move_legal(&pos, entry->move)) break;
             print_la_move(entry->move);
             do_move(&pos, entry->move, &undo);
