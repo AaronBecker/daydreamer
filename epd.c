@@ -31,7 +31,7 @@ void epd_testsuite(char* filename, int time_per_problem)
                 best_move = san_str_to_move(&root_data.root_pos, bm);
             }
             if (strcasestr(token, "id")) {
-                id = strsep(&test, "\"");
+                strsep(&test, "\"");
                 id = strsep(&test, "\"");
             }
         }
