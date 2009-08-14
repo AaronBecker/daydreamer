@@ -9,7 +9,6 @@ void epd_testsuite(char* filename, int time_per_problem)
 {
     char test_storage[4096];
     char* test = test_storage;
-    position_t pos;
     milli_timer_t epd_timer;
     init_timer(&epd_timer);
     FILE* test_file = fopen(filename, "r");
@@ -20,9 +19,8 @@ void epd_testsuite(char* filename, int time_per_problem)
     }
     int total_tests = 0, correct_tests = 0;
     while (fgets(test, 4096, test_file)) {
-        char *fen=NULL, *bm=NULL, *id=NULL, *token=NULL;
+        char *bm=NULL, *id=NULL, *token=NULL;
         move_t best_move = NO_MOVE;
-        //fen = strsep(&test, "; \t");
         init_search_data(&root_data);
         set_position(&root_data.root_pos, test);
         print_board(&root_data.root_pos);
@@ -38,7 +36,6 @@ void epd_testsuite(char* filename, int time_per_problem)
             }
         }
         printf("%d: %s\t", total_tests+1, id);
-        //printf("\nfen: %s\nbm: %s\n", fen, bm);
         if (best_move == NO_MOVE) {
             printf("parse error: couldn't read best move\n");
             test = test_storage;
@@ -47,7 +44,6 @@ void epd_testsuite(char* filename, int time_per_problem)
         }
         bool failure = false;
         start_timer(&epd_timer);
-        //copy_position(&root_data.root_pos, &pos);
         root_data.time_target = root_data.time_limit = time_per_problem;
         deepening_search(&root_data);
         move_t result = root_data.best_move;
