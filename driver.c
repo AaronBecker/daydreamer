@@ -6,7 +6,7 @@
 
 int main(void)
 {
-    // unbuffered i/o
+    // Set unbuffered i/o.
     setbuf(stdout, NULL);
     setbuf(stdin, NULL);
 

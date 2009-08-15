@@ -11,13 +11,17 @@ static const bool razoring_enabled = true;
 static const bool futility_enabled = true;
 static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
-    125, 300, 300, 500, 900
+    150, 300, 300, 500, 900
 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-    200, 250, 300
+    // raz_strelka
+    125, 300, 300
+//    250, 300, 350
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
-    50, 150, 250
+    // raz_strelka
+    -100, 0, 0
+//    50, 150, 250
 };
 
 static bool should_stop_searching(search_data_t* data);
@@ -107,7 +111,7 @@ static void open_node(search_data_t* data, int ply)
 {
     if ((++data->nodes_searched & POLL_INTERVAL) == 0) {
         if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
-        check_for_input(data);
+        uci_check_input(data);
     }
     data->search_stack[ply].killers[0] = NO_MOVE;
     data->search_stack[ply].killers[1] = NO_MOVE;
@@ -399,7 +403,7 @@ static int search(position_t* pos,
 {
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if (alpha > MATE_VALUE - ply - 1) return alpha; // Can't beat this.
+    if (alpha > MATE_VALUE - ply - 1) return alpha; // Can't beat this.../daydreamer_testing/shortwac.epd
     if (depth <= 0) {
         return quiesce(pos, search_node, ply, alpha, beta, depth);
     }

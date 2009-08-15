@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.0"
-#define ENGINE_VERSION_NAME     " rc1"
+#define ENGINE_VERSION_NAME     " rc3_raz_aggr"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -43,6 +43,9 @@ extern "C" {
 // daydreamer.c
 void init_daydreamer(void);
 
+// console.c
+void handle_console(position_t* pos, char* command);
+
 // epd.c
 void epd_testsuite(char* filename, int time_per_problem);
 
@@ -57,7 +60,6 @@ bool is_endgame(const position_t* pos);
 hashkey_t hash_position(const position_t* pos);
 
 // io.c
-void handle_console(position_t* pos, char* command);
 int square_to_coord_str(square_t sq, char* str);
 void move_to_la_str(move_t move, char* str);
 void position_to_fen_str(const position_t* pos, char* fen);
@@ -65,7 +67,6 @@ void print_la_move(move_t move);
 int print_la_move_list(const move_t* move);
 void print_board(const position_t* pos, bool uci_prefix);
 void print_pv(search_data_t* search_data);
-void check_for_input(search_data_t* search_data);
 
 // move.c
 void place_piece(position_t* position,
@@ -144,6 +145,7 @@ void print_transposition_stats(void);
 
 // uci.c
 void uci_main(void);
+void uci_check_input(search_data_t* search_data);
 
 // uci_option.c
 void init_uci_options(search_options_t* options);

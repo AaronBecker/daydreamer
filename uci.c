@@ -16,6 +16,7 @@ static void calculate_search_time(int wtime,
         int winc,
         int binc,
         int movestogo);
+static int bios_key(void);
 
 void uci_main(void)
 {
@@ -159,3 +160,87 @@ static void calculate_search_time(int wtime,
     root_data.time_target = time/movestogo;
     root_data.time_limit = time < time*8/movestogo ? time : time*8/movestogo;
 }
+
+/*
+ * Look for and handle console uci commands. Called periodically during search.
+ */
+void uci_check_input(search_data_t* search_data)
+{
+    char input[4096];
+    int data = bios_key();
+    if (data) {
+        if (!fgets(input, 4096, stdin))
+            strcpy(input, "quit\n");
+        if (!strncasecmp(input, "quit", 4)) {
+            search_data->engine_status = ENGINE_ABORTED;
+        } else if (!strncasecmp(input, "stop", 4)) {
+            search_data->engine_status = ENGINE_ABORTED;
+        } else if (strncasecmp(input, "ponderhit", 9) == 0) {
+            // TODO: handle ponderhits
+        }
+    }
+}
+
+/*
+ * Boilerplate code to see if data is available to be read on stdin.
+ * Cross-platform for unix/windows.
+ *
+ * Many thanks to the original author(s). I've seen minor variations on this
+ * in Scorpio, Viper, Beowulf, Olithink, and others, so I don't know where
+ * it's from originally. I'm just glad I didn't have to figure out how to
+ * do this on windows.
+ */
+#ifndef _WIN32
+/* Unix version */
+int bios_key(void)
+{
+    fd_set readfds;
+    struct timeval timeout;
+
+    FD_ZERO(&readfds);
+    FD_SET(fileno(stdin), &readfds);
+    /* Set to timeout immediately */
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+    select(16, &readfds, 0, 0, &timeout);
+
+    return (FD_ISSET(fileno(stdin), &readfds));
+}
+
+#else
+/* Windows version */
+#include <conio.h>
+int bios_key(void)
+{
+    static int init=0, pipe=0;
+    static HANDLE inh;
+    DWORD dw;
+    /*
+     * If we're running under XBoard then we can't use _kbhit() as the input
+     * commands are sent to us directly over the internal pipe
+     */
+#if defined(FILE_CNT)
+    if (stdin->_cnt > 0) return stdin->_cnt;
+#endif
+    if (!init) {
+        init = 1;
+        inh = GetStdHandle(STD_INPUT_HANDLE);
+        pipe = !GetConsoleMode(inh, &dw);
+        if (!pipe) {
+            SetConsoleMode(inh,
+                    dw & ~(ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT));
+            FlushConsoleInputBuffer(inh);
+        }
+    }
+    if (pipe) {
+        if (!PeekNamedPipe(inh, NULL, 0, NULL, &dw, NULL)) {
+            return 1;
+        }
+        return dw;
+    } else {
+        GetNumberOfConsoleInputEvents(inh, &dw);
+        return dw <= 1 ? 0 : dw;
+    }
+}
+#endif
+
