@@ -242,17 +242,19 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
                     abs(discover_check_dir) != N;
                 to = from + pawn_push[side];
                 if (pos->board[to]) continue;
+                rank_t relative_rank =
+                    relative_pawn_rank[side][square_rank(from)];
+                if (relative_rank == RANK_7) continue; // non-promotes only
                 for (const direction_t* delta = piece_deltas[piece];
                         *delta; ++delta) {
                     if (will_discover_check || to + *delta == king_sq) {
                         moves = add_move(pos,
                                 create_move(from, to, piece, EMPTY),
                                 moves);
+                        break;
                     }
                 }
                 to += pawn_push[side];
-                rank_t relative_rank =
-                    relative_pawn_rank[side][square_rank(from)];
                 if (relative_rank == RANK_2 && !pos->board[to]) {
                     for (const direction_t* delta = piece_deltas[piece];
                             *delta; ++delta) {
@@ -260,6 +262,7 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
                             moves = add_move(pos,
                                     create_move(from, to, piece, EMPTY),
                                     moves);
+                            break;
                         }
                     }
                 }
