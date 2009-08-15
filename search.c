@@ -7,8 +7,8 @@
 search_data_t root_data;
 static const bool nullmove_enabled = true;
 static const bool iid_enabled = true;
-static const bool razoring_enabled = true;
-static const bool futility_enabled = true;
+static const bool razoring_enabled = false;
+static const bool futility_enabled = false;
 static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
     125, 250, 300, 500, 900
@@ -597,11 +597,12 @@ static int quiesce(position_t* pos,
     if (alpha >= beta) return beta;
     
     move_t moves[256];
-    //if (!generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     if (!generate_pseudo_captures(pos, moves)) return alpha;
     // TODO: generate more moves to search. Good candidates are checks that
     // don't lose material (up to a certain number of consecutive checks, to
     // prevent a runaway) and promotions to queen.
+    // TODO: debug
+    //if (!generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     order_moves(pos, search_node, moves, NO_MOVE, ply);
     int num_legal_captures = 0;
     for (move_t* move = moves; *move; ++move) {
