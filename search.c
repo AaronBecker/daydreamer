@@ -14,13 +14,11 @@ static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
     150, 300, 300, 500, 900
 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-    // raz_strelka
-    125, 300, 300
+    200, 300, 300
 //    250, 300, 350
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
-    // raz_strelka
-    -100, 0, 0
+    0, 50, 100
 //    50, 150, 250
 };
 
@@ -325,9 +323,9 @@ void deepening_search(search_data_t* search_data)
     printf("info string targettime %d elapsedtime %d\n",
             search_data->time_target, elapsed_time(&search_data->timer));
     print_transposition_stats();
-    char la_move[6];
-    move_to_la_str(search_data->best_move, la_move);
-    printf("bestmove %s\n", la_move);
+    char coord_move[6];
+    move_to_coord_str(search_data->best_move, coord_move);
+    printf("bestmove %s\n", coord_move);
     search_data->engine_status = ENGINE_IDLE;
 }
 
@@ -348,10 +346,10 @@ static bool root_search(search_data_t* search_data)
             search_data->root_moves, hash_move, 0);
     for (move_t* move=search_data->root_moves; *move; ++move) {
         if (should_output(search_data)) {
-            char la_move[6];
-            move_to_la_str(*move, la_move);
+            char coord_move[6];
+            move_to_coord_str(*move, coord_move);
             printf("info currmove %s currmovenumber %d\n",
-                    la_move, move - search_data->root_moves);
+                    coord_move, move - search_data->root_moves);
         }
         undo_info_t undo;
         do_move(pos, *move, &undo);
@@ -366,9 +364,9 @@ static bool root_search(search_data_t* search_data)
                     1, -alpha-1, -alpha, search_data->current_depth+ext-1);
             if (score > alpha) {
                 if (should_output(search_data)) {
-                    char la_move[6];
-                    move_to_la_str(*move, la_move);
-                    printf("info string fail high, research %s\n", la_move);
+                    char coord_move[6];
+                    move_to_coord_str(*move, coord_move);
+                    printf("info string fail high, research %s\n", coord_move);
                 }
                 score = -search(pos, search_data->search_stack,
                         1, -beta, -alpha, search_data->current_depth+ext-1);

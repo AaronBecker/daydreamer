@@ -63,7 +63,7 @@ static void uci_position(char* uci_pos)
         uci_pos += 5;
         while (isspace(*uci_pos)) ++uci_pos;
         while (*uci_pos) {
-            move_t move = parse_la_move(&root_data.root_pos, uci_pos);
+            move_t move = parse_coord_move(&root_data.root_pos, uci_pos);
             if (move == NO_MOVE) {
                 printf("Warning: could not parse %s\n", uci_pos);
                 print_board(&root_data.root_pos, true);
@@ -88,7 +88,7 @@ static void uci_go(char* command)
         int move_index=0;
         while (isspace(*info)) ++info;
         while (*info) {
-            move_t move = parse_la_move(&root_data.root_pos, info);
+            move_t move = parse_coord_move(&root_data.root_pos, info);
             if (move == NO_MOVE) {
                 break;
             }

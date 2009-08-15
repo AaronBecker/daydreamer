@@ -61,10 +61,10 @@ hashkey_t hash_position(const position_t* pos);
 
 // io.c
 int square_to_coord_str(square_t sq, char* str);
-void move_to_la_str(move_t move, char* str);
+void move_to_coord_str(move_t move, char* str);
 void position_to_fen_str(const position_t* pos, char* fen);
-void print_la_move(move_t move);
-int print_la_move_list(const move_t* move);
+void print_coord_move(move_t move);
+int print_coord_move_list(const move_t* move);
 void print_board(const position_t* pos, bool uci_prefix);
 void print_pv(search_data_t* search_data);
 
@@ -91,8 +91,8 @@ int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);
 int generate_quiescence_moves(const position_t* pos, move_t* moves);
 
 // parse.c
-move_t parse_la_move(position_t* pos, const char* la_move);
-square_t parse_la_square(const char* la_square);
+move_t parse_coord_move(position_t* pos, const char* coord_move);
+square_t parse_coord_square(const char* coord_square);
 
 // perft.c
 void perft_testsuite(char* filename);

@@ -6,7 +6,7 @@
  * Convert an algebraic string representation of a square (e.g. A1, c6) to
  * a square_t.
  */
-square_t parse_la_square(const char* alg_square)
+square_t parse_coord_square(const char* alg_square)
 {
     if (tolower(alg_square[0]) < 'a' || tolower(alg_square[0]) > 'h' ||
         alg_square[1] < '0' || alg_square[1] > '9') return EMPTY;
@@ -18,13 +18,13 @@ square_t parse_la_square(const char* alg_square)
  * Only legal moves are generated--if the given move is impossible, NO_MOVE
  * is returned instead.
  */
-move_t parse_la_move(position_t* pos, const char* la_move)
+move_t parse_coord_move(position_t* pos, const char* coord_move)
 {
-    square_t from = parse_la_square(la_move);
-    square_t to = parse_la_square(la_move + 2);
+    square_t from = parse_coord_square(coord_move);
+    square_t to = parse_coord_square(coord_move + 2);
     if (from == INVALID_SQUARE || to == INVALID_SQUARE) return NO_MOVE;
     piece_type_t promote_type = NONE;
-    switch (*(la_move+4)) {
+    switch (*(coord_move+4)) {
         case 'n': case 'N': promote_type = KNIGHT; break;
         case 'b': case 'B': promote_type = BISHOP; break;
         case 'r': case 'R': promote_type = ROOK; break;

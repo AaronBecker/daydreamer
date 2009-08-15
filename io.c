@@ -23,9 +23,9 @@ int square_to_coord_str(square_t sq, char* str)
 }
 
 /*
- * Convert a move to its long algebraic string form.
+ * Convert a move to its coordinate string form.
  */
-void move_to_la_str(move_t move, char* str)
+void move_to_coord_str(move_t move, char* str)
 {
     if (move == NO_MOVE) {
         strcpy(str, "(none)");
@@ -90,10 +90,10 @@ void position_to_fen_str(const position_t* pos, char* fen)
 /*
  * Print the long algebraic form of |move| to stdout.
  */
-void print_la_move(move_t move)
+void print_coord_move(move_t move)
 {
     static char move_str[6];
-    move_to_la_str(move, move_str);
+    move_to_coord_str(move, move_str);
     printf("%s ", move_str);
 }
 
@@ -101,11 +101,11 @@ void print_la_move(move_t move)
  * Print a null-terminated list of moves to stdout, returning the number of
  * nodes printed.
  */
-int print_la_move_list(const move_t* move)
+int print_coord_move_list(const move_t* move)
 {
     int moves=0;
     while(*move) {
-        print_la_move(*move++);
+        print_coord_move(*move++);
         ++moves;
     }
     return moves;
@@ -138,7 +138,7 @@ void print_pv(search_data_t* search_data)
                 " qnodes %"PRIu64" nps %"PRIu64" pv ",
                 depth, score, time, nodes, search_data->qnodes_searched, nodes/(time+1)*1000);
     }
-    int moves = print_la_move_list(pv);
+    int moves = print_coord_move_list(pv);
     if (moves < depth) {
         // If our pv is shortened by a hash hit,
         // try to get more moves from the hash table.
@@ -151,7 +151,7 @@ void print_pv(search_data_t* search_data)
         while (moves < depth) {
             entry = get_transposition(&pos);
             if (!entry || !is_move_legal(&pos, entry->move)) break;
-            print_la_move(entry->move);
+            print_coord_move(entry->move);
             do_move(&pos, entry->move, &undo);
             ++moves;
         }

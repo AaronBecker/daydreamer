@@ -98,7 +98,7 @@ static uint64_t divide(position_t* pos, int depth)
     int num_moves = generate_legal_moves(pos, move_list);
 
     uint64_t old_trans, child_nodes, total_nodes=0;
-    char la_move[6];
+    char coord_move[6];
     while (*current_move) {
         undo_info_t undo;
         old_trans = transpositions;
@@ -106,8 +106,9 @@ static uint64_t divide(position_t* pos, int depth)
         child_nodes = full_search(pos, depth-1);
         total_nodes += child_nodes;
         undo_move(pos, *current_move, &undo);
-        move_to_la_str(*current_move, la_move);
-        printf("%s: %8"PRIu64" %8"PRIu64"\n", la_move, child_nodes, transpositions-old_trans);
+        move_to_coord_str(*current_move, coord_move);
+        printf("%s: %8"PRIu64" %8"PRIu64"\n",
+                coord_move, child_nodes, transpositions-old_trans);
         ++current_move;
     }
     printf("%d moves, %"PRIu64" nodes, %"PRIu64" transpositions", num_moves, total_nodes, transpositions);

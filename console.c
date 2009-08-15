@@ -35,7 +35,7 @@ void handle_console(position_t* pos, char* command)
     }
     // try to treat the input as a long algebraic move
     move_t move;
-    move = parse_la_move(pos, command);
+    move = parse_coord_move(pos, command);
     if (move == NO_MOVE) {
         printf("unrecognized command\n");
         return;
@@ -101,10 +101,10 @@ static void handle_moves(position_t* pos, char* command)
     move_t moves[256];
     int num_moves = generate_pseudo_moves(pos, moves);
     printf("%d pseduo-legal moves:\n", num_moves);
-    print_la_move_list(moves);
+    print_coord_move_list(moves);
     num_moves = generate_legal_moves(pos, moves);
     printf("%d legal moves:\n", num_moves);
-    print_la_move_list(moves);
+    print_coord_move_list(moves);
 }
 
 /*
@@ -190,7 +190,7 @@ static void handle_search(position_t* pos, char* command)
 static void handle_see(position_t* pos, char* command)
 {
     while (isspace(*command)) ++command;
-    move_t capture = parse_la_move(pos, command);
+    move_t capture = parse_coord_move(pos, command);
     printf("see: %d\n", static_exchange_eval(pos, capture));
 }
 
