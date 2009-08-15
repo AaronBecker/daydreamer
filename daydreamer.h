@@ -91,8 +91,8 @@ int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);
 int generate_quiescence_moves(const position_t* pos, move_t* moves);
 
 // parse.c
-move_t parse_coord_move(position_t* pos, const char* coord_move);
-square_t parse_coord_square(const char* coord_square);
+move_t str_to_coord_move(position_t* pos, const char* coord_move);
+square_t str_to_coord_square(const char* coord_square);
 
 // perft.c
 void perft_testsuite(char* filename);

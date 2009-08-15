@@ -35,7 +35,7 @@ void handle_console(position_t* pos, char* command)
     }
     // try to treat the input as a long algebraic move
     move_t move;
-    move = parse_coord_move(pos, command);
+    move = str_to_coord_move(pos, command);
     if (move == NO_MOVE) {
         printf("unrecognized command\n");
         return;
@@ -190,7 +190,7 @@ static void handle_search(position_t* pos, char* command)
 static void handle_see(position_t* pos, char* command)
 {
     while (isspace(*command)) ++command;
-    move_t capture = parse_coord_move(pos, command);
+    move_t capture = str_to_coord_move(pos, command);
     printf("see: %d\n", static_exchange_eval(pos, capture));
 }
 
