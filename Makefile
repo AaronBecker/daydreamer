@@ -43,17 +43,17 @@ opt:
 
 all: daydreamer
 
-daydreamer: $(OBJFILES)
+daydreamer: obj $(OBJFILES)
 	$(CC) $(LDFLAGS) $(OBJFILES) -o daydreamer
 
 tags: $(SRCFILES)
 	$(CTAGS) $(HEADERS) $(SRCFILES)
 
+obj/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 obj:
 	mkdir obj
-
-obj/%.o: %.c obj
-	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -rf obj daydreamer tags
