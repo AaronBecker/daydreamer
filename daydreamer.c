@@ -1,5 +1,6 @@
 
 #include "daydreamer.h"
+#include <string.h>
 #include <strings.h>
 
 extern void init_eval(void);
