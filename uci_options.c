@@ -28,6 +28,11 @@ typedef struct {
 static int uci_option_count = 0;
 static uci_option_t uci_options[128];
 
+/*
+ * Create an option and add it to the array. The set of things you have to
+ * specify is a little weird to allow all option types to be handled with
+ * the same function and data structure.
+ */
 static void add_uci_option(char* name,
         uci_option_type_t type,
         char* default_value,
@@ -56,7 +61,9 @@ static void add_uci_option(char* name,
     option->vars[var_index][0] = '\0';
 }
 
-
+/*
+ * Convert an option into its uci description string and print it.
+ */
 static void print_uci_option(uci_option_t* option)
 {
     char* option_types[] = { "check", "spin", "combo", "button", "string" };
@@ -77,6 +84,9 @@ static void print_uci_option(uci_option_t* option)
     printf("\n");
 }
 
+/*
+ * Dump all uci options to the console. Used during startup.
+ */
 void print_uci_options(void)
 {
     for (int i=0; i<uci_option_count; ++i) {
@@ -84,9 +94,14 @@ void print_uci_options(void)
     }
 }
 
+/*
+ * Handle a console command that sets a uci option. We receive the part of the
+ * command that looks like:
+ * <name> value <value>
+ * Each option has its own handler callback which is invoked.
+ */
 void set_uci_option(char* command, search_options_t* options)
 {
-    // expect "<name> value <value>"
     while (isspace(*command)) ++command;
     for (int i=0; i<uci_option_count; ++i) {
         int name_length = strlen(uci_options[i].name);
@@ -124,6 +139,10 @@ static void handle_output_delay(void* opt,
     options->output_delay = delay;
 }
 
+/*
+ * Create all uci options and set them to their default values. Also set
+ * default values for any options that aren't exposed to the uci interface.
+ */
 void init_uci_options(search_options_t* options)
 {
     add_uci_option("Hash", OPTION_SPIN, "32", 1, 4096, NULL, &handle_hash);
@@ -138,3 +157,4 @@ void init_uci_options(search_options_t* options)
     options->iid_pv_depth_cutoff = 5;
     options->iid_non_pv_depth_cutoff = 8;
 }
+

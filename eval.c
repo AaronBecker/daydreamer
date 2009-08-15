@@ -1,6 +1,11 @@
 
 #include "daydreamer.h"
+
+#ifdef UFO_EVAL
 #include "pst_ufo.inc"
+#else
+#include "pst_ufo.inc"
+#endif
 
 /*
  * Initialize all static evaluation data structures.

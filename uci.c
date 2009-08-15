@@ -45,8 +45,14 @@ static void uci_handle_command(char* command)
         set_uci_option(command+15, &root_data.options);
     }
     // not handled: ucinewgame, debug, register, ponderhit, stop
+    // stop is handled in uci_check_input, and ucinewgame and register are
+    // meaningless for us right now.
+    // TODO: handling for debug and ponderhit
 }
 
+/*
+ * Parse a uci position command and set the board appropriately.
+ */
 static void uci_position(char* uci_pos)
 {
     while (isspace(*uci_pos)) ++uci_pos;
@@ -77,6 +83,9 @@ static void uci_position(char* uci_pos)
     }
 }
 
+/*
+ * Parse the uci go command and start searching.
+ */
 static void uci_go(char* command)
 {
     char* info;
@@ -142,6 +151,12 @@ static void uci_go(char* command)
     deepening_search(&root_data);
 }
 
+/*
+ * Given uci time management parameters, determine how long to spend on this
+ * move. We compute both a target time (the amount of time we'd like to spend)
+ * that can be ignored if the position needs more time (e.g. we just failed
+ * high at the root) and a higher time limit that should not be exceeded.
+ */
 static void calculate_search_time(int wtime,
         int btime,
         int winc,

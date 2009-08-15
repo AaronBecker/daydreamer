@@ -56,7 +56,8 @@ void print_pv(search_data_t* search_data)
     } else {
         printf("info depth %d score cp %d time %d nodes %"PRIu64\
                 " qnodes %"PRIu64" nps %"PRIu64" pv ",
-                depth, score, time, nodes, search_data->qnodes_searched, nodes/(time+1)*1000);
+                depth, score, time, nodes,
+                search_data->qnodes_searched, nodes/(time+1)*1000);
     }
     int moves = print_coord_move_list(pv);
     if (moves < depth) {

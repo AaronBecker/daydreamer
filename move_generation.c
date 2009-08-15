@@ -84,12 +84,14 @@ int generate_pseudo_moves(const position_t* pos, move_t* moves)
  * Generate all pseudolegal moves that should be considered during quiescence
  * search. Currently this is just captures and promotions to queen.
  */
-int generate_quiescence_moves(const position_t* pos, move_t* moves)
+int generate_quiescence_moves(const position_t* pos,
+        move_t* moves,
+        bool generate_checks)
 {
     move_t* moves_head = moves;
-    moves += generate_pseudo_captures(pos, moves);
     moves += generate_queen_promotions(pos, moves);
-    // TODO: optionally generate checks for depth 0 quiescence
+    moves += generate_pseudo_captures(pos, moves);
+    if (generate_checks) moves += generate_pseudo_checks(pos, moves);
     return moves-moves_head;
 }
 
@@ -209,13 +211,13 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
             square_t to = INVALID_SQUARE;
             square_t from = pos->pieces[side][type][i].location;
             piece_t piece = create_piece(side, type);
+            // Figure out whether or not we can discover check by moving.
             direction_t discover_check_dir = 0;
             bool will_discover_check;
-            const attack_data_t* king_atk = &get_attack_data(to, king_sq);
+            const attack_data_t* king_atk = &get_attack_data(from, king_sq);
             if ((king_atk->possible_attackers & Q_FLAG) == 0) {
                 discover_check_dir = 0;
-            }
-            else {
+            } else {
                 direction_t king_dir = king_atk->relative_direction;
                 square_t sq;
                 for (sq = from + king_dir;
@@ -234,6 +236,7 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
                     }
                 }
             }
+            // Generate checking moves.
             if (type == PAWN) {
                 will_discover_check = discover_check_dir &&
                     abs(discover_check_dir) != N;

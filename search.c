@@ -11,15 +11,13 @@ static const bool razoring_enabled = true;
 static const bool futility_enabled = true;
 static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
-    150, 300, 300, 500, 900
+    125, 250, 300, 500, 900
 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-    200, 300, 300
-//    250, 300, 350
+    150, 300, 300
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
-    0, 50, 100
-//    50, 150, 250
+    0, 50, 150
 };
 
 static bool should_stop_searching(search_data_t* data);
@@ -169,7 +167,8 @@ static bool should_deepen(search_data_t* data)
 {
     if (should_stop_searching(data)) return false;
     // If we're more than halfway through our time, we won't make it through
-    // the next iteration anyway. TODO: this margin could be tightened up.
+    // the next iteration anyway.
+    // TODO: this margin could be tightened up.
     if (!data->infinite && data->time_target &&
         data->time_target-elapsed_time(&data->timer) <
         data->time_target/2) return false;
@@ -598,6 +597,7 @@ static int quiesce(position_t* pos,
     if (alpha >= beta) return beta;
     
     move_t moves[256];
+    //if (!generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     if (!generate_pseudo_captures(pos, moves)) return alpha;
     // TODO: generate more moves to search. Good candidates are checks that
     // don't lose material (up to a certain number of consecutive checks, to

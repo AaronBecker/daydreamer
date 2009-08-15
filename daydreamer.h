@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.0"
-#define ENGINE_VERSION_NAME     " rc3_raz_aggr"
+#define ENGINE_VERSION_NAME     " rc3_van"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -34,7 +34,6 @@ extern "C" {
 #ifndef MAX
 #define	MAX(a,b) (((a)>(b))?(a):(b))
 #endif
-
 
 /*
  * External function interface
@@ -89,7 +88,11 @@ int generate_legal_noncaptures(const position_t* pos, move_t* moves);
 int generate_pseudo_moves(const position_t* position, move_t* move_list);
 int generate_pseudo_captures(const position_t* position, move_t* move_list);
 int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);
-int generate_quiescence_moves(const position_t* pos, move_t* moves);
+int generate_quiescence_moves(const position_t* pos,
+        move_t* moves,
+        bool generate_checks);
+// TODO: remove once tested
+int generate_pseudo_checks(const position_t* pos, move_t* moves);
 
 // output.c
 void print_coord_move(move_t move);
