@@ -5,10 +5,10 @@ GCCFLAGS = --std=c99
 CLANGHOME = $(HOME)/local/clang
 SCANVIEW = $(CLANGHOME)/scan-build
 ANALYZER = $(CLANGHOME)/libexec/ccc-analyzer
-#CC = $(CLANGHOME)/bin/clang $(CLANGFLAGS)
+CC = $(CLANGHOME)/bin/clang $(CLANGFLAGS)
 #CC = /opt/local/bin/gcc $(GCCFLAGS)
 #CC = /usr/bin/gcc $(GCCFLAGS)
-CC = i386-mingw32-gcc $(GCCFLAGS)
+#CC = i386-mingw32-gcc $(GCCFLAGS)
 CTAGS = ctags
 
 COMMONFLAGS = -Wall -Wextra
@@ -23,7 +23,7 @@ DFTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEFAULTFLAGS))\\\"\"
 
 SRCFILES := $(wildcard *.c)
 HEADERS  := $(wildcard *.h)
-OBJFILES := $(patsubst %.c,%.o,$(wildcard *.c))
+OBJFILES := $(addprefix obj/, $(patsubst %.c,%.o,$(wildcard *.c)))
 
 .PHONY: all clean tags debug opt
 .DEFAULT_GOAL := default
@@ -49,9 +49,12 @@ daydreamer: $(OBJFILES)
 tags: $(SRCFILES)
 	$(CTAGS) $(HEADERS) $(SRCFILES)
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $<
+obj:
+	mkdir obj
+
+obj/%.o: %.c obj
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJFILES) daydreamer tags
+	rm -rf obj daydreamer tags
 
