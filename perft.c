@@ -7,6 +7,7 @@
 static uint64_t full_search(position_t* pos, int depth);
 static uint64_t divide(position_t* pos, int depth);
 static uint64_t transpositions;
+
 /*
  * Execute a series of perft tests from a given file. The test file consists of
  * any number of test lines, and each line has the following format:
