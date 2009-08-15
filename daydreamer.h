@@ -56,17 +56,18 @@ bool insufficient_material(const position_t* pos);
 bool is_draw(const position_t* pos);
 bool is_endgame(const position_t* pos);
 
+// format.c
+int square_to_coord_str(square_t sq, char* str);
+square_t coord_str_to_square(const char* coord_square);
+void move_to_coord_str(move_t move, char* str);
+move_t coord_str_to_move(position_t* pos, const char* coord_move);
+int move_to_san_str(position_t* pos, move_t move, char* str);
+int line_to_san_str(position_t* pos, move_t* line, char* san);
+move_t san_str_to_move(position_t* pos, char* san);
+void position_to_fen_str(const position_t* pos, char* fen);
+
 // hash.c
 hashkey_t hash_position(const position_t* pos);
-
-// io.c
-int square_to_coord_str(square_t sq, char* str);
-void move_to_coord_str(move_t move, char* str);
-void position_to_fen_str(const position_t* pos, char* fen);
-void print_coord_move(move_t move);
-int print_coord_move_list(const move_t* move);
-void print_board(const position_t* pos, bool uci_prefix);
-void print_pv(search_data_t* search_data);
 
 // move.c
 void place_piece(position_t* position,
@@ -90,9 +91,11 @@ int generate_pseudo_captures(const position_t* position, move_t* move_list);
 int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);
 int generate_quiescence_moves(const position_t* pos, move_t* moves);
 
-// parse.c
-move_t str_to_coord_move(position_t* pos, const char* coord_move);
-square_t str_to_coord_square(const char* coord_square);
+// output.c
+void print_coord_move(move_t move);
+int print_coord_move_list(const move_t* move);
+void print_board(const position_t* pos, bool uci_prefix);
+void print_pv(search_data_t* search_data);
 
 // perft.c
 void perft_testsuite(char* filename);
@@ -107,11 +110,6 @@ bool is_square_attacked(const position_t* position,
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_check(const position_t* pos);
 bool is_repetition(const position_t* pos);
-
-// san.c
-int move_to_san_str(position_t* pos, move_t move, char* str);
-int line_to_san_str(position_t* pos, move_t* line, char* san);
-move_t san_str_to_move(position_t* pos, char* san);
 
 // search.c
 void init_search_data(search_data_t* data);

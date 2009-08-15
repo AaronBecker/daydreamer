@@ -17,6 +17,8 @@ void init_daydreamer(void)
     init_uci_options(&root_data.options);
 }
 
+const char glyphs[] = ".PNBRQK  pnbrqk";
+
 const slide_t sliding_piece_types[] = {
     0, 0, 0, DIAGONAL, STRAIGHT, BOTH, 0, 0,
     0, 0, 0, DIAGONAL, STRAIGHT, BOTH, 0

@@ -1,16 +1,92 @@
 
 #include "daydreamer.h"
 #include <ctype.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
+
+extern const char glyphs[];
+#define piece_type_char(x) glyphs[x]
 
 #define AMBIG_NONE  0x00
 #define AMBIG_RANK  0x01
 #define AMBIG_FILE  0x02
 typedef int ambiguity_t;
 
-static char piece_chars[] = " PNBRQK";
-#define piece_type_char(x) piece_chars[x]
+/*
+ * Convert a square into ascii coordinates.
+ */
+int square_to_coord_str(square_t sq, char* str)
+{
+    *str++ = (char)square_file(sq) + 'a';
+    *str++ = (char)square_rank(sq) + '1';
+    *str = '\0';
+    return 2;
+}
+
+/*
+ * Convert an algebraic string representation of a square (e.g. A1, c6) to
+ * a square_t.
+ */
+square_t coord_str_to_square(const char* alg_square)
+{
+    if (tolower(alg_square[0]) < 'a' || tolower(alg_square[0]) > 'h' ||
+        alg_square[1] < '0' || alg_square[1] > '9') return EMPTY;
+    return create_square(tolower(alg_square[0])-'a', alg_square[1]-'1');
+}
+
+/*
+ * Convert a move to its coordinate string form.
+ */
+void move_to_coord_str(move_t move, char* str)
+{
+    if (move == NO_MOVE) {
+        strcpy(str, "(none)");
+        return;
+    }
+    if (move == NULL_MOVE) {
+        strcpy(str, "(null)");
+        return;
+    }
+    square_t from = get_move_from(move);
+    square_t to = get_move_to(move);
+    str += snprintf(str, 5, "%c%c%c%c",
+           (char)square_file(from) + 'a', (char)square_rank(from) + '1',
+           (char)square_file(to) + 'a', (char)square_rank(to) + '1');
+    if (get_move_promote(move)) {
+        snprintf(str, 2, "%c", tolower(glyphs[get_move_promote(move)]));
+    }
+}
+
+/*
+ * Convert a long algebraic move string (e.g. E2E4, c7c8q) to a move_t.
+ * Only legal moves are generated--if the given move is impossible, NO_MOVE
+ * is returned instead.
+ */
+move_t coord_str_to_move(position_t* pos, const char* coord_move)
+{
+    square_t from = coord_str_to_square(coord_move);
+    square_t to = coord_str_to_square(coord_move + 2);
+    if (from == INVALID_SQUARE || to == INVALID_SQUARE) return NO_MOVE;
+    piece_type_t promote_type = NONE;
+    switch (*(coord_move+4)) {
+        case 'n': case 'N': promote_type = KNIGHT; break;
+        case 'b': case 'B': promote_type = BISHOP; break;
+        case 'r': case 'R': promote_type = ROOK; break;
+        case 'q': case 'Q': promote_type = QUEEN; break;
+    }
+    move_t possible_moves[256];
+    int num_moves = generate_legal_moves(pos, possible_moves);
+    move_t move;
+    for (int i=0; i<num_moves; ++i) {
+        move = possible_moves[i];
+        if (from == get_move_from(move) &&
+                to == get_move_to(move) &&
+                get_move_promote(move) == promote_type)
+            return move;
+    }
+    return NO_MOVE;
+}
 
 /*
  * For a given move in a position, determine any ambiguities to be resolved in
@@ -123,8 +199,8 @@ move_t san_str_to_move(position_t* pos, char* san)
     piece_type_t promote_type = NONE;
     char* is_promote = strchr(san, '=');
     if (is_promote) {
-        char* promote_pos = strchr(piece_chars, toupper(*(is_promote+1)));
-        promote_type = promote_pos ? promote_pos - piece_chars : NONE;
+        char* promote_pos = strchr(glyphs, toupper(*(is_promote+1)));
+        promote_type = promote_pos ? promote_pos - glyphs : NONE;
         assert(promote_type <= QUEEN);
         end = is_promote - 1;
     } else if (*end == '+' || *end == '#') --end;
@@ -144,8 +220,8 @@ move_t san_str_to_move(position_t* pos, char* san)
     end--;
     square_t to_sq = create_square(to_file, to_rank);
 
-    char* piece_pos = strchr(piece_chars, toupper(san[0]));
-    piece_type_t piece_type = piece_pos ? piece_pos - piece_chars : PAWN;
+    char* piece_pos = strchr(glyphs, toupper(san[0]));
+    piece_type_t piece_type = piece_pos ? piece_pos - glyphs : PAWN;
     san++;
     if (san <= end && *san <= 'h' && *san >= 'a') {
         from_file = *san - 'a';
@@ -185,3 +261,46 @@ int line_to_san_str(position_t* pos, move_t* line, char* san)
     undo_move(pos, *line, &undo);
     return len;
 }
+
+/*
+ * Convert a position to its FEN form.
+ * (see wikipedia.org/wiki/Forsyth-Edwards_Notation)
+ */
+void position_to_fen_str(const position_t* pos, char* fen)
+{
+    int empty_run=0;
+    for (square_t square=A8;; ++square) {
+        if (empty_run && (pos->board[square] || !valid_board_index(square))) {
+            *fen++ = empty_run + '0';
+            empty_run = 0;
+        }
+        if (!valid_board_index(square)) {
+            *fen++ = '/';
+            square -= 0x19; // drop down to next rank
+        } else if (pos->board[square]) {
+            *fen++ = glyphs[pos->board[square]->piece];
+        } else empty_run++;
+        if (square == H1) break;
+    }
+    *fen++ = ' ';
+    *fen++ = pos->side_to_move == WHITE ? 'w' : 'b';
+    *fen++ = ' ';
+    if (pos->castle_rights == CASTLE_NONE) *fen++ = '-';
+    else {
+        if (has_oo_rights(pos, WHITE)) *fen++ = 'K';
+        if (has_ooo_rights(pos, WHITE)) *fen++ = 'Q';
+        if (has_oo_rights(pos, BLACK)) *fen++ = 'k';
+        if (has_ooo_rights(pos, BLACK)) *fen++ = 'q';
+    }
+    *fen++ = ' ';
+    if (pos->ep_square != EMPTY && valid_board_index(pos->ep_square)) {
+        *fen++ = square_file(pos->ep_square) + 'a';
+        *fen++ = square_rank(pos->ep_square) + '1';
+    } else *fen++ = '-';
+    *fen++ = ' ';
+    fen += sprintf(fen, "%d", pos->fifty_move_counter);
+    *fen++ = ' ';
+    fen += sprintf(fen, "%d", pos->ply/2);
+    *fen = '\0';
+}
+

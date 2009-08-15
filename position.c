@@ -147,7 +147,7 @@ char* set_position(position_t* pos, const char* fen)
 
     // Read en-passant square
     if (*fen != '-') {
-        pos->ep_square = str_to_coord_square(fen++);
+        pos->ep_square = coord_str_to_square(fen++);
         if (*fen) ++fen;
     }
     while (*fen && isspace(*(++fen))) {}
