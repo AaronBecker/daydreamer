@@ -84,6 +84,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     check_board_validity(pos);
     // Set undo info, so we can roll back later.
     undo->is_check = pos->is_check;
+    undo->check_square = pos->check_square;
     undo->prev_move = pos->prev_move;
     undo->ep_square = pos->ep_square;
     undo->fifty_move_counter = pos->fifty_move_counter;
@@ -186,6 +187,7 @@ void undo_move(position_t* pos, const move_t move, undo_info_t* undo)
     pos->side_to_move ^= 1;
     pos->ply--;
     pos->is_check = undo->is_check;
+    pos->check_square = undo->check_square;
     pos->ep_square = undo->ep_square;
     pos->fifty_move_counter = undo->fifty_move_counter;
     pos->castle_rights = undo->castle_rights;
@@ -208,6 +210,7 @@ void do_nullmove(position_t* pos, undo_info_t* undo)
     undo->fifty_move_counter = pos->fifty_move_counter;
     undo->hash = pos->hash;
     undo->is_check = pos->is_check;
+    undo->check_square = pos->check_square;
     pos->hash ^= ep_hash(pos);
     pos->hash ^= side_hash(pos);
     pos->side_to_move ^= 1;
@@ -233,6 +236,7 @@ void undo_nullmove(position_t* pos, undo_info_t* undo)
     pos->fifty_move_counter = undo->fifty_move_counter;
     pos->hash = undo->hash;
     pos->is_check = undo->is_check;
+    pos->check_square = undo->check_square;
     pos->ply--;
     check_board_validity(pos);
 }

@@ -37,6 +37,7 @@ static void init_position(position_t* position)
     position->prev_move = NO_MOVE;
     position->hash = 0;
     position->is_check = false;
+    position->check_square = EMPTY;
     memset(position->hash_history, 0, HASH_HISTORY_LENGTH * sizeof(hashkey_t));
 }
 
@@ -174,15 +175,17 @@ char* set_position(position_t* pos, const char* fen)
 
 /*
  * Is |sq| being directly attacked by any pieces on |side|? Works on both
- * occupied and unoccupied squares.
+ * occupied and unoccupied squares. If |find_checkers| is true, we're looking
+ * for checks. Count them all, and set pos->check_square.
  */
-uint8_t is_square_attacked(const position_t* pos,
+uint8_t is_square_attacked(position_t* pos,
         const square_t sq,
         const color_t side,
-        const bool count_attackers)
+        const bool find_checkers)
 {
     // For every opposing piece, look up the attack data for its square.
     uint8_t attackers = 0;
+    if (find_checkers) pos->check_square = EMPTY;
     for (piece_t p=PAWN; p<=KING; ++p) {
         const int num_pieces = pos->piece_count[side][p];
         for (int i=0; i<num_pieces; ++i) {
@@ -192,14 +195,17 @@ uint8_t is_square_attacked(const position_t* pos,
             if (attack_data->possible_attackers &
                     get_piece_flag(piece_entry->piece)) {
                 if (piece_slide_type(p) == NO_SLIDE) {
-                    if (!count_attackers) return 1;
+                    if (!find_checkers) return 1;
                     attackers++;
+                    pos->check_square = piece_entry->location;
+                    continue;
                 }
                 while (from != sq) {
                     from += attack_data->relative_direction;
                     if (from == sq) {
-                        if (!count_attackers) return 1;
+                        if (!find_checkers) return 1;
                         attackers++;
+                        pos->check_square = piece_entry->location;
                     }
                     if (pos->board[from]) break;
                 }
@@ -253,7 +259,8 @@ bool is_move_legal(position_t* pos, const move_t move)
     do_move(pos, move, &undo);
     bool legal = !is_square_attacked(pos,
             pos->pieces[pos->side_to_move^1][KING][0].location,
-            other_side, false);
+            other_side,
+            false);
     undo_move(pos, move, &undo);
     return legal;
 }
