@@ -139,7 +139,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     }
 
     square_t king_square = pos->pieces[other_side][KING][0].location;
-    pos->is_check = is_square_attacked(pos, king_square, side);
+    pos->is_check = is_square_attacked(pos, king_square, side, true);
     ++pos->fifty_move_counter;
     pos->hash_history[pos->ply++] = undo->hash;
     pos->side_to_move ^= 1;

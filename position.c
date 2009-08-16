@@ -99,7 +99,8 @@ char* set_position(position_t* pos, const char* fen)
             case '\n':check_board_validity(pos);
                       pos->hash = hash_position(pos);
                       square_t king_sq = pos->pieces[WHITE][KING][0].location;
-                      pos->is_check = is_square_attacked(pos, king_sq, BLACK);
+                      pos->is_check =
+                          is_square_attacked(pos, king_sq, BLACK, true);
                       return (char*)fen;
             default: warn(false, "Illegal character in FEN string");
                      return (char*)fen;
@@ -116,7 +117,7 @@ char* set_position(position_t* pos, const char* fen)
     }
     while (*fen && isspace(*(++fen))) {}
     square_t king_sq = pos->pieces[pos->side_to_move][KING][0].location;
-    pos->is_check = is_square_attacked(pos, king_sq, pos->side_to_move^1);
+    pos->is_check = is_square_attacked(pos, king_sq, pos->side_to_move^1, true);
 
     // Read castling rights.
     while (*fen && !isspace(*fen)) {
@@ -162,6 +163,10 @@ char* set_position(position_t* pos, const char* fen)
     if (sscanf(fen, "%d %d%n", &pos->fifty_move_counter, &pos->ply,
                 &consumed)) fen += consumed;
     pos->ply = pos->ply*2 + (pos->side_to_move == BLACK ? 1 : 0);
+    if (pos->ply < pos->fifty_move_counter) {
+        warn(false, "50 move counter is less than current ply");
+        pos->ply = pos->fifty_move_counter;
+    }
     pos->hash = hash_position(pos);
     check_board_validity(pos);
     return (char*)fen;
@@ -171,11 +176,13 @@ char* set_position(position_t* pos, const char* fen)
  * Is |sq| being directly attacked by any pieces on |side|? Works on both
  * occupied and unoccupied squares.
  */
-bool is_square_attacked(const position_t* pos,
+uint8_t is_square_attacked(const position_t* pos,
         const square_t sq,
-        const color_t side)
+        const color_t side,
+        const bool count_attackers)
 {
     // For every opposing piece, look up the attack data for its square.
+    uint8_t attackers = 0;
     for (piece_t p=PAWN; p<=KING; ++p) {
         const int num_pieces = pos->piece_count[side][p];
         for (int i=0; i<num_pieces; ++i) {
@@ -184,16 +191,22 @@ bool is_square_attacked(const position_t* pos,
             const attack_data_t* attack_data = &get_attack_data(from, sq);
             if (attack_data->possible_attackers &
                     get_piece_flag(piece_entry->piece)) {
-                if (piece_slide_type(p) == NO_SLIDE) return true;
+                if (piece_slide_type(p) == NO_SLIDE) {
+                    if (!count_attackers) return 1;
+                    attackers++;
+                }
                 while (from != sq) {
                     from += attack_data->relative_direction;
-                    if (from == sq) return true;
+                    if (from == sq) {
+                        if (!count_attackers) return 1;
+                        attackers++;
+                    }
                     if (pos->board[from]) break;
                 }
             }
         }
     }
-    return false;
+    return attackers;
 }
 
 bool is_check(const position_t* pos)
@@ -222,14 +235,14 @@ bool is_move_legal(position_t* pos, const move_t move)
 
     // See if any attacks are preventing castling.
     if (is_move_castle_long(move)) {
-        return !(is_square_attacked(pos, king_square, other_side) ||
-                is_square_attacked(pos, king_square-1, other_side) ||
-                is_square_attacked(pos, king_square-2, other_side));
+        return !(is_square_attacked(pos, king_square, other_side, false) ||
+                is_square_attacked(pos, king_square-1, other_side, false) ||
+                is_square_attacked(pos, king_square-2, other_side, false));
     }
     if (is_move_castle_short(move)) {
-        return !(is_square_attacked(pos, king_square, other_side) ||
-                is_square_attacked(pos, king_square+1, other_side) ||
-                is_square_attacked(pos, king_square+2, other_side));
+        return !(is_square_attacked(pos, king_square, other_side, false) ||
+                is_square_attacked(pos, king_square+1, other_side, false) ||
+                is_square_attacked(pos, king_square+2, other_side, false));
     }
 
     // Just try the move and see if the king is being attacked afterwards.
@@ -240,7 +253,7 @@ bool is_move_legal(position_t* pos, const move_t move)
     do_move(pos, move, &undo);
     bool legal = !is_square_attacked(pos,
             pos->pieces[pos->side_to_move^1][KING][0].location,
-            other_side);
+            other_side, false);
     undo_move(pos, move, &undo);
     return legal;
 }
