@@ -203,6 +203,10 @@ static void handle_see(position_t* pos, char* command)
     printf("see: %d\n", static_exchange_eval(pos, capture));
 }
 
+/*
+ * Command: epd <filename>
+ * Run analysis on each position in the given epd file.
+ */
 static void handle_epd(position_t* pos, char* command)
 {
     (void)pos;
@@ -213,6 +217,18 @@ static void handle_epd(position_t* pos, char* command)
     epd_testsuite(filename, time_per_move);
 }
 
+/*
+ * Command: bench <depth>
+ * Search all benchmark position to the given depth.
+ */
+static void handle_bench(position_t* pos, char* command)
+{
+    (void)pos;
+    int depth = 0;
+    sscanf(command, " %d", &depth);
+    if (!depth) depth = 5;
+    benchmark(depth, 0);
+}
 
 /*
  * Command: uci
@@ -234,6 +250,7 @@ static const char* command_prefixes[] = {
     "moves",
     "perft",
     "print",
+    "bench",
     "eval",
     "undo",
     "quit",
@@ -244,7 +261,7 @@ static const char* command_prefixes[] = {
 };
 
 static const int command_prefix_lengths[] = {
-    10, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 0
+    10, 8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 3, 3, 3, 0
 };
 
 static const command_handler handlers[] = {
@@ -256,6 +273,7 @@ static const command_handler handlers[] = {
     &handle_moves,
     &handle_perft,
     &handle_print,
+    &handle_bench,
     &handle_eval,
     &handle_undo,
     &handle_quit,

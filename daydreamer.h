@@ -39,11 +39,14 @@ extern "C" {
  * External function interface
  */
 
-// daydreamer.c
-void init_daydreamer(void);
+// benchmark.c
+void benchmark(int depth, int time);
 
 // console.c
 void handle_console(position_t* pos, char* command);
+
+// daydreamer.c
+void init_daydreamer(void);
 
 // epd.c
 void epd_testsuite(char* filename, int time_per_problem);
