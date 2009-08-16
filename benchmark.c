@@ -22,6 +22,11 @@ const char* positions[] = {
     NULL
 };
 
+/*
+ * Search all of the benchmark positions either to the given depth or for the
+ * given amount of time. The positions come directly from Glaurung's benchmark
+ * suite.
+ */
 void benchmark(int depth, int time)
 {
     milli_timer_t bench_timer;
