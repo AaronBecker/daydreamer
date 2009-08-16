@@ -222,10 +222,13 @@ bool is_check(const position_t* pos)
 
 bool is_move_legal(position_t* pos, const move_t move)
 {
+    // We only generate legal moves while in check.
+    if (is_check(pos)) return true;
+
     const color_t other_side = pos->side_to_move^1;
     const square_t king_square = pos->pieces[other_side^1][KING][0].location;
 
-    // don't try to make invalid/inconsistent moves
+    // Identify invalid/inconsistent moves.
     const square_t from = get_move_from(move);
     const square_t to = get_move_to(move);
     const piece_t piece = get_move_piece(move);

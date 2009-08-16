@@ -588,27 +588,30 @@ static int quiesce(position_t* pos,
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
     open_qnode(&root_data, ply);
     if (is_draw(pos)) return DRAW_VALUE;
+
     int eval = full_eval(pos);
     int score = eval;
-    if (ply >= MAX_SEARCH_DEPTH-1) return score;
-    if (!is_check(pos) && alpha < score) {
-        alpha = score;
-    }
-    if (alpha >= beta) return beta;
-    
     move_t moves[256];
-    if (!generate_pseudo_captures(pos, moves)) return alpha;
+    if (ply >= MAX_SEARCH_DEPTH-1) return score;
+    if (is_check(pos)) {
+        int evasions = generate_quiescence_moves(pos, moves, depth == 0);
+        if (!evasions) return -(MATE_VALUE-ply);
+    } else {
+        if (alpha < score) alpha = score;
+        if (alpha >= beta) return beta;
+    }
+    
+    if (!is_check(pos) &&
+            !generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     // TODO: generate more moves to search. Good candidates are checks that
     // don't lose material (up to a certain number of consecutive checks, to
     // prevent a runaway) and promotions to queen.
     // TODO: debug
     //if (!generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     order_moves(pos, search_node, moves, NO_MOVE, ply);
-    int num_legal_captures = 0;
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
-        ++num_legal_captures;
-        if (static_exchange_eval(pos, *move) < 0) continue;
+        if (!is_check(pos) && static_exchange_eval(pos, *move) < 0) continue;
         undo_info_t undo;
         do_move(pos, *move, &undo);
         score = -quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-1);

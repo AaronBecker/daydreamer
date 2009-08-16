@@ -94,10 +94,12 @@ int generate_quiescence_moves(const position_t* pos,
         move_t* moves,
         bool generate_checks)
 {
+    if (is_check(pos)) return generate_evasions(pos, moves);
     move_t* moves_head = moves;
-    moves += generate_queen_promotions(pos, moves);
+    // TODO: more thorough testing/validation before this can be turned back on
+    // moves += generate_queen_promotions(pos, moves);
     moves += generate_pseudo_captures(pos, moves);
-    if (generate_checks) moves += generate_pseudo_checks(pos, moves);
+    //if (generate_checks) moves += generate_pseudo_checks(pos, moves);
     return moves-moves_head;
 }
 
