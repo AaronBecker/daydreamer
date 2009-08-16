@@ -63,6 +63,14 @@ static void handle_print(position_t* pos, char* command)
     (void)command;
     print_board(pos, false);
     move_t moves[255];
+    printf("moves: ");
+    generate_legal_moves(pos, moves);
+    for (move_t* move = moves; *move; ++move) {
+        char san[8];
+        move_to_san_str(pos, *move, san);
+        printf("%s ", san);
+    }
+    printf("\nqmoves: ");
     generate_quiescence_moves(pos, moves, true);
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
