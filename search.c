@@ -400,7 +400,7 @@ static int search(position_t* pos,
 {
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if (alpha > MATE_VALUE - ply - 1) return alpha; // Can't beat this.../daydreamer_testing/shortwac.epd
+    if (alpha > MATE_VALUE - ply - 1) return alpha; // Can't beat this...
     if (depth <= 0) {
         return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
@@ -599,15 +599,13 @@ static int quiesce(position_t* pos,
     } else {
         if (alpha < score) alpha = score;
         if (alpha >= beta) return beta;
+        if (!generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     }
     
-    if (!is_check(pos) &&
-            !generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     // TODO: generate more moves to search. Good candidates are checks that
     // don't lose material (up to a certain number of consecutive checks, to
     // prevent a runaway) and promotions to queen.
     // TODO: debug
-    //if (!generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     order_moves(pos, search_node, moves, NO_MOVE, ply);
     for (move_t* move = moves; *move; ++move) {
         if (!is_move_legal(pos, *move)) continue;
