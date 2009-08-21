@@ -254,6 +254,8 @@ int generate_evasions(const position_t* pos, move_t* moves)
     // Generate King moves.
     square_t from = king_sq, to = INVALID_SQUARE;
     piece_entry_t* king_entry = pos->board[king_sq];
+    // Don't let the king mask its possible destination squares in calls
+    // to is_square_attacked.
     ((position_t*)pos)->board[king_sq] = NULL;
     for (const direction_t* delta = piece_deltas[king]; *delta; ++delta) {
         to = from + *delta;
