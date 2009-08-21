@@ -274,7 +274,8 @@ bool is_move_legal(position_t* pos, const move_t move)
  */
 bool is_repetition(const position_t* pos)
 {
-    for (int age = 2; age <= pos->fifty_move_counter; age += 2) {
+    int max_age = MIN(pos->fifty_move_counter, pos->ply);
+    for (int age = 2; age < max_age; age += 2) {
         assert(pos->ply >= age);
         if (pos->hash_history[pos->ply - age] == pos->hash) return true;
     }
