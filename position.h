@@ -62,14 +62,6 @@ typedef int square_t;
 #define square_to_index(square)     ((square)+((square) & 0x07))>>1
 #define index_to_square(square)     ((square)+((square) & ~0x07))
 
-/**
- * Definitions for positions.
- */
-typedef struct {
-    piece_t piece;
-    square_t location;
-} piece_entry_t;
-
 typedef uint8_t castle_rights_t;
 #define WHITE_OO                        0x01
 #define BLACK_OO                        0x01 << 1
@@ -93,8 +85,9 @@ typedef uint8_t castle_rights_t;
 #define HASH_HISTORY_LENGTH  512
 
 typedef struct {
-    piece_entry_t* board[128];          // 0x88 board
-    piece_entry_t pieces[2][8][16];     // [color][type][piece entries]
+    piece_t board[128];                 // 0x88 board
+    int piece_index[128];               // index of each piece in pieces
+    square_t pieces[2][8][16];          // [color][type][location]
     int piece_count[2][8];              // [color][type]
     color_t side_to_move;
     move_t prev_move;
@@ -130,7 +123,8 @@ typedef enum {
     W=-1, STATIONARY=0, E=1,
     WNW=14, NW=15, N=16, NE=17, ENE=18,
     NNW=31, NNE=33
-} direction_t;
+} direction_tag_t;
+typedef int direction_t;
 extern const direction_t piece_deltas[16][16];
 
 extern const direction_t pawn_push[];
@@ -139,7 +133,8 @@ extern const rank_t relative_pawn_rank[2][8];
 typedef enum {
     NONE_FLAG=0, WP_FLAG=1<<0, BP_FLAG=1<<1, N_FLAG=1<<2,
     B_FLAG=1<<3, R_FLAG=1<<4, Q_FLAG=1<<5, K_FLAG=1<<6
-} piece_flag_t;
+} piece_flag_tag_t;
+typedef int piece_flag_t;
 extern const piece_flag_t piece_flags[];
 #define get_piece_flag(piece)       piece_flags[(piece)]
 
@@ -151,6 +146,11 @@ typedef struct {
 // of squares (to, from) at the index [from-to].
 extern const attack_data_t* board_attack_data;
 #define get_attack_data(from, to)   board_attack_data[(from)-(to)]
+#define direction(from, to) \
+    get_attack_data((from),(to)).relative_direction
+#define possible_attack(from, to, piece) \
+    ((get_attack_data((from),(to)).possible_attackers & \
+     piece_flags[(piece)]) != 0)
 
 #ifdef __cplusplus
 } // extern "C"

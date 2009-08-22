@@ -108,12 +108,10 @@ void perft_testsuite(char* filename);
 uint64_t perft(position_t* position, int depth, bool divide);
 
 // position.c
-char* set_position(position_t* position, const char* fen);
+char* set_position(position_t* pos, const char* fen);
 void copy_position(position_t* dst, const position_t* src);
-uint8_t is_square_attacked(position_t* position,
-        const square_t square,
-        const color_t side,
-        const bool find_checkers);
+bool is_square_attacked(position_t* pos, square_t square, color_t side);
+uint8_t find_checks(position_t* pos);
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_check(const position_t* pos);
 bool is_repetition(const position_t* pos);

@@ -11,7 +11,7 @@ hashkey_t hash_position(const position_t* pos)
     hashkey_t hash = 0;
     for (square_t sq=A1; sq<=H8; ++sq) {
         if (!valid_board_index(sq) || !pos->board[sq]) continue;
-        hash ^= piece_hash(pos->board[sq]->piece, sq);
+        hash ^= piece_hash(pos->board[sq], sq);
     }
     hash ^= ep_hash(pos);
     hash ^= castle_hash(pos);

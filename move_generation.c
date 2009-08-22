@@ -4,16 +4,20 @@
 static int generate_queen_promotions(const position_t* pos, move_t* moves);
 static int generate_evasions(const position_t* pos, move_t* moves);
 static void generate_pawn_captures(const position_t* pos,
-        const piece_entry_t* piece_entry,
+        square_t from,
+        piece_t piece,
         move_t** moves);
 static void generate_pawn_noncaptures(const position_t* pos,
-        const piece_entry_t* piece_entry,
+        square_t from,
+        piece_t piece,
         move_t** moves);
 static void generate_piece_captures(const position_t* pos,
-        const piece_entry_t* piece_entry,
+        square_t from,
+        piece_t piece,
         move_t** moves);
 static void generate_piece_noncaptures(const position_t* pos,
-        const piece_entry_t* piece_entry,
+        square_t from,
+        piece_t piece,
         move_t** moves);
 
 
@@ -113,16 +117,17 @@ int generate_pseudo_captures(const position_t* pos, move_t* moves)
     move_t* moves_head = moves;
     color_t side = pos->side_to_move;
     for (piece_type_t type = KING; type != NONE; --type) {
+        piece_t piece = create_piece(side, type);
         for (int i = 0; i < pos->piece_count[side][type]; ++i) {
-            const piece_entry_t* piece_entry = &pos->pieces[side][type][i];
-            switch (piece_type(piece_entry->piece)) {
-                case PAWN: generate_pawn_captures(pos, piece_entry, &moves);
+            square_t from = pos->pieces[side][type][i];
+            switch (piece_type(piece)) {
+                case PAWN: generate_pawn_captures(pos, from, piece, &moves);
                            break;
                 case KING:
                 case KNIGHT:
                 case BISHOP:
                 case ROOK:
-                case QUEEN: generate_piece_captures(pos, piece_entry, &moves);
+                case QUEEN: generate_piece_captures(pos, from, piece, &moves);
                             break;
                 default:    assert(false);
             }
@@ -141,18 +146,19 @@ int generate_pseudo_noncaptures(const position_t* pos, move_t* moves)
     move_t* moves_head = moves;
     color_t side = pos->side_to_move;
     for (piece_type_t type = KING; type != NONE; --type) {
+        piece_t piece = create_piece(side, type);
         for (int i = 0; i < pos->piece_count[side][type]; ++i) {
-            const piece_entry_t* piece_entry = &pos->pieces[side][type][i];
-            switch (piece_type(piece_entry->piece)) {
+            square_t from = pos->pieces[side][type][i];
+            switch (piece_type(piece)) {
                 case PAWN:
-                    generate_pawn_noncaptures(pos, piece_entry, &moves);
+                    generate_pawn_noncaptures(pos, from, piece, &moves);
                     break;
                 case KING:
                 case KNIGHT:
                 case BISHOP:
                 case ROOK:
                 case QUEEN:
-                    generate_piece_noncaptures(pos, piece_entry, &moves);
+                    generate_piece_noncaptures(pos, from, piece, &moves);
                     break;
                 default: assert(false);
             }
@@ -163,15 +169,18 @@ int generate_pseudo_noncaptures(const position_t* pos, move_t* moves)
     // castling rights and the squares between king and rook are unoccupied.
     // Note: this would require some overhauling to support Chess960.
     square_t king_home = E1 + side*A8;
-    if (has_oo_rights(pos, side) && !pos->board[king_home+1] &&
-            !pos->board[king_home+2]) {
+    if (has_oo_rights(pos, side) &&
+            pos->board[king_home+1] == EMPTY &&
+            pos->board[king_home+2] == EMPTY) {
         moves = add_move(pos,
                 create_move_castle(king_home, king_home+2,
                     create_piece(side, KING)),
                 moves);
     }
-    if (has_ooo_rights(pos, side) && !pos->board[king_home-1] && 
-            !pos->board[king_home-2] && !pos->board[king_home-3]) {
+    if (has_ooo_rights(pos, side) &&
+            pos->board[king_home-1] == EMPTY &&
+            pos->board[king_home-2] == EMPTY &&
+            pos->board[king_home-3] == EMPTY) {
         moves = add_move(pos,
                 create_move_castle(king_home, king_home-2,
                     create_piece(side, KING)),
@@ -191,9 +200,7 @@ static int generate_queen_promotions(const position_t* pos, move_t* moves)
     color_t side = pos->side_to_move;
     piece_t piece = create_piece(side, PAWN);
     for (int i = 0; i < pos->piece_count[side][PAWN]; ++i) {
-        const piece_entry_t* piece_entry = &pos->pieces[side][PAWN][i];
-        assert(piece_entry->piece == piece);
-        square_t from = piece_entry->location;
+        square_t from = pos->pieces[side][PAWN][i];
         rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
         if (relative_rank < RANK_7) continue;
         square_t to = from + pawn_push[side];
@@ -217,20 +224,19 @@ static direction_t pin_direction(const position_t* pos,
     direction_t king_dir = king_atk->relative_direction;
     square_t sq;
     for (sq = from + king_dir;
-            valid_board_index(sq) && !pos->board[sq];
+            valid_board_index(sq) && pos->board[sq] == EMPTY;
             sq += king_dir) {}
     if (sq == king_sq) {
         // Nothing between us and the king. Is there anything
         // behind us that's doing the pinning?
         for (sq = from - king_dir;
-                valid_board_index(sq) && !pos->board[sq];
+                valid_board_index(sq) && pos->board[sq] == EMPTY;
                 sq -= king_dir) {}
         if (valid_board_index(sq) &&
-                piece_colors_differ(pos->board[sq]->piece,
-                    pos->board[from]->piece) &&
+                piece_colors_differ(pos->board[sq], pos->board[from]) &&
                 (king_atk->possible_attackers &
-                 get_piece_flag(pos->board[sq]->piece)) &&
-                (piece_slide_type(pos->board[sq]->piece) != NONE)) {
+                 get_piece_flag(pos->board[sq])) &&
+                (piece_slide_type(pos->board[sq]) != NONE)) {
             pin_dir = king_dir;
         }
     }
@@ -239,35 +245,34 @@ static direction_t pin_direction(const position_t* pos,
 
 /*
  * Generate all moves that evade check in the given position.
- * FIXME: untested and unused so far.
  */
 int generate_evasions(const position_t* pos, move_t* moves)
 {
     assert(pos->is_check && pos->board[pos->check_square]);
     move_t* moves_head = moves;
     color_t side = pos->side_to_move, other_side = side^1;
-    square_t king_sq = pos->pieces[side][KING][0].location;
+    square_t king_sq = pos->pieces[side][KING][0];
     square_t check_sq = pos->check_square;
-    piece_t king = pos->pieces[side][KING][0].piece;
-    piece_t checker = pos->board[check_sq]->piece;
+    piece_t king = create_piece(side, KING);
+    piece_t checker = pos->board[check_sq];
 
     // Generate King moves.
-    square_t from = king_sq, to = INVALID_SQUARE;
-    piece_entry_t* king_entry = pos->board[king_sq];
     // Don't let the king mask its possible destination squares in calls
     // to is_square_attacked.
-    ((position_t*)pos)->board[king_sq] = NULL;
+    square_t from = king_sq, to = INVALID_SQUARE;
+    ((position_t*)pos)->board[king_sq] = EMPTY;
     for (const direction_t* delta = piece_deltas[king]; *delta; ++delta) {
         to = from + *delta;
         if (!valid_board_index(to)) continue;
-        piece_t capture = pos->board[to] ? pos->board[to]->piece : EMPTY;
+        piece_t capture = pos->board[to];
         if (capture != EMPTY && !piece_colors_differ(king, capture)) continue;
-        if (is_square_attacked((position_t*)pos,to,other_side,false)) continue;
-        ((position_t*)pos)->board[king_sq] = king_entry;
+        if (is_square_attacked((position_t*)pos,to,other_side)) continue;
+        // TODO: can this be eliminated now?
+        ((position_t*)pos)->board[king_sq] = king;
         moves = add_move(pos, create_move(from, to, king, capture), moves);
-        ((position_t*)pos)->board[king_sq] = NULL;
+        ((position_t*)pos)->board[king_sq] = EMPTY;
     }
-    ((position_t*)pos)->board[king_sq] = king_entry;
+    ((position_t*)pos)->board[king_sq] = king;
     // If there are multiple checkers, only king moves are possible.
     if (pos->is_check > 1) {
         *moves = 0;
@@ -284,7 +289,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
         to = pos->ep_square;
         for (int i=0; i<2; ++i) {
             from = to-piece_deltas[our_pawn][i];
-            if (pos->board[from] && pos->board[from]->piece == our_pawn) {
+            if (pos->board[from] && pos->board[from] == our_pawn) {
                 pin_dir = pin_direction(pos, from, king_sq);
                 if (pin_dir) continue;
                 moves = add_move(pos,
@@ -296,12 +301,12 @@ int generate_evasions(const position_t* pos, move_t* moves)
     // Generate captures of the checker.
     for (piece_type_t type = QUEEN; type != NONE; --type) {
         for (int i = 0; i < pos->piece_count[side][type]; ++i) {
-            from = pos->pieces[side][type][i].location;
+            from = pos->pieces[side][type][i];
             piece_t piece = create_piece(side, type);
             pin_dir = pin_direction(pos, from, king_sq);
             if (pin_dir) continue;
             const attack_data_t* atk = &get_attack_data(from, check_sq);
-            if (!(atk->possible_attackers&get_piece_flag(piece))) continue;
+            if (!(atk->possible_attackers & get_piece_flag(piece))) continue;
             if (piece_slide_type(piece) == NONE) {
                 if (type == PAWN && relative_pawn_rank
                         [side][square_rank(from)] == RANK_7) {
@@ -340,7 +345,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
         get_attack_data(check_sq, king_sq).relative_direction;
     for (piece_type_t type = QUEEN; type != NONE; --type) {
         for (int i = 0; i < pos->piece_count[side][type]; ++i) {
-            from = pos->pieces[side][type][i].location;
+            from = pos->pieces[side][type][i];
             piece_t piece = create_piece(side, type);
             direction_t k_dir;
             pin_dir = pin_direction(pos, from, king_sq);
@@ -425,11 +430,11 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
 {
     move_t* moves_head = moves;
     color_t side = pos->side_to_move, other_side = side^1;
-    square_t king_sq = pos->pieces[other_side][KING][0].location;
+    square_t king_sq = pos->pieces[other_side][KING][0];
     for (piece_type_t type = QUEEN; type != NONE; --type) {
         for (int i = 0; i < pos->piece_count[side][type]; ++i) {
             square_t to = INVALID_SQUARE;
-            square_t from = pos->pieces[side][type][i].location;
+            square_t from = pos->pieces[side][type][i];
             piece_t piece = create_piece(side, type);
             // Figure out whether or not we can discover check by moving.
             direction_t discover_check_dir = 0;
@@ -450,9 +455,9 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
                             valid_board_index(sq) && !pos->board[sq];
                             sq -= king_dir) {}
                     if (valid_board_index(sq) &&
-                            (side == piece_color(pos->board[sq]->piece)) &&
+                            (side == piece_color(pos->board[sq])) &&
                             (king_atk->possible_attackers &
-                             get_piece_flag(pos->board[sq]->piece))) {
+                             get_piece_flag(pos->board[sq]))) {
                         discover_check_dir = king_dir;
                     }
                 }
@@ -542,12 +547,11 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
  * Add all pseudo-legal captures that the given pawn can make.
  */
 static void generate_pawn_captures(const position_t* pos,
-        const piece_entry_t* piece_entry,
+        square_t from,
+        piece_t piece,
         move_t** moves_head)
 {
     color_t side = pos->side_to_move;
-    piece_t piece = piece_entry->piece;
-    square_t from = piece_entry->location;
     square_t to;
     rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
     move_t* moves = *moves_head;
@@ -557,12 +561,12 @@ static void generate_pawn_captures(const position_t* pos,
             to = from + *delta;
             if (to == pos->ep_square) {
                 moves = add_move(pos, create_move_enpassant(from, to, piece,
-                        pos->board[to + pawn_push[side^1]]->piece), moves);
+                        pos->board[to + pawn_push[side^1]]), moves);
             }
-            if (!valid_board_index(to) || !pos->board[to]) continue;
-            if (piece_colors_differ(piece, pos->board[to]->piece)) {
+            if (!valid_board_index(to) || pos->board[to] == EMPTY) continue;
+            if (piece_colors_differ(piece, pos->board[to])) {
                 moves = add_move(pos, create_move(from, to, piece,
-                        pos->board[to]->piece), moves);
+                        pos->board[to]), moves);
             }
         }
     } else {
@@ -571,10 +575,10 @@ static void generate_pawn_captures(const position_t* pos,
             to = from + *delta;
             if (!valid_board_index(to) ||
                 !pos->board[to] ||
-                !piece_colors_differ(piece, pos->board[to]->piece)) continue;
+                !piece_colors_differ(piece, pos->board[to])) continue;
             for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
                 moves = add_move(pos, create_move_promote(from, to, piece,
-                        pos->board[to]->piece, promoted), moves);
+                        pos->board[to], promoted), moves);
             }
         }
     }
@@ -585,12 +589,11 @@ static void generate_pawn_captures(const position_t* pos,
  * Add all pseudo-legal non-capturing moves that the given pawn can make.
  */
 static void generate_pawn_noncaptures(const position_t* pos,
-        const piece_entry_t* piece_entry,
+        square_t from,
+        piece_t piece,
         move_t** moves_head)
 {
     color_t side = pos->side_to_move;
-    piece_t piece = piece_entry->piece;
-    square_t from = piece_entry->location;
     square_t to;
     rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
     move_t* moves = *moves_head;
@@ -600,7 +603,7 @@ static void generate_pawn_noncaptures(const position_t* pos,
         if (pos->board[to]) return;
         moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
         to += pawn_push[side];
-        if (relative_rank == RANK_2 && pos->board[to] == NULL) {
+        if (relative_rank == RANK_2 && pos->board[to] == EMPTY) {
             // initial two-square push
             moves = add_move(pos,
                     create_move(from, to, piece, EMPTY),
@@ -609,7 +612,7 @@ static void generate_pawn_noncaptures(const position_t* pos,
     } else {
         // promotions
         to = from + pawn_push[side];
-        if (pos->board[to]) return;
+        if (pos->board[to] != EMPTY) return;
         for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
             moves = add_move(pos, create_move_promote(from, to, piece,
                         EMPTY, promoted), moves);
@@ -622,11 +625,10 @@ static void generate_pawn_noncaptures(const position_t* pos,
  * Add all pseudo-legal captures that the given piece (N/B/Q/K) can make.
  */
 static void generate_piece_captures(const position_t* pos,
-        const piece_entry_t* piece_entry,
+        square_t from,
+        piece_t piece,
         move_t** moves_head)
 {
-    const piece_t piece = piece_entry->piece;
-    const square_t from = piece_entry->location;
     move_t* moves = *moves_head;
     square_t to;
     if (piece_slide_type(piece) == NONE) {
@@ -634,9 +636,9 @@ static void generate_piece_captures(const position_t* pos,
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             to = from + *delta;
             if (!valid_board_index(to) || !pos->board[to]) continue;
-            if (piece_colors_differ(piece, pos->board[to]->piece)) {
+            if (piece_colors_differ(piece, pos->board[to])) {
                 moves = add_move(pos, create_move(from, to, piece,
-                            pos->board[to]->piece), moves);
+                            pos->board[to]), moves);
             }
         }
     } else {
@@ -647,9 +649,9 @@ static void generate_piece_captures(const position_t* pos,
                 to += *delta;
                 if (!valid_board_index(to)) break;
                 if (!pos->board[to]) continue;
-                if (piece_colors_differ(piece, pos->board[to]->piece)) {
+                if (piece_colors_differ(piece, pos->board[to])) {
                     moves = add_move(pos, create_move(from, to, piece,
-                            pos->board[to]->piece), moves);
+                            pos->board[to]), moves);
                 }
             } while (!pos->board[to]);
         }
@@ -662,11 +664,10 @@ static void generate_piece_captures(const position_t* pos,
  * can make, with the exception of castles.
  */
 static void generate_piece_noncaptures(const position_t* pos,
-        const piece_entry_t* piece_entry,
+        square_t from,
+        piece_t piece,
         move_t** moves_head)
 {
-    const piece_t piece = piece_entry->piece;
-    const square_t from = piece_entry->location;
     move_t* moves = *moves_head;
     square_t to;
     if (piece_slide_type(piece) == NONE) {

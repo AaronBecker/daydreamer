@@ -17,11 +17,10 @@ void place_piece(position_t* pos, const piece_t piece, const square_t square)
     assert(type != INVALID_PIECE);
     assert(square != INVALID_SQUARE);
 
-    piece_entry_t* entry = &pos->pieces[color][type]
-        [pos->piece_count[color][type]++];
-    entry->location = square;
-    entry->piece = piece;
-    pos->board[square] = entry;
+    pos->board[square] = piece;
+    int index = pos->piece_count[color][type]++;
+    pos->pieces[color][type][index] = square;
+    pos->piece_index[square] = index;
     pos->material_eval[color] += material_value(piece);
     pos->piece_square_eval[color] += piece_square_value(piece, square);
     pos->endgame_piece_square_eval[color] +=
@@ -34,16 +33,19 @@ void place_piece(position_t* pos, const piece_t piece, const square_t square)
 void remove_piece(position_t* pos, const square_t square)
 {
     assert(pos->board[square]);
-    piece_t piece = pos->board[square]->piece;
+    piece_t piece = pos->board[square];
     color_t color = piece_color(piece);
     piece_type_t type = piece_type(piece);
     pos->hash ^= piece_hash(piece, square);
     // Swap the piece at the end of pos->pieces with the removed piece
+    pos->board[square] = EMPTY;
+    int index = pos->piece_index[square];
     int end_index = --pos->piece_count[color][type];
-    pos->board[square]->piece = pos->pieces[color][type][end_index].piece;
-    pos->board[square]->location = pos->pieces[color][type][end_index].location;
-    pos->board[pos->board[square]->location] = pos->board[square];
-    pos->board[square] = NULL;
+    if (index != end_index) {
+        square_t end_square = pos->pieces[color][type][end_index];
+        pos->pieces[color][type][index] = end_square;
+        pos->piece_index[end_square] = index;
+    }
     pos->material_eval[color] -= material_value(piece);
     pos->piece_square_eval[color] -= piece_square_value(piece, square);
     pos->endgame_piece_square_eval[color] -=
@@ -60,10 +62,13 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
     if (pos->board[to]) {
         remove_piece(pos, to);
     }
+    piece_t p = pos->board[from];
     pos->board[to] = pos->board[from];
-    pos->board[from] = NULL;
-    pos->board[to]->location = to;
-    piece_t p = pos->board[to]->piece;
+    int index = pos->piece_index[to] = pos->piece_index[from];
+    color_t color = piece_color(p);
+    piece_type_t type = piece_type(p);
+    pos->board[from] = EMPTY;
+    pos->pieces[color][type][index] = to;
     pos->piece_square_eval[piece_color(p)] -= piece_square_value(p, from);
     pos->piece_square_eval[piece_color(p)] += piece_square_value(p, to);
     pos->endgame_piece_square_eval[piece_color(p)] -=
@@ -106,8 +111,7 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
         if (relative_pawn_rank[side][square_rank(to)] -
                 relative_pawn_rank[side][square_rank(from)] != 1) {
             piece_t opp_pawn = create_piece(other_side, PAWN);
-            if ((pos->board[to-1] && pos->board[to-1]->piece == opp_pawn) ||
-                    (pos->board[to+1] && pos->board[to+1]->piece == opp_pawn)) {
+            if (pos->board[to-1] == opp_pawn || pos->board[to+1] == opp_pawn) {
                 pos->ep_square = from + pawn_push[side];
             }
         }
@@ -139,8 +143,8 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
         place_piece(pos, create_piece(side, promote_type), to);
     }
 
-    square_t king_square = pos->pieces[other_side][KING][0].location;
-    pos->is_check = is_square_attacked(pos, king_square, side, true);
+    square_t king_square = pos->pieces[other_side][KING][0];
+    pos->is_check = find_checks(pos);
     ++pos->fifty_move_counter;
     pos->hash_history[pos->ply++] = undo->hash;
     pos->side_to_move ^= 1;

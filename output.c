@@ -103,7 +103,7 @@ void print_board(const position_t* pos, bool uci_prefix)
             sq -= 0x19;
             continue;
         }
-        printf("%c ", glyphs[pos->board[sq] ? pos->board[sq]->piece : EMPTY]);
+        printf("%c ", glyphs[pos->board[sq]]);
     }
 }
 

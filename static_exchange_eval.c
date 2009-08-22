@@ -13,32 +13,89 @@ int static_exchange_eval(position_t* pos, move_t move)
     piece_t attacker = get_move_piece(move);
     piece_t captured = get_move_capture(move);
     if (!captured) return 0; // no capture--exchange is even
-    const piece_entry_t* attackers[2][16];
+    square_t attacker_sqs[2][16];
+    piece_t attacker_pcs[2][16];
     int num_attackers[2] = { 0, 0 };
     int initial_attacker[2] = { 0, 0 };
 
-    for (color_t side=WHITE; side<=BLACK; ++side) {
-        for (piece_t p=PAWN; p<=KING; ++p) {
-            const int num_pieces = pos->piece_count[side][p];
+    int index;
+    square_t sq;
+    // Find all the non-sliding pieces that could be attacking.
+    // Pawns:
+    if (pos->board[attacked_sq + NW] == BP && attacked_sq + NW != attacker_sq) {
+        index = num_attackers[BLACK]++;
+        attacker_sqs[BLACK][index] = attacked_sq + NW;
+        attacker_pcs[BLACK][index] = BP;
+    }
+    if (pos->board[attacked_sq + NE] == BP && attacked_sq + NE != attacker_sq) {
+        index = num_attackers[BLACK]++;
+        attacker_sqs[BLACK][index] = attacked_sq + NE;
+        attacker_pcs[BLACK][index] = BP;
+    }
+    if (pos->board[attacked_sq + SW] == WP && attacked_sq + SW != attacker_sq) {
+        index = num_attackers[WHITE]++;
+        attacker_sqs[WHITE][index] = attacked_sq + SW;
+        attacker_pcs[WHITE][index] = WP;
+    }
+    if (pos->board[attacked_sq + SE] == WP && attacked_sq + SE != attacker_sq) {
+        index = num_attackers[WHITE]++;
+        attacker_sqs[WHITE][index] = attacked_sq + SE;
+        attacker_pcs[WHITE][index] = WP;
+    }
+    // Knights:
+    for (int i=0; i<pos->piece_count[WHITE][KNIGHT]; ++i) {
+        sq = pos->pieces[WHITE][KNIGHT][i];
+        if (sq != attacker_sq &&
+                (get_attack_data(sq, attacked_sq).possible_attackers &
+                 N_FLAG)) {
+            index = num_attackers[WHITE]++;
+            attacker_sqs[WHITE][index] = sq;
+            attacker_pcs[WHITE][index] = WN;
+        }
+    }
+    for (int i=0; i<pos->piece_count[BLACK][KNIGHT]; ++i) {
+        sq = pos->pieces[BLACK][KNIGHT][i];
+        if (sq != attacker_sq && (get_attack_data(sq, attacked_sq).possible_attackers & N_FLAG)) {
+            index = num_attackers[BLACK]++;
+            attacker_sqs[BLACK][index] = sq;
+            attacker_pcs[BLACK][index] = BN;
+        }
+    }
+    // Kings:
+    sq = pos->pieces[WHITE][KING][0];
+    if (sq != attacker_sq && (get_attack_data(sq, attacked_sq).possible_attackers & K_FLAG)) {
+        index = num_attackers[WHITE]++;
+        attacker_sqs[WHITE][index] = sq;
+        attacker_pcs[WHITE][index] = WK;
+    }
+    sq = pos->pieces[BLACK][KING][0];
+    if (sq != attacker_sq && (get_attack_data(sq, attacked_sq).possible_attackers & K_FLAG)) {
+        index = num_attackers[BLACK]++;
+        attacker_sqs[BLACK][index] = sq;
+        attacker_pcs[BLACK][index] = BK;
+    }
+
+    const attack_data_t* att_to = &get_attack_data(0, attacked_sq);
+    for (int side=WHITE; side<=BLACK; ++side) {
+        for (int type=BISHOP; type<=QUEEN; ++type) {
+            const int num_pieces = pos->piece_count[side][type];
+            const piece_t p = create_piece(side, type);
+            const piece_flag_t attacker_flag = get_piece_flag(p);
             for (int i=0; i<num_pieces; ++i) {
-                const piece_entry_t* piece_entry = &pos->pieces[side][p][i];
-                square_t from=piece_entry->location;
-                const attack_data_t* attack_data = 
-                    &get_attack_data(from, attacked_sq);
+                const square_t from = pos->pieces[side][type][i];
                 if (from == attacker_sq ||
-                        !(attack_data->possible_attackers &
-                        get_piece_flag(piece_entry->piece))) continue;
-                if (piece_slide_type(p) == NO_SLIDE) {
-                    attackers[side][num_attackers[side]++] = piece_entry;
-                    continue;
-                }
+                        !(att_to[from].possible_attackers &
+                        attacker_flag)) continue;
+                square_t att_sq = from;
                 while (true) {
-                    from += attack_data->relative_direction;
-                    if (from == attacked_sq) {
-                        attackers[side][num_attackers[side]++] = piece_entry;
+                    att_sq += att_to[from].relative_direction;
+                    if (att_sq == attacked_sq) {
+                        index = num_attackers[side]++;
+                        attacker_sqs[side][index] = from;
+                        attacker_pcs[side][index] = p;
                         break;
                     }
-                    if (pos->board[from]) break;
+                    if (pos->board[att_sq]) break;
                 }
             }
         }
@@ -59,17 +116,19 @@ int static_exchange_eval(position_t* pos, move_t move)
         // add in any new x-ray attacks
         const attack_data_t* att_data =
             &get_attack_data(attacker_sq, attacked_sq);
-        if (att_data->possible_attackers & get_piece_flag(QUEEN)) {
+        if (att_data->possible_attackers & Q_FLAG) {
             square_t sq;
             for (sq=attacker_sq - att_data->relative_direction;
-                    valid_board_index(sq) && !pos->board[sq];
+                    valid_board_index(sq) && pos->board[sq] != EMPTY;
                     sq -= att_data->relative_direction) {}
-            if (valid_board_index(sq) && pos->board[sq]) {
-                const piece_entry_t* xray = pos->board[sq];
+            if (valid_board_index(sq) && pos->board[sq] != EMPTY) {
+                const piece_t xray_piece = pos->board[sq];
                 if (att_data->possible_attackers & 
-                        get_piece_flag(xray->piece)) {
-                    color_t xray_color = piece_color(xray->piece);
-                    attackers[xray_color][num_attackers[xray_color]++] = xray;
+                        get_piece_flag(xray_piece)) {
+                    const color_t xray_color = piece_color(xray_piece);
+                    index = num_attackers[xray_color]++;
+                    attacker_sqs[xray_color][index] = sq;
+                    attacker_pcs[xray_color][index] = xray_piece;
                 }
             }
         }
@@ -83,7 +142,7 @@ int static_exchange_eval(position_t* pos, move_t move)
         int least_value = material_value(KING)+1;
         int att_index = -1;
         for (int i=0; i<num_attackers[side]; ++i) {
-            capture_value = material_value(attackers[side][i]->piece);
+            capture_value = material_value(attacker_pcs[side][i]);
             if (capture_value < least_value) {
                 least_value = capture_value;
                 att_index = i;
@@ -93,9 +152,11 @@ int static_exchange_eval(position_t* pos, move_t move)
             assert(num_attackers[side] == 0);
             break;
         }
-        attacker = attackers[side][att_index]->piece;
-        attacker_sq = attackers[side][att_index]->location;
-        attackers[side][att_index] = attackers[side][--num_attackers[side]];
+        attacker = attacker_pcs[side][att_index];
+        attacker_sq = attacker_sqs[side][att_index];
+        index = --num_attackers[side];
+        attacker_sqs[side][att_index] = attacker_sqs[side][index];
+        attacker_pcs[side][att_index] = attacker_pcs[side][index];
         capture_value = least_value;
         if (piece_type(attacker) == KING && num_attackers[side^1]) break;
     }

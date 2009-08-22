@@ -11,18 +11,21 @@ void _check_board_validity(const position_t* pos)
     assert(pos->piece_count[0][PAWN] <= 8);
     assert(pos->piece_count[1][PAWN] <= 8);
     for (square_t sq=A1; sq<=H8; ++sq) {
-        if (!valid_board_index(sq)) continue;
-        if (pos->board[sq]) assert(pos->board[sq]->location == sq);
+        if (!valid_board_index(sq) || !pos->board[sq]) continue;
+        piece_t piece = pos->board[sq];
+        color_t side = piece_color(piece);
+        piece_type_t type = piece_type(piece);
+        assert(pos->pieces[side][type][pos->piece_index[sq]] == sq);
     }
     for (piece_type_t type=PAWN; type<=KING; ++type) {
-        for (int i=0; i<pos->piece_count[0][type]; ++i)
-            assert(pos->pieces[0][type][i].location == INVALID_SQUARE ||
-                    pos->board[pos->pieces[0][type][i].location] ==
-                    &pos->pieces[0][type][i]);
-        for (int i=0; i<pos->piece_count[1][type]; ++i)
-            assert(pos->pieces[1][type][i].location == INVALID_SQUARE ||
-                    pos->board[pos->pieces[1][type][i].location] ==
-                    &pos->pieces[1][type][i]);
+        for (int i=0; i<pos->piece_count[0][type]; ++i) {
+            piece_t piece = create_piece(0, type);
+            assert(pos->board[pos->pieces[0][type][i]] == piece);
+        }
+        for (int i=0; i<pos->piece_count[1][type]; ++i) {
+            piece_t piece = create_piece(1, type);
+            assert(pos->board[pos->pieces[1][type][i]] == piece);
+        }
     }
     assert(hash_position(pos) == pos->hash);
 }
@@ -39,12 +42,11 @@ void _check_move_validity(const position_t* pos, const move_t move)
     (void)pos,(void)move;                           // Avoid warning when
     (void)from,(void)to,(void)piece,(void)capture;  // NDEBUG is defined.
     assert(valid_board_index(from) && valid_board_index(to));
-    assert(pos->board[from]->piece == piece);
-    assert(pos->board[from]->location == from);
+    assert(pos->board[from] == piece);
     if (capture && !is_move_enpassant(move)) {
-        assert(pos->board[to]->piece == capture);
+        assert(pos->board[to] == capture);
     } else {
-        assert(pos->board[to] == NULL);
+        assert(pos->board[to] == EMPTY);
     }
 }
 

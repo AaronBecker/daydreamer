@@ -280,7 +280,7 @@ void position_to_fen_str(const position_t* pos, char* fen)
             *fen++ = '/';
             square -= 0x19; // drop down to next rank
         } else if (pos->board[square]) {
-            *fen++ = glyphs[pos->board[square]->piece];
+            *fen++ = glyphs[pos->board[square]];
         } else empty_run++;
         if (square == H1) {
             if (empty_run) *fen++ = empty_run + '0';

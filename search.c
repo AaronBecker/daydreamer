@@ -153,7 +153,7 @@ static int extend(position_t* pos, move_t move)
 {
     if (is_check(pos)) return 1;
     square_t sq = get_move_to(move);
-    if (piece_type(pos->board[sq]->piece) == PAWN &&
+    if (piece_type(pos->board[sq]) == PAWN &&
             (square_rank(sq) == RANK_7 || square_rank(sq) == RANK_2)) return 1;
     return 0;
 }
