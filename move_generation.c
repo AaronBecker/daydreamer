@@ -219,9 +219,8 @@ static direction_t pin_direction(const position_t* pos,
 {
     // Figure out whether or not we can discover check by moving.
     direction_t pin_dir = 0;
-    const attack_data_t* king_atk = &get_attack_data(from, king_sq);
-    if ((king_atk->possible_attackers & Q_FLAG) == 0) return 0;
-    direction_t king_dir = king_atk->relative_direction;
+    if (!possible_attack(from, king_sq, WQ)) return 0;
+    direction_t king_dir = direction(from, king_sq);
     square_t sq;
     for (sq = from + king_dir;
             valid_board_index(sq) && pos->board[sq] == EMPTY;
@@ -234,8 +233,7 @@ static direction_t pin_direction(const position_t* pos,
                 sq -= king_dir) {}
         if (valid_board_index(sq) &&
                 piece_colors_differ(pos->board[sq], pos->board[from]) &&
-                (king_atk->possible_attackers &
-                 get_piece_flag(pos->board[sq])) &&
+                possible_attack(from, king_sq, pos->board[sq]) &&
                 (piece_slide_type(pos->board[sq]) != NONE)) {
             pin_dir = king_dir;
         }
@@ -305,8 +303,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
             piece_t piece = create_piece(side, type);
             pin_dir = pin_direction(pos, from, king_sq);
             if (pin_dir) continue;
-            const attack_data_t* atk = &get_attack_data(from, check_sq);
-            if (!(atk->possible_attackers & get_piece_flag(piece))) continue;
+            if (!possible_attack(from, check_sq, piece)) continue;
             if (piece_slide_type(piece) == NONE) {
                 if (type == PAWN && relative_pawn_rank
                         [side][square_rank(from)] == RANK_7) {
@@ -323,9 +320,10 @@ int generate_evasions(const position_t* pos, move_t* moves)
                 }
             } else {
                 // A sliding piece, keep going until we hit something.
-                for (to = from + atk->relative_direction;
+                direction_t check_dir = direction(from, check_sq);
+                for (to = from + check_dir;
                         valid_board_index(to) && !pos->board[to];
-                        to += atk->relative_direction) {}
+                        to += check_dir) {}
                 if (to == check_sq) {
                     moves = add_move(pos,
                             create_move(from, to, piece, checker),
@@ -497,9 +495,8 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
                         *delta; ++delta) {
                     to = from + *delta;
                     if (!valid_board_index(to) || pos->board[to]) continue;
-                    const attack_data_t* atk = &get_attack_data(to, king_sq);
                     if (discover_check_dir ||
-                            atk->possible_attackers & N_FLAG) {
+                            possible_attack(to, king_sq, WN)) {
                         moves = add_move(pos,
                                 create_move(from, to, piece, EMPTY),
                                 moves);
@@ -519,10 +516,8 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
                                     moves);
                             continue;
                         }
-                        const attack_data_t* atk =
-                            &get_attack_data(to, king_sq);
-                        if (atk->possible_attackers & get_piece_flag(piece)) {
-                            const direction_t to_king = atk->relative_direction;
+                        if (possible_attack(to, king_sq, piece)) {
+                            const direction_t to_king = direction(to, king_sq);
                             for (square_t x=to + to_king;
                                     valid_board_index(x); x += to_king) {
                                 if (x == king_sq) {

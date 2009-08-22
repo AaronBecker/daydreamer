@@ -173,17 +173,18 @@ bool is_square_attacked(position_t* pos, square_t sq, color_t side)
 
     for (int type=KNIGHT; type<=KING; ++type) {
         piece_t p = create_piece(side, type);
-        const int num_pieces = pos->piece_count[side][type];
         const slide_t attacker_slide = piece_slide_type(p);
-        for (int i=0; i<num_pieces; ++i) {
-            const square_t from = pos->pieces[side][type][i];
+        square_t from;
+        for (square_t* pfrom = &pos->pieces[side][type][0];
+                (from = *pfrom) != INVALID_SQUARE;
+                ++pfrom) {
             if (possible_attack(from, sq, p)) {
                 if (attacker_slide == NO_SLIDE) return true;
-                square_t att_sq = from;
-                while (att_sq != sq) {
-                    att_sq += direction(from, sq);
-                    if (att_sq == sq) return true;
-                    if (pos->board[att_sq]) break;
+                direction_t att_dir = direction(from, sq);
+                while (from != sq) {
+                    from += att_dir;
+                    if (from == sq) return true;
+                    if (pos->board[from]) break;
                 }
             }
         }
@@ -213,10 +214,11 @@ uint8_t find_checks(position_t* pos)
 
     for (int type=KNIGHT; type<=KING; ++type) {
         piece_t p = create_piece(side, type);
-        const int num_pieces = pos->piece_count[side][type];
         const slide_t attacker_slide = piece_slide_type(p);
-        for (int i=0; i<num_pieces; ++i) {
-            const square_t from = pos->pieces[side][type][i];
+        square_t from;
+        for (square_t* pfrom = &pos->pieces[side][type][0];
+                (from = *pfrom) != INVALID_SQUARE;
+                ++pfrom) {
             if (possible_attack(from, sq, p)) {
                 if (attacker_slide == NO_SLIDE) {
                     pos->check_square = from;
@@ -224,8 +226,9 @@ uint8_t find_checks(position_t* pos)
                     continue;
                 }
                 square_t att_sq = from;
+                direction_t att_dir = direction(from, sq);
                 while (att_sq != sq) {
-                    att_sq += direction(from, sq);
+                    att_sq += att_dir;
                     if (att_sq == sq) {
                         pos->check_square = from;
                         if (++attackers > 1) return attackers;

@@ -45,9 +45,7 @@ int static_exchange_eval(position_t* pos, move_t move)
     // Knights:
     for (int i=0; i<pos->piece_count[WHITE][KNIGHT]; ++i) {
         sq = pos->pieces[WHITE][KNIGHT][i];
-        if (sq != attacker_sq &&
-                (get_attack_data(sq, attacked_sq).possible_attackers &
-                 N_FLAG)) {
+        if (sq != attacker_sq && possible_attack(sq, attacked_sq, WN)) {
             index = num_attackers[WHITE]++;
             attacker_sqs[WHITE][index] = sq;
             attacker_pcs[WHITE][index] = WN;
@@ -55,7 +53,7 @@ int static_exchange_eval(position_t* pos, move_t move)
     }
     for (int i=0; i<pos->piece_count[BLACK][KNIGHT]; ++i) {
         sq = pos->pieces[BLACK][KNIGHT][i];
-        if (sq != attacker_sq && (get_attack_data(sq, attacked_sq).possible_attackers & N_FLAG)) {
+        if (sq != attacker_sq && possible_attack(sq, attacked_sq, BN)) {
             index = num_attackers[BLACK]++;
             attacker_sqs[BLACK][index] = sq;
             attacker_pcs[BLACK][index] = BN;
@@ -63,32 +61,34 @@ int static_exchange_eval(position_t* pos, move_t move)
     }
     // Kings:
     sq = pos->pieces[WHITE][KING][0];
-    if (sq != attacker_sq && (get_attack_data(sq, attacked_sq).possible_attackers & K_FLAG)) {
+    if (sq != attacker_sq && possible_attack(sq, attacked_sq, WK)) {
         index = num_attackers[WHITE]++;
         attacker_sqs[WHITE][index] = sq;
         attacker_pcs[WHITE][index] = WK;
     }
     sq = pos->pieces[BLACK][KING][0];
-    if (sq != attacker_sq && (get_attack_data(sq, attacked_sq).possible_attackers & K_FLAG)) {
+    if (sq != attacker_sq && possible_attack(sq, attacked_sq, BK)) {
         index = num_attackers[BLACK]++;
         attacker_sqs[BLACK][index] = sq;
         attacker_pcs[BLACK][index] = BK;
     }
 
-    const attack_data_t* att_to = &get_attack_data(0, attacked_sq);
     for (int side=WHITE; side<=BLACK; ++side) {
         for (int type=BISHOP; type<=QUEEN; ++type) {
-            const int num_pieces = pos->piece_count[side][type];
+            //const int num_pieces = pos->piece_count[side][type];
             const piece_t p = create_piece(side, type);
-            const piece_flag_t attacker_flag = get_piece_flag(p);
-            for (int i=0; i<num_pieces; ++i) {
-                const square_t from = pos->pieces[side][type][i];
-                if (from == attacker_sq ||
-                        !(att_to[from].possible_attackers &
-                        attacker_flag)) continue;
+            //for (int i=0; i<num_pieces; ++i) {
+            square_t from;
+            for (square_t* pfrom = &pos->pieces[side][type][0];
+                    (from = *pfrom) != INVALID_SQUARE;
+                    ++pfrom) {
+                //const square_t from = pos->pieces[side][type][i];
+                if (from == attacker_sq || 
+                        !possible_attack(from, attacked_sq, p)) continue;
                 square_t att_sq = from;
+                direction_t att_dir = direction(from, attacked_sq);
                 while (true) {
-                    att_sq += att_to[from].relative_direction;
+                    att_sq += att_dir;
                     if (att_sq == attacked_sq) {
                         index = num_attackers[side]++;
                         attacker_sqs[side][index] = from;

@@ -20,6 +20,7 @@ void place_piece(position_t* pos, const piece_t piece, const square_t square)
     pos->board[square] = piece;
     int index = pos->piece_count[color][type]++;
     pos->pieces[color][type][index] = square;
+    pos->pieces[color][type][index+1] = INVALID_SQUARE;
     pos->piece_index[square] = index;
     pos->material_eval[color] += material_value(piece);
     pos->piece_square_eval[color] += piece_square_value(piece, square);
@@ -46,6 +47,7 @@ void remove_piece(position_t* pos, const square_t square)
         pos->pieces[color][type][index] = end_square;
         pos->piece_index[end_square] = index;
     }
+    pos->pieces[color][type][end_index] = INVALID_SQUARE;
     pos->material_eval[color] -= material_value(piece);
     pos->piece_square_eval[color] -= piece_square_value(piece, square);
     pos->endgame_piece_square_eval[color] -=
@@ -143,7 +145,6 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
         place_piece(pos, create_piece(side, promote_type), to);
     }
 
-    square_t king_square = pos->pieces[other_side][KING][0];
     pos->is_check = find_checks(pos);
     ++pos->fifty_move_counter;
     pos->hash_history[pos->ply++] = undo->hash;
