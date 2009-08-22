@@ -14,7 +14,6 @@ int static_exchange_eval(position_t* pos, move_t move)
     piece_t captured = get_move_capture(move);
     if (!captured) return 0; // no capture--exchange is even
     square_t attacker_sqs[2][16];
-    piece_t attacker_pcs[2][16];
     int num_attackers[2] = { 0, 0 };
     int initial_attacker[2] = { 0, 0 };
     int index;
@@ -24,22 +23,18 @@ int static_exchange_eval(position_t* pos, move_t move)
     if (pos->board[attacked_sq + NW] == BP && attacked_sq + NW != attacker_sq) {
         index = num_attackers[BLACK]++;
         attacker_sqs[BLACK][index] = attacked_sq + NW;
-        attacker_pcs[BLACK][index] = BP;
     }
     if (pos->board[attacked_sq + NE] == BP && attacked_sq + NE != attacker_sq) {
         index = num_attackers[BLACK]++;
         attacker_sqs[BLACK][index] = attacked_sq + NE;
-        attacker_pcs[BLACK][index] = BP;
     }
     if (pos->board[attacked_sq + SW] == WP && attacked_sq + SW != attacker_sq) {
         index = num_attackers[WHITE]++;
         attacker_sqs[WHITE][index] = attacked_sq + SW;
-        attacker_pcs[WHITE][index] = WP;
     }
     if (pos->board[attacked_sq + SE] == WP && attacked_sq + SE != attacker_sq) {
         index = num_attackers[WHITE]++;
         attacker_sqs[WHITE][index] = attacked_sq + SE;
-        attacker_pcs[WHITE][index] = WP;
     }
     
     for (int side=WHITE; side<=BLACK; ++side) {
@@ -55,7 +50,6 @@ int static_exchange_eval(position_t* pos, move_t move)
             if (piece_slide_type(p) == NO_SLIDE) {
                 index = num_attackers[side]++;
                 attacker_sqs[side][index] = from;
-                attacker_pcs[side][index] = p;
                 continue;
             }
             while (true) {
@@ -63,7 +57,6 @@ int static_exchange_eval(position_t* pos, move_t move)
                 if (att_sq == attacked_sq) {
                     index = num_attackers[side]++;
                     attacker_sqs[side][index] = from;
-                    attacker_pcs[side][index] = p;
                     break;
                 }
                 if (pos->board[att_sq]) break;
@@ -98,7 +91,6 @@ int static_exchange_eval(position_t* pos, move_t move)
                     const color_t xray_color = piece_color(xray_piece);
                     index = num_attackers[xray_color]++;
                     attacker_sqs[xray_color][index] = sq;
-                    attacker_pcs[xray_color][index] = xray_piece;
                 }
             }
         }
@@ -112,7 +104,7 @@ int static_exchange_eval(position_t* pos, move_t move)
         int least_value = material_value(KING)+1;
         int att_index = -1;
         for (int i=0; i<num_attackers[side]; ++i) {
-            capture_value = material_value(attacker_pcs[side][i]);
+            capture_value = material_value(pos->board[attacker_sqs[side][i]]);
             if (capture_value < least_value) {
                 least_value = capture_value;
                 att_index = i;
@@ -122,11 +114,10 @@ int static_exchange_eval(position_t* pos, move_t move)
             assert(num_attackers[side] == 0);
             break;
         }
-        attacker = attacker_pcs[side][att_index];
+        attacker = pos->board[attacker_sqs[side][att_index]];
         attacker_sq = attacker_sqs[side][att_index];
         index = --num_attackers[side];
         attacker_sqs[side][att_index] = attacker_sqs[side][index];
-        attacker_pcs[side][att_index] = attacker_pcs[side][index];
         capture_value = least_value;
         if (piece_type(attacker) == KING && num_attackers[side^1]) break;
     }
