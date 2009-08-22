@@ -41,7 +41,7 @@ typedef enum {
     RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NONE
 } rank_t;
 
-enum {
+typedef enum {
     A1=0x00, B1=0x01, C1=0x02, D1=0x03, E1=0x04, F1=0x05, G1=0x06, H1=0x07,
     A2=0x10, B2=0x11, C2=0x12, D2=0x13, E2=0x14, F2=0x15, G2=0x16, H2=0x17,
     A3=0x20, B3=0x21, C3=0x22, D3=0x23, E3=0x24, F3=0x25, G3=0x26, H3=0x27,
@@ -51,7 +51,7 @@ enum {
     A7=0x60, B7=0x61, C7=0x62, D7=0x63, E7=0x64, F7=0x65, G7=0x66, H7=0x67,
     A8=0x70, B8=0x71, C8=0x72, D8=0x73, E8=0x74, F8=0x75, G8=0x76, H8=0x77,
     INVALID_SQUARE=0x4b // just some square from the middle of the invalid part
-};
+} square_tag_t;
 typedef int square_t;
 
 #define square_rank(square)         ((square) >> 4)
@@ -87,8 +87,13 @@ typedef uint8_t castle_rights_t;
 typedef struct {
     piece_t board[128];                 // 0x88 board
     int piece_index[128];               // index of each piece in pieces
-    square_t pieces[2][8][16];          // [color][type][location]
-    int piece_count[2][8];              // [color][type]
+    square_t pieces[2][32];
+    square_t pawns[2][16];
+    int num_pieces[2];
+    int num_pawns[2];
+    //square_t pieces[2][8][16];          // [color][type][location]
+    //int piece_count[2][8];              // [color][type]
+    //int pawn_count[2];
     color_t side_to_move;
     move_t prev_move;
     square_t ep_square;

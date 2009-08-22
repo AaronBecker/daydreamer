@@ -17,9 +17,8 @@ int static_exchange_eval(position_t* pos, move_t move)
     piece_t attacker_pcs[2][16];
     int num_attackers[2] = { 0, 0 };
     int initial_attacker[2] = { 0, 0 };
-
     int index;
-    square_t sq;
+
     // Find all the non-sliding pieces that could be attacking.
     // Pawns:
     if (pos->board[attacked_sq + NW] == BP && attacked_sq + NW != attacker_sq) {
@@ -42,61 +41,32 @@ int static_exchange_eval(position_t* pos, move_t move)
         attacker_sqs[WHITE][index] = attacked_sq + SE;
         attacker_pcs[WHITE][index] = WP;
     }
-    // Knights:
-    for (int i=0; i<pos->piece_count[WHITE][KNIGHT]; ++i) {
-        sq = pos->pieces[WHITE][KNIGHT][i];
-        if (sq != attacker_sq && possible_attack(sq, attacked_sq, WN)) {
-            index = num_attackers[WHITE]++;
-            attacker_sqs[WHITE][index] = sq;
-            attacker_pcs[WHITE][index] = WN;
-        }
-    }
-    for (int i=0; i<pos->piece_count[BLACK][KNIGHT]; ++i) {
-        sq = pos->pieces[BLACK][KNIGHT][i];
-        if (sq != attacker_sq && possible_attack(sq, attacked_sq, BN)) {
-            index = num_attackers[BLACK]++;
-            attacker_sqs[BLACK][index] = sq;
-            attacker_pcs[BLACK][index] = BN;
-        }
-    }
-    // Kings:
-    sq = pos->pieces[WHITE][KING][0];
-    if (sq != attacker_sq && possible_attack(sq, attacked_sq, WK)) {
-        index = num_attackers[WHITE]++;
-        attacker_sqs[WHITE][index] = sq;
-        attacker_pcs[WHITE][index] = WK;
-    }
-    sq = pos->pieces[BLACK][KING][0];
-    if (sq != attacker_sq && possible_attack(sq, attacked_sq, BK)) {
-        index = num_attackers[BLACK]++;
-        attacker_sqs[BLACK][index] = sq;
-        attacker_pcs[BLACK][index] = BK;
-    }
-
+    
     for (int side=WHITE; side<=BLACK; ++side) {
-        for (int type=BISHOP; type<=QUEEN; ++type) {
-            //const int num_pieces = pos->piece_count[side][type];
-            const piece_t p = create_piece(side, type);
-            //for (int i=0; i<num_pieces; ++i) {
-            square_t from;
-            for (square_t* pfrom = &pos->pieces[side][type][0];
-                    (from = *pfrom) != INVALID_SQUARE;
-                    ++pfrom) {
-                //const square_t from = pos->pieces[side][type][i];
-                if (from == attacker_sq || 
-                        !possible_attack(from, attacked_sq, p)) continue;
-                square_t att_sq = from;
-                direction_t att_dir = direction(from, attacked_sq);
-                while (true) {
-                    att_sq += att_dir;
-                    if (att_sq == attacked_sq) {
-                        index = num_attackers[side]++;
-                        attacker_sqs[side][index] = from;
-                        attacker_pcs[side][index] = p;
-                        break;
-                    }
-                    if (pos->board[att_sq]) break;
+        square_t from;
+        for (square_t* pfrom = &pos->pieces[side][0];
+                (from = *pfrom) != INVALID_SQUARE;
+                ++pfrom) {
+            piece_t p = pos->board[from];
+            if (from == attacker_sq || 
+                    !possible_attack(from, attacked_sq, p)) continue;
+            square_t att_sq = from;
+            direction_t att_dir = direction(from, attacked_sq);
+            if (piece_slide_type(p) == NO_SLIDE) {
+                index = num_attackers[side]++;
+                attacker_sqs[side][index] = from;
+                attacker_pcs[side][index] = p;
+                continue;
+            }
+            while (true) {
+                att_sq += att_dir;
+                if (att_sq == attacked_sq) {
+                    index = num_attackers[side]++;
+                    attacker_sqs[side][index] = from;
+                    attacker_pcs[side][index] = p;
+                    break;
                 }
+                if (pos->board[att_sq]) break;
             }
         }
     }

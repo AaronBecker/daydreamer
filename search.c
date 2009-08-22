@@ -186,7 +186,7 @@ static bool is_nullmove_allowed(position_t* pos)
     // allow nullmove if we're not down to king/pawns
     int piece_value = pos->material_eval[pos->side_to_move] -
         material_value(WK) -
-        material_value(WP)*pos->piece_count[pos->side_to_move][PAWN];
+        material_value(WP)*pos->num_pawns[pos->side_to_move];
     return piece_value != 0;
 }
 

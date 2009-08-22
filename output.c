@@ -60,23 +60,24 @@ void print_pv(search_data_t* search_data)
                 search_data->qnodes_searched, nodes/(time+1)*1000);
     }
     int moves = print_coord_move_list(pv);
-    if (moves < depth) {
-        // If our pv is shortened by a hash hit,
-        // try to get more moves from the hash table.
-        position_t pos;
-        undo_info_t undo;
-        copy_position(&pos, &search_data->root_pos);
-        for (int i=0; pv[i] != NO_MOVE; ++i) do_move(&pos, pv[i], &undo);
+    // FIXME: re-enable this
+    //if (moves < depth) {
+    //    // If our pv is shortened by a hash hit,
+    //    // try to get more moves from the hash table.
+    //    position_t pos;
+    //    undo_info_t undo;
+    //    copy_position(&pos, &search_data->root_pos);
+    //    for (int i=0; pv[i] != NO_MOVE; ++i) do_move(&pos, pv[i], &undo);
 
-        transposition_entry_t* entry;
-        while (moves < depth) {
-            entry = get_transposition(&pos);
-            if (!entry || !is_move_legal(&pos, entry->move)) break;
-            print_coord_move(entry->move);
-            do_move(&pos, entry->move, &undo);
-            ++moves;
-        }
-    }
+    //    transposition_entry_t* entry;
+    //    while (moves < depth) {
+    //        entry = get_transposition(&pos);
+    //        if (!entry || !is_move_legal(&pos, entry->move)) break;
+    //        print_coord_move(entry->move);
+    //        do_move(&pos, entry->move, &undo);
+    //        ++moves;
+    //    }
+    //}
     printf("\n");
     char sanpv[1024];
     line_to_san_str(&search_data->root_pos, (move_t*)pv, sanpv);

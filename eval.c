@@ -52,8 +52,8 @@ int full_eval(const position_t* pos)
  */
 bool insufficient_material(const position_t* pos)
 {
-    return (pos->piece_count[WHITE][PAWN] == 0 &&
-        pos->piece_count[BLACK][PAWN] == 0 &&
+    return (pos->num_pawns[WHITE] == 0 &&
+        pos->num_pawns[BLACK] == 0 &&
         pos->material_eval[WHITE] < ROOK_VAL &&
         pos->material_eval[BLACK] < ROOK_VAL);
 }
@@ -78,7 +78,7 @@ bool is_endgame(const position_t* pos)
     // TODO: game phase determination could be a lot more sophisticated,
     // and the information could be cached.
     return (pos->material_eval[WHITE] + pos->material_eval[BLACK] -
-            (PAWN_VAL * (pos->piece_count[WHITE][PAWN] +
-                         pos->piece_count[BLACK][PAWN]))) <=
+            (PAWN_VAL * (pos->num_pawns[WHITE] +
+                         pos->num_pawns[BLACK]))) <=
         2 * KING_VAL + 4 * QUEEN_VAL;
 }

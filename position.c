@@ -13,15 +13,17 @@ static void init_position(position_t* position)
 {
     for (int square=0; square<128; ++square) {
         position->board[square] = EMPTY;
-        position->piece_index[square] = 0;
+        position->piece_index[square] = -1;
     }
 
     for (color_t color=WHITE; color<=BLACK; ++color) {
-        for (piece_type_t type=PAWN; type<=KING; ++type) {
-            position->piece_count[color][type] = 0;
-            for (int index=0; index<16; ++index) {
-                position->pieces[color][type][index] = INVALID_SQUARE;
-            }
+        position->num_pieces[color] = 0;
+        position->num_pawns[color] = 0;
+        for (int index=0; index<32; ++index) {
+            position->pieces[color][index] = INVALID_SQUARE;
+        }
+        for (int index=0; index<16; ++index) {
+            position->pawns[color][index] = INVALID_SQUARE;
         }
         position->material_eval[color] = 0;
         position->piece_square_eval[color] = 0;
@@ -171,21 +173,18 @@ bool is_square_attacked(position_t* pos, square_t sq, color_t side)
     if (pos->board[sq - piece_deltas[opp_pawn][0]] == opp_pawn) return true;
     if (pos->board[sq - piece_deltas[opp_pawn][1]] == opp_pawn) return true;
 
-    for (int type=KNIGHT; type<=KING; ++type) {
-        piece_t p = create_piece(side, type);
-        const slide_t attacker_slide = piece_slide_type(p);
-        square_t from;
-        for (square_t* pfrom = &pos->pieces[side][type][0];
-                (from = *pfrom) != INVALID_SQUARE;
-                ++pfrom) {
-            if (possible_attack(from, sq, p)) {
-                if (attacker_slide == NO_SLIDE) return true;
-                direction_t att_dir = direction(from, sq);
-                while (from != sq) {
-                    from += att_dir;
-                    if (from == sq) return true;
-                    if (pos->board[from]) break;
-                }
+    square_t from;
+    for (square_t* pfrom = &pos->pieces[side][0];
+            (from = *pfrom) != INVALID_SQUARE;
+            ++pfrom) {
+        piece_t p = pos->board[from];
+        if (possible_attack(from, sq, p)) {
+            if (piece_slide_type(p) == NO_SLIDE) return true;
+            direction_t att_dir = direction(from, sq);
+            while (from != sq) {
+                from += att_dir;
+                if (from == sq) return true;
+                if (pos->board[from]) break;
             }
         }
     }
@@ -197,13 +196,12 @@ uint8_t find_checks(position_t* pos)
     // For every opposing piece, look up the attack data for its square.
     uint8_t attackers = 0;
     pos->check_square = EMPTY;
-    color_t side = pos->side_to_move;
-    square_t sq = pos->pieces[side^1][KING][0];
+    color_t side = pos->side_to_move^1;
+    square_t sq = pos->pieces[side^1][0];
 
     // Special-case pawns for efficiency.
     piece_t opp_pawn = create_piece(side, PAWN);
     if (pos->board[sq - piece_deltas[opp_pawn][0]] == opp_pawn) {
-        attackers++;
         pos->check_square = sq - piece_deltas[opp_pawn][0];
         if (++attackers > 1) return attackers;
     }
@@ -212,29 +210,26 @@ uint8_t find_checks(position_t* pos)
         if (++attackers > 1) return attackers;
     }
 
-    for (int type=KNIGHT; type<=KING; ++type) {
-        piece_t p = create_piece(side, type);
-        const slide_t attacker_slide = piece_slide_type(p);
-        square_t from;
-        for (square_t* pfrom = &pos->pieces[side][type][0];
-                (from = *pfrom) != INVALID_SQUARE;
-                ++pfrom) {
-            if (possible_attack(from, sq, p)) {
-                if (attacker_slide == NO_SLIDE) {
+    square_t from;
+    for (square_t* pfrom = &pos->pieces[side][1];
+            (from = *pfrom) != INVALID_SQUARE;
+            ++pfrom) {
+        piece_t p = pos->board[from];
+        if (possible_attack(from, sq, p)) {
+            if (piece_slide_type(p) == NO_SLIDE) {
+                pos->check_square = from;
+                if (++attackers > 1) return attackers;
+                continue;
+            }
+            square_t att_sq = from;
+            direction_t att_dir = direction(from, sq);
+            while (att_sq != sq) {
+                att_sq += att_dir;
+                if (att_sq == sq) {
                     pos->check_square = from;
                     if (++attackers > 1) return attackers;
-                    continue;
                 }
-                square_t att_sq = from;
-                direction_t att_dir = direction(from, sq);
-                while (att_sq != sq) {
-                    att_sq += att_dir;
-                    if (att_sq == sq) {
-                        pos->check_square = from;
-                        if (++attackers > 1) return attackers;
-                    }
-                    if (pos->board[att_sq]) break;
-                }
+                if (pos->board[att_sq]) break;
             }
         }
     }
@@ -253,7 +248,7 @@ bool is_move_legal(position_t* pos, const move_t move)
     if (is_check(pos)) return true;
 
     const color_t other_side = pos->side_to_move^1;
-    const square_t king_square = pos->pieces[other_side^1][KING][0];
+    const square_t king_square = pos->pieces[other_side^1][0];
 
     // Identify invalid/inconsistent moves.
     const square_t from = get_move_from(move);
@@ -287,7 +282,7 @@ bool is_move_legal(position_t* pos, const move_t move)
     undo_info_t undo;
     do_move(pos, move, &undo);
     bool legal = !is_square_attacked(pos,
-            pos->pieces[pos->side_to_move^1][KING][0],
+            pos->pieces[pos->side_to_move^1][0],
             other_side);
     undo_move(pos, move, &undo);
     return legal;

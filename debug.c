@@ -6,26 +6,31 @@
  */
 void _check_board_validity(const position_t* pos)
 {
-    assert(pos->piece_count[0][KING] == 1);
-    assert(pos->piece_count[1][KING] == 1);
-    assert(pos->piece_count[0][PAWN] <= 8);
-    assert(pos->piece_count[1][PAWN] <= 8);
+    assert(pos->board[pos->pieces[WHITE][0]] == WK);
+    assert(pos->board[pos->pieces[BLACK][0]] == BK);
+    assert(pos->num_pawns[WHITE] <= 8);
+    assert(pos->num_pawns[BLACK] <= 8);
     for (square_t sq=A1; sq<=H8; ++sq) {
         if (!valid_board_index(sq) || !pos->board[sq]) continue;
         piece_t piece = pos->board[sq];
         color_t side = piece_color(piece);
-        piece_type_t type = piece_type(piece);
-        assert(pos->pieces[side][type][pos->piece_index[sq]] == sq);
+        if (piece_is_type(piece, PAWN)) {
+            assert(pos->pawns[side][pos->piece_index[sq]] == sq);
+        } else {
+            assert(pos->pieces[side][pos->piece_index[sq]] == sq);
+        }
     }
-    for (piece_type_t type=PAWN; type<=KING; ++type) {
-        for (int i=0; i<pos->piece_count[0][type]; ++i) {
-            piece_t piece = create_piece(0, type);
-            assert(pos->board[pos->pieces[0][type][i]] == piece);
-        }
-        for (int i=0; i<pos->piece_count[1][type]; ++i) {
-            piece_t piece = create_piece(1, type);
-            assert(pos->board[pos->pieces[1][type][i]] == piece);
-        }
+    for (int i=0; i<pos->num_pieces[0]; ++i) {
+        assert(pos->piece_index[pos->pieces[0][i]] == i);
+    }
+    for (int i=0; i<pos->num_pawns[0]; ++i) {
+        assert(pos->piece_index[pos->pawns[0][i]] == i);
+    }
+    for (int i=0; i<pos->num_pieces[1]; ++i) {
+        assert(pos->piece_index[pos->pieces[1][i]] == i);
+    }
+    for (int i=0; i<pos->num_pawns[1]; ++i) {
+        assert(pos->piece_index[pos->pawns[1][i]] == i);
     }
     assert(hash_position(pos) == pos->hash);
 }
