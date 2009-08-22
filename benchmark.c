@@ -27,9 +27,11 @@ const char* positions[] = {
  * given amount of time. The positions come directly from Glaurung's benchmark
  * suite.
  */
-void benchmark(int depth, int time)
+void benchmark(int depth, int time_limit)
 {
     milli_timer_t bench_timer;
+    uint64_t total_nodes = 0;
+    int time = 0;
     init_timer(&bench_timer);
     for (int i=0; ; ++i) {
         const char* fen = positions[i];
@@ -38,12 +40,16 @@ void benchmark(int depth, int time)
         set_position(&root_data.root_pos, fen);
         print_board(&root_data.root_pos, false);
         start_timer(&bench_timer);
-        root_data.time_target = root_data.time_limit = time;
+        root_data.time_target = root_data.time_limit = time_limit;
         root_data.depth_limit = depth;
         deepening_search(&root_data);
-        int time = stop_timer(&bench_timer);
+        time = stop_timer(&bench_timer);
         printf("time: %d\ndepth: %d\nnodes: %"PRIu64"\n",
                 time, root_data.current_depth, root_data.nodes_searched);
+        total_nodes += root_data.nodes_searched;
     }
+    time = elapsed_time(&bench_timer);
+    printf("aggregate nodes %"PRIu64" time %d nps %"PRIu64"\n",
+            total_nodes, time, total_nodes/(time+1)*1000);
 }
 

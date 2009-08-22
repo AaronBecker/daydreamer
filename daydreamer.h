@@ -40,7 +40,7 @@ extern "C" {
  */
 
 // benchmark.c
-void benchmark(int depth, int time);
+void benchmark(int depth, int time_limit);
 
 // console.c
 void handle_console(position_t* pos, char* command);
