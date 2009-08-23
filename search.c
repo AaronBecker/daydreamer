@@ -229,7 +229,7 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
 static void order_root_moves(search_data_t* root_data, move_t hash_move)
 {
     move_t* moves = root_data->root_moves;
-    uint64_t* scores = root_data->move_nodes;
+    uint64_t* scores = root_data->move_scores;
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         uint64_t score = scores[i];
         move_t move = moves[i];
@@ -359,13 +359,16 @@ static bool root_search(search_data_t* search_data)
     position_t* pos = &search_data->root_pos;
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
-    order_root_moves(search_data, hash_move);
+    //order_root_moves(search_data, hash_move);
+    order_moves(&search_data->root_pos, search_data->search_stack,
+        search_data->root_moves, hash_move, 0);
     for (move_t* move=search_data->root_moves; *move; ++move) {
+        int move_index = move - search_data->root_moves;
         if (should_output(search_data)) {
             char coord_move[6];
             move_to_coord_str(*move, coord_move);
-            printf("info currmove %s currmovenumber %d\n",
-                    coord_move, move - search_data->root_moves);
+            printf("info currmove %s currmovenumber %d orderscore %"PRIu64"\n",
+                coord_move, move_index, search_data->move_scores[move_index]);
         }
         uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
@@ -389,8 +392,9 @@ static bool root_search(search_data_t* search_data)
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
-        search_data->move_nodes[move-search_data->root_moves] =
+        search_data->move_scores[move_index] =
             search_data->nodes_searched - nodes_before;
+        // TODO: evaluate ordering by node count
         undo_move(pos, *move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
         // update score
