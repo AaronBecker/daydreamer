@@ -44,7 +44,8 @@ int generate_legal_moves(const position_t* pos, move_t* moves)
     move_t* moves_tail = moves+num_pseudo;
     move_t* moves_curr = moves;
     while (moves_curr < moves_tail) {
-        if (!is_move_legal((position_t*)pos, *moves_curr)) {
+        check_pseudo_move_legality((position_t*)pos, *moves_curr);
+        if (!is_pseudo_move_legal(pos, *moves_curr)) {
             *moves_curr = *(--moves_tail);
             *moves_tail = 0;
         } else {
@@ -66,7 +67,8 @@ int generate_legal_noncaptures(const position_t* pos, move_t* moves)
     move_t* moves_tail = moves+num_pseudo;
     move_t* moves_curr = moves;
     while (moves_curr < moves_tail) {
-        if (!is_move_legal((position_t*)pos, *moves_curr)) {
+        check_pseudo_move_legality((position_t*)pos, *moves_curr);
+        if (!is_pseudo_move_legal((position_t*)pos, *moves_curr)) {
             *moves_curr = *(--moves_tail);
             *moves_tail = 0;
         } else {
@@ -154,12 +156,15 @@ int generate_pseudo_noncaptures(const position_t* pos, move_t* moves)
     }
 
     // Castling. Castles are considered pseudo-legal if we have appropriate
-    // castling rights and the squares between king and rook are unoccupied.
+    // castling rights, the squares between king and rook are unoccupied,
+    // and the intermediate square is unattacked. Therefore checking for
+    // legality just requires seeing if we're in check afterwards.
     // Note: this would require some overhauling to support Chess960.
     square_t king_home = E1 + side*A8;
     if (has_oo_rights(pos, side) &&
             pos->board[king_home+1] == EMPTY &&
-            pos->board[king_home+2] == EMPTY) {
+            pos->board[king_home+2] == EMPTY &&
+            !is_square_attacked((position_t*)pos,king_home+1,side^1)) {
         moves = add_move(pos,
                 create_move_castle(king_home, king_home+2,
                     create_piece(side, KING)),
@@ -168,7 +173,8 @@ int generate_pseudo_noncaptures(const position_t* pos, move_t* moves)
     if (has_ooo_rights(pos, side) &&
             pos->board[king_home-1] == EMPTY &&
             pos->board[king_home-2] == EMPTY &&
-            pos->board[king_home-3] == EMPTY) {
+            pos->board[king_home-3] == EMPTY &&
+            !is_square_attacked((position_t*)pos,king_home-1,side^1)) {
         moves = add_move(pos,
                 create_move_castle(king_home, king_home-2,
                     create_piece(side, KING)),
@@ -201,36 +207,9 @@ static int generate_queen_promotions(const position_t* pos, move_t* moves)
     return (moves-moves_head);
 }
 
-static direction_t pin_direction(const position_t* pos,
-        square_t from,
-        square_t king_sq)
-{
-    // Figure out whether or not we can discover check by moving.
-    direction_t pin_dir = 0;
-    if (!possible_attack(from, king_sq, WQ)) return 0;
-    direction_t king_dir = direction(from, king_sq);
-    square_t sq;
-    for (sq = from + king_dir;
-            valid_board_index(sq) && pos->board[sq] == EMPTY;
-            sq += king_dir) {}
-    if (sq == king_sq) {
-        // Nothing between us and the king. Is there anything
-        // behind us that's doing the pinning?
-        for (sq = from - king_dir;
-                valid_board_index(sq) && pos->board[sq] == EMPTY;
-                sq -= king_dir) {}
-        if (valid_board_index(sq) &&
-                piece_colors_differ(pos->board[sq], pos->board[from]) &&
-                possible_attack(from, king_sq, pos->board[sq]) &&
-                (piece_slide_type(pos->board[sq]) != NONE)) {
-            pin_dir = king_dir;
-        }
-    }
-    return pin_dir;
-}
-
 /*
- * Generate all moves that evade check in the given position.
+ * Generate all moves that evade check in the given position. This is purely
+ * legal move generation; no pseudo-legal moves.
  */
 int generate_evasions(const position_t* pos, move_t* moves)
 {

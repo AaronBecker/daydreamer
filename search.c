@@ -478,7 +478,8 @@ static int search(position_t* pos,
     int num_legal_moves = 0, num_futile_moves = 0;
     order_moves(pos, search_node, moves, hash_move, ply);
     for (move_t* move = moves; *move; ++move) {
-        if (!is_move_legal(pos, *move)) continue;
+        check_pseudo_move_legality(pos, *move);
+        if (!is_pseudo_move_legal(pos, *move)) continue;
         ++num_legal_moves;
         undo_info_t undo;
         do_move(pos, *move, &undo);
@@ -608,7 +609,8 @@ static int quiesce(position_t* pos,
     // TODO: debug
     order_moves(pos, search_node, moves, NO_MOVE, ply);
     for (move_t* move = moves; *move; ++move) {
-        if (!is_move_legal(pos, *move)) continue;
+        check_pseudo_move_legality(pos, *move);
+        if (!is_pseudo_move_legal(pos, *move)) continue;
         if (!is_check(pos) && static_exchange_eval(pos, *move) < 0) continue;
         undo_info_t undo;
         do_move(pos, *move, &undo);

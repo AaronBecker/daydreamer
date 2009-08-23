@@ -110,9 +110,13 @@ uint64_t perft(position_t* position, int depth, bool divide);
 // position.c
 char* set_position(position_t* pos, const char* fen);
 void copy_position(position_t* dst, const position_t* src);
-bool is_square_attacked(position_t* pos, square_t square, color_t side);
+direction_t pin_direction(const position_t* pos,
+        square_t from,
+        square_t king_sq);
+bool is_square_attacked(const position_t* pos, square_t square, color_t side);
 uint8_t find_checks(position_t* pos);
 bool is_move_legal(position_t* pos, const move_t move);
+bool is_pseudo_move_legal(position_t* pos, move_t move);
 bool is_check(const position_t* pos);
 bool is_repetition(const position_t* pos);
 

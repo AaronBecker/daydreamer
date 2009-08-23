@@ -73,7 +73,7 @@ static void handle_print(position_t* pos, char* command)
     printf("\nqmoves: ");
     generate_quiescence_moves(pos, moves, true);
     for (move_t* move = moves; *move; ++move) {
-        if (!is_move_legal(pos, *move)) continue;
+        if (!is_pseudo_move_legal(pos, *move)) continue;
         char san[8];
         move_to_san_str(pos, *move, san);
         printf("%s ", san);

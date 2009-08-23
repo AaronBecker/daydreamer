@@ -35,11 +35,13 @@ typedef enum {
 
 typedef enum {
     FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NONE
-} file_t;
+} file_tag_t;
+typedef int file_t;
 
 typedef enum {
     RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NONE
-} rank_t;
+} rank_tag_t;
+typedef int rank_t;
 
 typedef enum {
     A1=0x00, B1=0x01, C1=0x02, D1=0x03, E1=0x04, F1=0x05, G1=0x06, H1=0x07,

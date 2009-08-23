@@ -148,14 +148,17 @@ void do_move(position_t* pos, const move_t move, undo_info_t* undo)
     }
     
     // Remove castling rights as necessary.
-    if (from == A1 + side*A8) remove_ooo_rights(pos, side);
-    else if (from == H1 + side*A8) remove_oo_rights(pos, side);
-    else if (from == E1 + side*A8)  {
+    if (from == (square_t)(A1 + side*A8)) remove_ooo_rights(pos, side);
+    else if (from == (square_t)(H1 + side*A8)) remove_oo_rights(pos, side);
+    else if (from == (square_t)(E1 + side*A8))  {
         remove_oo_rights(pos, side);
         remove_ooo_rights(pos, side);
     } 
-    if (to == A1 + other_side*A8) remove_ooo_rights(pos, other_side);
-    else if (to == H1 + other_side*A8) remove_oo_rights(pos, other_side);
+    if (to == (square_t)(A1 + other_side*A8)) {
+        remove_ooo_rights(pos, other_side);
+    } else if (to == (square_t)(H1 + other_side*A8)) {
+        remove_oo_rights(pos, other_side);
+    }
 
     transfer_piece(pos, from, to);
 

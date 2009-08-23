@@ -161,11 +161,38 @@ char* set_position(position_t* pos, const char* fen)
     return (char*)fen;
 }
 
+direction_t pin_direction(const position_t* pos,
+        square_t from,
+        square_t king_sq)
+{
+    direction_t pin_dir = 0;
+    if (!possible_attack(from, king_sq, WQ)) return 0;
+    direction_t king_dir = direction(from, king_sq);
+    square_t sq;
+    for (sq = from + king_dir;
+            valid_board_index(sq) && pos->board[sq] == EMPTY;
+            sq += king_dir) {}
+    if (sq == king_sq) {
+        // Nothing between us and the king. Is there anything
+        // behind us that's doing the pinning?
+        for (sq = from - king_dir;
+                valid_board_index(sq) && pos->board[sq] == EMPTY;
+                sq -= king_dir) {}
+        if (valid_board_index(sq) &&
+                piece_colors_differ(pos->board[sq], pos->board[from]) &&
+                possible_attack(from, king_sq, pos->board[sq]) &&
+                (piece_slide_type(pos->board[sq]) != NONE)) {
+            pin_dir = king_dir;
+        }
+    }
+    return pin_dir;
+}
+
 /*
  * Is |sq| being directly attacked by any pieces on |side|? Works on both
  * occupied and unoccupied squares.
  */
-bool is_square_attacked(position_t* pos, square_t sq, color_t side)
+bool is_square_attacked(const position_t* pos, square_t sq, color_t side)
 {
     // For every opposing piece, look up the attack data for its square.
     // Special-case pawns for efficiency.
@@ -174,7 +201,7 @@ bool is_square_attacked(position_t* pos, square_t sq, color_t side)
     if (pos->board[sq - piece_deltas[opp_pawn][1]] == opp_pawn) return true;
 
     square_t from;
-    for (square_t* pfrom = &pos->pieces[side][0];
+    for (const square_t* pfrom = &pos->pieces[side][0];
             (from = *pfrom) != INVALID_SQUARE;
             ++pfrom) {
         piece_t p = pos->board[from];
@@ -242,7 +269,11 @@ bool is_check(const position_t* pos)
     return pos->is_check;
 }
 
-bool is_move_legal(position_t* pos, const move_t move)
+/*
+ * Test a move's legality. There are no constraints on what kind of move it
+ * is; it could be complete nonsense.
+ */
+bool is_move_legal(position_t* pos, move_t move)
 {
     // We only generate legal moves while in check.
     if (is_check(pos)) return true;
@@ -276,9 +307,6 @@ bool is_move_legal(position_t* pos, const move_t move)
     }
 
     // Just try the move and see if the king is being attacked afterwards.
-    // TODO: This is sort of inefficient--actually making and unmaking the move
-    // isn't strictly necessary, so this could be optimized if it turns out
-    // to be a significant cost.
     undo_info_t undo;
     do_move(pos, move, &undo);
     bool legal = !is_square_attacked(pos,
@@ -286,6 +314,36 @@ bool is_move_legal(position_t* pos, const move_t move)
             other_side);
     undo_move(pos, move, &undo);
     return legal;
+}
+
+/*
+ * Test a pseudo-legal move's legality. For this, we only have to check that
+ * it doesn't leave the king in check.
+ */
+bool is_pseudo_move_legal(position_t* pos, move_t move)
+{
+    piece_t piece = get_move_piece(move);
+    square_t to = get_move_to(move);
+    square_t from = get_move_from(move);
+    color_t side = piece_color(piece);
+    // Note: any pseudo-legal castle is legal if the king isn't attacked
+    // afterwards, by design.
+    if (piece_is_type(piece, KING)) return !is_square_attacked(pos, to, side^1);
+
+    // Avoid moving pinned pieces.
+    direction_t pin_dir = pin_direction(pos, from, pos->pieces[side][0]);
+    if (pin_dir) return abs(pin_dir) == abs(direction(from, to));
+
+    // Resolving pins for en passant moves is a pain, and they're very rare.
+    // I just do them the expensive way and don't worry about it.
+    if (is_move_enpassant(move)) {
+        undo_info_t undo;
+        do_move(pos, move, &undo);
+        bool legal = !is_square_attacked(pos, pos->pieces[side][0], side^1);
+        undo_move(pos, move, &undo);
+        return legal;
+    }
+    return true;
 }
 
 /*

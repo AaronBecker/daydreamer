@@ -15,7 +15,7 @@ extern "C" {
  * FROM      TO        PIECE    CAPTURE  PROMOTE       EP   CASTLE  UNUSED
  * square_t  square_t  piece_t  piece_t  piece_type_t  bit  bit
  */
-typedef uint32_t move_t;
+typedef int32_t move_t;
 #define NO_MOVE                     0
 #define NULL_MOVE                   0xffff
 #define ENPASSANT_FLAG              1<<29

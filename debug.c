@@ -38,7 +38,7 @@ void _check_board_validity(const position_t* pos)
 /*
  * Perform some sanity checks on |move| to flag obviously invalid moves.
  */
-void _check_move_validity(const position_t* pos, const move_t move)
+void _check_move_validity(const position_t* pos, move_t move)
 {
     const square_t from = get_move_from(move);
     const square_t to = get_move_to(move);
@@ -53,6 +53,15 @@ void _check_move_validity(const position_t* pos, const move_t move)
     } else {
         assert(pos->board[to] == EMPTY);
     }
+}
+
+/*
+ * Make sure that legality testing for pseudo-moves gives the same result
+ * as the more expensive testing.
+ */
+void _check_pseudo_move_legality(position_t* pos, move_t move)
+{
+    assert(is_move_legal(pos, move) == is_pseudo_move_legal(pos, move));
 }
 
 /*
