@@ -595,7 +595,7 @@ static int quiesce(position_t* pos,
     move_t moves[256];
     if (ply >= MAX_SEARCH_DEPTH-1) return score;
     if (is_check(pos)) {
-        int evasions = generate_quiescence_moves(pos, moves, depth == 0);
+        int evasions = generate_evasions(pos, moves);
         if (!evasions) return -(MATE_VALUE-ply);
     } else {
         if (alpha < score) alpha = score;
@@ -606,7 +606,6 @@ static int quiesce(position_t* pos,
     // TODO: generate more moves to search. Good candidates are checks that
     // don't lose material (up to a certain number of consecutive checks, to
     // prevent a runaway) and promotions to queen.
-    // TODO: debug
     order_moves(pos, search_node, moves, NO_MOVE, ply);
     for (move_t* move = moves; *move; ++move) {
         check_pseudo_move_legality(pos, *move);

@@ -10,7 +10,7 @@ Search
     More experiments with nullmove, razoring, futility, and LMR
     history counters
 
-Check evasion move generation, single reply extension
+single reply extension
 shrink trans table entry size
 
 Track pinned pieces in SEE, test for improvement

@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.1"
-#define ENGINE_VERSION_NAME     " ng"
+#define ENGINE_VERSION_NAME     " complexq"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -94,8 +94,7 @@ int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);
 int generate_quiescence_moves(const position_t* pos,
         move_t* moves,
         bool generate_checks);
-// TODO: remove once tested
-int generate_pseudo_checks(const position_t* pos, move_t* moves);
+int generate_evasions(const position_t* pos, move_t* moves);
 
 // output.c
 void print_coord_move(move_t move);

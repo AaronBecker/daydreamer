@@ -2,7 +2,6 @@
 #include "daydreamer.h"
 
 static int generate_queen_promotions(const position_t* pos, move_t* moves);
-static int generate_evasions(const position_t* pos, move_t* moves);
 static void generate_pawn_captures(const position_t* pos,
         square_t from,
         piece_t piece,
@@ -19,6 +18,7 @@ static void generate_piece_noncaptures(const position_t* pos,
         square_t from,
         piece_t piece,
         move_t** moves);
+static int generate_pseudo_checks(const position_t* pos, move_t* moves)
 
 
 /*
@@ -102,10 +102,9 @@ int generate_quiescence_moves(const position_t* pos,
 {
     if (is_check(pos)) return generate_evasions(pos, moves);
     move_t* moves_head = moves;
-    // TODO: more thorough testing/validation before this can be turned back on
-    // moves += generate_queen_promotions(pos, moves);
+    moves += generate_queen_promotions(pos, moves);
     moves += generate_pseudo_captures(pos, moves);
-    //if (generate_checks) moves += generate_pseudo_checks(pos, moves);
+    if (generate_checks) moves += generate_pseudo_checks(pos, moves);
     return moves-moves_head;
 }
 
@@ -400,7 +399,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
  * quiescent move generation.
  * FIXME: untested and unused so far.
  */
-int generate_pseudo_checks(const position_t* pos, move_t* moves)
+static int generate_pseudo_checks(const position_t* pos, move_t* moves)
 {
     move_t* moves_head = moves;
     color_t side = pos->side_to_move, other_side = side^1;
