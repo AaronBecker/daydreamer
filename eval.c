@@ -4,7 +4,7 @@
 #ifdef UFO_EVAL
 #include "pst_ufo.inc"
 #else
-#include "pst_ufo.inc"
+#include "pst.inc"
 #endif
 
 /*
@@ -35,7 +35,24 @@ int simple_eval(const position_t* pos)
         pos->endgame_piece_square_eval[side] -
         pos->endgame_piece_square_eval[side^1] :
         pos->piece_square_eval[side] - pos->piece_square_eval[side^1];
-    return material_eval + piece_square_eval;
+    int material_adjust = 0;
+#ifndef UFO_EVAL
+    // Adjust material based on Larry Kaufmans's formula in
+    // "The Evaluation of Material Imbalances"
+    // bishop pair: +50 to each bishop
+    // knight += 5 * (pawns-5)
+    // rook -= 10 * (pawns-5)
+    material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
+    material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
+#if 0 // this hasn't proven useful yet.
+    material_adjust += pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5);
+    material_adjust -= pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5);
+    material_adjust -= pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5);
+    material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
+#endif
+    if (side == BLACK) material_adjust *= -1;
+#endif
+    return material_eval + piece_square_eval + material_adjust;
 }
 
 /*

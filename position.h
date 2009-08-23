@@ -93,6 +93,7 @@ typedef struct {
     square_t pawns[2][16];
     int num_pieces[2];
     int num_pawns[2];
+    int piece_count[16];
     //square_t pieces[2][8][16];          // [color][type][location]
     //int piece_count[2][8];              // [color][type]
     //int pawn_count[2];

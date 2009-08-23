@@ -231,7 +231,6 @@ int generate_evasions(const position_t* pos, move_t* moves)
         piece_t capture = pos->board[to];
         if (capture != EMPTY && !piece_colors_differ(king, capture)) continue;
         if (is_square_attacked((position_t*)pos,to,other_side)) continue;
-        // TODO: can this be eliminated now?
         ((position_t*)pos)->board[king_sq] = king;
         moves = add_move(pos, create_move(from, to, king, capture), moves);
         ((position_t*)pos)->board[king_sq] = EMPTY;
@@ -245,7 +244,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
     
     // First, the most common case: a check can be evaded via an
     // en passant capture. Note that if we're in check and an en passant
-    // capture is available, the only way an en passant capture would evade
+    // capture is available, the only way the en passant capture would evade
     // the check is if it's the newly moved pawn that's checking us.
     direction_t pin_dir;
     if (pos->ep_square != EMPTY && check_sq+pawn_push[side] == pos->ep_square) {

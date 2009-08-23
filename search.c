@@ -623,9 +623,7 @@ static int quiesce(position_t* pos,
         if (!generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     }
     
-    // TODO: generate more moves to search. Good candidates are checks that
-    // don't lose material (up to a certain number of consecutive checks, to
-    // prevent a runaway) and promotions to queen.
+    // TODO: special quiesce ordering function
     order_moves(pos, search_node, moves, NO_MOVE, ply);
     for (move_t* move = moves; *move; ++move) {
         check_pseudo_move_legality(pos, *move);

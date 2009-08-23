@@ -39,6 +39,7 @@ static void init_position(position_t* position)
     position->hash = 0;
     position->is_check = false;
     position->check_square = EMPTY;
+    memset(position->piece_count, 0, 16 * sizeof(int));
     memset(position->hash_history, 0, HASH_HISTORY_LENGTH * sizeof(hashkey_t));
 }
 

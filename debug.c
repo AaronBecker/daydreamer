@@ -1,5 +1,6 @@
 
 #include "daydreamer.h"
+#include <string.h>
 
 /*
  * Do some basic consistency checking on |pos| to identify bugs.
@@ -10,15 +11,21 @@ void _check_board_validity(const position_t* pos)
     assert(pos->board[pos->pieces[BLACK][0]] == BK);
     assert(pos->num_pawns[WHITE] <= 8);
     assert(pos->num_pawns[BLACK] <= 8);
+    int my_piece_count[16];
+    memset(my_piece_count, 0, 16 * sizeof(int));
     for (square_t sq=A1; sq<=H8; ++sq) {
         if (!valid_board_index(sq) || !pos->board[sq]) continue;
         piece_t piece = pos->board[sq];
         color_t side = piece_color(piece);
+        my_piece_count[piece]++;
         if (piece_is_type(piece, PAWN)) {
             assert(pos->pawns[side][pos->piece_index[sq]] == sq);
         } else {
             assert(pos->pieces[side][pos->piece_index[sq]] == sq);
         }
+    }
+    for (int i=0; i<16; ++i) {
+        assert(my_piece_count[i] == pos->piece_count[i]);
     }
     for (int i=0; i<pos->num_pieces[0]; ++i) {
         assert(pos->piece_index[pos->pieces[0][i]] == i);
