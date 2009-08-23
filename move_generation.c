@@ -18,14 +18,14 @@ static void generate_piece_noncaptures(const position_t* pos,
         square_t from,
         piece_t piece,
         move_t** moves);
-static int generate_pseudo_checks(const position_t* pos, move_t* moves)
+static int generate_pseudo_checks(const position_t* pos, move_t* moves);
 
 
 /*
  * Push a new move onto a stack of moves, first doing some sanity checks.
  */
 static move_t* add_move(const position_t* pos,
-        const move_t move,
+        move_t move,
         move_t* moves)
 {
     (void)pos; // avoid warning when NDEBUG is defined
@@ -37,14 +37,14 @@ static move_t* add_move(const position_t* pos,
 /*
  * Fill the provided list with all legal moves in the given position.
  */
-int generate_legal_moves(const position_t* pos, move_t* moves)
+int generate_legal_moves(position_t* pos, move_t* moves)
 {
     if (is_check(pos)) return generate_evasions(pos, moves);
     int num_pseudo = generate_pseudo_moves(pos, moves);
     move_t* moves_tail = moves+num_pseudo;
     move_t* moves_curr = moves;
     while (moves_curr < moves_tail) {
-        check_pseudo_move_legality((position_t*)pos, *moves_curr);
+        check_pseudo_move_legality(pos, *moves_curr);
         if (!is_pseudo_move_legal(pos, *moves_curr)) {
             *moves_curr = *(--moves_tail);
             *moves_tail = 0;
@@ -59,7 +59,7 @@ int generate_legal_moves(const position_t* pos, move_t* moves)
  * Fill the provided list with all legal non-capturing moves in the given
  * position.
  */
-int generate_legal_noncaptures(const position_t* pos, move_t* moves)
+int generate_legal_noncaptures(position_t* pos, move_t* moves)
 {
     int num_pseudo;
     if (is_check(pos)) num_pseudo = generate_evasions(pos, moves);
@@ -67,8 +67,8 @@ int generate_legal_noncaptures(const position_t* pos, move_t* moves)
     move_t* moves_tail = moves+num_pseudo;
     move_t* moves_curr = moves;
     while (moves_curr < moves_tail) {
-        check_pseudo_move_legality((position_t*)pos, *moves_curr);
-        if (!is_pseudo_move_legal((position_t*)pos, *moves_curr)) {
+        check_pseudo_move_legality(pos, *moves_curr);
+        if (!is_pseudo_move_legal(pos, *moves_curr)) {
             *moves_curr = *(--moves_tail);
             *moves_tail = 0;
         } else {

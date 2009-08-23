@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.1"
-#define ENGINE_VERSION_NAME     " complexq"
+#define ENGINE_VERSION_NAME     " rootorder"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -86,8 +86,8 @@ void do_nullmove(position_t* pos, undo_info_t* undo);
 void undo_nullmove(position_t* pos, undo_info_t* undo);
 
 // move_generation.c
-int generate_legal_moves(const position_t* pos, move_t* moves);
-int generate_legal_noncaptures(const position_t* pos, move_t* moves);
+int generate_legal_moves(position_t* pos, move_t* moves);
+int generate_legal_noncaptures(position_t* pos, move_t* moves);
 int generate_pseudo_moves(const position_t* position, move_t* move_list);
 int generate_pseudo_captures(const position_t* position, move_t* move_list);
 int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);

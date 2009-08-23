@@ -226,6 +226,25 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
     return alpha >= beta;
 }
 
+static void order_root_moves(search_data_t* root_data, move_t hash_move)
+{
+    move_t* moves = root_data->root_moves;
+    uint64_t* scores = root_data->move_nodes;
+    for (int i=0; moves[i] != NO_MOVE; ++i) {
+        uint64_t score = scores[i];
+        move_t move = moves[i];
+        if (move == hash_move) score = UINT64_MAX;
+        int j = i-1;
+        while (j >= 0 && scores[j] < score) {
+            scores[j+1] = scores[j];
+            moves[j+1] = moves[j];
+            --j;
+        }
+        scores[j+1] = score;
+        moves[j+1] = move;
+    }
+}
+
 /*
  * Take an unordered list of pseudo-legal moves and order them according
  * to how good we think they'll be. This just identifies a few key classes
@@ -340,9 +359,7 @@ static bool root_search(search_data_t* search_data)
     position_t* pos = &search_data->root_pos;
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
-    // TODO: sort by # of nodes expanded in previous iteration.
-    order_moves(&search_data->root_pos, search_data->search_stack,
-            search_data->root_moves, hash_move, 0);
+    order_root_moves(search_data, hash_move);
     for (move_t* move=search_data->root_moves; *move; ++move) {
         if (should_output(search_data)) {
             char coord_move[6];
@@ -350,6 +367,7 @@ static bool root_search(search_data_t* search_data)
             printf("info currmove %s currmovenumber %d\n",
                     coord_move, move - search_data->root_moves);
         }
+        uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
         do_move(pos, *move, &undo);
         int ext = extend(pos, *move);
@@ -371,6 +389,8 @@ static bool root_search(search_data_t* search_data)
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
+        search_data->move_nodes[move-search_data->root_moves] =
+            search_data->nodes_searched - nodes_before;
         undo_move(pos, *move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
         // update score
