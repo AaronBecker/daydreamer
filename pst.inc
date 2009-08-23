@@ -1,8 +1,6 @@
 
 /* 
- * Piece-square tables for the UFO simple evaluation function, as described at:
- * http://chessprogramming.wikispaces.com/Simplified+evaluation+function
- * Thanks to its originator, Tomasz Michniewski.
+ * Piece-square tables for the regular eval function.
  */
 const int material_values[] = {
     0, PAWN_VAL, KNIGHT_VAL, BISHOP_VAL, ROOK_VAL, QUEEN_VAL, KING_VAL, 0,
