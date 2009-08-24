@@ -42,15 +42,15 @@ int simple_eval(const position_t* pos)
     // bishop pair: +50 to each bishop
     // knight += 5 * (pawns-5)
     // rook -= 10 * (pawns-5)
+#if 0 // this hasn't proven useful yet.
     material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
     material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
-#if 0 // this hasn't proven useful yet.
     material_adjust += pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5);
     material_adjust -= pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5);
     material_adjust -= pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5);
     material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
-#endif
     if (side == BLACK) material_adjust *= -1;
+#endif
 #endif
     return material_eval + piece_square_eval + material_adjust;
 }
@@ -61,7 +61,8 @@ int simple_eval(const position_t* pos)
  */
 int full_eval(const position_t* pos)
 {
-    return simple_eval(pos);
+    int score = simple_eval(pos) + mobility_score(pos);
+    return score;
 }
 
 /*

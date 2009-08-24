@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.2"
-#define ENGINE_VERSION_NAME     " adj/scorder"
+#define ENGINE_VERSION_NAME     " mob"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -70,6 +70,9 @@ void position_to_fen_str(const position_t* pos, char* fen);
 
 // hash.c
 hashkey_t hash_position(const position_t* pos);
+
+// mobility.c
+int mobility_score(const position_t* pos);
 
 // move.c
 void place_piece(position_t* position,
