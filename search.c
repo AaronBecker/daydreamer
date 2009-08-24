@@ -359,9 +359,12 @@ static bool root_search(search_data_t* search_data)
     position_t* pos = &search_data->root_pos;
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
-    //order_root_moves(search_data, hash_move);
-    order_moves(&search_data->root_pos, search_data->search_stack,
-        search_data->root_moves, hash_move, 0);
+    if (search_data->current_depth < 4) {
+        order_moves(&search_data->root_pos, search_data->search_stack,
+            search_data->root_moves, hash_move, 0);
+    } else {
+        order_root_moves(search_data, hash_move);
+    }
     for (move_t* move=search_data->root_moves; *move; ++move) {
         int move_index = move - search_data->root_moves;
         if (should_output(search_data)) {
@@ -428,7 +431,6 @@ static int search(position_t* pos,
     if (depth <= 0) {
         return quiesce(pos, search_node, ply, alpha, beta, depth);
     }
-    open_node(&root_data, ply);
     if (is_draw(pos)) return DRAW_VALUE;
     bool full_window = (beta-alpha > 1);
 
@@ -449,6 +451,7 @@ static int search(position_t* pos,
             return MAX(alpha, trans_entry->score);
     }
 
+    open_node(&root_data, ply);
     int score = -MATE_VALUE-1;
     int lazy_score = simple_eval(pos);
     // Nullmove reduction.
@@ -611,13 +614,13 @@ static int quiesce(position_t* pos,
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
     if (alpha > MATE_VALUE - ply - 1) return alpha; // can't beat this
-    open_qnode(&root_data, ply);
     if (is_draw(pos)) return DRAW_VALUE;
 
     int eval = full_eval(pos);
     int score = eval;
     move_t moves[256];
     if (ply >= MAX_SEARCH_DEPTH-1) return score;
+    open_qnode(&root_data, ply);
     if (is_check(pos)) {
         int evasions = generate_evasions(pos, moves);
         if (!evasions) return -(MATE_VALUE-ply);
