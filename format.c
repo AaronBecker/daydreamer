@@ -137,13 +137,13 @@ int move_to_san_str(position_t* pos, move_t move, char* san)
     } else {
         // type
         piece_type_t type = get_move_piece_type(move);
+        ambiguity_t ambiguity = determine_move_ambiguity(pos, move);
         if (type != PAWN) {
             *san++ = piece_type_char(type);
         } else if (get_move_capture(move) && !(ambiguity & AMBIG_RANK)) {
             *san++ = square_file(get_move_from(move)) + 'a';
         }
         // source
-        ambiguity_t ambiguity = determine_move_ambiguity(pos, move);
         square_t from = get_move_from(move);
         if (ambiguity & AMBIG_RANK) *san++ = square_file(from) + 'a';
         if (ambiguity & AMBIG_FILE) *san++ = square_rank(from) + '1';
