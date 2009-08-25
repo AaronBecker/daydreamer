@@ -21,7 +21,7 @@ programs = {
     'vicki' : 'cmd=' + engine_prefix + 'vicki0.041a/vicki.sh' + \
             ' proto=xboard name=Vicki',
     'plisk' : 'cmd=' + engine_prefix + 'plisk_0-1/plisk_osx proto=uci',
-    'biglion' : 'cmd=' + engine_prefix + 'BigLion_223x/biglion.sh proto=uci'
+    'biglion' : 'cmd=' + engine_prefix + 'BigLion_223x/biglion.sh proto=uci',
     'sungorus' : 'cmd=' + engine_prefix + 'sungorus-1.2/sungorus proto=uci'
     #'gnuchess' : 'cmd=gnuchess' + ' proto=xboard' + ' name=gnuchess',
     }
