@@ -14,7 +14,6 @@ typedef struct {
     uint8_t age;
     score_type_t score_type;
 } transposition_entry_t;
-extern transposition_entry_t* transposition_table;
 
 #ifdef __cplusplus
 } // extern "C"

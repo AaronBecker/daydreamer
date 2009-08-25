@@ -42,6 +42,7 @@ static void init_position(position_t* position)
     position->castle_rights = CASTLE_NONE;
     position->prev_move = NO_MOVE;
     position->hash = 0;
+    position->pawn_hash = 0;
     position->is_check = false;
     position->check_square = EMPTY;
     memset(position->piece_count, 0, 16 * sizeof(int));

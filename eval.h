@@ -29,6 +29,11 @@ extern const int material_values[];
 #define endgame_piece_square_value(piece, square) \
     endgame_piece_square_values[piece][square]
 
+typedef struct {
+    int midgame;
+    int endgame;
+} score_t;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

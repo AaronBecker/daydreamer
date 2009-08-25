@@ -31,10 +31,12 @@ int simple_eval(const position_t* pos)
 {
     color_t side = pos->side_to_move;
     int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
-    int piece_square_eval = is_endgame(pos) ?
-        pos->endgame_piece_square_eval[side] -
-        pos->endgame_piece_square_eval[side^1] :
-        pos->piece_square_eval[side] - pos->piece_square_eval[side^1];
+    float phase = game_phase(pos);
+    int piece_square_eval = (int)(
+            (phase)*(pos->piece_square_eval[side] -
+                pos->piece_square_eval[side^1]) +
+            (1-phase)*(pos->endgame_piece_square_eval[side] -
+                pos->endgame_piece_square_eval[side^1]));
     int material_adjust = 0;
 #ifndef UFO_EVAL
     // Adjust material based on Larry Kaufmans's formula in
@@ -43,14 +45,15 @@ int simple_eval(const position_t* pos)
     // knight += 5 * (pawns-5)
     // rook -= 10 * (pawns-5)
 #if 0 // this hasn't proven useful yet.
+    // FIXME: this is a totally incorrect use of piece_count
     material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
     material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
     material_adjust += pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5);
     material_adjust -= pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5);
     material_adjust -= pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5);
     material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
-    if (side == BLACK) material_adjust *= -1;
 #endif
+    if (side == BLACK) material_adjust *= -1;
 #endif
     return material_eval + piece_square_eval + material_adjust;
 }
@@ -61,7 +64,14 @@ int simple_eval(const position_t* pos)
  */
 int full_eval(const position_t* pos)
 {
-    int score = simple_eval(pos) + mobility_score(pos);
+    int score = simple_eval(pos);
+    score_t phase_score;
+    phase_score.endgame = phase_score.midgame = 0;
+    pawn_score(pos, &phase_score);
+    // It's not worth computing mobility if we're way ahead or behind.
+    if (abs(score) < 2.5 * PAWN_VAL) mobility_score(pos, &phase_score);
+    float phase = game_phase(pos);
+    score += phase*phase_score.midgame + (1-phase)*phase_score.endgame;
     return score;
 }
 
@@ -91,12 +101,13 @@ bool is_draw(const position_t* pos)
  * Is the given position an endgame? Use a rough heuristic for now; it's used
  * to figure out which piece square tables to consult.
  */
-bool is_endgame(const position_t* pos)
+float game_phase(const position_t* pos)
 {
     // TODO: game phase determination could be a lot more sophisticated,
     // and the information could be cached.
-    return (pos->material_eval[WHITE] + pos->material_eval[BLACK] -
-            (PAWN_VAL * (pos->num_pawns[WHITE] +
-                         pos->num_pawns[BLACK]))) <=
-        2 * KING_VAL + 4 * QUEEN_VAL;
+    static const float total_possible_material =
+        16*PAWN_VAL + 4*KNIGHT_VAL + 4*BISHOP_VAL + 4*ROOK_VAL + 2*QUEEN_VAL;
+    float phase = (pos->material_eval[WHITE]+pos->material_eval[BLACK] -
+            2*KING_VAL) / total_possible_material;
+    return MIN(phase, 1.0);
 }

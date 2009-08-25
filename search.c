@@ -9,10 +9,12 @@ static const bool nullmove_enabled = true;
 static const bool iid_enabled = true;
 static const bool razoring_enabled = false;
 static const bool futility_enabled = false;
+static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
     125, 250, 300, 500, 900
 };
+static const int qfutility_margin = 125;
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
     150, 300, 300
 };
@@ -336,13 +338,14 @@ void deepening_search(search_data_t* search_data)
 
     --search_data->current_depth;
     search_data->best_score = id_score;
-    print_pv(search_data);
     print_search_stats(search_data);
     printf("info string targettime %d elapsedtime %d\n",
             search_data->time_target, elapsed_time(&search_data->timer));
     print_transposition_stats();
+    print_pawn_stats();
     char coord_move[6];
     move_to_coord_str(search_data->best_move, coord_move);
+    print_pv(search_data);
     printf("bestmove %s\n", coord_move);
     search_data->engine_status = ENGINE_IDLE;
 }
@@ -630,12 +633,22 @@ static int quiesce(position_t* pos,
         if (!generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     }
     
+    bool allow_futility = qfutility_enabled &&
+        beta-alpha > 1 &&
+        !is_check(pos) &&
+        pos->num_pieces[pos->side_to_move] > 2;
     // TODO: special quiesce ordering function
     order_moves(pos, search_node, moves, NO_MOVE, ply);
     for (move_t* move = moves; *move; ++move) {
         check_pseudo_move_legality(pos, *move);
         if (!is_pseudo_move_legal(pos, *move)) continue;
-        if (!is_check(pos) && static_exchange_eval(pos, *move) < 0) continue;
+        if (!is_check(pos) &&
+                !get_move_promote(*move) &&
+                static_exchange_eval(pos, *move) < 0) continue;
+        // TODO: prevent futility for passed pawn moves and checks
+        if (allow_futility && eval +
+                material_value(pos->board[get_move_to(*move)]) +
+                qfutility_margin < alpha) continue;
         undo_info_t undo;
         do_move(pos, *move, &undo);
         score = -quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-1);

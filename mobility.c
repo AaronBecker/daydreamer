@@ -16,10 +16,8 @@ int color_table[2][17] = {
     {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // black
 };
 
-int mobility_score(const position_t* pos)
+void mobility_score(const position_t* pos, score_t* score)
 {
-    int phase = 0; // TODO: endgame/midgame phase calculation
-    int score = 0;
     for (color_t side=WHITE; side<=BLACK; ++side) {
         int* mobile = color_table[side];
         square_t from, to;
@@ -29,8 +27,7 @@ int mobility_score(const position_t* pos)
                 ++pfrom) {
             piece = pos->board[from];
             piece_type_t type = piece_type(piece);
-            int ps = base_mobility_score[phase][type];
-            // TODO: a padded board representation would speed this up.
+            int ps = 0;
             switch (type) {
                 case KNIGHT:
                     ps += mobile[pos->board[from-33]];
@@ -82,12 +79,13 @@ int mobility_score(const position_t* pos)
                 default:
                     break;
             }
-            ps *= mobility_multiplier[phase][type];
-            score += ps;
+            score->midgame += (base_mobility_score[0][type] +
+                    ps*mobility_multiplier[0][type]) *
+                (side == pos->side_to_move ? 1 : -1);
+            score->endgame += (base_mobility_score[1][type] +
+                    ps*mobility_multiplier[1][type]) *
+                (side == pos->side_to_move ? 1 : -1);
         }
-        score *= -1;
     }
-    if (pos->side_to_move == BLACK) score *= -1;
-    return score;
 }
 

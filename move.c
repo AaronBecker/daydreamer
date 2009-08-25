@@ -21,6 +21,7 @@ void place_piece(position_t* pos, const piece_t piece, const square_t square)
         int index = pos->num_pawns[color]++;
         pos->pawns[color][index] = square;
         pos->piece_index[square] = index;
+        pos->pawn_hash ^= piece_hash(piece, square);
     } else {
         int index = pos->num_pieces[color]++;
         pos->pieces[color][index+1] = INVALID_SQUARE;
@@ -57,6 +58,7 @@ void remove_piece(position_t* pos, const square_t square)
         pos->pawns[color][position] = sq;
         pos->pawns[color][index] = INVALID_SQUARE;
         pos->piece_index[sq] = position;
+        pos->pawn_hash ^= piece_hash(piece, square);
     } else {
         int index = --pos->num_pieces[color];
         for (; index>0 && pos->pieces[color][index] != square; --index) {}
@@ -94,6 +96,8 @@ void transfer_piece(position_t* pos, const square_t from, const square_t to)
     if (piece_is_type(p, PAWN)) {
         pos->pawns[color][index] = to;
         pos->piece_index[to] = index;
+        pos->pawn_hash ^= piece_hash(p, from);
+        pos->pawn_hash ^= piece_hash(p, to);
     } else {
         pos->pieces[color][index] = to;
         pos->piece_index[to] = index;

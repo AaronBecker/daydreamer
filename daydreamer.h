@@ -14,8 +14,8 @@ extern "C" {
 #include <sys/time.h>
 
 #define ENGINE_NAME             "Daydreamer"
-#define ENGINE_VERSION_NUMBER   "1.2"
-#define ENGINE_VERSION_NAME     " mob"
+#define ENGINE_VERSION_NUMBER   "1.3"
+#define ENGINE_VERSION_NAME     " qf"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -26,6 +26,7 @@ extern "C" {
 #include "timer.h"
 #include "search.h"
 #include "trans_table.h"
+#include "pawn.h"
 #include "debug.h"
 
 #ifndef MIN
@@ -56,7 +57,7 @@ int simple_eval(const position_t* pos);
 int full_eval(const position_t* pos);
 bool insufficient_material(const position_t* pos);
 bool is_draw(const position_t* pos);
-bool is_endgame(const position_t* pos);
+float game_phase(const position_t* pos);
 
 // format.c
 int square_to_coord_str(square_t sq, char* str);
@@ -72,7 +73,7 @@ void position_to_fen_str(const position_t* pos, char* fen);
 hashkey_t hash_position(const position_t* pos);
 
 // mobility.c
-int mobility_score(const position_t* pos);
+void mobility_score(const position_t* pos, score_t* score);
 
 // move.c
 void place_piece(position_t* position,
@@ -104,6 +105,12 @@ void print_coord_move(move_t move);
 int print_coord_move_list(const move_t* move);
 void print_board(const position_t* pos, bool uci_prefix);
 void print_pv(search_data_t* search_data);
+
+// pawn.c
+void init_pawn_table(const int max_bytes);
+void clear_pawn_table(void);
+void pawn_score(const position_t* pos, score_t* score);
+void print_pawn_stats(void);
 
 // perft.c
 void perft_testsuite(char* filename);

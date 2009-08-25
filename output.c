@@ -42,6 +42,9 @@ void print_pv(search_data_t* search_data)
     const int time = elapsed_time(&search_data->timer);
     const uint64_t nodes = search_data->nodes_searched;
 
+    char sanpv[1024];
+    line_to_san_str(&search_data->root_pos, (move_t*)pv, sanpv);
+    printf("info string sanpv %s\n", sanpv);
     // note: use time+1 avoid divide-by-zero
     // mate scores are given as MATE_VALUE-ply, so we can calculate depth
     if (is_mate_score(score)) {
@@ -79,9 +82,6 @@ void print_pv(search_data_t* search_data)
     //    }
     //}
     printf("\n");
-    char sanpv[1024];
-    line_to_san_str(&search_data->root_pos, (move_t*)pv, sanpv);
-    printf("info string sanpv %s\n", sanpv);
 }
 
 /*

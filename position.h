@@ -108,6 +108,7 @@ typedef struct {
     uint8_t is_check;
     square_t check_square;
     hashkey_t hash;
+    hashkey_t pawn_hash;
     hashkey_t hash_history[HASH_HISTORY_LENGTH];
 } position_t;
 
