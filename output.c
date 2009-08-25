@@ -99,13 +99,14 @@ void print_board(const position_t* pos, bool uci_prefix)
     for (square_t sq = A8; sq != INVALID_SQUARE; ++sq) {
         if (!valid_board_index(sq)) {
             printf("\n");
-            if (sq < 0x18) return;
+            if (sq < 0x18) break;
             if (uci_prefix) printf("info string ");
             sq -= 0x19;
             continue;
         }
         printf("%c ", glyphs[pos->board[sq]]);
     }
+    report_eval(pos);
 }
 
 

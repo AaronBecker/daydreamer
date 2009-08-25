@@ -95,6 +95,7 @@ static void handle_eval(position_t* pos, char* command)
             pos->material_eval[BLACK],
             pos->piece_square_eval[WHITE],
             pos->piece_square_eval[BLACK]);
+    report_eval(pos);
     // make sure black eval is inverse of white
     pos->side_to_move ^=1;
     assert(full_eval(pos) == -eval);
