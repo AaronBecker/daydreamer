@@ -157,3 +157,4 @@ void pawn_score(const position_t* pos, score_t* score)
     score->midgame += pd->score[side] - pd->score[side^1];
     score->endgame += pd->endgame_score[side] - pd->endgame_score[side^1];
 }
+
