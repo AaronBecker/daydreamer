@@ -12,13 +12,13 @@ extern "C" {
 #define FEN_STARTPOS "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 typedef enum {
-    WHITE=0, BLACK=1, INVALID_COLOR=INT_MAX
+    WHITE=0, BLACK=1, INVALID_COLOR=2
 } color_t;
 
 typedef enum {
     EMPTY=0, WP=1, WN=2, WB=3, WR=4, WQ=5, WK=6,
     BP=9, BN=10, BB=11, BR=12, BQ=13, BK=14,
-    INVALID_PIECE=16
+    OUT_OF_BOUNDS=16
 } piece_t;
 
 typedef enum {
@@ -31,7 +31,8 @@ typedef enum {
 #define piece_is_color(piece, color)    (piece_color((piece)) == (color))
 #define create_piece(color, type)       (((color) << 3) | (type))
 #define piece_colors_match(p1, p2)      (((p1) >> 3) == ((p2) >> 3))
-#define piece_colors_differ(p1, p2)     (((p1) >> 3) != ((p2) >> 3))
+#define piece_colors_differ(p1, p2)     (((p1) >> 3) == ((p2) >> 3))
+#define can_capture(p1, p2)             ((((p1) >> 3)^1) == ((p2) >> 3))
 
 typedef enum {
     FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NONE
@@ -87,16 +88,14 @@ typedef uint8_t castle_rights_t;
 #define HASH_HISTORY_LENGTH  512
 
 typedef struct {
-    piece_t board[128];                 // 0x88 board
+    piece_t _board_storage[256];        // 16x16 padded board
+    piece_t* board;                     // 0x88 board in middle 128 slots
     int piece_index[128];               // index of each piece in pieces
     square_t pieces[2][32];
     square_t pawns[2][16];
     int num_pieces[2];
     int num_pawns[2];
     int piece_count[16];
-    //square_t pieces[2][8][16];          // [color][type][location]
-    //int piece_count[2][8];              // [color][type]
-    //int pawn_count[2];
     color_t side_to_move;
     move_t prev_move;
     square_t ep_square;
@@ -133,7 +132,7 @@ typedef enum {
     NNW=31, NNE=33
 } direction_tag_t;
 typedef int direction_t;
-extern const direction_t piece_deltas[16][16];
+extern const direction_t piece_deltas[17][16];
 
 extern const direction_t pawn_push[];
 extern const rank_t relative_pawn_rank[2][8];

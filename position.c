@@ -11,7 +11,12 @@
  */
 static void init_position(position_t* position)
 {
-    for (int square=0; square<128; ++square) {
+    position->board = position->_board_storage+64;
+    for (int square=0; square<256; ++square) {
+        position->_board_storage[square] = OUT_OF_BOUNDS;
+    }
+    for (int i=0; i<64; ++i) {
+        int square = index_to_square(i);
         position->board[square] = EMPTY;
         position->piece_index[square] = -1;
     }
@@ -170,17 +175,12 @@ direction_t pin_direction(const position_t* pos,
     if (!possible_attack(from, king_sq, WQ)) return 0;
     direction_t king_dir = direction(from, king_sq);
     square_t sq;
-    for (sq = from + king_dir;
-            valid_board_index(sq) && pos->board[sq] == EMPTY;
-            sq += king_dir) {}
+    for (sq = from + king_dir; pos->board[sq] == EMPTY; sq += king_dir) {}
     if (sq == king_sq) {
         // Nothing between us and the king. Is there anything
         // behind us that's doing the pinning?
-        for (sq = from - king_dir;
-                valid_board_index(sq) && pos->board[sq] == EMPTY;
-                sq -= king_dir) {}
-        if (valid_board_index(sq) &&
-                piece_colors_differ(pos->board[sq], pos->board[from]) &&
+        for (sq = from - king_dir; pos->board[sq] == EMPTY; sq -= king_dir) {}
+        if (can_capture(pos->board[sq], pos->board[from]) &&
                 possible_attack(from, king_sq, pos->board[sq]) &&
                 (piece_slide_type(pos->board[sq]) != NONE)) {
             pin_dir = king_dir;
@@ -212,7 +212,7 @@ bool is_square_attacked(const position_t* pos, square_t sq, color_t side)
             while (from != sq) {
                 from += att_dir;
                 if (from == sq) return true;
-                if (pos->board[from]) break;
+                if (pos->board[from] != EMPTY) break;
             }
         }
     }

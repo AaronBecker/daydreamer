@@ -11,13 +11,14 @@ int mobility_multiplier[2][8] = {
     {0, 0, 4, 5, 4, 2, 0}, // endgame
 };
 
-int color_table[2][16] = {
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1}, // white
-    {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0}, // black
+int color_table[2][17] = {
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0}, // white
+    {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // black
 };
 
 int mobility_score(const position_t* pos)
 {
+    return 0;
     int phase = 0; // TODO: endgame/midgame phase calculation
     int score = 0;
     for (color_t side=WHITE; side<=BLACK; ++side) {
@@ -33,76 +34,52 @@ int mobility_score(const position_t* pos)
             // TODO: a padded board representation would speed this up.
             switch (type) {
                 case KNIGHT:
-                    to = from-33;
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    to = from-31;
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    to = from-18;
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    to = from-14;
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    to = from+14;
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    to = from+18;
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    to = from+31;
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    to = from+33;
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
+                    ps += mobile[pos->board[from-33]];
+                    ps += mobile[pos->board[from-31]];
+                    ps += mobile[pos->board[from-18]];
+                    ps += mobile[pos->board[from-14]];
+                    ps += mobile[pos->board[from+14]];
+                    ps += mobile[pos->board[from+18]];
+                    ps += mobile[pos->board[from+31]];
+                    ps += mobile[pos->board[from+33]];
                     break;
                 case BISHOP:
-                    for (to=from-17; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to-=17, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from-15; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to-=15, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from+15; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to+=15, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from+17; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to+=17, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
+                    for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from-15; pos->board[to]==EMPTY; to-=15, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+15; pos->board[to]==EMPTY; to+=15, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+17; pos->board[to]==EMPTY; to+=17, ++ps) {}
+                    ps += mobile[pos->board[to]];
                     break;
                 case ROOK:
-                    for (to=from-16; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to-=16, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from-1; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to-=1, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from+1; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to+=1, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from+16; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to+=16, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
+                    for (to=from-16; pos->board[to]==EMPTY; to-=16, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from-1; pos->board[to]==EMPTY; to-=1, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+1; pos->board[to]==EMPTY; to+=1, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
+                    ps += mobile[pos->board[to]];
                     break;
                 case QUEEN:
-                    for (to=from-17; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to-=17, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from-16; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to-=16, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from-15; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to-=15, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from-1; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to-=1, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from+1; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to+=1, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from+15; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to+=15, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from+16; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to+=16, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
-                    for (to=from+17; valid_board_index(to) &&
-                            pos->board[to]==EMPTY; to+=17, ++ps) {}
-                    if (valid_board_index(to)) ps += mobile[pos->board[to]];
+                    for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from-16; pos->board[to]==EMPTY; to-=16, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from-15; pos->board[to]==EMPTY; to-=15, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from-1; pos->board[to]==EMPTY; to-=1, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+1; pos->board[to]==EMPTY; to+=1, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+15; pos->board[to]==EMPTY; to+=15, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+17; pos->board[to]==EMPTY; to+=17, ++ps) {}
+                    ps += mobile[pos->board[to]];
                 default:
                     break;
             }

@@ -13,7 +13,7 @@ void place_piece(position_t* pos, const piece_t piece, const square_t square)
     color_t color = piece_color(piece);
     piece_type_t type = piece_type(piece);
     assert(color == WHITE || color == BLACK);
-    assert(type != INVALID_PIECE);
+    assert(type >= PAWN && type <= KING);
     assert(square != INVALID_SQUARE);
 
     pos->board[square] = piece;

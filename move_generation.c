@@ -227,9 +227,8 @@ int generate_evasions(const position_t* pos, move_t* moves)
     ((position_t*)pos)->board[king_sq] = EMPTY;
     for (const direction_t* delta = piece_deltas[king]; *delta; ++delta) {
         to = from + *delta;
-        if (!valid_board_index(to)) continue;
         piece_t capture = pos->board[to];
-        if (capture != EMPTY && !piece_colors_differ(king, capture)) continue;
+        if (capture != EMPTY && !can_capture(king, capture)) continue;
         if (is_square_attacked((position_t*)pos,to,other_side)) continue;
         ((position_t*)pos)->board[king_sq] = king;
         moves = add_move(pos, create_move(from, to, king, capture), moves);
@@ -295,9 +294,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
         } else {
             // A sliding piece, keep going until we hit something.
             direction_t check_dir = direction(from, check_sq);
-            for (to = from + check_dir;
-                    valid_board_index(to) && !pos->board[to];
-                    to += check_dir) {}
+            for (to=from+check_dir; pos->board[to] == EMPTY; to+=check_dir) {}
             if (to == check_sq) {
                 moves = add_move(pos,
                         create_move(from, to, piece, checker),
@@ -320,9 +317,9 @@ int generate_evasions(const position_t* pos, move_t* moves)
         pin_dir = pin_direction(pos, from, king_sq);
         if (pin_dir) continue;
         to = from + pawn_push[side];
-        if (pos->board[to]) continue;
+        if (pos->board[to] != EMPTY) continue;
         rank_t rank = relative_pawn_rank[side][square_rank(from)];
-        k_dir = get_attack_data(to, king_sq).relative_direction;
+        k_dir = direction(to, king_sq);
         if (k_dir == block_dir &&
                 ((king_sq < to && check_sq > to) ||
                  (king_sq > to && check_sq < to))) {
@@ -342,7 +339,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
         if (rank != RANK_2) continue;
         to += pawn_push[side];
         if (pos->board[to]) continue;
-        k_dir = get_attack_data(to, king_sq).relative_direction;
+        k_dir = direction(to, king_sq);
         if (k_dir == block_dir &&
                 ((king_sq < to && check_sq > to) ||
                  (king_sq > to && check_sq < to))) {
@@ -359,10 +356,11 @@ int generate_evasions(const position_t* pos, move_t* moves)
         pin_dir = pin_direction(pos, from, king_sq);
         if (pin_dir) continue;
         if (piece_is_type(piece, KNIGHT)) {
-            for (const direction_t* delta=piece_deltas[piece]; *delta; ++delta) {
+            for (const direction_t* delta=piece_deltas[piece];
+                    *delta; ++delta) {
                 to = from + *delta;
-                if (!valid_board_index(to) || pos->board[to]) continue;
-                k_dir = get_attack_data(to, king_sq).relative_direction;
+                if (pos->board[to] != EMPTY) continue;
+                k_dir = direction(to, king_sq);
                 if (k_dir == block_dir &&
                         ((king_sq < to && check_sq > to) ||
                          (king_sq > to && check_sq < to))) {
@@ -372,11 +370,10 @@ int generate_evasions(const position_t* pos, move_t* moves)
                 }
             }
         } else {
-           for (const direction_t* delta=piece_deltas[piece]; *delta; ++delta) {
-                for (to = from + *delta;
-                        valid_board_index(to) && !pos->board[to];
-                        to += *delta) {
-                    k_dir = get_attack_data(to, king_sq).relative_direction;
+           for (const direction_t* delta=piece_deltas[piece];
+                   *delta; ++delta) {
+                for (to = from+*delta; pos->board[to] == EMPTY; to+=*delta) {
+                    k_dir = direction(to, king_sq);
                     if (k_dir == block_dir &&
                             ((king_sq < to && check_sq > to) ||
                              (king_sq > to && check_sq < to))) {
@@ -396,7 +393,6 @@ int generate_evasions(const position_t* pos, move_t* moves)
 /*
  * Generate all non-capturing, non-promoting, pseudo-legal checks. Used for
  * quiescent move generation.
- * FIXME: untested and unused so far.
  */
 static int generate_pseudo_checks(const position_t* pos, move_t* moves)
 {
@@ -416,17 +412,13 @@ static int generate_pseudo_checks(const position_t* pos, move_t* moves)
         } else {
             direction_t king_dir = king_atk->relative_direction;
             square_t sq;
-            for (sq = from + king_dir;
-                    valid_board_index(sq) && !pos->board[sq];
-                    sq += king_dir) {}
+            for (sq = from+king_dir; pos->board[sq] == EMPTY; sq+=king_dir) {}
             if (sq == king_sq) {
                 // Nothing between us and the king. Is there anything
                 // behind us to do the check when we move?
-                for (sq = from - king_dir;
-                        valid_board_index(sq) && !pos->board[sq];
+                for (sq = from-king_dir; pos->board[sq] == EMPTY;
                         sq -= king_dir) {}
-                if (valid_board_index(sq) &&
-                        (side == piece_color(pos->board[sq])) &&
+                if (side == piece_color(pos->board[sq]) &&
                         (king_atk->possible_attackers &
                          get_piece_flag(pos->board[sq]))) {
                     discover_check_dir = king_dir;
@@ -434,10 +426,9 @@ static int generate_pseudo_checks(const position_t* pos, move_t* moves)
             }
         }
         // Generate checking moves.
-        will_discover_check = discover_check_dir &&
-            abs(discover_check_dir) != N;
+        will_discover_check = discover_check_dir && abs(discover_check_dir)!=N;
         to = from + pawn_push[side];
-        if (pos->board[to]) continue;
+        if (pos->board[to] != EMPTY) continue;
         rank_t relative_rank =
             relative_pawn_rank[side][square_rank(from)];
         if (relative_rank == RANK_7) continue; // non-promotes only
@@ -450,8 +441,9 @@ static int generate_pseudo_checks(const position_t* pos, move_t* moves)
             }
         }
         to += pawn_push[side];
-        if (relative_rank == RANK_2 && !pos->board[to]) {
-            for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
+        if (relative_rank == RANK_2 && pos->board[to] == EMPTY) {
+            for (const direction_t* delta = piece_deltas[piece];
+                    *delta; ++delta) {
                 if (will_discover_check || to + *delta == king_sq) {
                     moves = add_move(pos,
                             create_move(from, to, piece, EMPTY),
@@ -475,17 +467,13 @@ static int generate_pseudo_checks(const position_t* pos, move_t* moves)
         } else {
             direction_t king_dir = king_atk->relative_direction;
             square_t sq;
-            for (sq = from + king_dir;
-                    valid_board_index(sq) && !pos->board[sq];
-                    sq += king_dir) {}
+            for (sq = from+king_dir; pos->board[sq] == EMPTY; sq+=king_dir) {}
             if (sq == king_sq) {
                 // Nothing between us and the king. Is there anything
                 // behind us to do the check when we move?
-                for (sq = from - king_dir;
-                        valid_board_index(sq) && !pos->board[sq];
+                for (sq = from - king_dir; pos->board[sq] == EMPTY;
                         sq -= king_dir) {}
-                if (valid_board_index(sq) &&
-                        (side == piece_color(pos->board[sq])) &&
+                if (side == piece_color(pos->board[sq]) &&
                         (king_atk->possible_attackers &
                          get_piece_flag(pos->board[sq]))) {
                     discover_check_dir = king_dir;
@@ -494,9 +482,10 @@ static int generate_pseudo_checks(const position_t* pos, move_t* moves)
         }
         // Generate checking moves.
         if (piece_is_type(piece, KNIGHT)) {
-            for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
+            for (const direction_t* delta = piece_deltas[piece];
+                    *delta; ++delta) {
                 to = from + *delta;
-                if (!valid_board_index(to) || pos->board[to]) continue;
+                if (pos->board[to] != EMPTY) continue;
                 if (discover_check_dir ||
                         possible_attack(to, king_sq, WN)) {
                     moves = add_move(pos,
@@ -505,10 +494,9 @@ static int generate_pseudo_checks(const position_t* pos, move_t* moves)
                 }
             }
         } else {
-            for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
-                for (to = from + *delta;
-                        valid_board_index(to) && !pos->board[to];
-                        to += *delta) {
+            for (const direction_t* delta = piece_deltas[piece];
+                    *delta; ++delta) {
+                for (to = from+*delta; pos->board[to] == EMPTY; to+=*delta) {
                     will_discover_check = discover_check_dir &&
                         abs(discover_check_dir) != abs(*delta);
                     if (will_discover_check) {
@@ -519,15 +507,12 @@ static int generate_pseudo_checks(const position_t* pos, move_t* moves)
                     }
                     if (possible_attack(to, king_sq, piece)) {
                         const direction_t to_king = direction(to, king_sq);
-                        for (square_t x=to + to_king;
-                                valid_board_index(x); x += to_king) {
-                            if (x == king_sq) {
-                                moves = add_move(pos,
-                                        create_move(from, to, piece, NONE),
-                                        moves);
-                                break;
-                            }
-                            if (pos->board[x]) break;
+                        square_t x = to + to_king;
+                        for (; pos->board[x] == EMPTY; x+=to_king) {}
+                        if (x == king_sq) {
+                            moves = add_move(pos,
+                                    create_move(from, to, piece, NONE),
+                                    moves);
                         }
                     }
                 }
@@ -554,23 +539,21 @@ static void generate_pawn_captures(const position_t* pos,
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             // non-promote captures
             to = from + *delta;
-            if (to == pos->ep_square) {
-                moves = add_move(pos, create_move_enpassant(from, to, piece,
-                        pos->board[to + pawn_push[side^1]]), moves);
-            }
-            if (!valid_board_index(to) || pos->board[to] == EMPTY) continue;
-            if (piece_colors_differ(piece, pos->board[to])) {
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
                 moves = add_move(pos, create_move(from, to, piece,
                         pos->board[to]), moves);
+            }
+            else if (to == pos->ep_square) {
+                moves = add_move(pos, create_move_enpassant(from, to, piece,
+                        pos->board[to + pawn_push[side^1]]), moves);
             }
         }
     } else {
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             // capture/promotes
             to = from + *delta;
-            if (!valid_board_index(to) ||
-                !pos->board[to] ||
-                !piece_colors_differ(piece, pos->board[to])) continue;
+            if (pos->board[to] == EMPTY ||
+                    !can_capture(piece, pos->board[to])) continue;
             for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
                 moves = add_move(pos, create_move_promote(from, to, piece,
                         pos->board[to], promoted), moves);
@@ -595,7 +578,7 @@ static void generate_pawn_noncaptures(const position_t* pos,
     if (relative_rank < RANK_7) {
         // non-promotions
         to = from + pawn_push[side];
-        if (pos->board[to]) return;
+        if (pos->board[to] != EMPTY) return;
         moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
         to += pawn_push[side];
         if (relative_rank == RANK_2 && pos->board[to] == EMPTY) {
@@ -630,8 +613,7 @@ static void generate_piece_captures(const position_t* pos,
         // not a sliding piece, just iterate over dest. squares
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             to = from + *delta;
-            if (!valid_board_index(to) || !pos->board[to]) continue;
-            if (piece_colors_differ(piece, pos->board[to])) {
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
                 moves = add_move(pos, create_move(from, to, piece,
                             pos->board[to]), moves);
             }
@@ -639,16 +621,12 @@ static void generate_piece_captures(const position_t* pos,
     } else {
         // a sliding piece, keep going until we hit something
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
-            to = from;
-            do {
-                to += *delta;
-                if (!valid_board_index(to)) break;
-                if (!pos->board[to]) continue;
-                if (piece_colors_differ(piece, pos->board[to])) {
-                    moves = add_move(pos, create_move(from, to, piece,
+            to = from + *delta;
+            while (pos->board[to] == EMPTY) to += *delta;
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
                             pos->board[to]), moves);
-                }
-            } while (!pos->board[to]);
+            }
         }
     }
     *moves_head = moves;
@@ -669,7 +647,7 @@ static void generate_piece_noncaptures(const position_t* pos,
         // not a sliding piece, just iterate over dest. squares
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             to = from + *delta;
-            if (!valid_board_index(to) || pos->board[to]) continue;
+            if (pos->board[to] != EMPTY) continue;
             moves = add_move(pos,
                     create_move(from, to, piece, NONE),
                     moves);
@@ -677,14 +655,13 @@ static void generate_piece_noncaptures(const position_t* pos,
     } else {
         // a sliding piece, keep going until we hit something
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
-            to = from;
-            do {
-                to += *delta;
-                if (!valid_board_index(to) || pos->board[to]) break;
+            to = from + *delta;
+            while (pos->board[to] == EMPTY) {
                 moves = add_move(pos,
                         create_move(from, to, piece, NONE),
                         moves);
-            } while (!pos->board[to]);
+                to += *delta;
+            }
         }
     }
     *moves_head = moves;

@@ -22,10 +22,10 @@ const char glyphs[] = ".PNBRQK  pnbrqk";
 
 const slide_t sliding_piece_types[] = {
     0, 0, 0, DIAGONAL, STRAIGHT, BOTH, 0, 0,
-    0, 0, 0, DIAGONAL, STRAIGHT, BOTH, 0
+    0, 0, 0, DIAGONAL, STRAIGHT, BOTH, 0, 0, 0
 };
 
-const direction_t piece_deltas[16][16] = {
+const direction_t piece_deltas[17][16] = {
     // White Pieces
     {0},                                                    // Null
     {NW, NE, 0},                                            // Pawn
@@ -42,7 +42,7 @@ const direction_t piece_deltas[16][16] = {
     {S, W, E, N, 0},                                        // Rook
     {SW, S, SE, W, E, NW, N, NE, 0},                        // Queen
     {SW, S, SE, W, E, NW, N, NE, 0},                        // King
-    {0}                                                     // Null
+    {0}, {0}                                                // Null
 };
 
 const direction_t pawn_push[] = {N, S};
