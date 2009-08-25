@@ -258,10 +258,10 @@ static void order_moves(position_t* pos,
         move_t hash_move,
         int ply)
 {
-    const int hash_score = 1000;
+    const int hash_score = 2000;
     const int promote_score = 900;
     const int underpromote_score = -600;
-    const int killer_score = 800;
+    const int killer_score = 1500;
     int scores[256];
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
@@ -275,9 +275,9 @@ static void order_moves(position_t* pos,
             score = static_exchange_eval(pos, move);
         } else if (move == search_node->killers[0]) {
             score = killer_score;
-        } else if (move == search_node->killers[1]) {
-            score = killer_score-1;
         } else if (ply >=2 && move == (search_node-1)->killers[0]) {
+            score = killer_score-1;
+        } else if (move == search_node->killers[1]) {
             score = killer_score-2;
         } else if (ply >=2 && move == (search_node-1)->killers[1]) {
             score = killer_score-3;
