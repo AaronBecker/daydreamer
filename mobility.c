@@ -18,7 +18,6 @@ int color_table[2][17] = {
 
 int mobility_score(const position_t* pos)
 {
-    return 0;
     int phase = 0; // TODO: endgame/midgame phase calculation
     int score = 0;
     for (color_t side=WHITE; side<=BLACK; ++side) {
