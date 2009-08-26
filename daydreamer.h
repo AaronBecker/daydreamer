@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.3"
-#define ENGINE_VERSION_NAME     " qf2"
+#define ENGINE_VERSION_NAME     " hist"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -57,6 +57,7 @@ int simple_eval(const position_t* pos);
 int full_eval(const position_t* pos);
 void report_eval(const position_t* pos);
 bool insufficient_material(const position_t* pos);
+bool can_win(const position_t* pos, color_t side);
 bool is_draw(const position_t* pos);
 float game_phase(const position_t* pos);
 

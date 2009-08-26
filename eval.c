@@ -71,6 +71,8 @@ int full_eval(const position_t* pos)
     float phase = game_phase(pos);
     score += phase*phase_score.midgame + (1-phase)*phase_score.endgame;
 #endif
+    if (!can_win(pos, pos->side_to_move)) score = MIN(score, DRAW_VALUE);
+    if (!can_win(pos, pos->side_to_move^1)) score = MAX(score, DRAW_VALUE);
     return score;
 }
 
@@ -141,8 +143,14 @@ bool insufficient_material(const position_t* pos)
 {
     return (pos->num_pawns[WHITE] == 0 &&
         pos->num_pawns[BLACK] == 0 &&
-        pos->material_eval[WHITE] < ROOK_VAL &&
-        pos->material_eval[BLACK] < ROOK_VAL);
+        pos->material_eval[WHITE] < ROOK_VAL + KING_VAL &&
+        pos->material_eval[BLACK] < ROOK_VAL + KING_VAL);
+}
+
+bool can_win(const position_t* pos, color_t side)
+{
+    return !(pos->num_pawns[side] == 0 &&
+            pos->material_eval[side] < ROOK_VAL + KING_VAL);
 }
 
 /*
