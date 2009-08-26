@@ -284,8 +284,8 @@ static void order_moves(position_t* pos,
         } else if (ply >=2 && move == (search_node-1)->killers[1]) {
             score = killer_score-3;
         } else {
-            score = root_data.history[pos->side_to_move][history_index(move)];
-            if (score > grain) score = grain;
+            //score = root_data.history[pos->side_to_move][history_index(move)];
+            //if (score > grain) score = grain;
         }
         // Insert the score into the right place in the list. The list is never
         // long enough to requre an n log n algorithm.
@@ -577,8 +577,8 @@ static int search(position_t* pos,
             if (score >= beta) {
                 if (!get_move_capture(*move) &&
                         !get_move_promote(*move)) {
-                    root_data.history[pos->side_to_move]
-                        [history_index(*move)] += depth*depth;
+                    //root_data.history[pos->side_to_move]
+                    //    [history_index(*move)] += depth*depth;
                     if (*move != search_node->killers[0]) {
                         search_node->killers[1] = search_node->killers[0];
                         search_node->killers[0] = *move;
