@@ -14,8 +14,8 @@ extern "C" {
 #include <sys/time.h>
 
 #define ENGINE_NAME             "Daydreamer"
-#define ENGINE_VERSION_NUMBER   "1.3"
-#define ENGINE_VERSION_NAME     " hist"
+#define ENGINE_VERSION_NUMBER   "1.4"
+#define ENGINE_VERSION_NAME     " vanilla"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
