@@ -52,6 +52,7 @@ typedef struct {
     int best_score;
     move_t pv[MAX_SEARCH_DEPTH];
     search_node_t search_stack[MAX_SEARCH_DEPTH];
+    int history[2][64*64];
     uint64_t nodes_searched;
     uint64_t qnodes_searched;
     int current_depth;
@@ -63,10 +64,13 @@ typedef struct {
     int depth_limit;
     int time_limit;
     int time_target;
-    int mate_search;
+    int mate_search; // TODO:implement
     bool infinite;
     bool ponder;
 } search_data_t;
+
+#define history_index(m)   \
+    (((square_to_index(get_move_from(m)))<<6)|(square_to_index(get_move_to(m))))
 
 #define POLL_INTERVAL   0xffff
 #define MATE_VALUE      0x7fff

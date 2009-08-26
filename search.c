@@ -9,17 +9,17 @@ static const bool nullmove_enabled = true;
 static const bool iid_enabled = true;
 static const bool razoring_enabled = false;
 static const bool futility_enabled = false;
-static const bool qfutility_enabled = true;
+static const bool qfutility_enabled = false;
 static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
-    125, 250, 300, 500, 900
+    200, 250, 300, 500, 900
 };
-static const int qfutility_margin = 125;
+static const int qfutility_margin = 80;
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-    150, 300, 300
+    500, 300, 300
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
-    0, 50, 150
+    150, 300, 300
 };
 
 static bool should_stop_searching(search_data_t* data);
@@ -49,6 +49,7 @@ void init_search_data(search_data_t* data)
     data->best_score = 0;
     memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
     memset(data->search_stack, 0, sizeof(search_node_t) * MAX_SEARCH_DEPTH);
+    memset(data->history, 0, sizeof(int)*2*64*64);
     data->nodes_searched = 0;
     data->qnodes_searched = 0;
     data->current_depth = 0;
@@ -258,10 +259,11 @@ static void order_moves(position_t* pos,
         move_t hash_move,
         int ply)
 {
-    const int hash_score = 1000;
-    const int promote_score = 900;
-    const int underpromote_score = -600;
-    const int killer_score = 800;
+    const int grain = 1000000;
+    const int hash_score = 1000 * grain;
+    const int promote_score = 900 * grain;
+    const int underpromote_score = -600 * grain;
+    const int killer_score = 800 * grain;
     int scores[256];
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
@@ -272,7 +274,7 @@ static void order_moves(position_t* pos,
         } else if (get_move_promote(move) != NONE) {
             score = underpromote_score;
         } else if (get_move_capture(move)) {
-            score = static_exchange_eval(pos, move);
+            score = static_exchange_eval(pos, move) * grain;
         } else if (move == search_node->killers[0]) {
             score = killer_score;
         } else if (move == search_node->killers[1]) {
@@ -281,6 +283,9 @@ static void order_moves(position_t* pos,
             score = killer_score-2;
         } else if (ply >=2 && move == (search_node-1)->killers[1]) {
             score = killer_score-3;
+        } else {
+            score = root_data.history[pos->side_to_move][history_index(move)];
+            if (score > grain) score = grain;
         }
         // Insert the score into the right place in the list. The list is never
         // long enough to requre an n log n algorithm.
@@ -571,10 +576,13 @@ static int search(position_t* pos,
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
                 if (!get_move_capture(*move) &&
-                        !get_move_promote(*move) &&
-                        *move != search_node->killers[0]) {
-                    search_node->killers[1] = search_node->killers[0];
-                    search_node->killers[0] = *move;
+                        !get_move_promote(*move)) {
+                    root_data.history[pos->side_to_move]
+                        [history_index(*move)] += depth*depth;
+                    if (*move != search_node->killers[0]) {
+                        search_node->killers[1] = search_node->killers[0];
+                        search_node->killers[0] = *move;
+                    }
                 }
                 put_transposition(pos, *move, depth, beta, SCORE_LOWERBOUND);
                 root_data.stats.move_selection[MIN(move-moves, HIST_BUCKETS)]++;
