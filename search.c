@@ -6,13 +6,16 @@
 
 search_data_t root_data;
 static const bool nullmove_enabled = true;
+static const bool verification_enabled = true;
 static const bool iid_enabled = true;
 static const bool razoring_enabled = false;
-static const bool futility_enabled = false;
+static const bool futility_enabled = true;
+static const bool history_prune_enabled = false;
+static const bool value_prune_enabled = false;
 static const bool qfutility_enabled = false;
 static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
-    200, 250, 300, 500, 900
+    90, 190, 250, 330, 400
 };
 static const int qfutility_margin = 80;
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
@@ -49,7 +52,7 @@ void init_search_data(search_data_t* data)
     data->best_score = 0;
     memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
     memset(data->search_stack, 0, sizeof(search_node_t) * MAX_SEARCH_DEPTH);
-    memset(data->history, 0, sizeof(int)*2*64*64);
+    memset(&data->history, 0, sizeof(history_t));
     data->nodes_searched = 0;
     data->qnodes_searched = 0;
     data->current_depth = 0;
@@ -187,10 +190,38 @@ static bool is_nullmove_allowed(position_t* pos)
     // don't allow nullmove if either side is in check
     if (is_check(pos)) return false;
     // allow nullmove if we're not down to king/pawns
-    int piece_value = pos->material_eval[pos->side_to_move] -
-        material_value(WK) -
-        material_value(WP)*pos->num_pawns[pos->side_to_move];
-    return piece_value != 0;
+    return !(pos->num_pieces[WHITE] == 1 && pos->num_pieces[BLACK] == 1);
+}
+
+static void record_success(history_t* h, move_t move, int depth)
+{
+    int index = history_index(move);
+    h->history[index] += depth_to_history(depth);
+    h->success[index]++;
+
+    // Keep history values inside the correct range.
+    if (h->history[index] > MAX_HISTORY) {
+        for (int i=0; i<MAX_HISTORY_INDEX; ++i) {
+            h->history[i] /= 2;
+        }
+    }
+}
+
+static void record_failure(history_t* h, move_t move)
+{
+    h->failure[history_index(move)]++;
+}
+
+static bool is_history_prune_allowed(history_t* h, move_t move, int depth)
+{
+    int index = history_index(move);
+    return (depth * h->success[index] < h->failure[index]);
+}
+
+static bool is_history_reduction_allowed(history_t* h, move_t move)
+{
+    int index = history_index(move);
+    return (h->success[index] / 2 < h->failure[index]);
 }
 
 /*
@@ -260,7 +291,7 @@ static void order_moves(position_t* pos,
         move_t hash_move,
         int ply)
 {
-    const int grain = 1000000;
+    const int grain = MAX_HISTORY;
     const int hash_score = 1000 * grain;
     const int promote_score = 900 * grain;
     const int underpromote_score = -600 * grain;
@@ -287,8 +318,7 @@ static void order_moves(position_t* pos,
         } else if (is_move_castle(move)) {
             score = castle_score;
         } else {
-            score = root_data.history[pos->side_to_move][history_index(move)];
-            if (score > grain) score = grain;
+            score = root_data.history.history[history_index(move)];
         }
         // Insert the score into the right place in the list. The list is never
         // long enough to requre an n log n algorithm.
@@ -479,10 +509,11 @@ static int search(position_t* pos,
         undo_nullmove(pos, &undo);
         if (is_mated_score(null_score)) mate_threat = true;
         if (null_score >= beta) {
-            int rdepth = depth - NULLMOVE_VERIFICATION_REDUCTION;
-            if (rdepth <= 0) return beta;
-            null_score = search(pos, search_node, ply, alpha, beta, rdepth);
-
+            if (verification_enabled) {
+                int rdepth = depth - NULLMOVE_VERIFICATION_REDUCTION;
+                if (rdepth <= 0) return beta;
+                null_score = search(pos, search_node, ply, alpha, beta, rdepth);
+            }
             if (null_score >= beta) return beta;
         }
         // TODO: mate threat detection
@@ -518,6 +549,7 @@ static int search(position_t* pos,
     int scores[256];
     bool single_reply = generate_pseudo_moves(pos, moves) == 1;
     int num_legal_moves = 0, num_futile_moves = 0;
+    int futility_score = mated_in(-1);
     order_moves(pos, search_node, moves, scores, hash_move, ply);
     int move_index = 0;
     for (move_t* move = moves; *move; ++move, ++move_index) {
@@ -544,14 +576,24 @@ static int search(position_t* pos,
                 !get_move_capture(*move) &&
                 !get_move_promote(*move);
             if (prune_futile) {
-                //TODO: History pruning.
-
-                // Value pruning
-                score = full_eval(pos) + futility_margin[depth-1];
-                if (score < alpha) {
+                // History pruning.
+                if (history_prune_enabled && is_history_prune_allowed(
+                            &root_data.history, *move, depth)) {
                     num_futile_moves++;
                     undo_move(pos, *move, &undo);
                     continue;
+                }
+                // Value pruning.
+                if (value_prune_enabled && lazy_score < beta) {
+                    if (futility_score == mated_in(-1)) {
+                        futility_score = full_eval(pos) +
+                            futility_margin[depth-1];
+                    }
+                    if (futility_score < beta) {
+                        num_futile_moves++;
+                        undo_move(pos, *move, &undo);
+                        continue;
+                    }
                 }
             }
             // Late move reduction (LMR), as described by Tord Romstad at
@@ -566,7 +608,8 @@ static int search(position_t* pos,
                 depth > LMR_DEPTH_LIMIT &&
                 get_move_promote(*move) != QUEEN &&
                 !get_move_capture(*move) &&
-                !is_move_castle(*move);
+                !is_move_castle(*move) &&
+                is_history_reduction_allowed(&root_data.history, *move);
             if (do_lmr) {
                 score = -search(pos, search_node+1, ply+1,
                         -alpha-1, -alpha, depth-LMR_REDUCTION-1);
@@ -590,8 +633,13 @@ static int search(position_t* pos,
             if (score >= beta) {
                 if (!get_move_capture(*move) &&
                         !get_move_promote(*move)) {
-                    root_data.history[pos->side_to_move]
-                        [history_index(*move)] += depth*depth;
+                    record_success(&root_data.history, *move, depth);
+                    for (int i=0; i<num_legal_moves; ++i) {
+                        move_t m = moves[i];
+                        if (!get_move_capture(m) && !get_move_promote(m)) {
+                            record_failure(&root_data.history, m);
+                        }
+                    }
                     if (*move != search_node->killers[0]) {
                         search_node->killers[1] = search_node->killers[0];
                         search_node->killers[0] = *move;

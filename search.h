@@ -41,6 +41,18 @@ typedef struct {
 } search_stats_t;
 
 typedef struct {
+    int history[16*64]; // move indexed by piece type and destination square
+    int success[16*64];
+    int failure[16*64];
+} history_t;
+
+#define MAX_HISTORY         1000000
+#define MAX_HISTORY_INDEX   (16*64)
+#define depth_to_history(d) ((d)*(d))
+#define history_index(m)   \
+    ((get_move_piece_type(m)<<6)|(square_to_index(get_move_to(m))))
+
+typedef struct {
     position_t root_pos;
     search_options_t options;
     search_stats_t stats;
@@ -52,7 +64,7 @@ typedef struct {
     int best_score;
     move_t pv[MAX_SEARCH_DEPTH];
     search_node_t search_stack[MAX_SEARCH_DEPTH];
-    int history[2][64*64];
+    history_t history;
     uint64_t nodes_searched;
     uint64_t qnodes_searched;
     int current_depth;
@@ -68,9 +80,6 @@ typedef struct {
     bool infinite;
     bool ponder;
 } search_data_t;
-
-#define history_index(m)   \
-    (((square_to_index(get_move_from(m)))<<6)|(square_to_index(get_move_to(m))))
 
 #define POLL_INTERVAL   0xffff
 #define MATE_VALUE      0x7fff
