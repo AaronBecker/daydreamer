@@ -152,9 +152,9 @@ static bool should_stop_searching(search_data_t* data)
  * TODO: recapture extensions would be good. Also, fractional extensions,
  * and fractional plies in general.
  */
-static int extend(position_t* pos, move_t move)
+static int extend(position_t* pos, move_t move, bool single_reply)
 {
-    if (is_check(pos)) return 1;
+    if (is_check(pos) || single_reply) return 1;
     square_t sq = get_move_to(move);
     if (piece_type(pos->board[sq]) == PAWN &&
             (square_rank(sq) == RANK_7 || square_rank(sq) == RANK_2)) return 1;
@@ -256,6 +256,7 @@ static void order_root_moves(search_data_t* root_data, move_t hash_move)
 static void order_moves(position_t* pos,
         search_node_t* search_node,
         move_t* moves,
+        int* scores,
         move_t hash_move,
         int ply)
 {
@@ -265,7 +266,6 @@ static void order_moves(position_t* pos,
     const int underpromote_score = -600 * grain;
     const int killer_score = 800 * grain;
     const int castle_score = 2*grain;
-    int scores[256];
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
         int score = 0;
@@ -371,8 +371,9 @@ static bool root_search(search_data_t* search_data)
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
     if (search_data->current_depth < 4) {
+        int scores[256];
         order_moves(&search_data->root_pos, search_data->search_stack,
-            search_data->root_moves, hash_move, 0);
+            search_data->root_moves, scores, hash_move, 0);
     } else {
         order_root_moves(search_data, hash_move);
     }
@@ -387,7 +388,7 @@ static bool root_search(search_data_t* search_data)
         uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
         do_move(pos, *move, &undo);
-        int ext = extend(pos, *move);
+        int ext = extend(pos, *move, false);
         int score;
         if (move == search_data->root_moves) {
             // First move, use full window search.
@@ -514,16 +515,18 @@ static int search(position_t* pos,
     }
 
     move_t moves[256];
-    generate_pseudo_moves(pos, moves);
+    int scores[256];
+    bool single_reply = generate_pseudo_moves(pos, moves) == 1;
     int num_legal_moves = 0, num_futile_moves = 0;
-    order_moves(pos, search_node, moves, hash_move, ply);
-    for (move_t* move = moves; *move; ++move) {
+    order_moves(pos, search_node, moves, scores, hash_move, ply);
+    int move_index = 0;
+    for (move_t* move = moves; *move; ++move, ++move_index) {
         check_pseudo_move_legality(pos, *move);
         if (!is_pseudo_move_legal(pos, *move)) continue;
         ++num_legal_moves;
         undo_info_t undo;
         do_move(pos, *move, &undo);
-        int ext = extend(pos, *move);
+        int ext = extend(pos, *move, single_reply);
         if (num_legal_moves == 1) {
             // First move, use full window search.
             score = -search(pos, search_node+1, ply+1,
@@ -533,7 +536,6 @@ static int search(position_t* pos,
             // futility before calling do_move, but this would require more
             // efficient ways of identifying important moves without actually
             // making them.
-            // TODO: history pruning
             bool prune_futile = futility_enabled &&
                 !full_window &&
                 !ext &&
@@ -542,6 +544,9 @@ static int search(position_t* pos,
                 !get_move_capture(*move) &&
                 !get_move_promote(*move);
             if (prune_futile) {
+                //TODO: History pruning.
+
+                // Value pruning
                 score = full_eval(pos) + futility_margin[depth-1];
                 if (score < alpha) {
                     num_futile_moves++;
@@ -552,8 +557,8 @@ static int search(position_t* pos,
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
             const bool move_is_late = full_window ?
-                num_legal_moves - num_futile_moves > LMR_PV_EARLY_MOVES :
-                num_legal_moves - num_futile_moves > LMR_EARLY_MOVES;
+                num_legal_moves > LMR_PV_EARLY_MOVES :
+                num_legal_moves > LMR_EARLY_MOVES;
             const bool do_lmr = lmr_enabled &&
                 move_is_late &&
                 !ext &&
@@ -635,6 +640,7 @@ static int quiesce(position_t* pos,
     int eval = full_eval(pos);
     int score = eval;
     move_t moves[256];
+    int scores[256];
     if (ply >= MAX_SEARCH_DEPTH-1) return score;
     open_qnode(&root_data, ply);
     if (is_check(pos)) {
@@ -651,7 +657,7 @@ static int quiesce(position_t* pos,
         !is_check(pos) &&
         pos->num_pieces[pos->side_to_move] > 2;
     // TODO: special quiesce ordering function
-    order_moves(pos, search_node, moves, NO_MOVE, ply);
+    order_moves(pos, search_node, moves, scores, NO_MOVE, ply);
     for (move_t* move = moves; *move; ++move) {
         check_pseudo_move_legality(pos, *move);
         if (!is_pseudo_move_legal(pos, *move)) continue;
