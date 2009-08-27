@@ -41,7 +41,7 @@ int simple_eval(const position_t* pos)
 #ifndef UFO_EVAL
     // Adjust material based on Larry Kaufmans's formula in
     // "The Evaluation of Material Imbalances"
-    // bishop pair: +50 to each bishop
+    // bishop pair: +50
     // knight += 5 * (pawns-5)
     // rook -= 10 * (pawns-5)
     material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
