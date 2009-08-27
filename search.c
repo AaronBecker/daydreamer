@@ -480,6 +480,7 @@ static int search(position_t* pos,
             null_score = search(pos, search_node, ply, alpha, beta, rdepth);
             if (null_score >= beta) return beta;
         }
+        // TODO: mate threat detection
     } else if (razoring_enabled &&
             pos->prev_move != NULL_MOVE &&
             !full_window &&
