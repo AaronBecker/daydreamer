@@ -12,8 +12,8 @@ static const int doubled_penalty[2][8] = {
 };
 static const int connected_bonus[2] = {10, 20};
 static const int passed_bonus[2][8] = {
-    { 0, 10, 10, 20, 30, 50, 80, 0},
-    { 0, 20, 40, 60, 80,100,150, 0},
+    { 0, 10, 10, 20, 30, 60, 90, 0},
+    { 0, 20, 40, 60, 80,120,170, 0},
 };
 
 static pawn_data_t* pawn_table = NULL;
