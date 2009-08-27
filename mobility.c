@@ -16,6 +16,9 @@ int color_table[2][17] = {
     {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // black
 };
 
+int low_mobility_threshold[8] = {0, 0, 1, 3, 3, 5, 0};
+int low_mobility_penalty[8] = {0, 0, 4, 8, 4, 12, 0};
+
 void mobility_score(const position_t* pos, score_t* score)
 {
     for (color_t side=WHITE; side<=BLACK; ++side) {
@@ -76,9 +79,13 @@ void mobility_score(const position_t* pos, score_t* score)
                     ps += mobile[pos->board[to]];
                     for (to=from+17; pos->board[to]==EMPTY; to+=17, ++ps) {}
                     ps += mobile[pos->board[to]];
+                    break;
                 default:
                     break;
             }
+            //if (ps <= low_mobility_threshold[type]) {
+            //    ps -= low_mobility_penalty[type];
+            //}
             score->midgame += (base_mobility_score[0][type] +
                     ps*mobility_multiplier[0][type]) *
                 (side == pos->side_to_move ? 1 : -1);
