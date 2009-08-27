@@ -264,6 +264,7 @@ static void order_moves(position_t* pos,
     const int promote_score = 900 * grain;
     const int underpromote_score = -600 * grain;
     const int killer_score = 800 * grain;
+    const int castle_score = 2*grain;
     int scores[256];
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
@@ -283,6 +284,8 @@ static void order_moves(position_t* pos,
             score = killer_score-2;
         } else if (ply >=2 && move == (search_node-1)->killers[1]) {
             score = killer_score-3;
+        } else if (is_move_castle(move)) {
+            score = castle_score;
         } else {
             score = root_data.history[pos->side_to_move][history_index(move)];
             if (score > grain) score = grain;
