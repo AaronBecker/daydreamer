@@ -12,9 +12,16 @@ static const int doubled_penalty[2][8] = {
 };
 static const int connected_bonus[2] = {10, 20};
 static const int passed_bonus[2][8] = {
-    { 0, 10, 10, 20, 30, 60, 90, 0},
-    { 0, 20, 40, 60, 80,120,170, 0},
+    { 0,  5, 10, 20, 60, 120, 200, 0},
+    { 0, 10, 20, 25, 50,  90, 125, 0},
 };
+static const int candidate_bonus[2][8] = {
+    { 0,  5,  5, 20, 35, 50, 0, 0},
+    { 0,  5,  5, 20, 45, 70, 0, 0},
+};
+static const int cumulative_defect_penalty[8] = {0, 0, 5, 10, 25, 50, 60, 75};
+// TODO: backward/weak pawns
+// TODO: figure out how obstructed passed pawns are in eval
 
 static pawn_data_t* pawn_table = NULL;
 static int num_buckets;
@@ -96,6 +103,7 @@ pawn_data_t* analyze_pawns(const position_t* pos)
         pd->num_passed[color] = 0;
         piece_t pawn = create_piece(color, PAWN);
         piece_t opp_pawn = create_piece(color^1, PAWN);
+        int num_defects = 0;
         for (int i=0; pos->pawns[color][i] != INVALID_SQUARE; ++i) {
             sq = pos->pawns[color][i];
             file_t file = square_file(sq);
@@ -116,6 +124,20 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 pd->passed[color][pd->num_passed[color]++] = sq;
                 pd->score[color] += passed_bonus[0][rank];
                 pd->endgame_score[color] += passed_bonus[1][rank];
+            } else {
+                // Candidate passed pawns (one enemy pawn one file away).
+                int blockers = 0;
+                for (to = sq + pawn_push[color];
+                        pos->board[to] != OUT_OF_BOUNDS;
+                        to += pawn_push[color]) {
+                    if (pos->board[to-1] == opp_pawn) ++blockers;
+                    if (pos->board[to] == opp_pawn) blockers = 2;
+                    if (pos->board[to+1] == opp_pawn) ++blockers;
+                }
+                if (blockers < 2) {
+                    pd->score[color] += candidate_bonus[0][rank];
+                    pd->endgame_score[color] += candidate_bonus[1][rank];
+                }
             }
 
             // Doubled pawns.
@@ -124,6 +146,7 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 if (pos->board[to] == pawn) {
                     pd->score[color] -= doubled_penalty[0][file];
                     pd->endgame_score[color] -= doubled_penalty[1][file];
+                    ++num_defects;
                     break;
                 }
             }
@@ -134,6 +157,7 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 if (pos->board[to-1] == pawn || pos->board[to+1] == pawn) {
                     pd->score[color] -= isolation_penalty[0][file];
                     pd->endgame_score[color] -= isolation_penalty[1][file];
+                    ++num_defects;
                     break;
                 }
             }
@@ -146,6 +170,9 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 pd->endgame_score[color] += connected_bonus[1];
             }
         }
+        int defect_penalty = cumulative_defect_penalty[MIN(8, num_defects)];
+        pd->score[color] -= defect_penalty;
+        pd->endgame_score[color] -= defect_penalty;
     }
     return pd;
 }
