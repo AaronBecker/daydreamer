@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 // TODO: shrink this structure.
+// TODO: track mate threats and whether null moves should be attempted
 typedef struct {
     hashkey_t key;
     move_t move;
