@@ -146,11 +146,13 @@ int generate_pseudo_noncaptures(const position_t* pos, move_t* moves)
     for (int i = 0; i < pos->num_pieces[side]; ++i) {
         from = pos->pieces[side][i];
         piece = pos->board[from];
+        assert(piece_color(piece) == side && piece_type(piece) != PAWN);
         generate_piece_noncaptures(pos, from, piece, &moves);
     }
     piece = create_piece(side, PAWN);
     for (int i=0; i<pos->num_pawns[side]; ++i) {
         from = pos->pawns[side][i];
+        assert(pos->board[from] == piece);
         generate_pawn_noncaptures(pos, from, piece, &moves);
     }
 
