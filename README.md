@@ -98,7 +98,7 @@ Installing
 
 The whole thing is a single executable, so there's nothing to install, really.
 Just put it wherever you want. I've included a polyglot.ini file for
-compatibility with Winboard interfacees, but aside from that there aren't any
+compatibility with Winboard interfaces, but aside from that there aren't any
 configuration files.
 
 Thanks
