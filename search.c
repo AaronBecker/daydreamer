@@ -639,9 +639,10 @@ static int search(position_t* pos,
     int futility_score = mated_in(-1);
     order_moves(pos, search_node, &move_list, hash_move, ply);
     int move_index = 0;
-    for (move_t move = pick_move(&move_list, true);
+    int ordered_moves = full_window ? 256 : 16;
+    for (move_t move = pick_move(&move_list, move_index<ordered_moves);
             move != NO_MOVE;
-            move = pick_move(&move_list, true),
+            move = pick_move(&move_list, move_index<ordered_moves),
             ++move_index) {
         check_pseudo_move_legality(pos, move);
         if (!is_pseudo_move_legal(pos, move)) continue;
