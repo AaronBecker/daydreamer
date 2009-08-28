@@ -53,7 +53,7 @@ static int quiesce(position_t* pos,
 void init_search_data(search_data_t* data)
 {
     memset(&data->stats, 0, sizeof(search_stats_t));
-    memset(data->root_moves, 0, sizeof(move_t) * 256);
+    memset(&data->root_move_list, 0, sizeof(move_list_t));
     data->best_move = NO_MOVE;
     data->best_score = 0;
     memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
@@ -268,8 +268,9 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
 
 static void order_root_moves(search_data_t* root_data, move_t hash_move)
 {
-    move_t* moves = root_data->root_moves;
-    uint64_t* scores = root_data->move_scores;
+    move_t* moves = root_data->root_move_list.moves;
+    root_data->root_move_list.offset = 0;
+    uint64_t* scores = root_data->move_nodes;
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         uint64_t score = scores[i];
         move_t move = moves[i];
@@ -283,6 +284,9 @@ static void order_root_moves(search_data_t* root_data, move_t hash_move)
         scores[j+1] = score;
         moves[j+1] = move;
     }
+    for (int i=0; moves[i] != NO_MOVE; ++i) {
+        root_data->root_move_list.scores[i] = INT_MAX-i;
+    }
 }
 
 /*
@@ -292,11 +296,12 @@ static void order_root_moves(search_data_t* root_data, move_t hash_move)
  */
 static void order_moves(position_t* pos,
         search_node_t* search_node,
-        move_t* moves,
-        int* scores,
+        move_list_t* move_list,
         move_t hash_move,
         int ply)
 {
+    move_t* moves = move_list->moves;
+    move_list->offset = 0;
     const int grain = MAX_HISTORY;
     const int hash_score = 1000 * grain;
     const int promote_score = 900 * grain;
@@ -329,70 +334,88 @@ static void order_moves(position_t* pos,
             score = killer_score;
         } else if (move == search_node->killers[1]) {
             score = killer_score-1;
-        } else if (ply >=2 && move == (search_node-1)->killers[0]) {
+        } else if (ply >=2 && move == (search_node-2)->killers[0]) {
             score = killer_score-2;
-        } else if (ply >=2 && move == (search_node-1)->killers[1]) {
+        } else if (ply >=2 && move == (search_node-2)->killers[1]) {
             score = killer_score-3;
         } else if (is_move_castle(move)) {
             score = castle_score;
         } else {
             score = root_data.history.history[history_index(move)];
         }
-        // Insert the score into the right place in the list. The list is never
-        // long enough to requre an n log n algorithm.
-        int j = i-1;
-        while (j >= 0 && scores[j] < score) {
-            scores[j+1] = scores[j];
-            moves[j+1] = moves[j];
-            --j;
-        }
-        scores[j+1] = score;
-        moves[j+1] = move;
+        move_list->scores[i] = score;
     }
 }
 
-static void order_qmoves(position_t* pos,
-        search_node_t* search_node,
-        move_t* moves,
-        int* scores,
-        move_t hash_move,
-        int ply)
+// TODO: benchmark pick_best schemes on sarcasm
+static move_t pick_move(move_list_t* move_list, bool pick_best)
 {
-    if (is_check(pos)) order_moves(pos, search_node, moves,
-            scores, hash_move, ply);
-    const int grain = MAX_HISTORY;
-    const int hash_score = 1000 * grain;
-    const int promote_score = 900 * grain;
-    const int capture_score = 700 * grain;
-    for (int i=0; moves[i] != NO_MOVE; ++i) {
-        const move_t move = moves[i];
-        int score = 0;
-        piece_type_t promote_type = get_move_promote(move);
-        if (move == hash_move) score = hash_score;
-        else if (promote_type == QUEEN && static_exchange_eval(pos, move)>=0) {
-            score = promote_score;
-        } else if (get_move_capture(move)) {
-            score = capture_score - get_move_piece_type(move);
-            square_t to = get_move_to(move);
-            if (ply > 0) {
-                square_t last_to = get_move_to((search_node-1)->pv[ply-1]);
-                if (to == last_to) score += grain;
-            }
-        } else {
-            score = 0;
+    if (!pick_best) return move_list->moves[move_list->offset++];
+    move_t move = NO_MOVE;
+    int score = INT_MIN;
+    int index = -1;
+    int offset = move_list->offset;
+
+    for (int i=offset; move_list->moves[i] != NO_MOVE; ++i) {
+        if (move_list->scores[i] > score) {
+            score = move_list->scores[i];
+            index = i;
         }
-        // Insert the score into the right place in the list. The list is never
-        // long enough to requre an n log n algorithm.
-        int j = i-1;
-        while (j >= 0 && scores[j] < score) {
-            scores[j+1] = scores[j];
-            moves[j+1] = moves[j];
-            --j;
-        }
-        scores[j+1] = score;
-        moves[j+1] = move;
     }
+    if (index != -1) {
+        move = move_list->moves[index];
+        score = move_list->scores[index];
+        move_list->moves[index] = move_list->moves[offset];
+        move_list->scores[index] = move_list->scores[offset];
+        move_list->moves[offset] = move;
+        move_list->scores[offset] = score;
+        move_list->offset++;
+    }
+    return move;
 }
+
+//static void order_qmoves(position_t* pos,
+//        search_node_t* search_node,
+//        move_t* moves,
+//        int* scores,
+//        move_t hash_move,
+//        int ply)
+//{
+//    if (is_check(pos)) order_moves(pos, search_node, moves,
+//            scores, hash_move, ply);
+//    const int grain = MAX_HISTORY;
+//    const int hash_score = 1000 * grain;
+//    const int promote_score = 900 * grain;
+//    const int capture_score = 700 * grain;
+//    for (int i=0; moves[i] != NO_MOVE; ++i) {
+//        const move_t move = moves[i];
+//        int score = 0;
+//        piece_type_t promote_type = get_move_promote(move);
+//        if (move == hash_move) score = hash_score;
+//        else if (promote_type == QUEEN && static_exchange_eval(pos, move)>=0) {
+//            score = promote_score;
+//        } else if (get_move_capture(move)) {
+//            score = capture_score - get_move_piece_type(move);
+//            square_t to = get_move_to(move);
+//            if (ply > 0) {
+//                square_t last_to = get_move_to((search_node-1)->pv[ply-1]);
+//                if (to == last_to) score += grain;
+//            }
+//        } else {
+//            score = 0;
+//        }
+//        // Insert the score into the right place in the list. The list is never
+//        // long enough to requre an n log n algorithm.
+//        int j = i-1;
+//        while (j >= 0 && scores[j] < score) {
+//            scores[j+1] = scores[j];
+//            moves[j+1] = moves[j];
+//            --j;
+//        }
+//        scores[j+1] = score;
+//        moves[j+1] = move;
+//    }
+//}
 
 /*
  * Iterative deepening search of the root position. This is the external
@@ -408,8 +431,9 @@ void deepening_search(search_data_t* search_data)
     // If |search_data| already has a list of root moves, we search only
     // those moves. Otherwise, search everything. This allows support for the
     // uci searchmoves command.
-    if (search_data->root_moves[0] == NO_MOVE) {
-        generate_legal_moves(&search_data->root_pos, search_data->root_moves);
+    if (search_data->root_move_list.moves[0] == NO_MOVE) {
+        generate_legal_moves(&search_data->root_pos,
+                search_data->root_move_list.moves);
     }
 
     int id_score = root_data.best_score = mated_in(-1);
@@ -462,26 +486,28 @@ static bool root_search(search_data_t* search_data)
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
     if (search_data->current_depth < 3) {
-        int scores[256];
         order_moves(&search_data->root_pos, search_data->search_stack,
-            search_data->root_moves, scores, hash_move, 0);
+            &search_data->root_move_list, hash_move, 0);
     } else {
         order_root_moves(search_data, hash_move);
     }
-    for (move_t* move=search_data->root_moves; *move; ++move) {
-        int move_index = move - search_data->root_moves;
+    int move_index = 0;
+    for (move_t move = pick_move(&search_data->root_move_list, true);
+            move != NO_MOVE;
+            move = pick_move(&search_data->root_move_list, true),
+            ++move_index) {
         if (should_output(search_data)) {
             char coord_move[6];
-            move_to_coord_str(*move, coord_move);
+            move_to_coord_str(move, coord_move);
             printf("info currmove %s currmovenumber %d orderscore %"PRIu64"\n",
-                coord_move, move_index, search_data->move_scores[move_index]);
+                coord_move, move_index, search_data->move_nodes[move_index]);
         }
         uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
-        do_move(pos, *move, &undo);
-        int ext = extend(pos, *move, false);
+        do_move(pos, move, &undo);
+        int ext = extend(pos, move, false);
         int score;
-        if (move == search_data->root_moves) {
+        if (move_index == 0) {
             // First move, use full window search.
             score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-1);
@@ -491,24 +517,24 @@ static bool root_search(search_data_t* search_data)
             if (score > alpha) {
                 if (should_output(search_data)) {
                     char coord_move[6];
-                    move_to_coord_str(*move, coord_move);
+                    move_to_coord_str(move, coord_move);
                     printf("info string fail high, research %s\n", coord_move);
                 }
                 score = -search(pos, search_data->search_stack,
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
-        search_data->move_scores[move_index] =
+        search_data->move_nodes[move_index] =
             search_data->nodes_searched - nodes_before;
-        undo_move(pos, *move, &undo);
+        undo_move(pos, move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
         if (score > alpha) {
             alpha = score;
             if (score > search_data->best_score) {
                 search_data->best_score = score;
-                search_data->best_move = *move;
+                search_data->best_move = move;
             }
-            update_pv(search_data->pv, search_data->search_stack->pv, 0, *move);
+            update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
             print_pv(search_data);
         }
@@ -594,6 +620,7 @@ static int search(position_t* pos,
         }
     }
 
+    // Internal iterative deepening.
     if (iid_enabled &&
             hash_move == NO_MOVE &&
             is_iid_allowed(full_window, depth)) {
@@ -605,20 +632,23 @@ static int search(position_t* pos,
         hash_move = search_node->pv[ply];
     }
 
-    move_t moves[256];
-    int scores[256];
-    bool single_reply = generate_pseudo_moves(pos, moves) == 1;
-    int num_legal_moves = 0, num_futile_moves = 0;
+    move_list_t move_list;
+    move_t searched_moves[256];
+    bool single_reply = generate_pseudo_moves(pos, move_list.moves) == 1;
+    int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
     int futility_score = mated_in(-1);
-    order_moves(pos, search_node, moves, scores, hash_move, ply);
+    order_moves(pos, search_node, &move_list, hash_move, ply);
     int move_index = 0;
-    for (move_t* move = moves; *move; ++move, ++move_index) {
-        check_pseudo_move_legality(pos, *move);
-        if (!is_pseudo_move_legal(pos, *move)) continue;
+    for (move_t move = pick_move(&move_list, true);
+            move != NO_MOVE;
+            move = pick_move(&move_list, true),
+            ++move_index) {
+        check_pseudo_move_legality(pos, move);
+        if (!is_pseudo_move_legal(pos, move)) continue;
         ++num_legal_moves;
         undo_info_t undo;
-        do_move(pos, *move, &undo);
-        int ext = extend(pos, *move, single_reply);
+        do_move(pos, move, &undo);
+        int ext = extend(pos, move, single_reply);
         if (num_legal_moves == 1) {
             // First move, use full window search.
             score = -search(pos, search_node+1, ply+1,
@@ -633,14 +663,14 @@ static int search(position_t* pos,
                 !ext &&
                 !mate_threat &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
-                !get_move_capture(*move) &&
-                !get_move_promote(*move);
+                !get_move_capture(move) &&
+                !get_move_promote(move);
             if (prune_futile) {
                 // History pruning.
                 if (history_prune_enabled && is_history_prune_allowed(
-                            &root_data.history, *move, depth)) {
+                            &root_data.history, move, depth)) {
                     num_futile_moves++;
-                    undo_move(pos, *move, &undo);
+                    undo_move(pos, move, &undo);
                     continue;
                 }
                 // Value pruning.
@@ -651,7 +681,7 @@ static int search(position_t* pos,
                     }
                     if (futility_score < beta) {
                         num_futile_moves++;
-                        undo_move(pos, *move, &undo);
+                        undo_move(pos, move, &undo);
                         continue;
                     }
                 }
@@ -666,10 +696,9 @@ static int search(position_t* pos,
                 !ext &&
                 !mate_threat &&
                 depth > LMR_DEPTH_LIMIT &&
-                get_move_promote(*move) != QUEEN &&
-                !get_move_capture(*move) &&
-                !is_move_castle(*move);// &&
-                //is_history_reduction_allowed(&root_data.history, *move);
+                get_move_promote(move) != QUEEN &&
+                !get_move_capture(move) &&
+                !is_move_castle(move);
             if (do_lmr) {
                 score = -search(pos, search_node+1, ply+1,
                         -alpha-1, -alpha, depth-LMR_REDUCTION-1);
@@ -685,28 +714,29 @@ static int search(position_t* pos,
                 }
             }
         }
-        undo_move(pos, *move, &undo);
+        searched_moves[num_searched_moves++] = move;
+        undo_move(pos, move, &undo);
         if (score > alpha) {
             alpha = score;
-            update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
+            update_pv(search_node->pv, (search_node+1)->pv, ply, move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
-                if (!get_move_capture(*move) &&
-                        !get_move_promote(*move)) {
-                    record_success(&root_data.history, *move, depth);
-                    for (int i=0; i<num_legal_moves; ++i) {
-                        move_t m = moves[i];
+                if (!get_move_capture(move) &&
+                        !get_move_promote(move)) {
+                    record_success(&root_data.history, move, depth);
+                    for (int i=0; i<num_searched_moves; ++i) {
+                        move_t m = searched_moves[i];
                         if (!get_move_capture(m) && !get_move_promote(m)) {
                             record_failure(&root_data.history, m);
                         }
                     }
-                    if (*move != search_node->killers[0]) {
+                    if (move != search_node->killers[0]) {
                         search_node->killers[1] = search_node->killers[0];
-                        search_node->killers[0] = *move;
+                        search_node->killers[0] = move;
                     }
                 }
-                put_transposition(pos, *move, depth, beta, SCORE_LOWERBOUND);
-                root_data.stats.move_selection[MIN(move-moves, HIST_BUCKETS)]++;
+                put_transposition(pos, move, depth, beta, SCORE_LOWERBOUND);
+                root_data.stats.move_selection[MIN(move_index, HIST_BUCKETS)]++;
                 search_node->pv[ply] = NO_MOVE;
                 return beta;
             }
@@ -747,10 +777,11 @@ static int quiesce(position_t* pos,
 
     int eval = full_eval(pos);
     int score = eval;
-    move_t moves[256];
-    int scores[256];
     if (ply >= MAX_SEARCH_DEPTH-1) return score;
     open_qnode(&root_data, ply);
+    move_list_t move_list;
+    move_t* moves = move_list.moves;
+    int* scores = move_list.scores;
     if (is_check(pos)) {
         int evasions = generate_evasions(pos, moves);
         if (!evasions) return mated_in(ply);
@@ -765,26 +796,27 @@ static int quiesce(position_t* pos,
         !full_window &&
         !is_check(pos) &&
         pos->num_pieces[pos->side_to_move] > 2;
-    order_moves(pos, search_node, moves, scores, NO_MOVE, ply);
+    order_moves(pos, search_node, &move_list, NO_MOVE, ply);
     int move_index = 0;
-    for (move_t* move = moves; *move; ++move, ++move_index) {
-        check_pseudo_move_legality(pos, *move);
-        if (!is_pseudo_move_legal(pos, *move)) continue;
+    for (move_t move = pick_move(&move_list, move_index<4); move != NO_MOVE;
+            move = pick_move(&move_list, move_index<4), ++move_index) {
+        check_pseudo_move_legality(pos, move);
+        if (!is_pseudo_move_legal(pos, move)) continue;
         if (!is_check(pos) &&
-                !get_move_promote(*move) &&
+                !get_move_promote(move) &&
                 scores[move_index] < MAX_HISTORY) continue;
         // TODO: prevent futility for passed pawn moves and checks
         if (allow_futility &&
-                get_move_promote(*move) != QUEEN &&
-                eval + material_value(pos->board[get_move_to(*move)]) +
+                get_move_promote(move) != QUEEN &&
+                eval + material_value(pos->board[get_move_to(move)]) +
                 qfutility_margin < alpha) continue;
         undo_info_t undo;
-        do_move(pos, *move, &undo);
+        do_move(pos, move, &undo);
         score = -quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-1);
-        undo_move(pos, *move, &undo);
+        undo_move(pos, move, &undo);
         if (score > alpha) {
             alpha = score;
-            update_pv(search_node->pv, (search_node+1)->pv, ply, *move);
+            update_pv(search_node->pv, (search_node+1)->pv, ply, move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
                 return beta;
