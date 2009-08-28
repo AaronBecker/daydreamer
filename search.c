@@ -301,8 +301,8 @@ static void order_moves(position_t* pos,
     const int hash_score = 1000 * grain;
     const int promote_score = 900 * grain;
     const int underpromote_score = -600 * grain;
-    const int killer_score = 800 * grain;
-    const int capture_score = 700 * grain;
+    const int capture_score = 800 * grain;
+    const int killer_score = 700 * grain;
     const int castle_score = 2*grain;
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
@@ -312,7 +312,7 @@ static void order_moves(position_t* pos,
         else if (promote_type == QUEEN && static_exchange_eval(pos, move)>=0) {
             score = promote_score;
         } else if (promote_type != NONE && promote_type != QUEEN) {
-            score = underpromote_score;
+            score = underpromote_score + promote_type;
         } else if (get_move_capture(move)) {
             int see = static_exchange_eval(pos, move) * grain;
             if (see >= 0) {
