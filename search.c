@@ -73,31 +73,6 @@ void init_search_data(search_data_t* data)
     data->ponder = 0;
 }
 
-static void print_search_stats(search_data_t* search_data)
-{
-    printf("info string cutoffs ");
-    for (int i=0; i<=search_data->current_depth; ++i) {
-        printf("%d ", search_data->stats.cutoffs[i]);
-    }
-    printf("\ninfo string move selection ");
-    int total_moves = 0;
-    for (int i=0; i<HIST_BUCKETS; ++i) {
-        total_moves += search_data->stats.move_selection[i];
-    }
-    for (int i=0; i<HIST_BUCKETS; ++i) {
-        printf("%.2f ", (float)search_data->stats.move_selection[i] /
-                total_moves);
-    }
-    printf("\ninfo string razoring attempts/cutoffs by depth "
-            "%d/%d %d/%d %d/%d\n",
-        search_data->stats.razor_attempts[0],
-        search_data->stats.razor_prunes[0],
-        search_data->stats.razor_attempts[1],
-        search_data->stats.razor_prunes[1],
-        search_data->stats.razor_attempts[2],
-        search_data->stats.razor_prunes[2]);
-}
-
 /*
  * Copy pv from a deeper search node, adding a new move at the current ply.
  */
