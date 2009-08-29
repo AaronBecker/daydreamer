@@ -78,16 +78,11 @@ hashkey_t hash_position(const position_t* pos);
 void mobility_score(const position_t* pos, score_t* score);
 
 // move.c
-void place_piece(position_t* position,
-        const piece_t piece,
-        const square_t square);
-void remove_piece(position_t* position,
-        const square_t square);
-void transfer_piece(position_t* position,
-        const square_t from,
-        const square_t to);
-void do_move(position_t* position, const move_t move, undo_info_t* undo);
-void undo_move(position_t* position, const move_t move, undo_info_t* undo);
+void place_piece(position_t* position, piece_t piece, square_t square);
+void remove_piece(position_t* position, square_t square);
+void transfer_piece(position_t* position, square_t from, square_t to);
+void do_move(position_t* position, move_t move, undo_info_t* undo);
+void undo_move(position_t* position, move_t move, undo_info_t* undo);
 void do_nullmove(position_t* pos, undo_info_t* undo);
 void undo_nullmove(position_t* pos, undo_info_t* undo);
 
@@ -105,6 +100,7 @@ int generate_evasions(const position_t* pos, move_t* moves);
 // output.c
 void print_coord_move(move_t move);
 int print_coord_move_list(const move_t* move);
+void print_search_stats(const search_data_t* search_data);
 void print_board(const position_t* pos, bool uci_prefix);
 void print_pv(search_data_t* search_data);
 
