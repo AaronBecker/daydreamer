@@ -13,8 +13,9 @@ programs = {
     'mediocre' : 'cmd=' + engine_prefix + \
             'mediocre_v0/mediocre.sh proto=uci',
     'clarabit' : 'cmd=' + engine_prefix + 'Clarabit_x32_win/clarabit.sh proto=uci',
-    'amundsen' : 'cmd=' + engine_prefix + 'amundsen-0.80/amundsen' + \
-            ' proto=xboard name="Amundsen 0.80"',
+    #'amundsen' : 'cmd=' + engine_prefix + 'amundsen-0.80/amundsen' + \
+    #        ' proto=xboard name="Amundsen 0.80"',
+    # illegal moves
     'bikjump' : 'cmd=' + engine_prefix + 'bikjump32/bikjump.sh proto=uci',
     'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
     'greko' : 'cmd=' + engine_prefix + 'greko-6.5/bin/greko proto=uci name=greko',
@@ -22,7 +23,13 @@ programs = {
             ' proto=xboard name=Vicki',
     'plisk' : 'cmd=' + engine_prefix + 'plisk_0-1/plisk_osx proto=uci',
     'biglion' : 'cmd=' + engine_prefix + 'BigLion_223x/biglion.sh proto=uci',
-    'sungorus' : 'cmd=' + engine_prefix + 'sungorus-1.2/sungorus proto=uci'
+    'sungorus' : 'cmd=' + engine_prefix + 'sungorus-1.2/sungorus proto=uci',
+    'diablo' : 'cmd=' + engine_prefix + 'diablo/diablo proto=uci',
+    'dirty' : 'cmd=' + engine_prefix + 'dirty_acca3/dirty.sh proto=xboard name=Dirty',
+    #'amateur' : 'cmd=' + engine_prefix + 'amateur282/amateur.sh ' + \
+    #        'proto=xboard name=Amateur',
+    # illegal moves
+    'romichess' : 'cmd=' + engine_prefix + 'romichess_P3k/romichess.sh proto=xboard name=Romichess',
     #'gnuchess' : 'cmd=gnuchess' + ' proto=xboard' + ' name=gnuchess',
     }
 
