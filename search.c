@@ -17,6 +17,7 @@ static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
     100
 //    100, 200
+//    100, 200, 350
 //    90, 190, 250, 330, 400
 };
 static const int qfutility_margin = 80;
@@ -569,6 +570,7 @@ static int search(position_t* pos,
             !full_window &&
             pos->prev_move != NULL_MOVE &&
             lazy_score + NULL_EVAL_MARGIN > beta &&
+            !is_mate_score(beta) &&
             is_nullmove_allowed(pos)) {
         undo_info_t undo;
         do_nullmove(pos, &undo);
@@ -617,10 +619,10 @@ static int search(position_t* pos,
     move_t searched_moves[256];
     bool single_reply = generate_pseudo_moves(pos, move_list.moves) == 1;
     int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
-    int futility_score = mated_in(-1);
-    order_moves(pos, search_node, &move_list, hash_move, ply);
-    int move_index = 0;
     int ordered_moves = full_window ? 256 : 16;
+    int futility_score = mated_in(-1);
+    int move_index = 0;
+    order_moves(pos, search_node, &move_list, hash_move, ply);
     for (move_t move = pick_move(&move_list, move_index<ordered_moves);
             move != NO_MOVE;
             move = pick_move(&move_list, move_index<ordered_moves),

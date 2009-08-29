@@ -92,7 +92,7 @@ typedef struct {
 #define DRAW_VALUE      0
 // TODO: replace parameters with options.
 #define NULL_R          3
-#define NULLMOVE_VERIFICATION_REDUCTION    4
+#define NULLMOVE_VERIFICATION_REDUCTION    5
 #define NULL_EVAL_MARGIN            200
 //#define RAZOR_DEPTH_LIMIT           3
 #define RAZOR_DEPTH_LIMIT           2
