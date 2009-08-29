@@ -108,6 +108,9 @@ int print_coord_move_list(const move_t* move);
 void print_board(const position_t* pos, bool uci_prefix);
 void print_pv(search_data_t* search_data);
 
+// pattern.c
+void pattern_score(const position_t* pos, score_t* score);
+
 // pawn.c
 void init_pawn_table(const int max_bytes);
 void clear_pawn_table(void);

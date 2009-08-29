@@ -66,8 +66,8 @@ int full_eval(const position_t* pos)
     score_t phase_score;
     phase_score.endgame = phase_score.midgame = 0;
     pawn_score(pos, &phase_score);
-    // It's not worth computing mobility if we're way ahead or behind.
-    if (abs(score) < 2.5 * PAWN_VAL) mobility_score(pos, &phase_score);
+    pattern_score(pos, &phase_score);
+    mobility_score(pos, &phase_score);
     float phase = game_phase(pos);
     score += phase*phase_score.midgame + (1-phase)*phase_score.endgame;
 #endif

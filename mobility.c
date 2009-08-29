@@ -1,28 +1,30 @@
 
 #include "daydreamer.h"
 
-int base_mobility_score[2][8] = {
+static const int mobility_weight = 1;
+
+static const int base_mobility_score[2][8] = {
     {0, 0, -4, -6, -7, -13, 0}, //midgame
     {0, 0, -4, -6, -7, -13, 0}, //endgame
 };
 
-int mobility_multiplier[2][8] = {
+static const int mobility_multiplier[2][8] = {
     {0, 0, 4, 5, 2, 1, 0}, // midgame
     {0, 0, 4, 5, 4, 2, 0}, // endgame
 };
 
-int color_table[2][17] = {
+static const int color_table[2][17] = {
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0}, // white
     {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // black
 };
 
-int low_mobility_threshold[8] = {0, 0, 1, 3, 3, 5, 0};
-int low_mobility_penalty[8] = {0, 0, 4, 8, 4, 12, 0};
+static const int low_mobility_threshold[8] = {0, 0, 1, 3, 3, 4, 0};
+static const int low_mobility_penalty[8] = {0, 0, 4, 6, 6, 12, 0};
 
 void mobility_score(const position_t* pos, score_t* score)
 {
     for (color_t side=WHITE; side<=BLACK; ++side) {
-        int* mobile = color_table[side];
+        const int* mobile = color_table[side];
         square_t from, to;
         piece_t piece;
         for (square_t* pfrom = &((position_t*)pos)->pieces[side][1];
@@ -83,13 +85,13 @@ void mobility_score(const position_t* pos, score_t* score)
                 default:
                     break;
             }
-            //if (ps <= low_mobility_threshold[type]) {
-            //    ps -= low_mobility_penalty[type];
-            //}
-            score->midgame += (base_mobility_score[0][type] +
+            if (ps <= low_mobility_threshold[type]) {
+                ps -= low_mobility_penalty[type];
+            }
+            score->midgame += mobility_weight * (base_mobility_score[0][type] +
                     ps*mobility_multiplier[0][type]) *
                 (side == pos->side_to_move ? 1 : -1);
-            score->endgame += (base_mobility_score[1][type] +
+            score->endgame += mobility_weight * (base_mobility_score[1][type] +
                     ps*mobility_multiplier[1][type]) *
                 (side == pos->side_to_move ? 1 : -1);
         }
