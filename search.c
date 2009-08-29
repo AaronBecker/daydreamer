@@ -158,7 +158,7 @@ static bool should_stop_searching(search_data_t* data)
  * and pawn pushes to the 7th (relative) rank.
  * Note: |move| has already been made in |pos|. We need both anyway for
  * efficiency.
- * TODO: recapture extensions would be good. Also, fractional extensions,
+ * TODO: recapture extensions might be good. Also, fractional extensions,
  * and fractional plies in general.
  */
 static int extend(position_t* pos, move_t move, bool single_reply)
@@ -231,8 +231,7 @@ static bool is_history_reduction_allowed(history_t* h, move_t move)
 }
 
 /*
- * Can we do internal iterative deepening? Controlled by search
- * parameters.
+ * Can we do internal iterative deepening?
  */
 static bool is_iid_allowed(bool full_window, int depth)
 {
@@ -266,6 +265,11 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
     return alpha >= beta;
 }
 
+/*
+ * Order moves at the root based on total nodes searched under that move.
+ * This is kind of an ugly implementation, due to the way that |pick_move|
+ * works, combined with the fact that node counts might overflow an int.
+ */
 static void order_root_moves(search_data_t* root_data, move_t hash_move)
 {
     move_t* moves = root_data->root_move_list.moves;
@@ -290,9 +294,12 @@ static void order_root_moves(search_data_t* root_data, move_t hash_move)
 }
 
 /*
- * Take an unordered list of pseudo-legal moves and order them according
+ * Take an unordered list of pseudo-legal moves and score them according
  * to how good we think they'll be. This just identifies a few key classes
- * of moves and insertion sorts them into place.
+ * of moves and applies scores appropriately. Moves are then selected
+ * by |pick_move|.
+ * TODO: try ordering captures by mvv/lva, then categorizing
+ * by see when they're searched
  */
 static void order_moves(position_t* pos,
         search_node_t* search_node,
@@ -347,7 +354,6 @@ static void order_moves(position_t* pos,
     }
 }
 
-// TODO: benchmark pick_best schemes on sarcasm
 static move_t pick_move(move_list_t* move_list, bool pick_best)
 {
     if (!pick_best) return move_list->moves[move_list->offset++];
@@ -476,7 +482,7 @@ void deepening_search(search_data_t* search_data)
 /*
  * Perform search at the root position. |search_data| contains all relevant
  * search information, which is set in |deepening_search|.
- * TODO: use an aspiration window.
+ * TODO: aspiration window?
  */
 static bool root_search(search_data_t* search_data)
 {
