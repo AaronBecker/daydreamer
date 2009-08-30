@@ -8,7 +8,7 @@
 extern const char glyphs[];
 
 /*
- * Print the long algebraic form of |move| to stdout.
+ * Print the coordinate form of |move| to stdout.
  */
 void print_coord_move(move_t move)
 {
@@ -29,6 +29,16 @@ int print_coord_move_list(const move_t* move)
         ++moves;
     }
     return moves;
+}
+
+/*
+ * Print a coordinate square to stdout.
+ */
+void print_coord_square(square_t square)
+{
+    static char square_str[2];
+    square_to_coord_str(square, square_str);
+    printf("%s ", square_str);
 }
 
 /*

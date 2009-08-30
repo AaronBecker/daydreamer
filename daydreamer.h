@@ -15,13 +15,14 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.4"
-#define ENGINE_VERSION_NAME     " null"
+#define ENGINE_VERSION_NAME     " ak2"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
 #include "move.h"
 #include "hash.h"
 #include "position.h"
+#include "attack.h"
 #include "eval.h"
 #include "timer.h"
 #include "search.h"
@@ -39,6 +40,15 @@ extern "C" {
 /*
  * External function interface
  */
+
+// attack.c
+void generate_attack_data(void);
+direction_t pin_direction(const position_t* pos,
+        square_t from,
+        square_t king_sq);
+bool is_square_attacked(const position_t* pos, square_t square, color_t side);
+bool piece_attacks_near(const position_t* pos, square_t from, square_t target);
+uint8_t find_checks(position_t* pos);
 
 // benchmark.c
 void benchmark(int depth, int time_limit);
@@ -97,8 +107,18 @@ int generate_quiescence_moves(const position_t* pos,
         bool generate_checks);
 int generate_evasions(const position_t* pos, move_t* moves);
 
+// move_selection.c
+void order_root_moves(search_data_t* root_data, move_t hash_move);
+void order_moves(position_t* pos,
+        search_node_t* search_node,
+        move_list_t* move_list,
+        move_t hash_move,
+        int ply);
+move_t pick_move(move_list_t* move_list, bool pick_best);
+
 // output.c
 void print_coord_move(move_t move);
+void print_coord_square(square_t square);
 int print_coord_move_list(const move_t* move);
 void print_search_stats(const search_data_t* search_data);
 void print_board(const position_t* pos, bool uci_prefix);
@@ -120,11 +140,6 @@ uint64_t perft(position_t* position, int depth, bool divide);
 // position.c
 char* set_position(position_t* pos, const char* fen);
 void copy_position(position_t* dst, const position_t* src);
-direction_t pin_direction(const position_t* pos,
-        square_t from,
-        square_t king_sq);
-bool is_square_attacked(const position_t* pos, square_t square, color_t side);
-uint8_t find_checks(position_t* pos);
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_pseudo_move_legal(position_t* pos, move_t move);
 bool is_check(const position_t* pos);

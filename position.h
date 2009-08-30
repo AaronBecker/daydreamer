@@ -138,29 +138,8 @@ extern const direction_t piece_deltas[17][16];
 extern const direction_t pawn_push[];
 extern const rank_t relative_pawn_rank[2][8];
 
-typedef enum {
-    NONE_FLAG=0, WP_FLAG=1<<0, BP_FLAG=1<<1, N_FLAG=1<<2,
-    B_FLAG=1<<3, R_FLAG=1<<4, Q_FLAG=1<<5, K_FLAG=1<<6
-} piece_flag_tag_t;
-typedef int piece_flag_t;
-extern const piece_flag_t piece_flags[];
-#define get_piece_flag(piece)       piece_flags[(piece)]
-
-typedef struct {
-    piece_flag_t possible_attackers;
-    direction_t relative_direction;
-} attack_data_t;
-// An array indexed from -128 to 128 which stores attack data for every pair
-// of squares (to, from) at the index [from-to].
-extern const attack_data_t* board_attack_data;
-#define get_attack_data(from, to)   board_attack_data[(from)-(to)]
-#define direction(from, to) \
-    get_attack_data((from),(to)).relative_direction
-#define possible_attack(from, to, piece) \
-    ((get_attack_data((from),(to)).possible_attackers & \
-     piece_flags[(piece)]) != 0)
-
 #ifdef __cplusplus
 } // extern "C"
 #endif
 #endif // POSITION_H
+

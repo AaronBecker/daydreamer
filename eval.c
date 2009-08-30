@@ -23,6 +23,77 @@ void init_eval(void)
     }
 }
 
+const int shield_value[2][17] = {
+    { 0, 4, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 2, 0, 0, 0, 0, 0 },
+};
+
+const int king_attack_score[16] = {
+    0, 5, 20, 20, 40, 80, 0, 0, 0, 5, 20, 20, 40, 80, 0, 0
+};
+// note: 1024 is 100%
+const int multiple_king_attack_scale[16] = {
+    0, 128, 512, 640, 896, 960, 1024, 1024,
+    1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024
+};
+
+static int king_shield_score(const position_t* pos, color_t side, square_t king)
+{
+    int s = 0;
+    int push = pawn_push[side];
+    s += shield_value[side][pos->board[king-1]];
+    s += shield_value[side][pos->board[king+1]];
+    s += shield_value[side][pos->board[king+push-1]];
+    s += shield_value[side][pos->board[king+push]];
+    s += shield_value[side][pos->board[king+push+1]];
+    s += shield_value[side][pos->board[king+2*push-1]] / 2;
+    s += shield_value[side][pos->board[king+2*push]] / 2;
+    s += shield_value[side][pos->board[king+2*push+1]] / 2;
+    return s;
+}
+
+static void evaluate_king_shield(const position_t* pos, score_t* phase_score)
+{
+    int score[2] = {0, 0};
+    for (color_t side = WHITE; side <= BLACK; ++side) {
+        square_t king = pos->pieces[side][0];
+        int current_shield = king_shield_score(pos, side, king);
+        int castle_shield = has_ooo_rights(pos, side) ?
+            king_shield_score(pos, side, C1+side*A8) / 2 :
+            INT_MIN;
+        castle_shield = MAX(castle_shield,
+                has_oo_rights(pos, side) ?
+                king_shield_score(pos, side, G1+side*A8) / 2 :
+                INT_MIN);
+        if (castle_shield == INT_MIN) castle_shield = 0;
+        score[side] = current_shield + castle_shield;
+    }
+    color_t side = pos->side_to_move;
+    phase_score->midgame += score[side]-score[side^1];
+    phase_score->endgame += score[side]-score[side^1];
+}
+
+static void evaluate_king_attackers(const position_t* pos, score_t* phase_score)
+{
+    int score[2] = {0, 0};
+    for (color_t side = WHITE; side <= BLACK; ++side) {
+        const square_t opp_king = pos->pieces[side^1][0];
+        int num_attackers = 0;
+        for (int i=1; i<pos->num_pieces[side]; ++i) {
+            const square_t attacker = pos->pieces[side][i];
+            if (piece_attacks_near(pos, attacker, opp_king)) {
+                score[side] += king_attack_score[pos->board[attacker]];
+                num_attackers++;
+            }
+        }
+        score[side] = score[side] * multiple_king_attack_scale[num_attackers]
+            / 1024;
+    }
+    color_t side = pos->side_to_move;
+    phase_score->midgame += score[side]-score[side^1];
+    phase_score->endgame += score[side]-score[side^1];
+}
+
 /*
  * Perform a simple position evaluation based just on material and piece
  * square bonuses.
@@ -68,6 +139,8 @@ int full_eval(const position_t* pos)
     pawn_score(pos, &phase_score);
     pattern_score(pos, &phase_score);
     mobility_score(pos, &phase_score);
+    evaluate_king_shield(pos, &phase_score);
+    evaluate_king_attackers(pos, &phase_score);
     float phase = game_phase(pos);
     score += phase*phase_score.midgame + (1-phase)*phase_score.endgame;
 #endif
@@ -118,12 +191,19 @@ void report_eval(const position_t* pos)
     if (side == BLACK) material_adjust *= -1;
     printf("info string mat_adj total: %d\n", material_adjust);
 
+    score_t king_score;
+    king_score.endgame = king_score.midgame = 0;
+    evaluate_king_attackers(pos, &king_score);
+    printf("info string king attackers: %d\n", king_score.midgame);
+    king_score.endgame = king_score.midgame = 0;
+    evaluate_king_shield(pos, &king_score);
+    printf("info string king shield: %d\n", king_score.midgame);
+
     score_t phase_score;
     phase_score.endgame = phase_score.midgame = 0;
     pawn_score(pos, &phase_score);
     printf("info string pawns (mid,end): (%d, %d)\n",
             phase_score.midgame, phase_score.endgame); 
-    // It's not worth computing mobility if we're way ahead or behind.
     score_t mob_score;
     mob_score.endgame = mob_score.midgame = 0;
     mobility_score(pos, &mob_score);
