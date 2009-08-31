@@ -11,16 +11,15 @@ typedef enum {
 } generation_t;
 
 typedef enum {
-    PHASE_ROOT, PHASE_TRANS, PHASE_KILLERS, PHASE_GOOD_CAPS,
-    PHASE_CHECKS, PHASE_BAD_CAPS, PHASE_QUIET, PHASE_PROMOTES,
-    PHASE_UNDERPROMOTES, PHASE_CASTLES, PHASE_EVASIONS, PHASE_END
+    PHASE_ROOT, PHASE_TRANS, PHASE_GOOD_TACTICS,
+    PHASE_CHECKS, PHASE_BAD_TACTICS, PHASE_QUIET,
+    PHASE_EVASIONS, PHASE_END
 } phase_t;
 
 typedef struct {
     move_t moves[256];
     int scores[256];
-    move_t bad_captures[256];
-    int bad_scores[256];
+    move_t bad_tactics[256];
     int moves_end;
     int bad_end;
     int current_move_index;
@@ -29,6 +28,7 @@ typedef struct {
     generation_t generator;
     move_t hash_move;
     move_t killers[5];
+    int moves_so_far;
     int depth;
     position_t* pos;
 } move_selector_t;

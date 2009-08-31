@@ -22,13 +22,15 @@ static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
 };
 static const int qfutility_margin = 80;
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
+    150
 //    400
-    400, 300
+//    400, 300
 //    500, 300, 300
 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
+    50
 //    150
-    150, 300
+//    150, 300
 //    150, 300, 300
 };
 
@@ -54,7 +56,8 @@ static int quiesce(position_t* pos,
 void init_search_data(search_data_t* data)
 {
     memset(&data->stats, 0, sizeof(search_stats_t));
-    memset(&data->root_move_list, 0, sizeof(move_list_t));
+    memset(&data->moves, 0, sizeof(move_t) * 256);
+    memset(&data->move_nodes, 0, sizeof(uint64_t) * 256);
     data->best_move = NO_MOVE;
     data->best_score = 0;
     memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
@@ -255,9 +258,8 @@ void deepening_search(search_data_t* search_data)
     // If |search_data| already has a list of root moves, we search only
     // those moves. Otherwise, search everything. This allows support for the
     // uci searchmoves command.
-    if (search_data->root_move_list.moves[0] == NO_MOVE) {
-        generate_legal_moves(&search_data->root_pos,
-                search_data->root_move_list.moves);
+    if (search_data->moves[0] == NO_MOVE) {
+        generate_legal_moves(&search_data->root_pos, search_data->moves);
     }
 
     int id_score = root_data.best_score = mated_in(-1);
@@ -309,22 +311,18 @@ static bool root_search(search_data_t* search_data)
     position_t* pos = &search_data->root_pos;
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
-    if (search_data->current_depth < 3) {
-        order_moves(&search_data->root_pos, search_data->search_stack,
-            &search_data->root_move_list, hash_move, 0);
-    } else {
-        order_root_moves(search_data, hash_move);
-    }
+
+    move_selector_t selector;
+    init_move_selector(&selector, pos, ROOT_GENERATION,
+            NULL, hash_move, search_data->current_depth, 0);
     int move_index = 0;
-    for (move_t move = pick_move(&search_data->root_move_list, true);
-            move != NO_MOVE;
-            move = pick_move(&search_data->root_move_list, true),
-            ++move_index) {
+    for (move_t move = select_move(&selector); move != NO_MOVE;
+            move = select_move(&selector), ++move_index) {
         if (should_output(search_data)) {
             char coord_move[6];
             move_to_coord_str(move, coord_move);
-            printf("info currmove %s currmovenumber %d orderscore %"PRIu64"\n",
-                coord_move, move_index, search_data->move_nodes[move_index]);
+            printf("info currmove %s currmovenumber %d score %"PRIu64"\n",
+                    coord_move, move_index, get_root_node_count(move));
         }
         uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
@@ -348,8 +346,7 @@ static bool root_search(search_data_t* search_data)
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
-        search_data->move_nodes[move_index] =
-            search_data->nodes_searched - nodes_before;
+        store_root_node_count(move, search_data->nodes_searched-nodes_before);
         undo_move(pos, move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
         if (score > alpha) {
@@ -457,25 +454,14 @@ static int search(position_t* pos,
         hash_move = search_node->pv[ply];
     }
 
-    //move_list_t move_list;
     move_t searched_moves[256];
-    //bool single_reply = generate_pseudo_moves(pos, move_list.moves) == 1;
-    int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
-    //int ordered_moves = full_window ? 256 : 16;
-    int futility_score = mated_in(-1);
-    //int move_index = 0;
-    //order_moves(pos, search_node, &move_list, hash_move, ply);
     move_selector_t selector;
     generation_t gen_type = full_window ? PV_GENERATION : NORMAL_GENERATION;
     init_move_selector(&selector, pos, gen_type,
             search_node, hash_move, depth, ply);
     bool single_reply = has_single_reply(&selector);
-//    for (move_t move = pick_move(&move_list, move_index<ordered_moves);
-//            move != NO_MOVE;
-//            move = pick_move(&move_list, move_index<ordered_moves),
-//            ++move_index) {
-//        check_pseudo_move_legality(pos, move);
-//        if (!is_pseudo_move_legal(pos, move)) continue;
+    int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
+    int futility_score = mated_in(-1);
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector), ++num_legal_moves) {
         undo_info_t undo;
@@ -617,19 +603,6 @@ static int quiesce(position_t* pos,
         if (alpha >= beta) return beta;
     }
 
-
-    //move_list_t move_list;
-    //move_t* moves = move_list.moves;
-    //int* scores = move_list.scores;
-    //if (is_check(pos)) {
-    //    int evasions = generate_evasions(pos, moves);
-    //    if (!evasions) return mated_in(ply);
-    //} else {
-    //    if (alpha < score) alpha = score;
-    //    if (alpha >= beta) return beta;
-    //    if (!generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
-    //}
-    
     bool full_window = (beta-alpha > 1);
     bool allow_futility = qfutility_enabled &&
         !full_window &&
@@ -642,15 +615,6 @@ static int quiesce(position_t* pos,
         QUIESCENT_GENERATION;
     init_move_selector(&selector, pos, gen_type,
             search_node, NO_MOVE, depth, ply);
-    //order_moves(pos, search_node, &move_list, NO_MOVE, ply);
-    //int move_index = 0;
-    //for (move_t move = pick_move(&move_list, move_index<4); move != NO_MOVE;
-    //        move = pick_move(&move_list, move_index<4), ++move_index) {
-    //    check_pseudo_move_legality(pos, move);
-    //    if (!is_pseudo_move_legal(pos, move)) continue;
-    //    if (!is_check(pos) &&
-    //            !get_move_promote(move) &&
-    //            scores[move_index] < MAX_HISTORY) continue;
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector), ++num_qmoves) {
         // TODO: prevent futility for passed pawn moves and checks

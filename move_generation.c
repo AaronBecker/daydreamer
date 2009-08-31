@@ -1,12 +1,7 @@
 
 #include "daydreamer.h"
 
-static int generate_queen_promotions(const position_t* pos, move_t* moves);
 static void generate_pawn_captures(const position_t* pos,
-        square_t from,
-        piece_t piece,
-        move_t** moves);
-static void generate_pawn_noncaptures(const position_t* pos,
         square_t from,
         piece_t piece,
         move_t** moves);
@@ -19,7 +14,11 @@ static void generate_piece_noncaptures(const position_t* pos,
         piece_t piece,
         move_t** moves);
 static int generate_promotions(const position_t* pos, move_t* moves);
-
+static void generate_pawn_quiet_moves(const position_t* pos,
+        square_t from,
+        piece_t piece,
+        move_t** moves_head);
+static int generate_pseudo_captures(const position_t* pos, move_t* moves);
 
 /*
  * Push a new move onto a stack of moves, first doing some sanity checks.
@@ -57,10 +56,10 @@ int generate_legal_moves(position_t* pos, move_t* moves)
 
 int generate_pseudo_tactical_moves(const position_t* pos, move_t* moves)
 {
-}
-
-int generate_pseudo_nontactical_moves(const position_t* pos, move_t* moves)
-{
+    move_t* moves_head = moves;
+    moves += generate_promotions(pos, moves);
+    moves += generate_pseudo_captures(pos, moves);
+    return moves - moves_head;
 }
 
 /*
@@ -72,33 +71,15 @@ int generate_pseudo_moves(const position_t* pos, move_t* moves)
 {
     if (is_check(pos)) return generate_evasions(pos, moves);
     move_t* moves_head = moves;
-    moves += generate_pseudo_captures(pos, moves);
-    moves += generate_pseudo_noncaptures(pos, moves);
+    moves += generate_pseudo_tactical_moves(pos, moves);
+    moves += generate_pseudo_quiet_moves(pos, moves);
     return moves-moves_head;
 }
-
-/*
- * Generate all pseudolegal moves that should be considered during quiescence
- * search. Currently this is just captures and promotions to queen.
- */
-int generate_quiescence_moves(const position_t* pos,
-        move_t* moves,
-        bool generate_checks)
-{
-    if (is_check(pos)) return generate_evasions(pos, moves);
-    move_t* moves_head = moves;
-    moves += generate_queen_promotions(pos, moves);
-    moves += generate_pseudo_captures(pos, moves);
-    if (generate_checks) moves += generate_pseudo_checks(pos, moves);
-    return moves-moves_head;
-}
-
-
 
 /*
  * Fill the provided list with all pseudolegal captures in the given position.
  */
-int generate_pseudo_captures(const position_t* pos, move_t* moves)
+static int generate_pseudo_captures(const position_t* pos, move_t* moves)
 {
     move_t* moves_head = moves;
     color_t side = pos->side_to_move;
@@ -118,28 +99,12 @@ int generate_pseudo_captures(const position_t* pos, move_t* moves)
     return moves-moves_head;
 }
 
-/*
- * Fill the provided list with all pseudolegal non-capturing moves in the given
- * position.
- */
-int generate_pseudo_noncaptures(const position_t* pos, move_t* moves)
+int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves)
 {
     move_t* moves_head = moves;
     color_t side = pos->side_to_move;
     piece_t piece;
     square_t from;
-    for (int i = 0; i < pos->num_pieces[side]; ++i) {
-        from = pos->pieces[side][i];
-        piece = pos->board[from];
-        assert(piece_color(piece) == side && piece_type(piece) != PAWN);
-        generate_piece_noncaptures(pos, from, piece, &moves);
-    }
-    piece = create_piece(side, PAWN);
-    for (int i=0; i<pos->num_pawns[side]; ++i) {
-        from = pos->pawns[side][i];
-        assert(pos->board[from] == piece);
-        generate_pawn_noncaptures(pos, from, piece, &moves);
-    }
 
     // Castling. Castles are considered pseudo-legal if we have appropriate
     // castling rights, the squares between king and rook are unoccupied,
@@ -166,28 +131,20 @@ int generate_pseudo_noncaptures(const position_t* pos, move_t* moves)
                     create_piece(side, KING)),
                 moves);
     }
-    *moves = 0;
-    return (moves-moves_head);
-}
 
-/*
- * Add all pseudo-legal non-capturing promotions to queen.
- */
-static int generate_queen_promotions(const position_t* pos, move_t* moves)
-{
-    move_t* moves_head = moves;
-    color_t side = pos->side_to_move;
-    piece_t piece = create_piece(side, PAWN);
-    for (int i = 0; i < pos->num_pawns[side]; ++i) {
-        square_t from = pos->pawns[side][i];
-        rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
-        if (relative_rank < RANK_7) continue;
-        square_t to = from + pawn_push[side];
-        if (pos->board[to]) continue;
-        moves = add_move(pos,
-                create_move_promote(from, to, piece, EMPTY, QUEEN),
-                moves);
+    for (int i = 0; i < pos->num_pieces[side]; ++i) {
+        from = pos->pieces[side][i];
+        piece = pos->board[from];
+        assert(piece_color(piece) == side && piece_type(piece) != PAWN);
+        generate_piece_noncaptures(pos, from, piece, &moves);
     }
+    piece = create_piece(side, PAWN);
+    for (int i=0; i<pos->num_pawns[side]; ++i) {
+        from = pos->pawns[side][i];
+        assert(pos->board[from] == piece);
+        generate_pawn_quiet_moves(pos, from, piece, &moves);
+    }
+
     *moves = 0;
     return (moves-moves_head);
 }
@@ -573,10 +530,7 @@ static void generate_pawn_captures(const position_t* pos,
     *moves_head = moves;
 }
 
-/*
- * Add all pseudo-legal non-capturing moves that the given pawn can make.
- */
-static void generate_pawn_noncaptures(const position_t* pos,
+static void generate_pawn_quiet_moves(const position_t* pos,
         square_t from,
         piece_t piece,
         move_t** moves_head)
@@ -585,26 +539,15 @@ static void generate_pawn_noncaptures(const position_t* pos,
     square_t to;
     rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
     move_t* moves = *moves_head;
-    if (relative_rank < RANK_7) {
-        // non-promotions
-        to = from + pawn_push[side];
-        if (pos->board[to] != EMPTY) return;
-        moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
-        to += pawn_push[side];
-        if (relative_rank == RANK_2 && pos->board[to] == EMPTY) {
-            // initial two-square push
-            moves = add_move(pos,
-                    create_move(from, to, piece, EMPTY),
-                    moves);
-        }
-    } else {
-        // promotions
-        to = from + pawn_push[side];
-        if (pos->board[to] != EMPTY) return;
-        for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
-            moves = add_move(pos, create_move_promote(from, to, piece,
-                        EMPTY, promoted), moves);
-        }
+    to = from + pawn_push[side];
+    if (relative_rank == RANK_7 || pos->board[to] != EMPTY) return;
+    moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
+    to += pawn_push[side];
+    if (relative_rank == RANK_2 && pos->board[to] == EMPTY) {
+        // initial two-square push
+        moves = add_move(pos,
+                create_move(from, to, piece, EMPTY),
+                moves);
     }
     *moves_head = moves;
 }

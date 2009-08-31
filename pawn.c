@@ -181,6 +181,7 @@ void pawn_score(const position_t* pos, score_t* score)
 {
     pawn_data_t* pd = analyze_pawns(pos);
     color_t side = pos->side_to_move;
+    assert(abs(pd->score[WHITE]<2000) && abs(pd->score[BLACK]<2000));
     score->midgame += pd->score[side] - pd->score[side^1];
     score->endgame += pd->endgame_score[side] - pd->endgame_score[side^1];
 }

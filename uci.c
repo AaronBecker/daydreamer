@@ -106,7 +106,7 @@ static void uci_go(char* command)
             if (!is_move_legal(&root_data.root_pos, move)) {
                 printf("%s is not a legal move\n", info);
             }
-            root_data.root_move_list.moves[move_index++] = move;
+            root_data.moves[move_index++] = move;
             while (*info && !isspace(*info)) ++info;
             while (isspace(*info)) ++info;
         }
