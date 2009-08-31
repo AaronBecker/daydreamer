@@ -28,6 +28,7 @@ extern "C" {
 #include "search.h"
 #include "trans_table.h"
 #include "pawn.h"
+#include "move_selection.h"
 #include "debug.h"
 
 #ifndef MIN
@@ -106,6 +107,7 @@ int generate_quiescence_moves(const position_t* pos,
         move_t* moves,
         bool generate_checks);
 int generate_evasions(const position_t* pos, move_t* moves);
+int generate_pseudo_checks(const position_t* pos, move_t* moves);
 
 // move_selection.c
 void order_root_moves(search_data_t* root_data, move_t hash_move);

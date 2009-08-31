@@ -18,7 +18,6 @@ static void generate_piece_noncaptures(const position_t* pos,
         square_t from,
         piece_t piece,
         move_t** moves);
-static int generate_pseudo_checks(const position_t* pos, move_t* moves);
 
 
 /*
@@ -396,7 +395,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
  * Generate all non-capturing, non-promoting, pseudo-legal checks. Used for
  * quiescent move generation.
  */
-static int generate_pseudo_checks(const position_t* pos, move_t* moves)
+int generate_pseudo_checks(const position_t* pos, move_t* moves)
 {
     move_t* moves_head = moves;
     color_t side = pos->side_to_move, other_side = side^1;
