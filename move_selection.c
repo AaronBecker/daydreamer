@@ -8,62 +8,37 @@ static const int ordered_pv_moves = 256;
 static const int ordered_nonpv_moves = 16;
 static const int ordered_quiescent_moves = 4;
 
+//typedef enum {
+//    ROOT_GENERATION, PV_GENERATION, NORMAL_GENERATION,
+//    ESCAPE_GENERATION, QUIESCENT_GENERATION, QUIESCENT_D0_GENERATION
+//} generation_t;
 
-//typedef int (*gen_fn)(const position_t*, move_t*);
-
-/*
-int generate_pseudo_moves(const position_t* position, move_t* move_list);
-int generate_pseudo_captures(const position_t* position, move_t* move_list);
-int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);
-int generate_quiescence_moves(const position_t* pos,
-        move_t* moves,
-        bool generate_checks);
-int generate_evasions(const position_t* pos, move_t* moves);
-*/
-/*
-typedef enum {
-    ROOT_GENERATION, PV_GENERATION, NORMAL_GENERATION,
-    ESCAPE_GENERATION, QUIESCENT_GENERATION, QUIESCENT_D0_GENERATION
-} generation_t;
-*/
-
+// TODO: separate phase for killers, with separate legality verification
+// TODO: queen promotions in qsearch
 phase_t phase_list[6][8] = {
     {PHASE_TRANS, PHASE_ROOT, PHASE_END},
-    {PHASE_TRANS, PHASE_GOOD_CAPS, PHASE_KILLERS,
+//    {PHASE_TRANS, PHASE_GOOD_CAPS, PHASE_KILLERS,
+//        PHASE_QUIET, PHASE_BAD_CAPS, PHASE_END}, 
+    {PHASE_TRANS, PHASE_GOOD_CAPS,
         PHASE_QUIET, PHASE_BAD_CAPS, PHASE_END}, 
-    {PHASE_TRANS, PHASE_GOOD_CAPS, PHASE_KILLERS,
+//    {PHASE_TRANS, PHASE_GOOD_CAPS, PHASE_KILLERS,
+//        PHASE_QUIET, PHASE_BAD_CAPS, PHASE_END}, 
+    {PHASE_TRANS, PHASE_GOOD_CAPS,
         PHASE_QUIET, PHASE_BAD_CAPS, PHASE_END}, 
-    {PHASE_EVASIONS, PHASE_END},
+    {PHASE_TRANS, PHASE_EVASIONS, PHASE_END},
     {PHASE_GOOD_CAPS, PHASE_END},
-    {PHASE_GOOD_CAPS, PHASE_CHECKS, PHASE_END}
+    {PHASE_CHECKS, PHASE_GOOD_CAPS, PHASE_END}
     //TODO: compare to 
-    //{PHASE_CHECKS, PHASE_GOOD_CAPS, PHASE_END}
+    //{PHASE_GOOD_CAPS, PHASE_CHECKS, PHASE_END}
 };
-
-/*
-typedef struct {
-    move_t moves[256];
-    int scores[256];
-    move_t bad_captures[256];
-    int bad_scores[256];
-    int move_end;
-    int current_move_index;
-    int phase_index;
-    phase_t phase;
-    generation_t generator;
-    move_t hash_move;
-    move_t killers[4];
-    int depth;
-    position_t* pos;
-} move_selector_t;
-*/
 
 static bool generate_moves(move_selector_t* sel);
 static void sort_moves(move_selector_t* sel);
 static void sort_captures(move_selector_t* sel);
+static bool is_killer_plausible(position_t* pos, move_t killer);
 
-void init_move_selector(position_t* pos,
-        move_selector_t* sel,
+void init_move_selector(move_selector_t* sel,
+        position_t* pos,
         generation_t gen_type,
         search_node_t* search_node,
         move_t hash_move,
@@ -75,38 +50,50 @@ void init_move_selector(position_t* pos,
     else sel->generator = gen_type;
     sel->hash_move = hash_move;
     sel->depth = depth;
-    sel->current_move_index = sel->phase_index = 0;
-    sel->moves_end = sel->bad_end = 0;
+    sel->phase_index = 0;
+    sel->bad_end = 0;
+    sel->bad_captures[0] = NO_MOVE;
     sel->phase = phase_list[sel->generator][0];
     sel->killers[0] = search_node->killers[0];
     sel->killers[1] = search_node->killers[1];
     if (ply >=2) {
-        sel->killers[3] = (search_node-2)->killers[0];
-        sel->killers[4] = (search_node-2)->killers[1];
+        sel->killers[2] = (search_node-2)->killers[0];
+        sel->killers[3] = (search_node-2)->killers[1];
     } else {
-        sel->killers[3] = sel->killers[4] = NO_MOVE;
+        sel->killers[2] = sel->killers[3] = NO_MOVE;
     }
+    sel->killers[4] = NO_MOVE;
     generate_moves(sel);
+}
+
+// FIXME: doesn't work because of PHASE_TRANS
+bool has_single_reply(move_selector_t* sel)
+{
+    return false;
+    //return (sel->generator == ESCAPE_GENERATION && sel->moves_end == 1);
 }
 
 static bool generate_moves(move_selector_t* sel)
 {
     sel->moves_end = 0;
+    sel->current_move_index = -1;
     int i=0;
     switch (sel->phase) {
         case PHASE_TRANS:
             sel->moves[sel->moves_end++] = sel->hash_move;
             sel->moves[sel->moves_end] = NO_MOVE;
             break;
-        case PHASE_KILLERS:
-            for (; sel->killers != NO_MOVE; ++i) {
-                sel->moves[sel->moves_end++] = sel->killers[i];
-            }
-            sel->moves[sel->moves_end] = NO_MOVE;
-            break;
+//        case PHASE_KILLERS:
+//            for (; sel->killers[i] != NO_MOVE; ++i) {
+//                sel->moves[i] = sel->killers[i];
+//            }
+//            sel->moves[i] = NO_MOVE;
+//            sel->moves_end = i;
+//            break;
         case PHASE_GOOD_CAPS:
             sel->moves_end = generate_pseudo_captures(sel->pos, sel->moves);
             sort_captures(sel);
+            //sort_moves(sel);
             break;
         case PHASE_BAD_CAPS:
             for (; sel->bad_captures[i] != NO_MOVE; ++i) {
@@ -133,17 +120,21 @@ static bool generate_moves(move_selector_t* sel)
             return false;
     }
     assert(sel->moves[sel->moves_end] == NO_MOVE);
+    assert(sel->current_move_index == -1);
     return true;
 }
 
 move_t select_move(move_selector_t* sel)
 {
     move_t move;
-    while ((move = sel->moves[++sel->current_move_index]) != NO_MOVE) {
+    while ((move = sel->moves[++(sel->current_move_index)] ) != NO_MOVE) {
+        assert (sel->current_move_index < sel->moves_end);
         if (sel->phase!=PHASE_TRANS && move==sel->hash_move) continue;
-        if (sel->phase == PHASE_QUIET &&
-                move == sel->killers[0] || move == sel->killers[1] ||
-                move == sel->killers[2] || move == sel->killers[3]) continue;
+//        if (sel->phase == PHASE_KILLERS &&
+//                !is_killer_plausible(sel->pos, move)) continue;
+//        if (sel->phase == PHASE_QUIET &&
+//                (move == sel->killers[0] || move == sel->killers[1] ||
+//                move == sel->killers[2] || move == sel->killers[3])) continue;
         if (sel->phase == PHASE_GOOD_CAPS) {
             int index = sel->current_move_index;
             if (sel->scores[index] < 0) {
@@ -157,11 +148,14 @@ move_t select_move(move_selector_t* sel)
                 break;
             }
         }
-        check_pseudo_move_legality(pos, move);
+        // Only search non-losing checks in quiescence
+        if (sel->phase == PHASE_CHECKS &&
+                sel->scores[sel->current_move_index] < 0) continue;
         if (sel->phase != PHASE_EVASIONS &&
                 !is_pseudo_move_legal(sel->pos, move)) continue;
         assert(sel->phase != PHASE_GOOD_CAPS ||
                 sel->scores[sel->current_move_index] >= 0);
+        check_pseudo_move_legality(sel->pos, move);
         return move;
     }
     // Out of moves, generate more
@@ -229,7 +223,6 @@ static void sort_captures(move_selector_t* sel)
     move_t* moves = sel->moves;
     int* scores = sel->scores;
     const int grain = MAX_HISTORY;
-    const int hash_score = 1000 * grain;
     const int promote_score = 900 * grain;
     const int underpromote_score = -600 * grain;
     const int capture_score = 800 * grain;
@@ -243,16 +236,8 @@ static void sort_captures(move_selector_t* sel)
         } else if (promote_type != NONE && promote_type != QUEEN) {
             score = underpromote_score + promote_type;
         } else {
-            piece_type_t type = get_move_piece_type(move);
-            piece_type_t opp_type = piece_type(get_move_capture(move));
-            if (type == PAWN || type <= opp_type) {
-                score = capture_score + opp_type - type;
-            } else {
-                int see = static_exchange_eval(sel->pos, move) * grain;
-                score = see >= 0 ?
-                    capture_score + see :
-                    bad_capture_score + see;
-            }
+            int see = static_exchange_eval(sel->pos, move) * grain;
+            score = see >= 0 ? capture_score + see : bad_capture_score + see;
         }
         scores[i] = score;
 
@@ -265,6 +250,32 @@ static void sort_captures(move_selector_t* sel)
         scores[j+1] = score;
         moves[j+1] = move;
     }
+}
+
+/*
+ * Trying to re-use killers from previous plies will yield moves that are
+ * no longer pseudo-legal because of the previous move. 
+ */
+static bool is_killer_plausible(position_t* pos, move_t killer)
+{
+    if (is_move_castle(killer)) {
+        color_t side = pos->side_to_move;
+        square_t king_home = E1 + side * A8;
+        if (is_move_castle_short(killer) &&
+            pos->board[king_home+1] == EMPTY &&
+            pos->board[king_home+2] == EMPTY &&
+            !is_square_attacked(pos,king_home+1,side^1)) return true;
+        if (is_move_castle_long(killer) &&
+            pos->board[king_home-1] == EMPTY &&
+            pos->board[king_home-2] == EMPTY &&
+            pos->board[king_home-3] == EMPTY &&
+            !is_square_attacked(pos,king_home-1,side^1)) return true;
+        return false;
+    }
+    square_t from = get_move_from(killer);
+    square_t to = get_move_to(killer);
+    return (pos->board[from] == get_move_piece(killer) &&
+            pos->board[to] == EMPTY);
 }
 
 

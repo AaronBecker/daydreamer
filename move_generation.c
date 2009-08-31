@@ -18,6 +18,7 @@ static void generate_piece_noncaptures(const position_t* pos,
         square_t from,
         piece_t piece,
         move_t** moves);
+static int generate_promotions(const position_t* pos, move_t* moves);
 
 
 /*
@@ -54,27 +55,12 @@ int generate_legal_moves(position_t* pos, move_t* moves)
     return moves_tail-moves;
 }
 
-/*
- * Fill the provided list with all legal non-capturing moves in the given
- * position.
- */
-int generate_legal_noncaptures(position_t* pos, move_t* moves)
+int generate_pseudo_tactical_moves(const position_t* pos, move_t* moves)
 {
-    int num_pseudo;
-    if (is_check(pos)) num_pseudo = generate_evasions(pos, moves);
-    else num_pseudo = generate_pseudo_noncaptures(pos, moves);
-    move_t* moves_tail = moves+num_pseudo;
-    move_t* moves_curr = moves;
-    while (moves_curr < moves_tail) {
-        check_pseudo_move_legality(pos, *moves_curr);
-        if (!is_pseudo_move_legal(pos, *moves_curr)) {
-            *moves_curr = *(--moves_tail);
-            *moves_tail = 0;
-        } else {
-            ++moves_curr;
-        }
-    }
-    return moves_tail-moves;
+}
+
+int generate_pseudo_nontactical_moves(const position_t* pos, move_t* moves)
+{
 }
 
 /*
@@ -185,8 +171,7 @@ int generate_pseudo_noncaptures(const position_t* pos, move_t* moves)
 }
 
 /*
- * Add all pseudo-legal non-capturing promotions to queen. Used for
- * quiescence search.
+ * Add all pseudo-legal non-capturing promotions to queen.
  */
 static int generate_queen_promotions(const position_t* pos, move_t* moves)
 {
@@ -202,6 +187,30 @@ static int generate_queen_promotions(const position_t* pos, move_t* moves)
         moves = add_move(pos,
                 create_move_promote(from, to, piece, EMPTY, QUEEN),
                 moves);
+    }
+    *moves = 0;
+    return (moves-moves_head);
+}
+
+/*
+ * Add all pseudo-legal non-capturing promotions.
+ */
+static int generate_promotions(const position_t* pos, move_t* moves)
+{
+    move_t* moves_head = moves;
+    color_t side = pos->side_to_move;
+    piece_t piece = create_piece(side, PAWN);
+    for (int i = 0; i < pos->num_pawns[side]; ++i) {
+        square_t from = pos->pawns[side][i];
+        rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
+        if (relative_rank < RANK_7) continue;
+        square_t to = from + pawn_push[side];
+        if (pos->board[to]) continue;
+        for (piece_type_t type=KNIGHT; type<=QUEEN; ++type) {
+            moves = add_move(pos,
+                    create_move_promote(from, to, piece, EMPTY, type),
+                    moves);
+        }
     }
     *moves = 0;
     return (moves-moves_head);

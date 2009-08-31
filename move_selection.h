@@ -28,7 +28,7 @@ typedef struct {
     phase_t phase;
     generation_t generator;
     move_t hash_move;
-    move_t killers[4];
+    move_t killers[5];
     int depth;
     position_t* pos;
 } move_selector_t;
