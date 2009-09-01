@@ -4,7 +4,7 @@
 extern search_data_t root_data;
 
 // TODO: separate phase for killers, with separate legality verification
-static const phase_t phase_list[6][8] = {
+static const phase_t phase_list[7][8] = {
     {PHASE_TRANS, PHASE_ROOT, PHASE_END},           // ROOT
     {PHASE_TRANS, PHASE_GOOD_TACTICS,
         PHASE_QUIET, PHASE_BAD_TACTICS, PHASE_END}, // PV
@@ -12,7 +12,8 @@ static const phase_t phase_list[6][8] = {
         PHASE_QUIET, PHASE_BAD_TACTICS, PHASE_END}, // NORMAL
     {PHASE_EVASIONS, PHASE_END},                    // ESCAPE
     {PHASE_GOOD_TACTICS, PHASE_END},                // QUIESCE
-    {PHASE_GOOD_TACTICS, PHASE_CHECKS, PHASE_END}   // QUIESCE_D0
+    {PHASE_GOOD_TACTICS, PHASE_CHECKS, PHASE_END},  // QUIESCE_D0
+    {PHASE_TRANS, PHASE_ALL, PHASE_END}, // ALL
     //{PHASE_CHECKS, PHASE_GOOD_TACTICS, PHASE_END}
 };
 
@@ -29,6 +30,7 @@ static void sort_moves(move_selector_t* sel);
 static void sort_tactics(move_selector_t* sel);
 static void sort_root_moves(move_selector_t* sel);
 static int score_tactical_move(position_t* pos, move_t move);
+static void old_sort_moves(move_selector_t* sel);
 
 void init_move_selector(move_selector_t* sel,
         position_t* pos,
@@ -111,6 +113,11 @@ static bool generate_moves(move_selector_t* sel)
             break;
         case PHASE_ROOT:
             sort_root_moves(sel);
+            break;
+        case PHASE_ALL:
+            sel->moves_end = generate_pseudo_moves(sel->pos, sel->moves);
+            //old_sort_moves(sel);
+            sort_moves(sel);
             break;
         case PHASE_END:
             return false;
@@ -279,4 +286,62 @@ static int score_tactical_move(position_t* pos, move_t move)
     else good_tactic = (static_exchange_eval(pos, move) >= 0);
     return 6*capture - piece + 5 +
         (good_tactic ? good_tactic_score : bad_tactic_score);
+}
+
+
+static void old_sort_moves(move_selector_t* sel)
+{
+    move_t* moves = sel->moves;
+    int* scores = sel->scores;
+    const int hash_score = 1000 * grain;
+    const int promote_score = 900 * grain;
+    const int underpromote_score = -600 * grain;
+    const int capture_score = 800 * grain;
+    const int killer_score = 700 * grain;
+    const int castle_score = 2*grain;
+    for (int i=0; moves[i] != NO_MOVE; ++i) {
+        const move_t move = moves[i];
+        int score = 0;
+        piece_type_t promote_type = get_move_promote(move);
+        if (move == sel->hash_move) score = hash_score;
+        else if (promote_type == QUEEN && static_exchange_eval(sel->pos, move)>=0) {
+            score = promote_score;
+        } else if (promote_type != NONE && promote_type != QUEEN) {
+            score = underpromote_score + promote_type;
+        } else if (get_move_capture(move)) {
+            int see = static_exchange_eval(sel->pos, move) * grain;
+            if (see >= 0) {
+                score = capture_score + see;
+                //square_t to = get_move_to(move);
+                //if (ply > 0) {
+                //    square_t last_to = get_move_to((search_node-1)->pv[ply-1]);
+                //    if(to == last_to) score += grain;
+                //}
+            } else {
+                score = see;
+            }
+        } else if (move == sel->killers[0]) {
+            score = killer_score;
+        } else if (move == sel->killers[1]) {
+            score = killer_score-1;
+        } else if (move == sel->killers[2]) {
+            score = killer_score-2;
+        } else if (move == sel->killers[3]) {
+            score = killer_score-3;
+        } else if (is_move_castle(move)) {
+            score = castle_score;
+        } else {
+            score = root_data.history.history[history_index(move)];
+        }
+        scores[i] = score;
+
+        int j = i-1;
+        while (j >= 0 && scores[j] < score) {
+            scores[j+1] = scores[j];
+            moves[j+1] = moves[j];
+            --j;
+        }
+        scores[j+1] = score;
+        moves[j+1] = move;
+    }
 }
