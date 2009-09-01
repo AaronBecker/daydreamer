@@ -77,6 +77,21 @@ int generate_pseudo_moves(const position_t* pos, move_t* moves)
 }
 
 /*
+ * Generate all pseudolegal moves that should be considered during quiescence
+ * search. Currently this is just captures and promotions to queen.
+ */
+int generate_quiescence_moves(const position_t* pos,
+        move_t* moves,
+        bool generate_checks)
+{
+    if (is_check(pos)) return generate_evasions(pos, moves);
+    move_t* moves_head = moves;
+    moves += generate_pseudo_tactical_moves(pos, moves);
+    if (generate_checks) moves += generate_pseudo_checks(pos, moves);
+    return moves-moves_head;
+}
+
+/*
  * Fill the provided list with all pseudolegal captures in the given position.
  */
 static int generate_pseudo_captures(const position_t* pos, move_t* moves)

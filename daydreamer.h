@@ -117,6 +117,12 @@ bool has_single_reply(move_selector_t* sel);
 move_t select_move(move_selector_t* sel);
 void store_root_node_count(move_t move, uint64_t nodes);
 uint64_t get_root_node_count(move_t move);
+void order_moves(position_t* pos,
+        search_node_t* search_node,
+        move_list_t* move_list,
+        move_t hash_move,
+        int ply);
+move_t pick_move(move_list_t* move_list, bool pick_best);
 
 // output.c
 void print_coord_move(move_t move);

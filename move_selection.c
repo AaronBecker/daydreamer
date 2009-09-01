@@ -13,8 +13,8 @@ static const phase_t phase_list[7][8] = {
     {PHASE_EVASIONS, PHASE_END},                    // ESCAPE
     {PHASE_GOOD_TACTICS, PHASE_END},                // QUIESCE
     {PHASE_GOOD_TACTICS, PHASE_CHECKS, PHASE_END},  // QUIESCE_D0
-    {PHASE_TRANS, PHASE_ALL, PHASE_END}, // ALL
     //{PHASE_CHECKS, PHASE_GOOD_TACTICS, PHASE_END}
+    {PHASE_ALL, PHASE_END}, // ALL
 };
 
 static const int phase_ordered_nodes[6] = { 256, 256, 16, 16, 4, 8 };
@@ -41,8 +41,7 @@ void init_move_selector(move_selector_t* sel,
         int ply)
 {
     sel->pos = pos;
-    if (is_check(pos)) sel->generator = ESCAPE_GENERATION;
-    else sel->generator = gen_type;
+    sel->generator = is_check(pos) ? ESCAPE_GENERATION : gen_type;
     sel->hash_move = hash_move;
     sel->depth = depth;
     sel->phase_index = 0;
@@ -85,7 +84,8 @@ static bool generate_moves(move_selector_t* sel)
             sel->moves_end = generate_pseudo_tactical_moves(sel->pos,
                     sel->moves);
             if (sel->moves_so_far < phase_ordered_nodes[sel->generator]) {
-                sort_tactics(sel);
+                //sort_tactics(sel);
+                old_sort_moves(sel);
             }
             break;
         case PHASE_BAD_TACTICS:
@@ -104,20 +104,22 @@ static bool generate_moves(move_selector_t* sel)
         case PHASE_CHECKS:
                 sel->moves_end = generate_pseudo_checks(sel->pos, sel->moves);
             if (sel->moves_so_far < phase_ordered_nodes[sel->generator]) {
-                sort_moves(sel);
+                //sort_moves(sel);
+                old_sort_moves(sel);
             }
             break;
         case PHASE_EVASIONS:
             sel->moves_end = generate_evasions(sel->pos, sel->moves);
-            sort_moves(sel);
+            //sort_moves(sel);
+            old_sort_moves(sel);
             break;
         case PHASE_ROOT:
             sort_root_moves(sel);
             break;
         case PHASE_ALL:
             sel->moves_end = generate_pseudo_moves(sel->pos, sel->moves);
+            old_sort_moves(sel);
             //old_sort_moves(sel);
-            sort_moves(sel);
             break;
         case PHASE_END:
             return false;
@@ -130,9 +132,10 @@ static bool generate_moves(move_selector_t* sel)
 move_t select_move(move_selector_t* sel)
 {
     move_t move;
-    while ((move = sel->moves[++(sel->current_move_index)] ) != NO_MOVE) {
+    while ((move = sel->moves[++(sel->current_move_index)]) != NO_MOVE) {
         assert (sel->current_move_index < sel->moves_end);
         if (sel->phase != PHASE_TRANS && sel->phase != PHASE_EVASIONS &&
+                sel->phase != PHASE_ALL &&
                 move == sel->hash_move) continue;
         if (sel->phase == PHASE_GOOD_TACTICS) {
             int index = sel->current_move_index;
@@ -165,7 +168,6 @@ move_t select_move(move_selector_t* sel)
 }
 
 // TODO: separate sorting functions for different phases.
-// TODO: order captures by mva/lva within their phase
 static void sort_moves(move_selector_t* sel)
 {
     move_t* moves = sel->moves;
@@ -202,7 +204,6 @@ static void sort_moves(move_selector_t* sel)
     }
 }
 
-// TODO: order tactics by mva/lva within their phase
 static void sort_tactics(move_selector_t* sel)
 {
     move_t* moves = sel->moves;
@@ -288,11 +289,116 @@ static int score_tactical_move(position_t* pos, move_t move)
         (good_tactic ? good_tactic_score : bad_tactic_score);
 }
 
+/*
+ * Take an unordered list of pseudo-legal moves and score them according
+ * to how good we think they'll be. This just identifies a few key classes
+ * of moves and applies scores appropriately. Moves are then selected
+ * by |pick_move|.
+ * TODO: try ordering captures by mvv/lva, then categorizing
+ * by see when they're searched
+ */
+void order_moves(position_t* pos,
+        search_node_t* search_node,
+        move_list_t* move_list,
+        move_t hash_move,
+        int ply)
+{
+    move_list->offset = 0;
+    move_t* moves = move_list->moves;
+    int* scores = move_list->scores;
+
+    const int hash_score = 1000 * grain;
+    const int promote_score = 900 * grain;
+    const int underpromote_score = -600 * grain;
+    const int capture_score = 800 * grain;
+    const int killer_score = 700 * grain;
+    const int castle_score = 2*grain;
+    for (int i=0; moves[i] != NO_MOVE; ++i) {
+        const move_t move = moves[i];
+        int score = 0;
+        piece_type_t promote_type = get_move_promote(move);
+        if (move == hash_move) score = hash_score;
+        else if (promote_type == QUEEN && static_exchange_eval(pos, move)>=0) {
+            score = promote_score;
+        } else if (promote_type != NONE && promote_type != QUEEN) {
+            score = underpromote_score + promote_type;
+        } else if (get_move_capture(move)) {
+            int see = static_exchange_eval(pos, move) * grain;
+            if (see >= 0) {
+                score = capture_score + see;
+            } else {
+                score = see;
+            }
+        } else if (move == search_node->killers[0]) {
+            score = killer_score;
+        } else if (move == search_node->killers[1]) {
+            score = killer_score-1;
+        } else if (ply >=2 && move == (search_node-2)->killers[0]) {
+            score = killer_score-2;
+        } else if (ply >=2 && move == (search_node-2)->killers[1]) {
+            score = killer_score-3;
+        } else if (is_move_castle(move)) {
+            score = castle_score;
+        } else {
+            score = root_data.history.history[history_index(move)];
+        }
+        scores[i] = score;
+    }
+/*
+    for (int i=0; moves[i] != NO_MOVE; ++i) {
+        const move_t move = moves[i];
+        int score = 0;
+        if (move == hash_move) {
+            score = hash_score;
+        } else if (get_move_capture(move) || get_move_promote(move)) {
+            score = score_tactical_move(pos, move);
+        } else if (move == search_node->killers[0]) {
+            score = killer_score;
+        } else if (move == search_node->killers[1]) {
+            score = killer_score-1;
+        } else if (ply >= 2 && move == (search_node-2)->killers[0]) {
+            score = killer_score-2;
+        } else if (ply >=2 && move == (search_node-2)->killers[1]) {
+            score = killer_score-3;
+        } else {
+            score = root_data.history.history[history_index(move)];
+        }
+        scores[i] = score;
+    }
+    */
+}
+
+move_t pick_move(move_list_t* move_list, bool pick_best)
+{
+    if (!pick_best) return move_list->moves[move_list->offset++];
+    move_t move = NO_MOVE;
+    int score = INT_MIN;
+    int index = -1;
+    int offset = move_list->offset;
+
+    for (int i=offset; move_list->moves[i] != NO_MOVE; ++i) {
+        if (move_list->scores[i] > score) {
+            score = move_list->scores[i];
+            index = i;
+        }
+    }
+    if (index != -1) {
+        move = move_list->moves[index];
+        score = move_list->scores[index];
+        move_list->moves[index] = move_list->moves[offset];
+        move_list->scores[index] = move_list->scores[offset];
+        move_list->moves[offset] = move;
+        move_list->scores[offset] = score;
+        move_list->offset++;
+    }
+    return move;
+}
 
 static void old_sort_moves(move_selector_t* sel)
 {
     move_t* moves = sel->moves;
     int* scores = sel->scores;
+
     const int hash_score = 1000 * grain;
     const int promote_score = 900 * grain;
     const int underpromote_score = -600 * grain;
@@ -312,11 +418,6 @@ static void old_sort_moves(move_selector_t* sel)
             int see = static_exchange_eval(sel->pos, move) * grain;
             if (see >= 0) {
                 score = capture_score + see;
-                //square_t to = get_move_to(move);
-                //if (ply > 0) {
-                //    square_t last_to = get_move_to((search_node-1)->pv[ply-1]);
-                //    if(to == last_to) score += grain;
-                //}
             } else {
                 score = see;
             }
@@ -324,9 +425,9 @@ static void old_sort_moves(move_selector_t* sel)
             score = killer_score;
         } else if (move == sel->killers[1]) {
             score = killer_score-1;
-        } else if (move == sel->killers[2]) {
+        } else if (sel->killers[2]) {
             score = killer_score-2;
-        } else if (move == sel->killers[3]) {
+        } else if (sel->killers[3]) {
             score = killer_score-3;
         } else if (is_move_castle(move)) {
             score = castle_score;

@@ -52,7 +52,7 @@ typedef struct {
     int failure[16*64];
 } history_t;
 
-#define MAX_HISTORY         32768
+#define MAX_HISTORY         1000000
 #define MAX_HISTORY_INDEX   (16*64)
 #define depth_to_history(d) ((d)*(d))
 #define history_index(m)   \
@@ -96,7 +96,7 @@ typedef struct {
 #define NULLMOVE_VERIFICATION_REDUCTION    5
 #define NULL_EVAL_MARGIN            200
 //#define RAZOR_DEPTH_LIMIT           3
-#define RAZOR_DEPTH_LIMIT           1
+#define RAZOR_DEPTH_LIMIT           2
 //#define FUTILITY_DEPTH_LIMIT        5
 #define FUTILITY_DEPTH_LIMIT        1
 #define LMR_PV_EARLY_MOVES          10

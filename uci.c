@@ -107,6 +107,7 @@ static void uci_go(char* command)
                 printf("%s is not a legal move\n", info);
             }
             root_data.moves[move_index++] = move;
+            //root_data.root_move_list.moves[move_index++] = move;
             while (*info && !isspace(*info)) ++info;
             while (isspace(*info)) ++info;
         }
