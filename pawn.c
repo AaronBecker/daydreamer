@@ -14,15 +14,15 @@ static const int backward_penalty[2][8] = {
     { 5, 10, 10, 15, 15, 10, 10,  5},
     {20, 20, 20, 20, 20, 20, 20, 20}
 };
-static const int connected_bonus[2] = {10, 20};
 static const int passed_bonus[2][8] = {
     { 0,  5, 10, 20, 60, 120, 200, 0},
     { 0, 10, 20, 25, 50,  90, 125, 0},
 };
 static const int candidate_bonus[2][8] = {
-    { 0,  5,  5, 20, 35, 50, 0, 0},
-    { 0,  5,  5, 20, 45, 70, 0, 0},
+    { 0,  5,  5, 10, 20, 30, 0, 0},
+    { 0,  5, 10, 20, 45, 70, 0, 0},
 };
+static const int connected_bonus[2] = {5, 10};
 static const int cumulative_defect_penalty[8] = {0, 0, 5, 10, 25, 50, 60, 75};
 // TODO: backward/weak pawns
 // TODO: figure out how obstructed passed pawns are in eval
@@ -106,8 +106,8 @@ pawn_data_t* analyze_pawns(const position_t* pos)
     for (color_t color=WHITE; color<=BLACK; ++color) {
         pd->num_passed[color] = 0;
         int push = pawn_push[color];
-        piece_t pawn = create_piece(color, PAWN);
-        piece_t opp_pawn = create_piece(color^1, PAWN);
+        const piece_t pawn = create_piece(color, PAWN);
+        const piece_t opp_pawn = create_piece(color^1, PAWN);
         int num_defects = 0;
         for (int i=0; pos->pawns[color][i] != INVALID_SQUARE; ++i) {
             sq = pos->pawns[color][i];
@@ -168,14 +168,15 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             }
 
             // Connected pawns.
-            if (!isolated && (pos->board[sq+1] == pawn ||
+            if (!isolated &&
+                    ((pos->board[sq+1] == pawn && pos->board[sq-1] == pawn) ||
                     pos->board[sq+push+1] == pawn ||
                     pos->board[sq+push-1] == pawn)) {
                 pd->score[color] += connected_bonus[0];
                 pd->endgame_score[color] += connected_bonus[1];
             }
 
-            // Backward pawns (unsupportable by pawns, can't advance)
+            //// Backward pawns (unsupportable by pawns, can't advance)
             if (!passed && !isolated &&
                     pos->board[sq+push-1] != opp_pawn &&
                     pos->board[sq+push+1] != opp_pawn) {
