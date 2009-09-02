@@ -31,6 +31,7 @@ static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
     150, 300
 //    150, 300, 300
 };
+static const int iid_non_pv_margin = 100;
 
 static bool should_stop_searching(search_data_t* data);
 static bool root_search(search_data_t* search_data);
@@ -210,7 +211,7 @@ static bool is_history_reduction_allowed(history_t* h, move_t move)
 /*
  * Can we do internal iterative deepening?
  */
-static bool is_iid_allowed(bool full_window, int depth)
+static bool is_iid_allowed(bool full_window, int depth, int margin)
 {
     search_options_t* options = &root_data.options;
     if (full_window) {
@@ -219,7 +220,8 @@ static bool is_iid_allowed(bool full_window, int depth)
     }
     if (!full_window) {
         if (!options->enable_non_pv_iid ||
-                options->iid_non_pv_depth_cutoff >= depth) return false;
+                options->iid_non_pv_depth_cutoff >= depth ||
+                margin > iid_non_pv_margin) return false;
     }
     return true;
 }
@@ -445,7 +447,7 @@ static int search(position_t* pos,
     // Internal iterative deepening.
     if (iid_enabled &&
             hash_move == NO_MOVE &&
-            is_iid_allowed(full_window, depth)) {
+            is_iid_allowed(full_window, depth, beta-lazy_score)) {
         const int iid_depth = depth -
             (full_window ? root_data.options.iid_pv_depth_reduction :
                            root_data.options.iid_non_pv_depth_reduction);
