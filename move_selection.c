@@ -2,16 +2,24 @@
 #include "daydreamer.h"
 
 extern search_data_t root_data;
-static const int ordered_move_count[6] = { 256, 256, 16, 16, 4, 4 };
+
+// How many moves should be selected by scanning through the score list and
+// picking the highest available, as opposed to picking them in order? Note
+// that root selection is 0, because the moves are already sorted into the
+// correct order.
+static const int ordered_move_count[6] = { 0, 256, 16, 16, 4, 4 };
 
 static void generate_moves(move_selector_t* sel);
-static void sort_moves(move_selector_t* sel);
-static void sort_tactics(move_selector_t* sel);
+static void score_moves(move_selector_t* sel);
+static void score_moves_classic(move_selector_t* sel);
 static void sort_root_moves(move_selector_t* sel);
 static int score_tactical_move(position_t* pos, move_t move);
 static void old_sort_moves(move_selector_t* sel);
-static void sel_score_moves(move_selector_t* sel);
 
+/*
+ * Initialize the move selector data structure with the information needed to
+ * determine what kind of moves to generate and how to order them.
+ */
 void init_move_selector(move_selector_t* sel,
         position_t* pos,
         generation_t gen_type,
@@ -46,11 +54,18 @@ void init_move_selector(move_selector_t* sel,
     generate_moves(sel);
 }
 
+/*
+ * Is there only one possible move in the current position? This may need to
+ * be changed for phased move generation later.
+ */
 bool has_single_reply(move_selector_t* sel)
 {
     return sel->single_reply;
 }
 
+/*
+ * Fill the list of candidate moves and score each move for later selection.
+ */
 static void generate_moves(move_selector_t* sel)
 {
     sel->moves_end = 0;
@@ -58,8 +73,7 @@ static void generate_moves(move_selector_t* sel)
     switch (sel->generator) {
         case ESCAPE_GEN:
             sel->moves_end = generate_evasions(sel->pos, sel->moves);
-            sel_score_moves(sel);
-            //old_sort_moves(sel);
+            score_moves(sel);
             break;
         case ROOT_GEN:
             sort_root_moves(sel);
@@ -67,20 +81,17 @@ static void generate_moves(move_selector_t* sel)
         case PV_GEN:
         case NONPV_GEN:
             sel->moves_end = generate_pseudo_moves(sel->pos, sel->moves);
-            sel_score_moves(sel);
-            //old_sort_moves(sel);
+            score_moves(sel);
             break;
         case Q_CHECK_GEN:
             sel->moves_end = generate_quiescence_moves(
                     sel->pos, sel->moves, true);
-            sel_score_moves(sel);
-            //old_sort_moves(sel);
+            score_moves(sel);
             break;
         case Q_GEN:
             sel->moves_end = generate_quiescence_moves(
                     sel->pos, sel->moves, false);
-            sel_score_moves(sel);
-            //old_sort_moves(sel);
+            score_moves(sel);
             break;
     }
     sel->single_reply = sel->moves_end == 1;
@@ -88,6 +99,11 @@ static void generate_moves(move_selector_t* sel)
     assert(sel->current_move_index == 0);
 }
 
+/*
+ * Return the next move to be searched. The first n moves are returned in order
+ * of their score, and the rest in the order they were generated. n depends on
+ * the type of node we're at.
+ */
 move_t select_move(move_selector_t* sel)
 {
     move_t move;
@@ -135,27 +151,16 @@ move_t select_move(move_selector_t* sel)
         break;
     }
     return move;
-
-    /*
-     * NOTE: change current_move_index back to -1 in generate
-    move_t move;
-    while ((move = sel->moves[++(sel->current_move_index)]) != NO_MOVE) {
-        assert (sel->current_move_index < sel->moves_end);
-        // Only search non-losing checks in quiescence
-        if ((sel->generator == Q_CHECK_GEN || sel->generator == Q_GEN) &&
-                sel->scores[sel->current_move_index] < 0) continue;
-        if (sel->generator != ESCAPE_GEN && sel->generator != ROOT_GEN &&
-                !is_pseudo_move_legal(sel->pos, move)) continue;
-        check_pseudo_move_legality(sel->pos, move);
-        sel->moves_so_far++;
-        return move;
-    }
-    return NO_MOVE;
-    */
 }
 
-// TODO: separate sorting functions for different phases.
-static void sort_moves(move_selector_t* sel)
+/*
+ * Take an unordered list of pseudo-legal moves and score them according
+ * to how good we think they'll be. This just identifies a few key classes
+ * of moves and applies scores appropriately. Moves are then selected
+ * by |select_move|.
+ * TODO: separate scoring functions for different phases.
+ */
+static void score_moves(move_selector_t* sel)
 {
     move_t* moves = sel->moves;
     int* scores = sel->scores;
@@ -182,40 +187,32 @@ static void sort_moves(move_selector_t* sel)
             score = root_data.history.history[history_index(move)];
         }
         scores[i] = score;
-
-        int j = i-1;
-        while (j >= 0 && scores[j] < score) {
-            scores[j+1] = scores[j];
-            moves[j+1] = moves[j];
-            --j;
-        }
-        scores[j+1] = score;
-        moves[j+1] = move;
-    }
-}
-
-static void sort_tactics(move_selector_t* sel)
-{
-    move_t* moves = sel->moves;
-    int* scores = sel->scores;
-    for (int i=0; moves[i] != NO_MOVE; ++i) {
-        const move_t move = moves[i];
-        const int score = score_tactical_move(sel->pos, moves[i]);
-        scores[i] = score;
-
-        int j = i-1;
-        while (j >= 0 && scores[j] < score) {
-            scores[j+1] = scores[j];
-            moves[j+1] = moves[j];
-            --j;
-        }
-        scores[j+1] = score;
-        moves[j+1] = move;
     }
 }
 
 /*
+ * Determine a score for a capturing or promoting move.
+ */
+static int score_tactical_move(position_t* pos, move_t move)
+{
+    const int grain = MAX_HISTORY;
+    const int good_tactic_score = 800 * grain;
+    const int bad_tactic_score = -800 * grain;
+    bool good_tactic;
+    piece_type_t piece = get_move_piece_type(move);
+    piece_type_t promote = get_move_promote(move);
+    piece_type_t capture = piece_type(get_move_capture(move));
+    if (promote != NONE && promote != QUEEN) good_tactic = false;
+    else if (capture != NONE && piece <= capture) good_tactic = true;
+    else good_tactic = (static_exchange_eval(pos, move) >= 0);
+    return 6*capture - piece + 5 +
+        (good_tactic ? good_tactic_score : bad_tactic_score);
+}
+
+/*
  * Sort moves at the root based on total nodes searched under that move.
+ * Since the moves are sorted into position, |sel->scores| is not used to
+ * select moves during root move selection.
  */
 static void sort_root_moves(move_selector_t* sel)
 {
@@ -226,8 +223,7 @@ static void sort_root_moves(move_selector_t* sel)
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;
     if (sel->depth < 3) {
-        //sort_moves(sel);
-        sel_score_moves(sel);
+        score_moves(sel);
         return;
     }
 
@@ -267,171 +263,20 @@ uint64_t get_root_node_count(move_t move)
     return root_data.move_nodes[i];
 }
 
-static int score_tactical_move(position_t* pos, move_t move)
-{
-    const int grain = MAX_HISTORY;
-    const int good_tactic_score = 800 * grain;
-    const int bad_tactic_score = -800 * grain;
-    bool good_tactic;
-    piece_type_t piece = get_move_piece_type(move);
-    piece_type_t promote = get_move_promote(move);
-    piece_type_t capture = piece_type(get_move_capture(move));
-    if (promote != NONE && promote != QUEEN) good_tactic = false;
-    else if (capture != NONE && piece <= capture) good_tactic = true;
-    else good_tactic = (static_exchange_eval(pos, move) >= 0);
-    return 6*capture - piece + 5 +
-        (good_tactic ? good_tactic_score : bad_tactic_score);
-}
-
 /*
- * Take an unordered list of pseudo-legal moves and score them according
- * to how good we think they'll be. This just identifies a few key classes
- * of moves and applies scores appropriately. Moves are then selected
- * by |pick_move|.
- * TODO: try ordering captures by mvv/lva, then categorizing
- * by see when they're searched
+ * The old move scoring function, kept for reference.
  */
-void order_moves(position_t* pos,
-        search_node_t* search_node,
-        move_list_t* move_list,
-        move_t hash_move,
-        int ply)
-{
-    move_list->offset = 0;
-    move_t* moves = move_list->moves;
-    int* scores = move_list->scores;
-
-    const int grain = MAX_HISTORY;
-    const int hash_score = 1000 * grain;
-    const int promote_score = 900 * grain;
-    const int underpromote_score = -600 * grain;
-    const int capture_score = 800 * grain;
-    const int killer_score = 700 * grain;
-    const int castle_score = 2*grain;
-    for (int i=0; moves[i] != NO_MOVE; ++i) {
-        const move_t move = moves[i];
-        int score = 0;
-        piece_type_t promote_type = get_move_promote(move);
-        if (move == hash_move) score = hash_score;
-        else if (promote_type == QUEEN && static_exchange_eval(pos, move)>=0) {
-            score = promote_score;
-        } else if (promote_type != NONE && promote_type != QUEEN) {
-            score = underpromote_score + promote_type;
-        } else if (get_move_capture(move)) {
-            int see = static_exchange_eval(pos, move) * grain;
-            if (see >= 0) {
-                score = capture_score + see;
-            } else {
-                score = see;
-            }
-        } else if (move == search_node->killers[0]) {
-            score = killer_score;
-        } else if (move == search_node->killers[1]) {
-            score = killer_score-1;
-        } else if (ply >=2 && move == (search_node-2)->killers[0]) {
-            score = killer_score-2;
-        } else if (ply >=2 && move == (search_node-2)->killers[1]) {
-            score = killer_score-3;
-        } else if (is_move_castle(move)) {
-            score = castle_score;
-        } else {
-            score = root_data.history.history[history_index(move)];
-        }
-        scores[i] = score;
-    }
-}
-
-move_t pick_move(move_list_t* move_list, bool pick_best)
-{
-    if (!pick_best) return move_list->moves[move_list->offset++];
-    move_t move = NO_MOVE;
-    int score = INT_MIN;
-    int index = -1;
-    int offset = move_list->offset;
-
-    for (int i=offset; move_list->moves[i] != NO_MOVE; ++i) {
-        if (move_list->scores[i] > score) {
-            score = move_list->scores[i];
-            index = i;
-        }
-    }
-    if (index != -1) {
-        move = move_list->moves[index];
-        score = move_list->scores[index];
-        move_list->moves[index] = move_list->moves[offset];
-        move_list->scores[index] = move_list->scores[offset];
-        move_list->moves[offset] = move;
-        move_list->scores[offset] = score;
-        move_list->offset++;
-    }
-    return move;
-}
-
-static void old_sort_moves(move_selector_t* sel)
+static void score_moves_classic(move_selector_t* sel)
 {
     move_t* moves = sel->moves;
     int* scores = sel->scores;
 
     const int grain = MAX_HISTORY;
-    const int hash_score = 1000 * grain;
-    const int promote_score = 900 * grain;
-    const int underpromote_score = -600 * grain;
-    const int capture_score = 800 * grain;
-    const int killer_score = 700 * grain;
-    const int castle_score = 2*grain;
-    for (int i=0; moves[i] != NO_MOVE; ++i) {
-        const move_t move = moves[i];
-        int score = 0;
-        piece_type_t promote_type = get_move_promote(move);
-        if (move == sel->hash_move) score = hash_score;
-        else if (promote_type == QUEEN && static_exchange_eval(sel->pos, move)>=0) {
-            score = promote_score;
-        } else if (promote_type != NONE && promote_type != QUEEN) {
-            score = underpromote_score + promote_type;
-        } else if (get_move_capture(move)) {
-            int see = static_exchange_eval(sel->pos, move) * grain;
-            if (see >= 0) {
-                score = capture_score + see;
-            } else {
-                score = see;
-            }
-        } else if (move == sel->killers[0]) {
-            score = killer_score;
-        } else if (move == sel->killers[1]) {
-            score = killer_score-1;
-        } else if (sel->killers[2]) {
-            score = killer_score-2;
-        } else if (sel->killers[3]) {
-            score = killer_score-3;
-        } else if (is_move_castle(move)) {
-            score = castle_score;
-        } else {
-            score = root_data.history.history[history_index(move)];
-        }
-        scores[i] = score;
-
-        int j = i-1;
-        while (j >= 0 && scores[j] < score) {
-            scores[j+1] = scores[j];
-            moves[j+1] = moves[j];
-            --j;
-        }
-        scores[j+1] = score;
-        moves[j+1] = move;
-    }
-}
-
-static void sel_score_moves(move_selector_t* sel)
-{
-    move_t* moves = sel->moves;
-    int* scores = sel->scores;
-
-    const int grain = MAX_HISTORY;
-    const int hash_score = 1000 * grain;
-    const int promote_score = 900 * grain;
-    const int underpromote_score = -600 * grain;
-    const int capture_score = 800 * grain;
-    const int killer_score = 700 * grain;
+    const int hash_score = 100 * grain;
+    const int promote_score = 90 * grain;
+    const int underpromote_score = -60 * grain;
+    const int capture_score = 80 * grain;
+    const int killer_score = 70 * grain;
     const int castle_score = 2*grain;
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
@@ -444,7 +289,7 @@ static void sel_score_moves(move_selector_t* sel)
         } else if (promote_type != NONE && promote_type != QUEEN) {
             score = underpromote_score + promote_type;
         } else if (get_move_capture(move)) {
-            int see = static_exchange_eval(sel->pos, move) * grain;
+            int see = static_exchange_eval(sel->pos, move);
             if (see >= 0) {
                 score = capture_score + see;
             } else {

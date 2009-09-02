@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.4"
-#define ENGINE_VERSION_NAME     " newsel"
+#define ENGINE_VERSION_NAME     " select"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -104,6 +104,9 @@ int generate_pseudo_tactical_moves(const position_t* pos, move_t* moves);
 int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves);
 int generate_evasions(const position_t* pos, move_t* moves);
 int generate_pseudo_checks(const position_t* pos, move_t* moves);
+int generate_quiescence_moves(const position_t* pos,
+        move_t* moves,
+        bool generate_checks);
 
 // move_selection.c
 void init_move_selector(move_selector_t* sel,
@@ -117,12 +120,6 @@ bool has_single_reply(move_selector_t* sel);
 move_t select_move(move_selector_t* sel);
 void store_root_node_count(move_t move, uint64_t nodes);
 uint64_t get_root_node_count(move_t move);
-void order_moves(position_t* pos,
-        search_node_t* search_node,
-        move_list_t* move_list,
-        move_t hash_move,
-        int ply);
-move_t pick_move(move_list_t* move_list, bool pick_best);
 
 // output.c
 void print_coord_move(move_t move);
