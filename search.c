@@ -314,17 +314,17 @@ static bool root_search(search_data_t* search_data)
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
 
     move_selector_t selector;
-    init_move_selector(&selector, pos, ROOT_GENERATION,
+    init_move_selector(&selector, pos, ROOT_GEN,
             NULL, hash_move, search_data->current_depth, 0);
     int move_index = 0;
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector), ++move_index) {
-        if (should_output(search_data)) {
+        //if (should_output(search_data)) {
             char coord_move[6];
             move_to_coord_str(move, coord_move);
             printf("info currmove %s currmovenumber %d score %"PRIu64"\n",
                     coord_move, move_index, get_root_node_count(move));
-        }
+        //}
         uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
         do_move(pos, move, &undo);
@@ -347,6 +347,7 @@ static bool root_search(search_data_t* search_data)
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
+        printf("search result %d\n", score);
         store_root_node_count(move, search_data->nodes_searched-nodes_before);
         undo_move(pos, move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
@@ -455,12 +456,13 @@ static int search(position_t* pos,
         hash_move = search_node->pv[ply];
     }
 
-    move_list_t move_list;
     move_t searched_moves[256];
+    int futility_score = mated_in(-1);
+
+    move_list_t move_list;
     bool single_reply = generate_pseudo_moves(pos, move_list.moves) == 1;
     int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
     int ordered_moves = full_window ? 256 : 16;
-    int futility_score = mated_in(-1);
     int move_index = 0;
     order_moves(pos, search_node, &move_list, hash_move, ply);
     for (move_t move = pick_move(&move_list, move_index<ordered_moves);
@@ -471,18 +473,17 @@ static int search(position_t* pos,
         if (!is_pseudo_move_legal(pos, move)) continue;
         ++num_legal_moves;
 
-//    move_t searched_moves[256];
 //    move_selector_t selector;
-//    //generation_t gen_type = ALL_GENERATION;
-//    generation_t gen_type = full_window ? PV_GENERATION : NORMAL_GENERATION;
+//    generation_t gen_type = full_window ? PV_GEN : NONPV_GEN;
 //    init_move_selector(&selector, pos, gen_type,
 //            search_node, hash_move, depth, ply);
 //    bool single_reply = has_single_reply(&selector);
 //    int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
-//    int futility_score = mated_in(-1);
 //    for (move_t move = select_move(&selector); move != NO_MOVE;
 //            move = select_move(&selector)) {
 //        num_legal_moves = selector.moves_so_far;
+//        //
+//        assert(is_pseudo_move_legal(pos, move));
 
         undo_info_t undo;
         do_move(pos, move, &undo);
@@ -618,6 +619,7 @@ static int quiesce(position_t* pos,
     int score = eval;
     if (ply >= MAX_SEARCH_DEPTH-1) return score;
     open_qnode(&root_data, ply);
+
     move_list_t move_list;
     move_t* moves = move_list.moves;
     int* scores = move_list.scores;
@@ -629,12 +631,18 @@ static int quiesce(position_t* pos,
         if (alpha >= beta) return beta;
         if (!generate_quiescence_moves(pos, moves, depth == 0)) return alpha;
     }
+
+//    if (!is_check(pos)) {
+//        if (alpha < score) alpha = score;
+//        if (alpha >= beta) return beta;
+//    }
     
     bool full_window = (beta-alpha > 1);
     bool allow_futility = qfutility_enabled &&
         !full_window &&
         !is_check(pos) &&
         pos->num_pieces[pos->side_to_move] > 2;
+
     order_moves(pos, search_node, &move_list, NO_MOVE, ply);
     int move_index = 0;
     for (move_t move = pick_move(&move_list, move_index<4); move != NO_MOVE;
@@ -644,6 +652,15 @@ static int quiesce(position_t* pos,
         if (!is_check(pos) &&
                 (!get_move_promote(move) || get_move_promote(move) != QUEEN) &&
                 scores[move_index] < MAX_HISTORY) continue;
+
+//    int num_qmoves = 0;
+//    move_selector_t selector;
+//    generation_t gen_type = depth == 0 ? Q_CHECK_GEN : Q_GEN;
+//    init_move_selector(&selector, pos, gen_type,
+//            search_node, NO_MOVE, depth, ply);
+//    for (move_t move = select_move(&selector); move != NO_MOVE;
+//            move = select_move(&selector), ++num_qmoves) {
+
         // TODO: prevent futility for passed pawn moves and checks
         if (allow_futility &&
                 get_move_promote(move) != QUEEN &&
@@ -662,6 +679,11 @@ static int quiesce(position_t* pos,
             }
         }
     }
+
+//    if (!num_qmoves && is_check(pos)) {
+//        return mated_in(ply);
+//    }
+
     return alpha;
 }
 
