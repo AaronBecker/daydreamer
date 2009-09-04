@@ -30,18 +30,18 @@ release I focused much more energy on reducing the size of the search tree,
 with good results. Here are results from some testing matches I ran at 10s per
 side to give a rough idea of how the new release of Daydreamer stacks up:
 
-Diablo 0.5.1    +30-20=0    30.0/50
-Dirty ACCA 3    +32-13=5    34.5/50
-Greko 6.5       +29-10=11   34.5/50
-Sungorus 1.2    +24-13=13   30.5/50
-Romichess P3K   +17-26=7    20.5/50
-Bison 9.6       +5-34=11    10.5/50
+    Diablo 0.5.1    +30-20=0    30.0/50
+    Dirty ACCA 3    +32-13=5    34.5/50
+    Greko 6.5       +29-10=11   34.5/50
+    Sungorus 1.2    +24-13=13   30.5/50
+    Romichess P3K   +17-26=7    20.5/50
+    Bison 9.6       +5-34=11    10.5/50
 
 and here are scores on two common (relatively easy) suites of problems, solved
 at 10s per problem:
 
-WAC     293/300
-ECMGMP  120/182
+    WAC     293/300
+    ECMGMP  120/182
 
 Using Daydreamer
 ----------------
