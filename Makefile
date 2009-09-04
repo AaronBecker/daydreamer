@@ -11,7 +11,7 @@ CC = /usr/bin/gcc $(GCCFLAGS)
 #CC = i386-mingw32-gcc $(GCCFLAGS)
 CTAGS = ctags
 
-COMMONFLAGS = -Wall -Wextra
+COMMONFLAGS = -Wall -Wextra -Wno-unused-function
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0
 ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
 DEFAULTFLAGS = $(COMMONFLAGS) -g -O2 -DOMIT_CHECKS
