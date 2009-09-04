@@ -24,7 +24,6 @@ static const int backward_penalty[2][8] = {
 };
 static const int connected_bonus[2] = {10, 20};
 static const int cumulative_defect_penalty[8] = {0, 0, 5, 10, 25, 50, 60, 75};
-// TODO: backward/weak pawns
 // TODO: figure out how obstructed passed pawns are in eval
 
 static pawn_data_t* pawn_table = NULL;
@@ -212,12 +211,14 @@ pawn_data_t* analyze_pawns(const position_t* pos)
     return pd;
 }
 
-void pawn_score(const position_t* pos, score_t* score)
+score_t pawn_score(const position_t* pos)
 {
     pawn_data_t* pd = analyze_pawns(pos);
     color_t side = pos->side_to_move;
     assert(abs(pd->score[WHITE]<2000) && abs(pd->score[BLACK]<2000));
-    score->midgame += pd->score[side] - pd->score[side^1];
-    score->endgame += pd->endgame_score[side] - pd->endgame_score[side^1];
+    score_t score;
+    score.midgame = pd->score[side] - pd->score[side^1];
+    score.endgame = pd->endgame_score[side] - pd->endgame_score[side^1];
+    return score;
 }
 

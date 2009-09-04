@@ -7,7 +7,7 @@ static const int trapped_bishop = 150;
  * Find simple bad patterns that won't show up within reasonable search
  * depths. This is mostly trapped and blocked pieces.
  */
-void pattern_score(const position_t*pos, score_t* score)
+score_t pattern_score(const position_t*pos)
 {
     int s = 0;
     if (pos->board[A2] == BB && pos->board[B3] == WP) s += trapped_bishop;
@@ -21,6 +21,8 @@ void pattern_score(const position_t*pos, score_t* score)
     if (pos->board[G8] == WB && pos->board[F7] == BP) s -= trapped_bishop;
     if (pos->side_to_move == BLACK) s *= -1;
 
-    score->midgame += s;
-    score->endgame += s;
+    score_t score;
+    score.midgame = s;
+    score.endgame = s;
+    return score;
 }

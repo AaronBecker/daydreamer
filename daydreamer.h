@@ -19,24 +19,28 @@ extern "C" {
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
-#include "move.h"
-#include "hash.h"
-#include "position.h"
-#include "attack.h"
-#include "eval.h"
-#include "timer.h"
-#include "search.h"
-#include "trans_table.h"
-#include "pawn.h"
-#include "move_selection.h"
-#include "debug.h"
-
 #ifndef MIN
 #define	MIN(a,b) (((a)<(b))?(a):(b))
 #endif
 #ifndef MAX
 #define	MAX(a,b) (((a)>(b))?(a):(b))
 #endif
+#ifndef CLAMP
+#define CLAMP(x, low, high) (((x)>(high)) ? (high):(((x)<(low)) ? (low):(x)))
+#endif
+
+#include "board.h"
+#include "move.h"
+#include "hash.h"
+#include "eval.h"
+#include "position.h"
+#include "attack.h"
+#include "timer.h"
+#include "search.h"
+#include "trans_table.h"
+#include "pawn.h"
+#include "move_selection.h"
+#include "debug.h"
 
 /*
  * External function interface
@@ -70,7 +74,7 @@ void report_eval(const position_t* pos);
 bool insufficient_material(const position_t* pos);
 bool can_win(const position_t* pos, color_t side);
 bool is_draw(const position_t* pos);
-float game_phase(const position_t* pos);
+int game_phase(const position_t* pos);
 
 // format.c
 int square_to_coord_str(square_t sq, char* str);
@@ -86,7 +90,7 @@ void position_to_fen_str(const position_t* pos, char* fen);
 hashkey_t hash_position(const position_t* pos);
 
 // mobility.c
-void mobility_score(const position_t* pos, score_t* score);
+score_t mobility_score(const position_t* pos);
 
 // move.c
 void place_piece(position_t* position, piece_t piece, square_t square);
@@ -130,12 +134,12 @@ void print_board(const position_t* pos, bool uci_prefix);
 void print_pv(search_data_t* search_data);
 
 // pattern.c
-void pattern_score(const position_t* pos, score_t* score);
+score_t pattern_score(const position_t*pos);
 
 // pawn.c
 void init_pawn_table(const int max_bytes);
 void clear_pawn_table(void);
-void pawn_score(const position_t* pos, score_t* score);
+score_t pawn_score(const position_t* pos);
 void print_pawn_stats(void);
 
 // perft.c

@@ -37,8 +37,8 @@ void place_piece(position_t* pos, piece_t piece, square_t square)
     pos->hash ^= piece_hash(piece, square);
     pos->piece_count[piece]++;
     pos->material_eval[color] += material_value(piece);
-    pos->piece_square_eval[color] += piece_square_value(piece, square);
-    pos->endgame_piece_square_eval[color] +=
+    pos->piece_square_eval[color].midgame += piece_square_value(piece, square);
+    pos->piece_square_eval[color].endgame +=
         endgame_piece_square_value(piece, square);
 }
 
@@ -73,8 +73,8 @@ void remove_piece(position_t* pos, square_t square)
     pos->hash ^= piece_hash(piece, square);
     pos->piece_count[piece]--;
     pos->material_eval[color] -= material_value(piece);
-    pos->piece_square_eval[color] -= piece_square_value(piece, square);
-    pos->endgame_piece_square_eval[color] -=
+    pos->piece_square_eval[color].midgame -= piece_square_value(piece, square);
+    pos->piece_square_eval[color].endgame -=
         endgame_piece_square_value(piece, square);
 }
 
@@ -102,11 +102,11 @@ void transfer_piece(position_t* pos, square_t from, square_t to)
         pos->pieces[color][index] = to;
         pos->piece_index[to] = index;
     }
-    pos->piece_square_eval[piece_color(p)] -= piece_square_value(p, from);
-    pos->piece_square_eval[piece_color(p)] += piece_square_value(p, to);
-    pos->endgame_piece_square_eval[piece_color(p)] -=
+    pos->piece_square_eval[color].midgame -= piece_square_value(p, from);
+    pos->piece_square_eval[color].midgame += piece_square_value(p, to);
+    pos->piece_square_eval[color].endgame -=
         endgame_piece_square_value(p, from);
-    pos->endgame_piece_square_eval[piece_color(p)] +=
+    pos->piece_square_eval[color].endgame +=
         endgame_piece_square_value(p, to);
     pos->hash ^= piece_hash(p, from);
     pos->hash ^= piece_hash(p, to);
