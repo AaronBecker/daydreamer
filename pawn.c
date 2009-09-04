@@ -105,9 +105,8 @@ pawn_data_t* analyze_pawns(const position_t* pos)
     if (pd->key == pos->pawn_hash) return pd;
 
     pd->key = pos->pawn_hash;
-    pd->score[0] = pd->score[1] = 0;
-    pd->endgame_score[0] = pd->endgame_score[1] = 0;
-
+    pd->score[WHITE].midgame = pd->score[WHITE].endgame = 0;
+    pd->score[BLACK].midgame = pd->score[BLACK].endgame = 0;
     square_t sq;
     for (color_t color=WHITE; color<=BLACK; ++color) {
         pd->num_passed[color] = 0;
@@ -133,8 +132,8 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             }
             if (passed) {
                 pd->passed[color][pd->num_passed[color]++] = sq;
-                pd->score[color] += passed_bonus[0][rank];
-                pd->endgame_score[color] += passed_bonus[1][rank];
+                pd->score[color].midgame += passed_bonus[0][rank];
+                pd->score[color].endgame += passed_bonus[1][rank];
             } else {
                 // Candidate passed pawns (one enemy pawn one file away).
                 int blockers = 0;
@@ -145,16 +144,16 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                     if (pos->board[to+1] == opp_pawn) ++blockers;
                 }
                 if (blockers < 2) {
-                    pd->score[color] += candidate_bonus[0][rank];
-                    pd->endgame_score[color] += candidate_bonus[1][rank];
+                    pd->score[color].midgame += candidate_bonus[0][rank];
+                    pd->score[color].endgame += candidate_bonus[1][rank];
                 }
             }
 
             // Doubled pawns.
             for (to = sq+push; pos->board[to] != OUT_OF_BOUNDS; to += push) {
                 if (pos->board[to] == pawn) {
-                    pd->score[color] -= doubled_penalty[0][file];
-                    pd->endgame_score[color] -= doubled_penalty[1][file];
+                    pd->score[color].midgame -= doubled_penalty[0][file];
+                    pd->score[color].endgame -= doubled_penalty[1][file];
                     ++num_defects;
                     break;
                 }
@@ -165,8 +164,8 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             to = file + N;
             for (; pos->board[to] != OUT_OF_BOUNDS; to += N) {
                 if (pos->board[to-1] == pawn || pos->board[to+1] == pawn) {
-                    pd->score[color] -= isolation_penalty[0][file];
-                    pd->endgame_score[color] -= isolation_penalty[1][file];
+                    pd->score[color].midgame -= isolation_penalty[0][file];
+                    pd->score[color].endgame -= isolation_penalty[1][file];
                     isolated = true;
                     ++num_defects;
                     break;
@@ -177,8 +176,8 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             if (((pos->board[sq+1] == pawn && pos->board[sq-1] == pawn) ||
                     pos->board[sq+push+1] == pawn ||
                     pos->board[sq+push-1] == pawn)) {
-                pd->score[color] += connected_bonus[0];
-                pd->endgame_score[color] += connected_bonus[1];
+                pd->score[color].midgame += connected_bonus[0];
+                pd->score[color].endgame += connected_bonus[1];
             }
 
             // Backward pawns (unsupportable by pawns, can't advance)
@@ -204,16 +203,16 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                         }
                     }
                     if (backward) {
-                        pd->score[color] -= backward_penalty[0][file];
-                        pd->endgame_score[color] -= backward_penalty[1][file];
+                        pd->score[color].midgame -= backward_penalty[0][file];
+                        pd->score[color].endgame -= backward_penalty[1][file];
                         ++num_defects;
                     }
                 }
             }
         }
         int defect_penalty = cumulative_defect_penalty[MIN(8, num_defects)];
-        pd->score[color] -= defect_penalty;
-        pd->endgame_score[color] -= defect_penalty;
+        pd->score[color].midgame -= defect_penalty;
+        pd->score[color].endgame -= defect_penalty;
     }
     return pd;
 }
@@ -252,10 +251,10 @@ score_t pawn_score(const position_t* pos)
     }
     color_t side = pos->side_to_move;
     score_t score;
-    score.midgame = pd->score[side] + passer_bonus[side] -
-        (pd->score[side^1] + passer_bonus[side^1]);
-    score.endgame = pd->endgame_score[side] + passer_bonus[side] -
-        (pd->endgame_score[side^1] + passer_bonus[side^1]);
+    score.midgame = pd->score[side].midgame + passer_bonus[side] -
+        (pd->score[side^1].midgame + passer_bonus[side^1]);
+    score.endgame = pd->score[side].endgame + passer_bonus[side] -
+        (pd->score[side^1].endgame + passer_bonus[side^1]);
     return score;
 }
 

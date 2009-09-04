@@ -8,8 +8,7 @@ extern "C" {
 typedef struct {
     square_t passed[2][8];
     int num_passed[2];
-    int score[2];
-    int endgame_score[2];
+    score_t score[2];
     hashkey_t key;
 } pawn_data_t;
 
