@@ -85,8 +85,8 @@ static void handle_eval(position_t* pos, char* command)
     printf("material: (%d,%d)\npiece square: (%d,%d)\n",
             pos->material_eval[WHITE],
             pos->material_eval[BLACK],
-            pos->piece_square_eval[WHITE],
-            pos->piece_square_eval[BLACK]);
+            pos->piece_square_eval[WHITE].midgame,
+            pos->piece_square_eval[BLACK].midgame);
     report_eval(pos);
     // make sure black eval is inverse of white
     pos->side_to_move ^=1;
@@ -200,8 +200,8 @@ static void handle_search(position_t* pos, char* command)
 static void handle_see(position_t* pos, char* command)
 {
     while (isspace(*command)) ++command;
-    move_t capture = coord_str_to_move(pos, command);
-    printf("see: %d\n", static_exchange_eval(pos, capture));
+    move_t move = coord_str_to_move(pos, command);
+    printf("see: %d\n", static_exchange_eval(pos, move));
 }
 
 /*
