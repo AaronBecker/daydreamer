@@ -5,16 +5,14 @@ extern search_data_t root_data;
 
 // How many moves should be selected by scanning through the score list and
 // picking the highest available, as opposed to picking them in order? Note
-// that root selection is 0, because the moves are already sorted into the
+// that root selection is 0 because the moves are already sorted into the
 // correct order.
 static const int ordered_move_count[6] = { 0, 256, 16, 16, 4, 4 };
 
 static void generate_moves(move_selector_t* sel);
 static void score_moves(move_selector_t* sel);
-static void score_moves_classic(move_selector_t* sel);
 static void sort_root_moves(move_selector_t* sel);
 static int score_tactical_move(position_t* pos, move_t move);
-static void old_sort_moves(move_selector_t* sel);
 
 /*
  * Initialize the move selector data structure with the information needed to
@@ -143,7 +141,6 @@ move_t select_move(move_selector_t* sel)
         if ((sel->generator == Q_CHECK_GEN || sel->generator == Q_GEN) &&
             (!get_move_promote(move) || get_move_promote(move) != QUEEN) &&
             sel->scores[sel->current_move_index-1] < MAX_HISTORY) continue;
-                //sel->scores[sel->current_move_index-1] < 0) continue;
         if (sel->generator != ESCAPE_GEN && sel->generator != ROOT_GEN &&
                 !is_pseudo_move_legal(sel->pos, move)) continue;
         check_pseudo_move_legality(sel->pos, move);
@@ -266,7 +263,7 @@ uint64_t get_root_node_count(move_t move)
 /*
  * The old move scoring function, kept for reference.
  */
-static void score_moves_classic(move_selector_t* sel)
+void score_moves_classic(move_selector_t* sel)
 {
     move_t* moves = sel->moves;
     int* scores = sel->scores;
@@ -311,3 +308,4 @@ static void score_moves_classic(move_selector_t* sel)
         scores[i] = score;
     }
 }
+

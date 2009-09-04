@@ -92,6 +92,9 @@ void generate_attack_data(void)
     }
 }
 
+/*
+ * Is the piece on |from| pinned, and if so what's the direction to the king?
+ */
 direction_t pin_direction(const position_t* pos,
         square_t from,
         square_t king_sq)
@@ -144,6 +147,9 @@ bool is_square_attacked(const position_t* pos, square_t sq, color_t side)
     return false;
 }
 
+/*
+ * Is a the piece on |from| attacking a square adjacent to |target|?
+ */
 bool piece_attacks_near(const position_t* pos, square_t from, square_t target)
 {
     piece_t p = pos->board[from];
@@ -165,6 +171,11 @@ bool piece_attacks_near(const position_t* pos, square_t from, square_t target)
     return false;
 }
 
+/*
+ * Set |pos->check_square| to the location of a checking piece, and return 0
+ * if |pos| is not check, 1 if there is exactly 1 checker, or 2 if there are
+ * multiple checkers.
+ */
 uint8_t find_checks(position_t* pos)
 {
     // For every opposing piece, look up the attack data for its square.
