@@ -63,9 +63,9 @@ static void handle_print(position_t* pos, char* command)
     (void)command;
     print_board(pos, false);
     move_t moves[255];
-    generate_quiescence_moves(pos, moves, true);
+    printf("moves: ");
+    generate_legal_moves(pos, moves);
     for (move_t* move = moves; *move; ++move) {
-        if (!is_move_legal(pos, *move)) continue;
         char san[8];
         move_to_san_str(pos, *move, san);
         printf("%s ", san);
@@ -87,6 +87,7 @@ static void handle_eval(position_t* pos, char* command)
             pos->material_eval[BLACK],
             pos->piece_square_eval[WHITE],
             pos->piece_square_eval[BLACK]);
+    report_eval(pos);
     // make sure black eval is inverse of white
     pos->side_to_move ^=1;
     assert(full_eval(pos) == -eval);
@@ -203,6 +204,10 @@ static void handle_see(position_t* pos, char* command)
     printf("see: %d\n", static_exchange_eval(pos, capture));
 }
 
+/*
+ * Command: epd <filename>
+ * Run analysis on each position in the given epd file.
+ */
 static void handle_epd(position_t* pos, char* command)
 {
     (void)pos;
@@ -213,6 +218,18 @@ static void handle_epd(position_t* pos, char* command)
     epd_testsuite(filename, time_per_move);
 }
 
+/*
+ * Command: bench <depth>
+ * Search all benchmark position to the given depth.
+ */
+static void handle_bench(position_t* pos, char* command)
+{
+    (void)pos;
+    int depth = 0;
+    sscanf(command, " %d", &depth);
+    if (!depth) depth = 5;
+    benchmark(depth, 0);
+}
 
 /*
  * Command: uci
@@ -234,6 +251,7 @@ static const char* command_prefixes[] = {
     "moves",
     "perft",
     "print",
+    "bench",
     "eval",
     "undo",
     "quit",
@@ -244,7 +262,7 @@ static const char* command_prefixes[] = {
 };
 
 static const int command_prefix_lengths[] = {
-    10, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 0
+    10, 8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 3, 3, 3, 0
 };
 
 static const command_handler handlers[] = {
@@ -256,6 +274,7 @@ static const command_handler handlers[] = {
     &handle_moves,
     &handle_perft,
     &handle_print,
+    &handle_bench,
     &handle_eval,
     &handle_undo,
     &handle_quit,

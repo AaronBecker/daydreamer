@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 // TODO: shrink this structure.
+// TODO: track mate threats and whether null moves should be attempted
 typedef struct {
     hashkey_t key;
     move_t move;
@@ -14,7 +15,6 @@ typedef struct {
     uint8_t age;
     score_type_t score_type;
 } transposition_entry_t;
-extern transposition_entry_t* transposition_table;
 
 #ifdef __cplusplus
 } // extern "C"

@@ -1,7 +1,6 @@
 
 /* 
- * Piece-square tables and material values for the UFO simple evaluation
- * function, as described at:
+ * Piece-square tables for the UFO simple evaluation function, as described at:
  * http://chessprogramming.wikispaces.com/Simplified+evaluation+function
  * Thanks to its originator, Tomasz Michniewski.
  */

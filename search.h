@@ -8,6 +8,12 @@ extern "C" {
 #define MAX_SEARCH_DEPTH        64
 
 typedef struct {
+    move_t moves[256];
+    int scores[256];
+    int offset;
+} move_list_t;
+
+typedef struct {
     move_t pv[MAX_SEARCH_DEPTH];
     move_t killers[2];
 } search_node_t;
@@ -41,16 +47,31 @@ typedef struct {
 } search_stats_t;
 
 typedef struct {
+    int history[16*64]; // move indexed by piece type and destination square
+    int success[16*64];
+    int failure[16*64];
+} history_t;
+
+#define MAX_HISTORY         1000000
+#define MAX_HISTORY_INDEX   (16*64)
+#define depth_to_history(d) ((d)*(d))
+#define history_index(m)   \
+    ((get_move_piece_type(m)<<6)|(square_to_index(get_move_to(m))))
+
+typedef struct {
     position_t root_pos;
     search_options_t options;
     search_stats_t stats;
 
     // search state info
-    move_t root_moves[256];
+    //move_list_t root_move_list;
+    move_t moves[256];
+    uint64_t move_nodes[256];
     move_t best_move; // FIXME: shouldn't this be redundant with pv[0]?
     int best_score;
     move_t pv[MAX_SEARCH_DEPTH];
     search_node_t search_stack[MAX_SEARCH_DEPTH];
+    history_t history;
     uint64_t nodes_searched;
     uint64_t qnodes_searched;
     int current_depth;
@@ -62,7 +83,7 @@ typedef struct {
     int depth_limit;
     int time_limit;
     int time_target;
-    int mate_search;
+    int mate_search; // TODO:implement
     bool infinite;
     bool ponder;
 } search_data_t;
@@ -72,16 +93,19 @@ typedef struct {
 #define DRAW_VALUE      0
 // TODO: replace parameters with options.
 #define NULL_R          3
-#define NULLMOVE_VERIFICATION_REDUCTION    4
+#define NULLMOVE_VERIFICATION_REDUCTION    5
 #define NULL_EVAL_MARGIN            200
-#define RAZOR_DEPTH_LIMIT           3
-#define FUTILITY_DEPTH_LIMIT        5
+#define RAZOR_DEPTH_LIMIT           1
+#define FUTILITY_DEPTH_LIMIT        1
 #define LMR_PV_EARLY_MOVES          10
 #define LMR_EARLY_MOVES             3
 #define LMR_DEPTH_LIMIT             1
 #define LMR_REDUCTION               1
 
-#define is_mate_score(score)       (abs(score) + 256 > MATE_VALUE)
+#define is_mate_score(score)        (score+MAX_SEARCH_DEPTH+1>MATE_VALUE)
+#define is_mated_score(score)       (score-MAX_SEARCH_DEPTH-1<-MATE_VALUE)
+#define mate_in(ply)                (MATE_VALUE-ply)
+#define mated_in(ply)               (-MATE_VALUE+ply)
 #define should_output(s)    \
     (elapsed_time(&((s)->timer)) > (s)->options.output_delay)
 

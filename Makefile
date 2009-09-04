@@ -5,13 +5,14 @@ GCCFLAGS = --std=c99
 CLANGHOME = $(HOME)/local/clang
 SCANVIEW = $(CLANGHOME)/scan-build
 ANALYZER = $(CLANGHOME)/libexec/ccc-analyzer
-CC = $(CLANGHOME)/bin/clang $(CLANGFLAGS)
+#CC = $(CLANGHOME)/bin/clang $(CLANGFLAGS)
 #CC = /opt/local/bin/gcc $(GCCFLAGS)
-#CC = /usr/bin/gcc $(GCCFLAGS)
+CC = /usr/bin/gcc $(GCCFLAGS)
 #CC = i386-mingw32-gcc $(GCCFLAGS)
 CTAGS = ctags
 
-COMMONFLAGS = -Wall -Wextra
+COMMONFLAGS = -Wall -Wextra -Wno-unused-function
+LDFLAGS =
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0
 ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
 DEFAULTFLAGS = $(COMMONFLAGS) -g -O2 -DOMIT_CHECKS
@@ -19,7 +20,7 @@ OPTFLAGS = $(COMMONFLAGS) -O3 -DOMIT_CHECKS -DNDEBUG
 CFLAGS = $(DEFAULTFLAGS)
 DBGCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEBUGFLAGS)\\\"\"
 OPTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(OPTFLAGS)\\\"\"
-DFTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEFAULTFLAGS))\\\"\"
+DFTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEFAULTFLAGS)\\\"\"
 
 SRCFILES := $(wildcard *.c)
 HEADERS  := $(wildcard *.h)

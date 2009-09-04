@@ -1,28 +1,43 @@
 
 #include "daydreamer.h"
+#include <string.h>
 
 /*
  * Do some basic consistency checking on |pos| to identify bugs.
  */
 void _check_board_validity(const position_t* pos)
 {
-    assert(pos->piece_count[0][KING] == 1);
-    assert(pos->piece_count[1][KING] == 1);
-    assert(pos->piece_count[0][PAWN] <= 8);
-    assert(pos->piece_count[1][PAWN] <= 8);
+    assert(pos->board[pos->pieces[WHITE][0]] == WK);
+    assert(pos->board[pos->pieces[BLACK][0]] == BK);
+    assert(pos->num_pawns[WHITE] <= 8);
+    assert(pos->num_pawns[BLACK] <= 8);
+    int my_piece_count[16];
+    memset(my_piece_count, 0, 16 * sizeof(int));
     for (square_t sq=A1; sq<=H8; ++sq) {
-        if (!valid_board_index(sq)) continue;
-        if (pos->board[sq]) assert(pos->board[sq]->location == sq);
+        if (!valid_board_index(sq) || !pos->board[sq]) continue;
+        piece_t piece = pos->board[sq];
+        color_t side = piece_color(piece);
+        my_piece_count[piece]++;
+        if (piece_is_type(piece, PAWN)) {
+            assert(pos->pawns[side][pos->piece_index[sq]] == sq);
+        } else {
+            assert(pos->pieces[side][pos->piece_index[sq]] == sq);
+        }
     }
-    for (piece_type_t type=PAWN; type<=KING; ++type) {
-        for (int i=0; i<pos->piece_count[0][type]; ++i)
-            assert(pos->pieces[0][type][i].location == INVALID_SQUARE ||
-                    pos->board[pos->pieces[0][type][i].location] ==
-                    &pos->pieces[0][type][i]);
-        for (int i=0; i<pos->piece_count[1][type]; ++i)
-            assert(pos->pieces[1][type][i].location == INVALID_SQUARE ||
-                    pos->board[pos->pieces[1][type][i].location] ==
-                    &pos->pieces[1][type][i]);
+    for (int i=0; i<16; ++i) {
+        assert(my_piece_count[i] == pos->piece_count[i]);
+    }
+    for (int i=0; i<pos->num_pieces[0]; ++i) {
+        assert(pos->piece_index[pos->pieces[0][i]] == i);
+    }
+    for (int i=0; i<pos->num_pawns[0]; ++i) {
+        assert(pos->piece_index[pos->pawns[0][i]] == i);
+    }
+    for (int i=0; i<pos->num_pieces[1]; ++i) {
+        assert(pos->piece_index[pos->pieces[1][i]] == i);
+    }
+    for (int i=0; i<pos->num_pawns[1]; ++i) {
+        assert(pos->piece_index[pos->pawns[1][i]] == i);
     }
     assert(hash_position(pos) == pos->hash);
 }
@@ -30,7 +45,7 @@ void _check_board_validity(const position_t* pos)
 /*
  * Perform some sanity checks on |move| to flag obviously invalid moves.
  */
-void _check_move_validity(const position_t* pos, const move_t move)
+void _check_move_validity(const position_t* pos, move_t move)
 {
     const square_t from = get_move_from(move);
     const square_t to = get_move_to(move);
@@ -39,13 +54,23 @@ void _check_move_validity(const position_t* pos, const move_t move)
     (void)pos,(void)move;                           // Avoid warning when
     (void)from,(void)to,(void)piece,(void)capture;  // NDEBUG is defined.
     assert(valid_board_index(from) && valid_board_index(to));
-    assert(pos->board[from]->piece == piece);
-    assert(pos->board[from]->location == from);
+    assert(pos->board[from] == piece);
     if (capture && !is_move_enpassant(move)) {
-        assert(pos->board[to]->piece == capture);
+        assert(pos->board[to] == capture);
     } else {
-        assert(pos->board[to] == NULL);
+        assert(pos->board[to] == EMPTY);
     }
+}
+
+/*
+ * Make sure that legality testing for pseudo-moves gives the same result
+ * as the more expensive testing.
+ */
+void _check_pseudo_move_legality(position_t* pos, move_t move)
+{
+    (void)pos;
+    (void)move;
+    assert(is_move_legal(pos, move) == is_pseudo_move_legal(pos, move));
 }
 
 /*

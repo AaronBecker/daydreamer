@@ -1,5 +1,5 @@
 
-Daydreamer 1.0
+Daydreamer 1.5
 ==============
 
 Daydreamer is a chess-playing program I've been writing in my spare time. I'm
@@ -8,6 +8,40 @@ search with distributed memory, but first the serial code needs more work.
 I named it Daydreamer after a bug in an early version caused it to occasionally
 follow up very strong play with bizarre blunders, as though it had lost its
 focus on the game and its mind was wandering aimlessly.
+
+Changes since 1.0
+-----------------
+
+Replaced the standard simplified evaluation with a custom job. The simple
+version is still available for testing purposes. In addition to re-doing the
+material valuation and piece-square tables, I added pawn evaluation (passed
+pawn identification is probably the single largest improvement over version 1
+in terms of playing strength) and simple measures of mobility and king safety.
+
+The board representation has been modified for efficiency, and the move
+generator is more sophisticated now. I've also completely revamped the move
+ordering (probably the second largest improvement) and added futility pruning
+to the search. History counters are now used both for futility and move
+ordering.
+
+The result is a pretty significant jump in strength. Early on I underestimated
+the importance of good move ordering relative to raw nodes per second. For this
+release I focused much more energy on reducing the size of the search tree,
+with good results. Here are results from some testing matches I ran at 10s per
+side to give a rough idea of how the new release of Daydreamer stacks up:
+
+Diablo 0.5.1    +30-20=0    30.0/50
+Dirty ACCA 3    +32-13=5    34.5/50
+Greko 6.5       +29-10=11   34.5/50
+Sungorus 1.2    +24-13=13   30.5/50
+Romichess P3K   +17-26=7    20.5/50
+Bison 9.6       +5-34=11    10.5/50
+
+and here are scores on two common (relatively easy) suites of problems, solved
+at 10s per problem:
+
+WAC     293/300
+ECMGMP  120/182
 
 Using Daydreamer
 ----------------
@@ -19,8 +53,45 @@ the UCI specification pretty faithfully, but it doesn't support pondering yet,
 and it doesn't report some of the more esoteric search info that UCI defines.
 It reports only a single variation.
 
-Design
+Compiling
+---------
+
+If you have a C compiler that can handle C99, this should be easy. Just edit
+the CC variable in the Makefile to point at your compiler, set the compile
+flags you want in CFLAGS, and you should be good to go. If you compile with
+-DCOMPILE_COMMAND, you can pass a string that will be reported when you start
+the engine up. I find this pretty helpful for remembering what version I'm
+working with. I've tested with gcc on Mac and Linux, clang on Mac, and the
+MinGW cross-compiler for Windows.
+
+Installing
+----------
+
+The whole thing is a single executable, so there's nothing to install, really.
+Just put it wherever you want. I've included a polyglot.ini file for
+compatibility with Winboard interfaces, but aside from that there aren't any
+configuration files.
+
+Thanks
 ------
+
+I'm the only person who actually writes the code of Daydreamer, but the ideas
+and structure of the code owe a lot to the chess programming community. I read
+through the source of a lot of open source engines before starting this
+project, and they've all influenced my design for Daydreamer. In particular,
+Fruit by Fabian Letouzey and Glaurung and Viper by Tord Romstad have strongly
+influenced the way I approached this project, and Daydreamer would be much
+worse without them.
+
+I also had access to a lot of good writing about the design, implementation,
+and testing of chess engines. Bruce Moreland's site and the blogs of [Jonatan
+Pettersson (Mediocre)](http://mediocrechess.blogspot.com/) and [Matt Gingell
+(Chesley)](http://sourceforge.net/apps/wordpress/chesley/) have been
+particularly interesting. Thanks also to the authors of the many engines I've
+tested against, and to composers of EPD testing suites.
+
+Design (1.0)
+------------
 
 To over-simplify, all chess engines have two parts: search and evaluation.
 Evaluation is the part that looks at the board and figures out who's winning
@@ -49,8 +120,8 @@ position that has easy tactics on the board. It gets a lot of strength from the
 implemented razoring and futility pruning, although I haven't quite figured out
 how to make the most of them yet.
 
-Strength
---------
+Strength (1.0)
+--------------
 
 So, how strong is Daydreamer? Strong enough to beat me, certainly. It's not
 terribly strong yet for a chess engine, but it's progressing pretty quickly. I
@@ -81,41 +152,3 @@ function with a maximum time of 10s.
 
     WAC    291/300
     ECMGMP  93/173
-
-Compiling
----------
-
-If you have a C compiler that can handle C99, this should be easy. Just edit
-the CC variable in the Makefile to point at your compiler, set the compile
-flags you want in CFLAGS, and you should be good to go. If you compile with
--DCOMPILE_COMMAND, you can pass a string that will be reported when you start
-the engine up. I find this pretty helpful for remembering what version I'm
-working with. I've tested with gcc on Mac and Linux, clang on Mac, and the
-MinGW cross-compiler on Windows.
-
-Installing
-----------
-
-The whole thing is a single executable, so there's nothing to install, really.
-Just put it wherever you want. I've included a polyglot.ini file for
-compatibility with Winboard interfacees, but aside from that there aren't any
-configuration files.
-
-Thanks
-------
-
-I'm the only person who actually writes the code of Daydreamer, but the ideas
-and structure of the code owe a lot to the chess programming community. I read
-through the source of a lot of open source engines before starting this
-project, and they've all influenced my design for Daydreamer. In particular,
-Fruit by Fabian Letouzey and Glaurung and Viper by Tord Romstad have strongly
-influenced the way I approached this project, and Daydreamer would be much
-worse without them.
-
-I also had access to a lot of good writing about the design, implementation,
-and testing of chess engines. Bruce Moreland's site and the blogs of [Jonatan
-Pettersson (Mediocre)](http://mediocrechess.blogspot.com/) and [Matt Gingell
-(Chesley)](http://sourceforge.net/apps/wordpress/chesley/) have been
-particularly interesting. Thanks also to the authors of the many engines I've
-tested against, and to composers of EPD testing suites.
-

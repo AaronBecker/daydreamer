@@ -11,18 +11,24 @@
  */
 static void init_position(position_t* position)
 {
-    for (int square=0; square<128; ++square) {
-        position->board[square] = NULL;
+    position->board = position->_board_storage+64;
+    for (int square=0; square<256; ++square) {
+        position->_board_storage[square] = OUT_OF_BOUNDS;
+    }
+    for (int i=0; i<64; ++i) {
+        int square = index_to_square(i);
+        position->board[square] = EMPTY;
+        position->piece_index[square] = -1;
     }
 
     for (color_t color=WHITE; color<=BLACK; ++color) {
-        for (piece_type_t type=PAWN; type<=KING; ++type) {
-            position->piece_count[color][type] = 0;
-            for (int index=0; index<16; ++index) {
-                piece_entry_t* entry = &position->pieces[color][type][index];
-                entry->piece = create_piece(color, type);
-                entry->location = INVALID_SQUARE;
-            }
+        position->num_pieces[color] = 0;
+        position->num_pawns[color] = 0;
+        for (int index=0; index<32; ++index) {
+            position->pieces[color][index] = INVALID_SQUARE;
+        }
+        for (int index=0; index<16; ++index) {
+            position->pawns[color][index] = INVALID_SQUARE;
         }
         position->material_eval[color] = 0;
         position->piece_square_eval[color] = 0;
@@ -36,7 +42,10 @@ static void init_position(position_t* position)
     position->castle_rights = CASTLE_NONE;
     position->prev_move = NO_MOVE;
     position->hash = 0;
+    position->pawn_hash = 0;
     position->is_check = false;
+    position->check_square = EMPTY;
+    memset(position->piece_count, 0, 16 * sizeof(int));
     memset(position->hash_history, 0, HASH_HISTORY_LENGTH * sizeof(hashkey_t));
 }
 
@@ -47,16 +56,6 @@ void copy_position(position_t* dst, const position_t* src)
 {
     check_board_validity(src);
     memcpy(dst, src, sizeof(position_t));
-    for (color_t color=WHITE; color<=BLACK; ++color) {
-        for (piece_type_t type=PAWN; type<=KING; ++type) {
-            for (int index=0; index<dst->piece_count[color][type]; ++index) {
-                piece_entry_t* entry = &dst->pieces[color][type][index];
-                if (entry->location != INVALID_SQUARE) {
-                    dst->board[entry->location] = entry;
-                }
-            }
-        }
-    }
     check_board_validity(src);
     check_board_validity(dst);
 }
@@ -98,8 +97,7 @@ char* set_position(position_t* pos, const char* fen)
             case '\0':
             case '\n':check_board_validity(pos);
                       pos->hash = hash_position(pos);
-                      square_t king_sq = pos->pieces[WHITE][KING][0].location;
-                      pos->is_check = is_square_attacked(pos, king_sq, BLACK);
+                      pos->is_check = find_checks(pos);
                       return (char*)fen;
             default: warn(false, "Illegal character in FEN string");
                      return (char*)fen;
@@ -115,8 +113,7 @@ char* set_position(position_t* pos, const char* fen)
                   return (char*)fen;
     }
     while (*fen && isspace(*(++fen))) {}
-    square_t king_sq = pos->pieces[pos->side_to_move][KING][0].location;
-    pos->is_check = is_square_attacked(pos, king_sq, pos->side_to_move^1);
+    pos->is_check = find_checks(pos);
 
     // Read castling rights.
     while (*fen && !isspace(*fen)) {
@@ -162,62 +159,46 @@ char* set_position(position_t* pos, const char* fen)
     if (sscanf(fen, "%d %d%n", &pos->fifty_move_counter, &pos->ply,
                 &consumed)) fen += consumed;
     pos->ply = pos->ply*2 + (pos->side_to_move == BLACK ? 1 : 0);
+    if (pos->ply < pos->fifty_move_counter) {
+        warn(false, "50 move counter is less than current ply");
+        pos->ply = pos->fifty_move_counter;
+    }
     pos->hash = hash_position(pos);
     check_board_validity(pos);
     return (char*)fen;
 }
 
 /*
- * Is |sq| being directly attacked by any pieces on |side|? Works on both
- * occupied and unoccupied squares.
+ * In |pos|, is the side to move in check?
  */
-bool is_square_attacked(const position_t* pos,
-        const square_t sq,
-        const color_t side)
-{
-    // For every opposing piece, look up the attack data for its square.
-    for (piece_t p=PAWN; p<=KING; ++p) {
-        const int num_pieces = pos->piece_count[side][p];
-        for (int i=0; i<num_pieces; ++i) {
-            const piece_entry_t* piece_entry = &pos->pieces[side][p][i];
-            square_t from=piece_entry->location;
-            const attack_data_t* attack_data = &get_attack_data(from, sq);
-            if (attack_data->possible_attackers &
-                    get_piece_flag(piece_entry->piece)) {
-                if (piece_slide_type(p) == NO_SLIDE) return true;
-                while (from != sq) {
-                    from += attack_data->relative_direction;
-                    if (from == sq) return true;
-                    if (pos->board[from]) break;
-                }
-            }
-        }
-    }
-    return false;
-}
-
 bool is_check(const position_t* pos)
 {
     return pos->is_check;
 }
 
-bool is_move_legal(position_t* pos, const move_t move)
+/*
+ * Test a move's legality. There are no constraints on what kind of move it
+ * is; it could be complete nonsense.
+ */
+bool is_move_legal(position_t* pos, move_t move)
 {
-    const color_t other_side = pos->side_to_move^1;
-    const square_t king_square = pos->pieces[other_side^1][KING][0].location;
+    // We only generate legal moves while in check.
+    if (is_check(pos)) return true;
 
-    // don't try to make invalid/inconsistent moves
+    const color_t other_side = pos->side_to_move^1;
+    const square_t king_square = pos->pieces[other_side^1][0];
+
+    // Identify invalid/inconsistent moves.
     const square_t from = get_move_from(move);
     const square_t to = get_move_to(move);
     const piece_t piece = get_move_piece(move);
     const piece_t capture = get_move_capture(move);
     if (!valid_board_index(from) || !valid_board_index(to)) return false;
-    if (!pos->board[from] || pos->board[from]->piece != piece) return false;
-    if (pos->board[from]->location != from) return false;
+    if (pos->board[from] != piece) return false;
     if (capture && !is_move_enpassant(move)) {
-        if (!pos->board[to] || pos->board[to]->piece != capture) return false;
+        if (pos->board[to] != capture) return false;
     } else {
-        if (pos->board[to] != NULL) return false;
+        if (pos->board[to] != EMPTY) return false;
     }
 
     // See if any attacks are preventing castling.
@@ -233,16 +214,43 @@ bool is_move_legal(position_t* pos, const move_t move)
     }
 
     // Just try the move and see if the king is being attacked afterwards.
-    // TODO: This is sort of inefficient--actually making and unmaking the move
-    // isn't strictly necessary, so this could be optimized if it turns out
-    // to be a significant cost.
     undo_info_t undo;
     do_move(pos, move, &undo);
     bool legal = !is_square_attacked(pos,
-            pos->pieces[pos->side_to_move^1][KING][0].location,
+            pos->pieces[pos->side_to_move^1][0],
             other_side);
     undo_move(pos, move, &undo);
     return legal;
+}
+
+/*
+ * Test a pseudo-legal move's legality. For this, we only have to check that
+ * it doesn't leave the king in check.
+ */
+bool is_pseudo_move_legal(position_t* pos, move_t move)
+{
+    piece_t piece = get_move_piece(move);
+    square_t to = get_move_to(move);
+    square_t from = get_move_from(move);
+    color_t side = piece_color(piece);
+    // Note: any pseudo-legal castle is legal if the king isn't attacked
+    // afterwards, by design.
+    if (piece_is_type(piece, KING)) return !is_square_attacked(pos, to, side^1);
+
+    // Avoid moving pinned pieces.
+    direction_t pin_dir = pin_direction(pos, from, pos->pieces[side][0]);
+    if (pin_dir) return abs(pin_dir) == abs(direction(from, to));
+
+    // Resolving pins for en passant moves is a pain, and they're very rare.
+    // I just do them the expensive way and don't worry about it.
+    if (is_move_enpassant(move)) {
+        undo_info_t undo;
+        do_move(pos, move, &undo);
+        bool legal = !is_square_attacked(pos, pos->pieces[side][0], side^1);
+        undo_move(pos, move, &undo);
+        return legal;
+    }
+    return true;
 }
 
 /*
@@ -251,7 +259,8 @@ bool is_move_legal(position_t* pos, const move_t move)
  */
 bool is_repetition(const position_t* pos)
 {
-    for (int age = 2; age <= pos->fifty_move_counter; age += 2) {
+    int max_age = MIN(pos->fifty_move_counter, pos->ply);
+    for (int age = 2; age < max_age; age += 2) {
         assert(pos->ply >= age);
         if (pos->hash_history[pos->ply - age] == pos->hash) return true;
     }

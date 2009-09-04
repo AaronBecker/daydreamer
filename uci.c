@@ -17,6 +17,7 @@ static void calculate_search_time(int wtime,
         int binc,
         int movestogo);
 static int bios_key(void);
+static bool new_game = false;
 
 void uci_main(void)
 {
@@ -41,6 +42,7 @@ static void uci_handle_command(char* command)
     else if (!strncasecmp(command, "quit", 4)) exit(0);
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
+    else if (!strncasecmp(command, "ucinewgame", 10)) new_game = true;
     else if (!strncasecmp(command, "setoption name", 14)) {
         set_uci_option(command+15, &root_data.options);
     }
@@ -104,7 +106,8 @@ static void uci_go(char* command)
             if (!is_move_legal(&root_data.root_pos, move)) {
                 printf("%s is not a legal move\n", info);
             }
-            root_data.root_moves[move_index++] = move;
+            root_data.moves[move_index++] = move;
+            //root_data.root_move_list.moves[move_index++] = move;
             while (*info && !isspace(*info)) ++info;
             while (isspace(*info)) ++info;
         }
@@ -163,6 +166,7 @@ static void calculate_search_time(int wtime,
         int binc,
         int movestogo)
 {
+    // TODO: increase move time after ucinewgame
     // TODO: cool heuristics for time mangement.
     // For now, just use a simple static rule and look at our own time only
     color_t side = root_data.root_pos.side_to_move;
@@ -172,6 +176,11 @@ static void calculate_search_time(int wtime,
     // If we don't know n, guess 40. Allow using up to 8/n for tough moves.
     if (!movestogo) movestogo = 40;
     time += movestogo*inc;
+    if (new_game) {
+        // take more time on the first analyzed move of a new game
+        time *= 2;
+        new_game = false;
+    }
     root_data.time_target = time/movestogo;
     root_data.time_limit = time < time*8/movestogo ? time : time*8/movestogo;
 }

@@ -9,7 +9,7 @@ static int num_buckets;
 static int generation;
 static const int generation_limit = 8;
 static int age_score_table[8];
-transposition_entry_t* transposition_table = NULL;
+static transposition_entry_t* transposition_table = NULL;
 
 static struct {
     int misses;

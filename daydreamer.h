@@ -14,7 +14,7 @@ extern "C" {
 #include <sys/time.h>
 
 #define ENGINE_NAME             "Daydreamer"
-#define ENGINE_VERSION_NUMBER   "1.0.1"
+#define ENGINE_VERSION_NUMBER   "1.5"
 #define ENGINE_VERSION_NAME     ""
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
@@ -22,10 +22,13 @@ extern "C" {
 #include "move.h"
 #include "hash.h"
 #include "position.h"
+#include "attack.h"
 #include "eval.h"
 #include "timer.h"
 #include "search.h"
 #include "trans_table.h"
+#include "pawn.h"
+#include "move_selection.h"
 #include "debug.h"
 
 #ifndef MIN
@@ -39,11 +42,23 @@ extern "C" {
  * External function interface
  */
 
-// daydreamer.c
-void init_daydreamer(void);
+// attack.c
+void generate_attack_data(void);
+direction_t pin_direction(const position_t* pos,
+        square_t from,
+        square_t king_sq);
+bool is_square_attacked(const position_t* pos, square_t square, color_t side);
+bool piece_attacks_near(const position_t* pos, square_t from, square_t target);
+uint8_t find_checks(position_t* pos);
+
+// benchmark.c
+void benchmark(int depth, int time_limit);
 
 // console.c
 void handle_console(position_t* pos, char* command);
+
+// daydreamer.c
+void init_daydreamer(void);
 
 // epd.c
 void epd_testsuite(char* filename, int time_per_problem);
@@ -51,9 +66,11 @@ void epd_testsuite(char* filename, int time_per_problem);
 // eval.c
 int simple_eval(const position_t* pos);
 int full_eval(const position_t* pos);
+void report_eval(const position_t* pos);
 bool insufficient_material(const position_t* pos);
+bool can_win(const position_t* pos, color_t side);
 bool is_draw(const position_t* pos);
-bool is_endgame(const position_t* pos);
+float game_phase(const position_t* pos);
 
 // format.c
 int square_to_coord_str(square_t sq, char* str);
@@ -68,49 +85,68 @@ void position_to_fen_str(const position_t* pos, char* fen);
 // hash.c
 hashkey_t hash_position(const position_t* pos);
 
+// mobility.c
+void mobility_score(const position_t* pos, score_t* score);
+
 // move.c
-void place_piece(position_t* position,
-        const piece_t piece,
-        const square_t square);
-void remove_piece(position_t* position,
-        const square_t square);
-void transfer_piece(position_t* position,
-        const square_t from,
-        const square_t to);
-void do_move(position_t* position, const move_t move, undo_info_t* undo);
-void undo_move(position_t* position, const move_t move, undo_info_t* undo);
+void place_piece(position_t* position, piece_t piece, square_t square);
+void remove_piece(position_t* position, square_t square);
+void transfer_piece(position_t* position, square_t from, square_t to);
+void do_move(position_t* position, move_t move, undo_info_t* undo);
+void undo_move(position_t* position, move_t move, undo_info_t* undo);
 void do_nullmove(position_t* pos, undo_info_t* undo);
 void undo_nullmove(position_t* pos, undo_info_t* undo);
 
 // move_generation.c
-int generate_legal_moves(const position_t* pos, move_t* moves);
-int generate_legal_noncaptures(const position_t* pos, move_t* moves);
+int generate_legal_moves(position_t* pos, move_t* moves);
 int generate_pseudo_moves(const position_t* position, move_t* move_list);
-int generate_pseudo_captures(const position_t* position, move_t* move_list);
-int generate_pseudo_noncaptures(const position_t* position, move_t* move_list);
+int generate_pseudo_tactical_moves(const position_t* pos, move_t* moves);
+int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves);
+int generate_evasions(const position_t* pos, move_t* moves);
+int generate_pseudo_checks(const position_t* pos, move_t* moves);
 int generate_quiescence_moves(const position_t* pos,
         move_t* moves,
         bool generate_checks);
-// TODO: remove once tested
-int generate_pseudo_checks(const position_t* pos, move_t* moves);
+
+// move_selection.c
+void init_move_selector(move_selector_t* sel,
+        position_t* pos,
+        generation_t gen_type,
+        search_node_t* search_node,
+        move_t hash_move,
+        int depth,
+        int ply);
+bool has_single_reply(move_selector_t* sel);
+move_t select_move(move_selector_t* sel);
+void store_root_node_count(move_t move, uint64_t nodes);
+uint64_t get_root_node_count(move_t move);
 
 // output.c
 void print_coord_move(move_t move);
+void print_coord_square(square_t square);
 int print_coord_move_list(const move_t* move);
+void print_search_stats(const search_data_t* search_data);
 void print_board(const position_t* pos, bool uci_prefix);
 void print_pv(search_data_t* search_data);
+
+// pattern.c
+void pattern_score(const position_t* pos, score_t* score);
+
+// pawn.c
+void init_pawn_table(const int max_bytes);
+void clear_pawn_table(void);
+void pawn_score(const position_t* pos, score_t* score);
+void print_pawn_stats(void);
 
 // perft.c
 void perft_testsuite(char* filename);
 uint64_t perft(position_t* position, int depth, bool divide);
 
 // position.c
-char* set_position(position_t* position, const char* fen);
+char* set_position(position_t* pos, const char* fen);
 void copy_position(position_t* dst, const position_t* src);
-bool is_square_attacked(const position_t* position,
-        const square_t square,
-        const color_t side);
 bool is_move_legal(position_t* pos, const move_t move);
+bool is_pseudo_move_legal(position_t* pos, move_t move);
 bool is_check(const position_t* pos);
 bool is_repetition(const position_t* pos);
 

@@ -12,13 +12,13 @@ extern "C" {
 #define FEN_STARTPOS "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 typedef enum {
-    WHITE=0, BLACK=1, INVALID_COLOR=INT_MAX
+    WHITE=0, BLACK=1, INVALID_COLOR=2
 } color_t;
 
 typedef enum {
     EMPTY=0, WP=1, WN=2, WB=3, WR=4, WQ=5, WK=6,
     BP=9, BN=10, BB=11, BR=12, BQ=13, BK=14,
-    INVALID_PIECE=16
+    OUT_OF_BOUNDS=16
 } piece_t;
 
 typedef enum {
@@ -31,15 +31,18 @@ typedef enum {
 #define piece_is_color(piece, color)    (piece_color((piece)) == (color))
 #define create_piece(color, type)       (((color) << 3) | (type))
 #define piece_colors_match(p1, p2)      (((p1) >> 3) == ((p2) >> 3))
-#define piece_colors_differ(p1, p2)     (((p1) >> 3) != ((p2) >> 3))
+#define piece_colors_differ(p1, p2)     (((p1) >> 3) == ((p2) >> 3))
+#define can_capture(p1, p2)             ((((p1) >> 3)^1) == ((p2) >> 3))
 
 typedef enum {
     FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NONE
-} file_t;
+} file_tag_t;
+typedef int file_t;
 
 typedef enum {
     RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NONE
-} rank_t;
+} rank_tag_t;
+typedef int rank_t;
 
 enum {
     A1=0x00, B1=0x01, C1=0x02, D1=0x03, E1=0x04, F1=0x05, G1=0x06, H1=0x07,
@@ -51,24 +54,16 @@ enum {
     A7=0x60, B7=0x61, C7=0x62, D7=0x63, E7=0x64, F7=0x65, G7=0x66, H7=0x67,
     A8=0x70, B8=0x71, C8=0x72, D8=0x73, E8=0x74, F8=0x75, G8=0x76, H8=0x77,
     INVALID_SQUARE=0x4b // just some square from the middle of the invalid part
-};
+} square_tag_t;
 typedef int square_t;
 
 #define square_rank(square)         ((square) >> 4)
 #define square_file(square)         ((square) & 0x0f)
 #define create_square(file, rank)   (((rank) << 4) | (file))
-#define valid_board_index(idx)      !(idx & 0x88)
+#define valid_board_index(idx)      !((idx) & 0x88)
 #define flip_square(square)         ((square) ^ 0x70)
 #define square_to_index(square)     ((square)+((square) & 0x07))>>1
 #define index_to_square(square)     ((square)+((square) & ~0x07))
-
-/**
- * Definitions for positions.
- */
-typedef struct {
-    piece_t piece;
-    square_t location;
-} piece_entry_t;
 
 typedef uint8_t castle_rights_t;
 #define WHITE_OO                        0x01
@@ -93,9 +88,14 @@ typedef uint8_t castle_rights_t;
 #define HASH_HISTORY_LENGTH  512
 
 typedef struct {
-    piece_entry_t* board[128];          // 0x88 board
-    piece_entry_t pieces[2][8][16];     // [color][type][piece entries]
-    int piece_count[2][8];              // [color][type]
+    piece_t _board_storage[256];        // 16x16 padded board
+    piece_t* board;                     // 0x88 board in middle 128 slots
+    int piece_index[128];               // index of each piece in pieces
+    square_t pieces[2][32];
+    square_t pawns[2][16];
+    int num_pieces[2];
+    int num_pawns[2];
+    int piece_count[16];
     color_t side_to_move;
     move_t prev_move;
     square_t ep_square;
@@ -105,13 +105,16 @@ typedef struct {
     int piece_square_eval[2];
     int endgame_piece_square_eval[2];
     castle_rights_t castle_rights;
-    bool is_check;
+    uint8_t is_check;
+    square_t check_square;
     hashkey_t hash;
+    hashkey_t pawn_hash;
     hashkey_t hash_history[HASH_HISTORY_LENGTH];
 } position_t;
 
 typedef struct {
-    bool is_check;
+    uint8_t is_check;
+    square_t check_square;
     move_t prev_move;
     square_t ep_square;
     int fifty_move_counter;
@@ -128,29 +131,15 @@ typedef enum {
     W=-1, STATIONARY=0, E=1,
     WNW=14, NW=15, N=16, NE=17, ENE=18,
     NNW=31, NNE=33
-} direction_t;
-extern const direction_t piece_deltas[16][16];
+} direction_tag_t;
+typedef int direction_t;
+extern const direction_t piece_deltas[17][16];
 
 extern const direction_t pawn_push[];
 extern const rank_t relative_pawn_rank[2][8];
-
-typedef enum {
-    NONE_FLAG=0, WP_FLAG=1<<0, BP_FLAG=1<<1, N_FLAG=1<<2,
-    B_FLAG=1<<3, R_FLAG=1<<4, Q_FLAG=1<<5, K_FLAG=1<<6
-} piece_flag_t;
-extern const piece_flag_t piece_flags[];
-#define get_piece_flag(piece)       piece_flags[(piece)]
-
-typedef struct {
-    piece_flag_t possible_attackers;
-    direction_t relative_direction;
-} attack_data_t;
-// An array indexed from -128 to 128 which stores attack data for every pair
-// of squares (to, from) at the index [from-to].
-extern const attack_data_t* board_attack_data;
-#define get_attack_data(from, to)   board_attack_data[(from)-(to)]
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 #endif // POSITION_H
+

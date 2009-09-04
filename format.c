@@ -96,8 +96,9 @@ move_t coord_str_to_move(position_t* pos, const char* coord_move)
 static ambiguity_t determine_move_ambiguity(position_t* pos, move_t move)
 {
     square_t dest = get_move_to(move);
-    rank_t from_rank = square_rank(get_move_from(move));
-    file_t from_file = square_file(get_move_from(move));
+    square_t from = get_move_from(move);
+    rank_t from_rank = square_rank(from);
+    file_t from_file = square_file(from);
     piece_type_t type = get_move_piece_type(move);
     move_t moves[256];
     generate_legal_moves(pos, moves);
@@ -107,6 +108,7 @@ static ambiguity_t determine_move_ambiguity(position_t* pos, move_t move)
         if (get_move_to(*other_move) != dest) continue;
         if (get_move_piece_type(*other_move) != type) continue;
         square_t other_from = get_move_from(*other_move);
+        if (from == other_from) continue;
         if (square_rank(other_from) == from_rank) ambiguity |= AMBIG_RANK;
         if (square_file(other_from) == from_file) ambiguity |= AMBIG_FILE;
     }
@@ -135,13 +137,13 @@ int move_to_san_str(position_t* pos, move_t move, char* san)
     } else {
         // type
         piece_type_t type = get_move_piece_type(move);
+        ambiguity_t ambiguity = determine_move_ambiguity(pos, move);
         if (type != PAWN) {
             *san++ = piece_type_char(type);
-        } else if (get_move_capture(move)) {
-            *san++ = square_file(get_move_to(move)) + 'a';
+        } else if (get_move_capture(move) && !(ambiguity & AMBIG_RANK)) {
+            *san++ = square_file(get_move_from(move)) + 'a';
         }
         // source
-        ambiguity_t ambiguity = determine_move_ambiguity(pos, move);
         square_t from = get_move_from(move);
         if (ambiguity & AMBIG_RANK) *san++ = square_file(from) + 'a';
         if (ambiguity & AMBIG_FILE) *san++ = square_rank(from) + '1';
@@ -278,9 +280,12 @@ void position_to_fen_str(const position_t* pos, char* fen)
             *fen++ = '/';
             square -= 0x19; // drop down to next rank
         } else if (pos->board[square]) {
-            *fen++ = glyphs[pos->board[square]->piece];
+            *fen++ = glyphs[pos->board[square]];
         } else empty_run++;
-        if (square == H1) break;
+        if (square == H1) {
+            if (empty_run) *fen++ = empty_run + '0';
+            break;
+        }
     }
     *fen++ = ' ';
     *fen++ = pos->side_to_move == WHITE ? 'w' : 'b';
