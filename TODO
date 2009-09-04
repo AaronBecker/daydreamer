@@ -4,24 +4,21 @@ Search
     Better statistics gathering/reporting
     TBB?
     Ponder
-    Checks/promotes in quiescence
     Identify "tough" moves and take more time on them
     More accurate time management
     More experiments with nullmove, razoring, futility, and LMR
-    history counters
 
-single reply extension
 shrink trans table entry size
+evaluation hashing
 
+Allow SEE for non-capturing moves
 Track pinned pieces in SEE, test for improvement
-
-separate out ufo vs normal eval
-Expand evaluation function: start with pawn eval + hash
 Chess960 support
 
 Interface
     Basic Winboard interface?
     ECO classification
+    PGN parsing
     Improve non-UCI console interface
     non-standard commands in uci? (perft, etc)
 
