@@ -23,8 +23,15 @@ static const int backward_penalty[2][8] = {
     {20, 20, 20, 20, 20, 20, 20, 20}
 };
 static const int connected_bonus[2] = {10, 20};
-static const int cumulative_defect_penalty[8] = {0, 0, 5, 10, 25, 50, 60, 75};
-// TODO: figure out how obstructed passed pawns are in eval
+static const int cumulative_defect_penalty[8] = {
+    0, 0, 5, 10, 25, 50, 60, 75
+};
+static const int unstoppable_passer_bonus[8] = {
+    0, 500, 525, 550, 575, 600, 650, 0
+};
+static const int advanceable_passer_bonus[8] = {
+    0, 20, 25, 30, 35, 40, 80, 0
+};
 
 static pawn_data_t* pawn_table = NULL;
 static int num_buckets;
@@ -214,11 +221,41 @@ pawn_data_t* analyze_pawns(const position_t* pos)
 score_t pawn_score(const position_t* pos)
 {
     pawn_data_t* pd = analyze_pawns(pos);
+    int passer_bonus[2] = {0, 0};
+    for (color_t side=WHITE; side<=BLACK; ++side) {
+        for (int i=0; i<pd->num_passed[side]; ++i) {
+            square_t passer = pd->passed[side][i];
+            rank_t rank = relative_pawn_rank[side][square_rank(passer)];
+            if (pos->num_pieces[side^1] == 1) {
+                // Other side is down to king+pawns. Is this passer stoppable?
+                // This measure is conservative, which is fine.
+                int prom_dist = 8 - rank;
+                if (rank == RANK_2) --prom_dist;
+                if (pos->side_to_move == side) --prom_dist;
+                square_t prom_sq = create_square(square_file(passer), RANK_8);
+                if (distance(pos->pieces[side^1][0], prom_sq) > prom_dist) {
+                    passer_bonus[side] += unstoppable_passer_bonus[rank];
+                }
+            } else {
+                // Can the pawn advance without being captured?
+                square_t target = passer + pawn_push[side];
+                if (pos->board[target] != EMPTY) continue;
+                move_t push = rank == RANK_7 ?
+                    create_move_promote(passer, target,
+                            create_piece(side, PAWN), EMPTY, QUEEN) :
+                    create_move(passer, target,
+                            create_piece(side, PAWN), EMPTY);
+                if (static_exchange_eval(pos, push) < 0) continue;
+                passer_bonus[side] += advanceable_passer_bonus[rank];
+            }
+        }
+    }
     color_t side = pos->side_to_move;
-    assert(abs(pd->score[WHITE]<2000) && abs(pd->score[BLACK]<2000));
     score_t score;
-    score.midgame = pd->score[side] - pd->score[side^1];
-    score.endgame = pd->endgame_score[side] - pd->endgame_score[side^1];
+    score.midgame = pd->score[side] + passer_bonus[side] -
+        (pd->score[side^1] + passer_bonus[side^1]);
+    score.endgame = pd->endgame_score[side] + passer_bonus[side] -
+        (pd->endgame_score[side^1] + passer_bonus[side^1]);
     return score;
 }
 
