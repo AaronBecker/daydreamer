@@ -138,6 +138,9 @@ int full_eval(const position_t* pos)
     return score;
 }
 
+/*
+ * Print a breakdown of the static evaluation of |pos|.
+ */
 void report_eval(const position_t* pos)
 {
     color_t side = pos->side_to_move;
@@ -216,6 +219,9 @@ bool insufficient_material(const position_t* pos)
         pos->material_eval[BLACK] < ROOK_VAL + KING_VAL);
 }
 
+/*
+ * Is it still possible for |side| to win the game?
+ */
 bool can_win(const position_t* pos, color_t side)
 {
     return !(pos->num_pawns[side] == 0 &&
@@ -239,8 +245,7 @@ bool is_draw(const position_t* pos)
  */
 float game_phase(const position_t* pos)
 {
-    // TODO: game phase determination could be a lot more sophisticated,
-    // and the information could be cached.
+    // TODO: game phase determination could be a lot more sophisticated.
     static const float total_possible_material =
         16*PAWN_VAL + 4*KNIGHT_VAL + 4*BISHOP_VAL + 4*ROOK_VAL + 2*QUEEN_VAL;
     float phase = (pos->material_eval[WHITE]+pos->material_eval[BLACK] -
