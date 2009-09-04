@@ -68,6 +68,8 @@ void _check_move_validity(const position_t* pos, move_t move)
  */
 void _check_pseudo_move_legality(position_t* pos, move_t move)
 {
+    (void)pos;
+    (void)move;
     assert(is_move_legal(pos, move) == is_pseudo_move_legal(pos, move));
 }
 

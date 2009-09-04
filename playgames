@@ -4,9 +4,9 @@ from subprocess import Popen, PIPE
 import sys
 import optparse
 
-engine_prefix = '/Users/abecker/work/misc_code/chess_engines/'
-cutechess_path = '/Users/abecker/work/misc_code/cutechess-cli/cutechess-cli.sh'
-daydreamer_path = '/Users/abecker/work/code/daydreamer/'
+engine_prefix = '/Users/abecker/misc_code/chess_engines/'
+cutechess_path = '/Users/abecker/misc_code/cutechess-cli/cutechess-cli.sh'
+daydreamer_path = '/Users/abecker/code/daydreamer/'
 programs = {
     'roce' : 'cmd=' + engine_prefix + 'roce38m/roce38_32 proto=uci',
     'tscp' : 'cmd=' + engine_prefix + 'tscp181/tscp proto=xboard name=tscp',
