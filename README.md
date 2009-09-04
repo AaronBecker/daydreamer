@@ -40,8 +40,8 @@ side to give a rough idea of how the new release of Daydreamer stacks up:
 and here are scores on two common (relatively easy) suites of problems, solved
 at 10s per problem:
 
-WAC     293/300
-ECMGMP  120/182
+    WAC     293/300
+    ECMGMP  120/182
 
 Using Daydreamer
 ----------------
