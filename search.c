@@ -14,23 +14,11 @@ static const bool history_prune_enabled = true;
 static const bool value_prune_enabled = true;
 static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
-static const int futility_margin[FUTILITY_DEPTH_LIMIT] = {
-    100
-//    100, 200
-//    100, 200, 350
-//    90, 190, 250, 330, 400
-};
+
+static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100 };
 static const int qfutility_margin = 80;
-static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = {
-//    400
-    400, 300
-//    500, 300, 300
-};
-static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = {
-//    150
-    150, 300
-//    150, 300, 300
-};
+static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = { 300 };
+static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = { 150 };
 
 static bool should_stop_searching(search_data_t* data);
 static bool root_search(search_data_t* search_data);
@@ -619,7 +607,7 @@ static int quiesce(position_t* pos,
         // TODO: prevent futility for passed pawn moves and checks
         if (allow_futility &&
                 get_move_promote(move) != QUEEN &&
-                eval + material_value(pos->board[get_move_to(move)]) +
+                eval + material_value(get_move_capture(move)) +
                 qfutility_margin < alpha) continue;
         undo_info_t undo;
         do_move(pos, move, &undo);
