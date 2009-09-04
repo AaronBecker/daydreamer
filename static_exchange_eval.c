@@ -7,7 +7,7 @@
  * favorable. Note: this implementation does not account for pinned pieces.
  * TODO: make this work for non-captures.
  */
-int static_exchange_eval(position_t* pos, move_t move)
+int static_exchange_eval(const position_t* pos, move_t move)
 {
     square_t attacker_sq = get_move_from(move);
     square_t attacked_sq = get_move_to(move);
@@ -39,7 +39,7 @@ int static_exchange_eval(position_t* pos, move_t move)
     
     for (int side=WHITE; side<=BLACK; ++side) {
         square_t from;
-        for (square_t* pfrom = &pos->pieces[side][0];
+        for (const square_t* pfrom = &pos->pieces[side][0];
                 (from = *pfrom) != INVALID_SQUARE;
                 ++pfrom) {
             piece_t p = pos->board[from];

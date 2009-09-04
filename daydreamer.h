@@ -160,7 +160,7 @@ void root_search_minimax(void);
 void deepening_search(search_data_t* search_data);
 
 // static_exchange_eval.c
-int static_exchange_eval(position_t* pos, move_t move);
+int static_exchange_eval(const position_t* pos, move_t move);
 
 // timer.c
 void init_timer(milli_timer_t* timer);
