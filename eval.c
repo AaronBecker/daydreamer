@@ -41,33 +41,22 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
 {
     int s = 0;
     int push = pawn_push[side];
-    s += shield_value[side][pos->board[king-1]];
-    s += shield_value[side][pos->board[king+1]];
+    s += shield_value[side][pos->board[king-1]] / 2;
+    s += shield_value[side][pos->board[king+1]] / 2;
     s += shield_value[side][pos->board[king+push-1]];
-    s += shield_value[side][pos->board[king+push]];
+    s += shield_value[side][pos->board[king+push]] * 2;
     s += shield_value[side][pos->board[king+push+1]];
     s += shield_value[side][pos->board[king+2*push-1]] / 2;
-    s += shield_value[side][pos->board[king+2*push]] / 2;
+    s += shield_value[side][pos->board[king+2*push]];
     s += shield_value[side][pos->board[king+2*push+1]] / 2;
     return s;
 }
 
 static void evaluate_king_shield(const position_t* pos, score_t* phase_score)
 {
-    int score[2] = {0, 0};
-    for (color_t side = WHITE; side <= BLACK; ++side) {
-        square_t king = pos->pieces[side][0];
-        int current_shield = king_shield_score(pos, side, king);
-        int castle_shield = has_ooo_rights(pos, side) ?
-            king_shield_score(pos, side, C1+side*A8) / 2 :
-            INT_MIN;
-        castle_shield = MAX(castle_shield,
-                has_oo_rights(pos, side) ?
-                king_shield_score(pos, side, G1+side*A8) / 2 :
-                INT_MIN);
-        if (castle_shield == INT_MIN) castle_shield = 0;
-        score[side] = current_shield + castle_shield;
-    }
+    int score[2];
+    score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
+    score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
     color_t side = pos->side_to_move;
     phase_score->midgame += score[side]-score[side^1];
     phase_score->endgame += score[side]-score[side^1];
@@ -149,6 +138,9 @@ int full_eval(const position_t* pos)
     return score;
 }
 
+/*
+ * Print a breakdown of the static evaluation of |pos|.
+ */
 void report_eval(const position_t* pos)
 {
     color_t side = pos->side_to_move;
@@ -227,6 +219,9 @@ bool insufficient_material(const position_t* pos)
         pos->material_eval[BLACK] < ROOK_VAL + KING_VAL);
 }
 
+/*
+ * Is it still possible for |side| to win the game?
+ */
 bool can_win(const position_t* pos, color_t side)
 {
     return !(pos->num_pawns[side] == 0 &&
@@ -250,8 +245,7 @@ bool is_draw(const position_t* pos)
  */
 float game_phase(const position_t* pos)
 {
-    // TODO: game phase determination could be a lot more sophisticated,
-    // and the information could be cached.
+    // TODO: game phase determination could be a lot more sophisticated.
     static const float total_possible_material =
         16*PAWN_VAL + 4*KNIGHT_VAL + 4*BISHOP_VAL + 4*ROOK_VAL + 2*QUEEN_VAL;
     float phase = (pos->material_eval[WHITE]+pos->material_eval[BLACK] -
