@@ -58,18 +58,20 @@ void print_pv(search_data_t* search_data)
     printf("info string sanpv %s\n", sanpv);
     if (is_mate_score(score) || is_mated_score(score)) {
         printf("info depth %d score mate %d time %d nodes %"PRIu64\
-                " qnodes %"PRIu64" nps %"PRIu64" pv ",
+                " qnodes %"PRIu64" nps %"PRIu64" tbhits %d pv ",
                 depth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),
                 time,
                 nodes,
                 search_data->qnodes_searched,
-                nodes/(time+1)*1000);
+                nodes/(time+1)*1000,
+                search_data->stats.egbb_hits);
     } else {
         printf("info depth %d score cp %d time %d nodes %"PRIu64\
-                " qnodes %"PRIu64" nps %"PRIu64" pv ",
+                " qnodes %"PRIu64" nps %"PRIu64" tbhits %d pv ",
                 depth, score, time, nodes,
-                search_data->qnodes_searched, nodes/(time+1)*1000);
+                search_data->qnodes_searched, nodes/(time+1)*1000,
+                search_data->stats.egbb_hits);
     }
     int moves = print_coord_move_list(pv);
     // FIXME: re-enable this

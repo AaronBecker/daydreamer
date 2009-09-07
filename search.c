@@ -152,6 +152,13 @@ static bool should_deepen(search_data_t* data)
     return true;
 }
 
+static bool should_probe_egbb(int depth, int ply, int m50, int alpha, int beta)
+{
+    if (!root_data.options.use_egbb) return false;
+    if (is_mate_score(alpha) || is_mated_score(beta)) return false;
+    return (m50 == 0 || (ply < 2*(depth + ply)/3));
+}
+
 /*
  * In the given position, is the nullmove heuristic valid? We avoid nullmoves
  * in cases where we're down to king and pawns because of zugzwang.
@@ -387,8 +394,17 @@ static int search(position_t* pos,
             return MAX(alpha, trans_entry->score);
     }
 
+    // Check endgame bitbases if appropriate
+    int score;
+    if (should_probe_egbb(depth, ply, pos->fifty_move_counter, alpha, beta)) {
+        if (probe_egbb(pos, &score, ply)) {
+            ++root_data.stats.egbb_hits;
+            return score;
+        }
+    }
+
     open_node(&root_data, ply);
-    int score = mated_in(-1);
+    score = mated_in(-1);
     int lazy_score = simple_eval(pos);
     bool mate_threat = false;
     // Nullmove reduction.
@@ -583,15 +599,24 @@ static int quiesce(position_t* pos,
     if (alpha > mate_in(ply-1)) return alpha; // can't beat this
     if (is_draw(pos)) return DRAW_VALUE;
 
+    // Check endgame bitbases if appropriate
+    int score;
+    if (should_probe_egbb(depth, ply, pos->fifty_move_counter, alpha, beta)) {
+        if (probe_egbb(pos, &score, ply)) {
+            ++root_data.stats.egbb_hits;
+            return score;
+        }
+    }
+
     int eval = full_eval(pos);
-    int score = eval;
+    score = eval;
     if (ply >= MAX_SEARCH_DEPTH-1) return score;
     open_qnode(&root_data, ply);
     if (!is_check(pos)) {
         if (alpha < score) alpha = score;
         if (alpha >= beta) return beta;
     }
-    
+
     bool full_window = (beta-alpha > 1);
     bool allow_futility = qfutility_enabled &&
         !full_window &&

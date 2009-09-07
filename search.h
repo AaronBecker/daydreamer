@@ -35,6 +35,7 @@ typedef struct {
     int iid_non_pv_depth_reduction;
     int iid_pv_depth_cutoff;
     int iid_non_pv_depth_cutoff;
+    bool use_egbb;
 } search_options_t;
 
 #define HIST_BUCKETS    15
@@ -44,6 +45,7 @@ typedef struct {
     int move_selection[HIST_BUCKETS + 1];
     int razor_attempts[3];
     int razor_prunes[3];
+    int egbb_hits;
 } search_stats_t;
 
 typedef struct {
@@ -64,7 +66,6 @@ typedef struct {
     search_stats_t stats;
 
     // search state info
-    //move_list_t root_move_list;
     move_t moves[256];
     uint64_t move_nodes[256];
     move_t best_move; // FIXME: shouldn't this be redundant with pv[0]?
