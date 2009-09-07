@@ -16,6 +16,7 @@ typedef struct {
 typedef struct {
     move_t pv[MAX_SEARCH_DEPTH];
     move_t killers[2];
+    move_t mate_killer;
 } search_node_t;
 
 typedef enum {

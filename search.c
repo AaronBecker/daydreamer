@@ -88,6 +88,7 @@ static void open_node(search_data_t* data, int ply)
     }
     data->search_stack[ply].killers[0] = NO_MOVE;
     data->search_stack[ply].killers[1] = NO_MOVE;
+    data->search_stack[ply].mate_killer = NO_MOVE;
 }
 
 /*
@@ -558,6 +559,7 @@ static int search(position_t* pos,
                         search_node->killers[0] = move;
                     }
                 }
+                if (is_mate_score(score)) search_node->mate_killer = move;
                 put_transposition(pos, move, depth, beta, SCORE_LOWERBOUND);
                 root_data.stats.move_selection[
                     MIN(num_legal_moves-1, HIST_BUCKETS)]++;

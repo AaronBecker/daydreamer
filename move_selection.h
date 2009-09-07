@@ -17,6 +17,7 @@ typedef struct {
     int current_move_index;
     generation_t generator;
     move_t hash_move;
+    move_t mate_killer;
     move_t killers[5];
     int moves_so_far;
     int ordered_moves;

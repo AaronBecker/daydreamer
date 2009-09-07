@@ -37,6 +37,7 @@ void init_move_selector(move_selector_t* sel,
     sel->moves_so_far = 0;
     sel->ordered_moves = ordered_move_count[gen_type];
     if (search_node) {
+        sel->mate_killer = search_node->mate_killer;
         sel->killers[0] = search_node->killers[0];
         sel->killers[1] = search_node->killers[1];
         if (ply >= 2) {
@@ -170,6 +171,8 @@ static void score_moves(move_selector_t* sel)
         int score = 0;
         if (move == sel->hash_move) {
             score = hash_score;
+        } else if (move == sel->mate_killer) {
+            score = hash_score-1;
         } else if (get_move_capture(move) || get_move_promote(move)) {
             score = score_tactical_move(sel->pos, move);
         } else if (move == sel->killers[0]) {
