@@ -58,9 +58,6 @@ uint8_t find_checks(position_t* pos);
 // benchmark.c
 void benchmark(int depth, int time_limit);
 
-// console.c
-void handle_console(position_t* pos, char* command);
-
 // daydreamer.c
 void init_daydreamer(void);
 
