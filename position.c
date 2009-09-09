@@ -56,6 +56,7 @@ void copy_position(position_t* dst, const position_t* src)
 {
     check_board_validity(src);
     memcpy(dst, src, sizeof(position_t));
+    dst->board = dst->_board_storage+64;
     check_board_validity(src);
     check_board_validity(dst);
 }
