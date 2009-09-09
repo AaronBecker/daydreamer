@@ -579,6 +579,8 @@ static int search(position_t* pos,
     }
 
     root_data.stats.move_selection[MIN(num_legal_moves-1, HIST_BUCKETS)]++;
+    if (full_window) root_data.stats.pv_move_selection[
+        MIN(num_legal_moves-1, HIST_BUCKETS)]++;
     if (alpha == orig_alpha) {
         put_transposition(pos, NO_MOVE, depth, alpha, SCORE_UPPERBOUND);
     } else {
