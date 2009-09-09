@@ -405,6 +405,7 @@ static int search(position_t* pos,
     }
 
     open_node(&root_data, ply);
+    if (full_window) root_data.pvnodes_searched++;
     score = mated_in(-1);
     int lazy_score = simple_eval(pos);
     bool mate_threat = false;
@@ -562,6 +563,8 @@ static int search(position_t* pos,
                 if (is_mate_score(score)) search_node->mate_killer = move;
                 put_transposition(pos, move, depth, beta, SCORE_LOWERBOUND);
                 root_data.stats.move_selection[
+                    MIN(num_legal_moves-1, HIST_BUCKETS)]++;
+                if (full_window) root_data.stats.pv_move_selection[
                     MIN(num_legal_moves-1, HIST_BUCKETS)]++;
                 search_node->pv[ply] = NO_MOVE;
                 return beta;

@@ -44,6 +44,7 @@ typedef struct {
 typedef struct {
     int cutoffs[MAX_SEARCH_DEPTH];
     int move_selection[HIST_BUCKETS + 1];
+    int pv_move_selection[HIST_BUCKETS + 1];
     int razor_attempts[3];
     int razor_prunes[3];
     int egbb_hits;
@@ -76,6 +77,7 @@ typedef struct {
     history_t history;
     uint64_t nodes_searched;
     uint64_t qnodes_searched;
+    uint64_t pvnodes_searched;
     int current_depth;
     engine_status_t engine_status;
 

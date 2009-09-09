@@ -57,24 +57,27 @@ void print_pv(search_data_t* search_data)
     line_to_san_str(&search_data->root_pos, (move_t*)pv, sanpv);
     printf("info string sanpv %s\n", sanpv);
     if (is_mate_score(score) || is_mated_score(score)) {
-        printf("info depth %d score mate %d time %d nodes %"PRIu64\
-                " qnodes %"PRIu64" nps %"PRIu64" tbhits %d pv ",
+        printf("info depth %d score mate %d time %d nodes %"PRIu64
+                " qnodes %"PRIu64" pvnodes %"PRIu64
+                " nps %"PRIu64" tbhits %d pv ",
                 depth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),
                 time,
                 nodes,
                 search_data->qnodes_searched,
+                search_data->pvnodes_searched,
                 nodes/(time+1)*1000,
                 search_data->stats.egbb_hits);
     } else {
-        printf("info depth %d score cp %d time %d nodes %"PRIu64\
-                " qnodes %"PRIu64" nps %"PRIu64" tbhits %d pv ",
+        printf("info depth %d score cp %d time %d nodes %"PRIu64
+                " qnodes %"PRIu64" pvnodes %"PRIu64
+                " nps %"PRIu64" tbhits %d pv ",
                 depth, score, time, nodes,
-                search_data->qnodes_searched, nodes/(time+1)*1000,
+                search_data->qnodes_searched,
+                search_data->pvnodes_searched, nodes/(time+1)*1000,
                 search_data->stats.egbb_hits);
     }
     int moves = print_coord_move_list(pv);
-    // FIXME: re-enable this
     if (moves < depth) {
         // If our pv is shortened by a hash hit,
         // try to get more moves from the hash table.
@@ -101,15 +104,31 @@ void print_search_stats(const search_data_t* search_data)
     for (int i=0; i<=search_data->current_depth; ++i) {
         printf("%d ", search_data->stats.cutoffs[i]);
     }
+
     printf("\ninfo string move selection ");
-    int total_moves = 0;
+    int total_moves = search_data->nodes_searched;
+    int hist_moves = 0;
     for (int i=0; i<HIST_BUCKETS; ++i) {
-        total_moves += search_data->stats.move_selection[i];
+        hist_moves += search_data->stats.move_selection[i];
     }
+    printf("%.2f ", (float)(total_moves-hist_moves)/total_moves);
     for (int i=0; i<HIST_BUCKETS; ++i) {
         printf("%.2f ", (float)search_data->stats.move_selection[i] /
                 total_moves);
     }
+
+    printf("\ninfo string pv move selection ");
+    total_moves = search_data->pvnodes_searched;
+    hist_moves = 0;
+    for (int i=0; i<HIST_BUCKETS; ++i) {
+        hist_moves += search_data->stats.pv_move_selection[i];
+    }
+    printf("%.2f ", (float)(total_moves-hist_moves)/total_moves);
+    for (int i=0; i<HIST_BUCKETS; ++i) {
+        printf("%.2f ", (float)search_data->stats.pv_move_selection[i] /
+                total_moves);
+    }
+
     printf("\ninfo string razoring attempts/cutoffs by depth "
             "%d/%d %d/%d %d/%d\n",
         search_data->stats.razor_attempts[0],
