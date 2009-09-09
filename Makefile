@@ -42,7 +42,7 @@ default:
 opt:
 	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS) $(OPTCOMPILESTR)"
 
-all: daydreamer
+all: default
 
 daydreamer: obj $(OBJFILES)
 	$(CC) $(LDFLAGS) $(OBJFILES) -o daydreamer
