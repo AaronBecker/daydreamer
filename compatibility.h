@@ -9,6 +9,8 @@ extern "C" {
  * Platform-specific settings, included before we get to anything else
  * in daydreamer.h.
  */
+#ifdef __APPLE__
+#endif
 
 #ifdef __linux__
 // This is needed to give access to some of the string handling functions
