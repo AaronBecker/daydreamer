@@ -16,16 +16,13 @@ static void calculate_search_time(int wtime,
         int winc,
         int binc,
         int movestogo);
+static void uci_handle_ext(char* command);
 static int bios_key(void);
 static bool new_game = false;
 
 void uci_main(void)
 {
-    printf("\nid name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
-    printf("id author %s\n", ENGINE_AUTHOR);
-    print_uci_options();
     set_position(&root_data.root_pos, FEN_STARTPOS);
-    printf("uciok\n");
     while (1) uci_get_input();
 }
 
@@ -38,17 +35,21 @@ static void uci_get_input(void)
 
 static void uci_handle_command(char* command)
 {
-    if (!strncasecmp(command, "isready", 7)) printf("readyok\n");
+    if (!strncasecmp(command, "uci", 3)) {
+        printf("id name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
+        printf("id author %s\n", ENGINE_AUTHOR);
+        print_uci_options();
+        printf("uciok\n");
+    } else if (!strncasecmp(command, "isready", 7)) printf("readyok\n");
     else if (!strncasecmp(command, "quit", 4)) exit(0);
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
     else if (!strncasecmp(command, "ucinewgame", 10)) new_game = true;
     else if (!strncasecmp(command, "setoption name", 14)) {
         set_uci_option(command+15, &root_data.options);
+    } else {
+        uci_handle_ext(command);
     }
-    // not handled: ucinewgame, debug, register, ponderhit, stop
-    // stop is handled in uci_check_input, and ucinewgame and register are
-    // meaningless for us right now.
     // TODO: handling for debug and ponderhit
 }
 
@@ -107,7 +108,6 @@ static void uci_go(char* command)
                 printf("%s is not a legal move\n", info);
             }
             root_data.moves[move_index++] = move;
-            //root_data.root_move_list.moves[move_index++] = move;
             while (*info && !isspace(*info)) ++info;
             while (isspace(*info)) ++info;
         }
@@ -166,7 +166,6 @@ static void calculate_search_time(int wtime,
         int binc,
         int movestogo)
 {
-    // TODO: increase move time after ucinewgame
     // TODO: cool heuristics for time mangement.
     // For now, just use a simple static rule and look at our own time only
     color_t side = root_data.root_pos.side_to_move;
@@ -202,6 +201,55 @@ void uci_check_input(search_data_t* search_data)
         } else if (strncasecmp(input, "ponderhit", 9) == 0) {
             // TODO: handle ponderhits
         }
+    }
+}
+
+/*
+ * Handle non-standard uci extensions. These are diagnostic and debugging
+ * commands that print more information about a position or more or execute
+ * test suites.
+ */
+static void uci_handle_ext(char* command)
+{
+    position_t* pos = &root_data.root_pos;
+    if (!strncasecmp(command, "perftsuite", 10)) {
+        command+=10;
+        while (isspace(*command)) command++;
+        perft_testsuite(command);
+    } else if (!strncasecmp(command, "perft", 5)) {
+        int depth=1;
+        sscanf(command+5, " %d", &depth);
+        perft(pos, depth, false);
+    } else if (!strncasecmp(command, "divide", 6)) {
+        int depth=1;
+        sscanf(command+6, " %d", &depth);
+        perft(pos, depth, true);
+    } else if (!strncasecmp(command, "bench", 5)) {
+        int depth = 1;
+        sscanf(command+5, " %d", &depth);
+        benchmark(depth, 0);
+    } else if (!strncasecmp(command, "see", 3)) {
+        command += 3;
+        while (isspace(*command)) command++;
+        move_t move = coord_str_to_move(pos, command);
+        printf("see: %d\n", static_exchange_eval(pos, move));
+    } else if (!strncasecmp(command, "epd", 3)) {
+        char filename[256];
+        int time_per_move = 5;
+        sscanf(command+3, " %s %d", filename, &time_per_move);
+        time_per_move *= 1000;
+        epd_testsuite(filename, time_per_move);
+    } else if (!strncasecmp(command, "print", 5)) {
+        print_board(pos, false);
+        move_t moves[255];
+        printf("moves: ");
+        generate_legal_moves(pos, moves);
+        for (move_t* move = moves; *move; ++move) {
+            char san[8];
+            move_to_san_str(pos, *move, san);
+            printf("%s ", san);
+        }
+        printf("\n");
     }
 }
 
