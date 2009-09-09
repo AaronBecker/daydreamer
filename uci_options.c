@@ -141,7 +141,7 @@ static void handle_output_delay(void* opt,
 
 static void handle_egbb_use(void* opt, char* value, search_options_t* options)
 {
-    uci_option_t* option = opt;
+    (void)opt;
     if (!strncasecmp(value, "value true", 10)) options->use_egbb = true;
     else if (!strncasecmp(value, "value false", 11)) options->use_egbb = false;
     else printf("did not recognize option value \"%s\"\n", value);
@@ -149,6 +149,9 @@ static void handle_egbb_use(void* opt, char* value, search_options_t* options)
 
 static void handle_egbb_path(void* opt, char* value, search_options_t* options)
 {
+    (void)opt;
+    (void)value;
+    (void)options;
     // TODO: make this actually set the egbb path
 }
 
