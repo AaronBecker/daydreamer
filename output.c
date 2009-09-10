@@ -137,6 +137,11 @@ void print_search_stats(const search_data_t* search_data)
         search_data->stats.razor_prunes[1],
         search_data->stats.razor_attempts[2],
         search_data->stats.razor_prunes[2]);
+    printf("info string scores by iteration ");
+    for (int i=0; i<=search_data->current_depth; ++i) {
+        printf("%d ", search_data->scores_by_iteration[i]);
+    }
+    printf("\n");
 }
 
 /*
