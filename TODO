@@ -3,7 +3,6 @@ Search
     Aspiration
     Store move ordering for PV nodes
     Better statistics gathering/reporting
-        track full window nodes in stats
     TBB?
     Ponder
     Identify "tough" moves and take more time on them
@@ -12,15 +11,10 @@ Search
 
 shrink trans table entry size
 evaluation hashing
-
 Track pinned pieces in SEE, test for improvement
 Chess960 support
 
 Interface
-    Basic Winboard interface?
     ECO classification
     PGN parsing
-    Improve non-UCI console interface
-    non-standard commands in uci? (perft, etc)
-        get rid of console and replace with non-standard uci?
 

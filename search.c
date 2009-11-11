@@ -274,6 +274,7 @@ void deepening_search(search_data_t* search_data)
                 search_data->current_depth,
                 search_data->best_score);
         id_score = search_data->best_score;
+        search_data->scores_by_iteration[search_data->current_depth] = id_score;
         if (!should_deepen(search_data)) {
             ++search_data->current_depth;
             break;
