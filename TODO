@@ -13,7 +13,6 @@ Search
 shrink trans table entry size
 evaluation hashing
 
-Allow SEE for non-capturing moves
 Track pinned pieces in SEE, test for improvement
 Chess960 support
 
