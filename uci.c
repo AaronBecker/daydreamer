@@ -181,6 +181,9 @@ static void calculate_search_time(int wtime,
         time *= 2;
         new_game = false;
     }
+    // Avoid time forfeits. TODO: actually use time_limit properly;
+    // that's the non-hacky solution.
+    if (movestogo == 1 || (!inc && time < 10000)) time /= 2;
     root_data.time_target = time/movestogo;
     root_data.time_limit = time < time*8/movestogo ? time : time*8/movestogo;
 }

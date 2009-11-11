@@ -30,10 +30,10 @@ static void set_transposition_age(int age);
 /*
  * Create a transposition table of the appropriate size.
  */
-void init_transposition_table(const int max_bytes)
+void init_transposition_table(const size_t max_bytes)
 {
     assert(max_bytes >= 1024);
-    int size = sizeof(transposition_entry_t) * bucket_size;
+    size_t size = sizeof(transposition_entry_t) * bucket_size;
     num_buckets = 1;
     while (size <= max_bytes >> 1) {
         size <<= 1;
@@ -171,9 +171,10 @@ void put_transposition_line(position_t* pos,
 
 void print_transposition_stats(void)
 {
-    printf("info string hash entries %d", num_buckets);
+    int num_entries = num_buckets * bucket_size;
+    printf("info string hash entries %d", num_entries);
     printf(" filled: %d (%.2f%%)", hash_stats.occupied,
-            (float)hash_stats.occupied / (float)num_buckets * 100.);
+            (float)hash_stats.occupied / (float)num_entries * 100.);
     printf(" evictions: %d", hash_stats.evictions);
     printf(" hits: %d (%.2f%%)", hash_stats.hits,
             (float)hash_stats.hits / (hash_stats.hits+hash_stats.misses)*100.);
