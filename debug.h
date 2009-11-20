@@ -7,7 +7,7 @@ extern "C" {
 
 #include <assert.h>
 #include <stdio.h>
-#if 0  non-aborting assert
+#if 0  //non-aborting assert
 #include <execinfo.h>
 #undef assert
 #undef __assert
