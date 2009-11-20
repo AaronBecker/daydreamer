@@ -49,7 +49,7 @@ void print_pv(search_data_t* search_data)
     const move_t* pv = search_data->pv;
     const int depth = search_data->current_depth;
     const int score = search_data->best_score;
-    // note: use time+1 avoid divide-by-zero
+    // note: use time+1 to avoid divide-by-zero
     const int time = elapsed_time(&search_data->timer) + 1;
     const uint64_t nodes = search_data->nodes_searched;
 
