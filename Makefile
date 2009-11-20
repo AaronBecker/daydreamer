@@ -1,6 +1,7 @@
 
 CLANGFLAGS =
 GCCFLAGS = --std=c99
+ARCHFLAGS = -m64
 
 CLANGHOME = $(HOME)/local/clang
 SCANVIEW = $(CLANGHOME)/scan-build
@@ -11,8 +12,8 @@ CC = /usr/bin/gcc $(GCCFLAGS)
 #CC = i386-mingw32-gcc $(GCCFLAGS)
 CTAGS = ctags
 
-COMMONFLAGS = -Wall -Wextra -Wno-unused-function
-LDFLAGS =
+COMMONFLAGS = -Wall -Wextra -Wno-unused-function $(ARCHFLAGS)
+LDFLAGS = $(ARCHFLAGS)
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0
 ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
 DEFAULTFLAGS = $(COMMONFLAGS) -g -O2 -DOMIT_CHECKS
