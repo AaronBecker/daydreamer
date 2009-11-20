@@ -7,11 +7,23 @@ extern "C" {
 
 #include <assert.h>
 #include <stdio.h>
-#if 0 // non-aborting assert
+#if 0  non-aborting assert
+#include <execinfo.h>
 #undef assert
 #undef __assert
-#define assert(e)  \
-        ((void) ((e) ? 0 : __assert (#e, __FILE__, __LINE__)))
+#define assert(e)   do { \
+    if (e) break; \
+    printf ("%s:%u: failed assertion `%s'\n", __FILE__, __LINE__, #e); \
+    void* callstack[128]; \
+    int frames = backtrace(callstack, 128); \
+    char** strs = backtrace_symbols(callstack, frames); \
+    for (int i = 0; i < frames; ++i) { \
+        printf("%s\n", strs[i]); \
+    } \
+    free(strs); \
+} while (0)
+//((void) ((e) ? 0 : __assert (#e, __FILE__, __LINE__)))
+
 #define __assert(e, file, line) \
         ((void)printf ("%s:%u: failed assertion `%s'\n", file, line, e))
 #endif
