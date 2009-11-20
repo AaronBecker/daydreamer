@@ -14,7 +14,7 @@ extern "C" {
 #include <sys/time.h>
 
 #define ENGINE_NAME             "Daydreamer"
-#define ENGINE_VERSION_NUMBER   "1.5"
+#define ENGINE_VERSION_NUMBER   "1.51"
 #define ENGINE_VERSION_NAME     ""
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
@@ -170,7 +170,7 @@ int stop_timer(milli_timer_t* timer);
 int elapsed_time(milli_timer_t* timer);
 
 // trans_table.c
-void init_transposition_table(const int max_bytes);
+void init_transposition_table(const size_t max_bytes);
 void clear_transposition_table(void);
 void increment_transposition_age(void);
 transposition_entry_t* get_transposition(position_t* pos);
