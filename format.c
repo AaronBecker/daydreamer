@@ -251,7 +251,7 @@ move_t san_str_to_move(position_t* pos, char* san)
  */
 int line_to_san_str(position_t* pos, move_t* line, char* san)
 {
-    if (!is_move_legal(pos, *line)) {
+    if (*line && !is_move_legal(pos, *line)) {
         printf("WARNING: invalid pv\n");
         *line = 0;
     }
