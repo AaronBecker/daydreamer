@@ -183,9 +183,6 @@ bool is_check(const position_t* pos)
  */
 bool is_move_legal(position_t* pos, move_t move)
 {
-    // We only generate legal moves while in check.
-    if (is_check(pos)) return true;
-
     const color_t other_side = pos->side_to_move^1;
     const square_t king_square = pos->pieces[other_side^1][0];
 
@@ -195,6 +192,7 @@ bool is_move_legal(position_t* pos, move_t move)
     const piece_t piece = get_move_piece(move);
     const piece_t capture = get_move_capture(move);
     if (!valid_board_index(from) || !valid_board_index(to)) return false;
+    if (piece < WP || piece > BK || (piece > WK && piece < BP)) return false;
     if (pos->board[from] != piece) return false;
     if (capture && !is_move_enpassant(move)) {
         if (pos->board[to] != capture) return false;
