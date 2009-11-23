@@ -8,7 +8,7 @@ search_data_t root_data;
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
-static const bool razoring_enabled = false;
+static const bool razoring_enabled = true;
 static const bool futility_enabled = true;
 static const bool history_prune_enabled = true;
 static const bool value_prune_enabled = true;
@@ -18,7 +18,7 @@ static const bool lmr_enabled = true;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100 };
 static const int qfutility_margin = 80;
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = { 300 };
-static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = { 150 };
+static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = { 200 };
 
 static bool should_stop_searching(search_data_t* data);
 static bool root_search(search_data_t* search_data);
@@ -443,10 +443,10 @@ static int search(position_t* pos,
         // from Stockfish.
         root_data.stats.razor_attempts[depth-1]++;
         int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
-        if (qscore + razor_cutoff_margin[depth-1] < beta) {
+        //if (qscore + razor_cutoff_margin[depth-1] < beta) {
             root_data.stats.razor_prunes[depth-1]++;
             return qscore;
-        }
+        //}
     }
 
     // Internal iterative deepening.
