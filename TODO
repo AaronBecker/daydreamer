@@ -6,7 +6,7 @@ Search
     TBB?
     Ponder
     Identify "tough" moves and take more time on them
-    More accurate time management
+    (!) More accurate time management
     More experiments with nullmove, razoring, futility, and LMR
 
 shrink trans table entry size
@@ -18,3 +18,6 @@ Interface
     ECO classification
     PGN parsing
 
+Evaluation
+    test weighting for different components
+    bounded eval with early exit
