@@ -9,6 +9,13 @@ I named it Daydreamer after a bug in an early version caused it to occasionally
 follow up very strong play with bizarre blunders, as though it had lost its
 focus on the game and its mind was wandering aimlessly.
 
+Changes since 1.5
+-----------------
+
+* Improved time management
+* Improved futility pruning
+* Razoring
+
 Changes since 1.0
 -----------------
 

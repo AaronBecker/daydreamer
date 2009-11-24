@@ -21,3 +21,6 @@ Interface
 Evaluation
     test weighting for different components
     bounded eval with early exit
+
+Testing
+    smaller mate value, like 30k
