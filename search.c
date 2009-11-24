@@ -15,8 +15,9 @@ static const bool value_prune_enabled = true;
 static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
 
-static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100 };
+static const int iid_margin = 100;
 static const int qfutility_margin = 80;
+static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = { 300 };
 static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = { 200 };
 
@@ -212,8 +213,7 @@ static bool is_iid_allowed(bool full_window, int depth)
     if (full_window) {
         if (!options->enable_pv_iid ||
                 options->iid_pv_depth_cutoff >= depth) return false;
-    }
-    if (!full_window) {
+    } else {
         if (!options->enable_non_pv_iid ||
                 options->iid_non_pv_depth_cutoff >= depth) return false;
     }
@@ -441,6 +441,7 @@ static int search(position_t* pos,
             lazy_score + razor_attempt_margin[depth-1] < beta) {
         // Razoring. The two-level depth-sensitive margin idea comes
         // from Stockfish.
+        // TODO: test multi-level and verified razoring
         root_data.stats.razor_attempts[depth-1]++;
         int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
         //if (qscore + razor_cutoff_margin[depth-1] < beta) {
@@ -452,10 +453,12 @@ static int search(position_t* pos,
     // Internal iterative deepening.
     if (iid_enabled &&
             hash_move == NO_MOVE &&
+            lazy_score + iid_margin >= beta &&
             is_iid_allowed(full_window, depth)) {
-        const int iid_depth = depth -
-            (full_window ? root_data.options.iid_pv_depth_reduction :
-                           root_data.options.iid_non_pv_depth_reduction);
+        const int iid_depth = full_window ?
+                depth - root_data.options.iid_pv_depth_reduction :
+                MIN(depth / 2,
+                    depth - root_data.options.iid_non_pv_depth_reduction);
         assert(iid_depth > 0);
         search(pos, search_node, ply, alpha, beta, iid_depth);
         hash_move = search_node->pv[ply];
@@ -490,7 +493,8 @@ static int search(position_t* pos,
                 !mate_threat &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !get_move_capture(move) &&
-                !get_move_promote(move);
+                !get_move_promote(move) &&
+                num_legal_moves >= depth + 2;
             if (prune_futile) {
                 // History pruning.
                 if (history_prune_enabled && is_history_prune_allowed(
@@ -638,6 +642,7 @@ static int quiesce(position_t* pos,
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector), ++num_qmoves) {
         // TODO: prevent futility for passed pawn moves and checks
+        // TODO: no futility on early moves?
         if (allow_futility &&
                 get_move_promote(move) != QUEEN &&
                 eval + material_value(get_move_capture(move)) +
