@@ -15,7 +15,7 @@ static const bool value_prune_enabled = true;
 static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
 
-static const int iid_margin = 100;
+//static const int iid_margin = 100;
 static const int qfutility_margin = 80;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = { 300 };
@@ -97,8 +97,8 @@ static void open_node(search_data_t* data, int ply)
  */
 static void open_qnode(search_data_t* data, int ply)
 {
-    open_node(data, ply);
     ++data->qnodes_searched;
+    open_node(data, ply);
 }
 
 /*
@@ -453,7 +453,7 @@ static int search(position_t* pos,
     // Internal iterative deepening.
     if (iid_enabled &&
             hash_move == NO_MOVE &&
-            lazy_score + iid_margin >= beta &&
+            //lazy_score + iid_margin >= beta &&
             is_iid_allowed(full_window, depth)) {
         const int iid_depth = full_window ?
                 depth - root_data.options.iid_pv_depth_reduction :
