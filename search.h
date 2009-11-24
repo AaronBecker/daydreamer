@@ -93,7 +93,7 @@ typedef struct {
     bool ponder;
 } search_data_t;
 
-#define POLL_INTERVAL   0xffff
+#define POLL_INTERVAL   0x3fff
 #define MATE_VALUE      0x7fff
 #define DRAW_VALUE      0
 // TODO: replace parameters with options.
