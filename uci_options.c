@@ -178,11 +178,5 @@ void init_uci_options(search_options_t* options)
     add_uci_option("Endgame bitbase path", OPTION_STRING, ".", 0, 0, NULL,
             &handle_egbb_path);
     set_uci_option("Endgame bitbase path value .", options);
-    options->enable_pv_iid = true;
-    options->enable_non_pv_iid = false;
-    options->iid_pv_depth_reduction = 2;
-    options->iid_non_pv_depth_reduction = 2;
-    options->iid_pv_depth_cutoff = 5;
-    options->iid_non_pv_depth_cutoff = 8;
 }
 

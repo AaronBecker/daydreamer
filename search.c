@@ -16,6 +16,13 @@ static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
 
 //static const int iid_margin = 100;
+static const bool enable_pv_iid = true;
+static const bool enable_non_pv_iid = false;
+static const int iid_pv_depth_reduction = 2;
+static const int iid_non_pv_depth_reduction = 2;
+static const int iid_pv_depth_cutoff = 5;
+static const int iid_non_pv_depth_cutoff = 8;
+
 static const int qfutility_margin = 80;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
 static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = { 300 };
@@ -209,13 +216,10 @@ static bool is_history_reduction_allowed(history_t* h, move_t move)
  */
 static bool is_iid_allowed(bool full_window, int depth)
 {
-    search_options_t* options = &root_data.options;
     if (full_window) {
-        if (!options->enable_pv_iid ||
-                options->iid_pv_depth_cutoff >= depth) return false;
+        if (!enable_pv_iid || iid_pv_depth_cutoff >= depth) return false;
     } else {
-        if (!options->enable_non_pv_iid ||
-                options->iid_non_pv_depth_cutoff >= depth) return false;
+        if (!enable_non_pv_iid || iid_non_pv_depth_cutoff >= depth) return false;
     }
     return true;
 }
@@ -456,9 +460,8 @@ static int search(position_t* pos,
             //lazy_score + iid_margin >= beta &&
             is_iid_allowed(full_window, depth)) {
         const int iid_depth = full_window ?
-                depth - root_data.options.iid_pv_depth_reduction :
-                MIN(depth / 2,
-                    depth - root_data.options.iid_non_pv_depth_reduction);
+                depth - iid_pv_depth_reduction :
+                MIN(depth / 2, depth - iid_non_pv_depth_reduction);
         assert(iid_depth > 0);
         search(pos, search_node, ply, alpha, beta, iid_depth);
         hash_move = search_node->pv[ply];
