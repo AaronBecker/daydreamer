@@ -25,8 +25,7 @@ static const int iid_non_pv_depth_cutoff = 8;
 
 static const int qfutility_margin = 80;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
-static const int razor_attempt_margin[RAZOR_DEPTH_LIMIT] = { 300 };
-static const int razor_cutoff_margin[RAZOR_DEPTH_LIMIT] = { 200 };
+static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300 };
 
 static bool should_stop_searching(search_data_t* data);
 static bool root_search(search_data_t* search_data);
@@ -410,7 +409,8 @@ static int search(position_t* pos,
 
     // Check endgame bitbases if appropriate
     int score;
-    if (should_probe_egbb(depth, ply, pos->fifty_move_counter, alpha, beta)) {
+    if (should_probe_egbb(pos, depth, ply,
+                pos->fifty_move_counter, alpha, beta)) {
         if (probe_egbb(pos, &score, ply)) {
             ++root_data.stats.egbb_hits;
             return score;
@@ -432,6 +432,7 @@ static int search(position_t* pos,
             is_nullmove_allowed(pos)) {
         undo_info_t undo;
         do_nullmove(pos, &undo);
+        // TEST: pv[ply] = NULL_MOVE;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, MAX(depth-NULL_R, 0));
         undo_nullmove(pos, &undo);
@@ -450,16 +451,14 @@ static int search(position_t* pos,
             depth <= RAZOR_DEPTH_LIMIT &&
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
-            lazy_score + razor_attempt_margin[depth-1] < beta) {
-        // Razoring. The two-level depth-sensitive margin idea comes
-        // from Stockfish.
-        // TODO: test multi-level and verified razoring
+            lazy_score + razor_margin[depth-1] < beta) {
+        // Razoring.
         root_data.stats.razor_attempts[depth-1]++;
         int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
-        //if (qscore + razor_cutoff_margin[depth-1] < beta) {
+        if (depth == 1 || qscore < beta) {
             root_data.stats.razor_prunes[depth-1]++;
             return qscore;
-        //}
+        }
     }
 
     // Internal iterative deepening.
@@ -624,7 +623,8 @@ static int quiesce(position_t* pos,
 
     // Check endgame bitbases if appropriate
     int score;
-    if (should_probe_egbb(depth, ply, pos->fifty_move_counter, alpha, beta)) {
+    if (should_probe_egbb(pos, depth, ply,
+                pos->fifty_move_counter, alpha, beta)) {
         if (probe_egbb(pos, &score, ply)) {
             ++root_data.stats.egbb_hits;
             return score;
