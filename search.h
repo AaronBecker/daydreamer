@@ -89,7 +89,7 @@ typedef struct {
 } search_data_t;
 
 #define POLL_INTERVAL   0x3fff
-#define MATE_VALUE      0x7fff
+#define MATE_VALUE      32000
 #define DRAW_VALUE      0
 // TODO: replace parameters with options.
 #define NULL_R          3
