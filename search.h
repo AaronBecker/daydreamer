@@ -37,6 +37,7 @@ typedef struct {
     int iid_pv_depth_cutoff;
     int iid_non_pv_depth_cutoff;
     bool use_egbb;
+    char egbb_path[512];
 } search_options_t;
 
 #define HIST_BUCKETS    15

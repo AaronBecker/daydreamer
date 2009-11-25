@@ -145,6 +145,8 @@ static void handle_egbb_use(void* opt, char* value, search_options_t* options)
     if (!strncasecmp(value, "value true", 10)) options->use_egbb = true;
     else if (!strncasecmp(value, "value false", 11)) options->use_egbb = false;
     else printf("did not recognize option value \"%s\"\n", value);
+    if (options->use_egbb) load_egbb(options->egbb_path, 0);
+    else unload_egbb();
 }
 
 static void handle_egbb_path(void* opt, char* value, search_options_t* options)
@@ -152,7 +154,11 @@ static void handle_egbb_path(void* opt, char* value, search_options_t* options)
     (void)opt;
     (void)value;
     (void)options;
-    // TODO: make this actually set the egbb path
+    char* s = value + 6;
+    char* d = options->egbb_path;
+    while (*s != '\n' && *s && d - options->egbb_path < 512) *d++ = *s++;
+    *d = '\0';
+    if (options->use_egbb) load_egbb(options->egbb_path, 0);
 }
 
 /*
@@ -166,9 +172,9 @@ void init_uci_options(search_options_t* options)
     add_uci_option("Output Delay", OPTION_SPIN, "2000", 0, 1000000, NULL,
             &handle_output_delay);
     set_uci_option("Output Delay value 2000", options);
-    add_uci_option("Use endgame bitbases", OPTION_CHECK, "true", 0, 0, NULL,
+    add_uci_option("Use endgame bitbases", OPTION_CHECK, "false", 0, 0, NULL,
             &handle_egbb_use);
-    set_uci_option("Use endgame bitbases value true", options);
+    set_uci_option("Use endgame bitbases value false", options);
     add_uci_option("Endgame bitbase path", OPTION_STRING, ".", 0, 0, NULL,
             &handle_egbb_path);
     set_uci_option("Endgame bitbase path value .", options);

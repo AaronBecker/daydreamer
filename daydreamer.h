@@ -63,6 +63,7 @@ void init_daydreamer(void);
 
 // epbb.c
 bool load_egbb(char* egbb_dir, int cache_size_bytes);
+void unload_egbb(void);
 bool probe_egbb(position_t* pos, int* value, int ply);
 
 // epd.c

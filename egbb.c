@@ -7,19 +7,22 @@
 enum egbb_colors {
     _WHITE,_BLACK
 };
+
 enum egbb_occupancy {
     _EMPTY,
     _WKING,_WQUEEN,_WROOK,_WBISHOP,_WKNIGHT,_WPAWN,
     _BKING,_BQUEEN,_BROOK,_BBISHOP,_BKNIGHT,_BPAWN
 };
+
 enum egbb_load_types {
     LOAD_NONE,LOAD_4MEN,SMART_LOAD,LOAD_5MEN
 };
 
 static const int piece_to_egbb_table[] = {
-    _EMPTY, _WPAWN, _WKNIGHT, _WROOK, _WQUEEN, _WKING, _EMPTY,
-    _EMPTY, _BPAWN, _BKNIGHT, _BROOK, _BQUEEN, _BKING, _EMPTY
+    _EMPTY, _WPAWN, _WKNIGHT, _WBISHOP, _WROOK, _WQUEEN, _WKING, _EMPTY,
+    _EMPTY, _BPAWN, _BKNIGHT, _BBISHOP, _BROOK, _BQUEEN, _BKING, _EMPTY
 };
+
 #define piece_to_egbb(p)    piece_to_egbb_table[p]
 #define square_to_egbb(s)   square_to_index(s)
 #define EGBB_NOTFOUND 99999
@@ -34,15 +37,16 @@ typedef void (CDECL *load_egbb_fn)(char* path, int cache_size, int options);
 
 static probe_egbb_fn probe_egbb_internal;
 static bool egbb_is_loaded = false;
+static lib_handle_t lib = NULL;
 
 bool load_egbb(char* egbb_dir, int cache_size_bytes)
 {
     if (!cache_size_bytes) cache_size_bytes = EGBB_DEFAULT_CACHE_SIZE;
-    static lib_handle_t lib = NULL;
     char path[1024];
     strncpy(path, egbb_dir, 1000);
     strcat(path, EGBB_NAME);
 
+    egbb_is_loaded = false;
     if (lib) unload_library(lib);
     lib = load_library(path);
     if (!lib) {
@@ -50,21 +54,32 @@ bool load_egbb(char* egbb_dir, int cache_size_bytes)
         strcat(path, EGBB64_NAME);
         lib = load_library(path);
     }
-    if (!lib) return false;
+    if (!lib) {
+        printf("Attempt to load egbb from %s failed\n", egbb_dir);
+        return false;
+    }
 
     load_egbb_fn load_egbb = load_function(lib, "load_egbb_5men");
     probe_egbb_internal = load_function(lib, "probe_egbb_5men");
-    load_egbb(egbb_dir, cache_size_bytes, LOAD_4MEN);
+    load_egbb(egbb_dir, cache_size_bytes, SMART_LOAD);
     egbb_is_loaded = true;
     return true;
 }
 
+void unload_egbb(void)
+{
+    if (!lib) return;
+    unload_library(lib);
+    lib = NULL;
+    egbb_is_loaded = false;
+}
+
 bool probe_egbb(position_t* pos, int* value, int ply)
 {
-    // TODO: fix settings for bitbase use and # of men in search options
     if (!egbb_is_loaded) return false;
+    //TODO: evaluate 5 man bases
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
-            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 5) return false;
+            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 4) return false;
 
     int wk = square_to_egbb(pos->pieces[WHITE][0]);
     int bk = square_to_egbb(pos->pieces[BLACK][0]);
@@ -82,12 +97,12 @@ bool probe_egbb(position_t* pos, int* value, int ply)
         p[count] = piece_to_egbb(pos->board[sq]);
         s[count++] = square_to_egbb(sq);
     }
-    for (int i=1; i<pos->num_pawns[WHITE]; ++i) {
+    for (int i=0; i<pos->num_pawns[WHITE]; ++i) {
         sq = pos->pawns[WHITE][i];
         p[count] = piece_to_egbb(pos->board[sq]);
         s[count++] = square_to_egbb(sq);
     }
-    for (int i=1; i<pos->num_pawns[BLACK]; ++i) {
+    for (int i=0; i<pos->num_pawns[BLACK]; ++i) {
         sq = pos->pawns[BLACK][i];
         p[count] = piece_to_egbb(pos->board[sq]);
         s[count++] = square_to_egbb(sq);
