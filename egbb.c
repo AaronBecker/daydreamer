@@ -77,9 +77,8 @@ void unload_egbb(void)
 bool probe_egbb(position_t* pos, int* value, int ply)
 {
     if (!egbb_is_loaded) return false;
-    //TODO: evaluate 5 man bases
-    if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
-            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 4) return false;
+    assert(pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
+            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] >= 5);
 
     int wk = square_to_egbb(pos->pieces[WHITE][0]);
     int bk = square_to_egbb(pos->pieces[BLACK][0]);
