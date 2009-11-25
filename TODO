@@ -8,6 +8,8 @@ Search
     Identify "tough" moves and take more time on them
     (!) More accurate time management
     More experiments with nullmove, razoring, futility, and LMR
+    "easy move" at root
+    recognize singular replies
 
 shrink trans table entry size
 evaluation hashing
@@ -24,3 +26,4 @@ Evaluation
 
 Testing
     smaller mate value, like 30k
+    extensions, check for dubious ones
