@@ -153,7 +153,7 @@ int full_eval(const position_t* pos)
     component_score = evaluate_king_shield(pos);
     add_scaled_score(&phase_score, &component_score, shield_scale);
     component_score = evaluate_king_attackers(pos);
-    add_scaled_score(&phase_score, &component_score, king_atttack_scale);
+    add_scaled_score(&phase_score, &component_score, king_attack_scale);
 
     int phase = game_phase(pos);
     score += blend_score(&phase_score, phase);
