@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.51"
-#define ENGINE_VERSION_NAME     ""
+#define ENGINE_VERSION_NAME     " egbb"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -187,7 +187,7 @@ void put_transposition_line(position_t* pos,
 void print_transposition_stats(void);
 
 // uci.c
-void uci_main(void);
+void uci_read_stream(FILE* stream);
 void uci_check_input(search_data_t* search_data);
 
 // uci_option.c

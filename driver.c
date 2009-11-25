@@ -17,6 +17,14 @@ int main(void)
 #endif
     printf("\n");
     init_daydreamer();
-    uci_main();
+
+    // Read from uci script, if possible.
+    FILE* script;
+    if ((script = fopen("daydreamer.uci", "r"))) {
+        uci_read_stream(script);
+        fclose(script);
+    }
+    // Main loop input processing.
+    uci_read_stream(stdin);
 }
 

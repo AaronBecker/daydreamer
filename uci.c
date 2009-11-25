@@ -20,17 +20,10 @@ static void uci_handle_ext(char* command);
 static int bios_key(void);
 static bool new_game = false;
 
-void uci_main(void)
+void uci_read_stream(FILE* stream)
 {
-    set_position(&root_data.root_pos, FEN_STARTPOS);
-    while (1) uci_get_input();
-}
-
-static void uci_get_input(void)
-{
-    static char command[4096];
-    if (!fgets(command, 4096, stdin)) strcpy(command, "quit\n");
-    uci_handle_command(command);
+    char command[4096];
+    while (fgets(command, 4096, stream)) uci_handle_command(command);
 }
 
 static void uci_handle_command(char* command)

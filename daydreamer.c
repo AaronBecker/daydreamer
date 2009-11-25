@@ -16,6 +16,7 @@ void init_daydreamer(void)
     init_transposition_table(64 * 1<<20);
     init_pawn_table(1 * 1<<20);
     init_uci_options(&root_data.options);
+    set_position(&root_data.root_pos, FEN_STARTPOS);
 }
 
 const char glyphs[] = ".PNBRQK  pnbrqk";
