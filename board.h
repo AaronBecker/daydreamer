@@ -61,7 +61,7 @@ typedef int square_t;
 #define valid_board_index(idx)      !((idx) & 0x88)
 #define flip_square(square)         ((square) ^ 0x70)
 #define square_to_index(square)     ((square)+((square) & 0x07))>>1
-#define index_to_square(square)     ((square)+((square) & ~0x07))
+#define index_to_square(index)      ((index)+((index) & ~0x07))
 
 typedef uint8_t castle_rights_t;
 #define WHITE_OO                        0x01
