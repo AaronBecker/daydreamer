@@ -7,6 +7,12 @@
 #include "pst.inc"
 #endif
 
+static const int pawn_scale = 1024;
+static const int pattern_scale = 1024;
+static const int mobility_scale = 1024;
+static const int shield_scale = 1024;
+static const int king_attack_scale = 1024;
+
 /*
  * Initialize all static evaluation data structures.
  */
@@ -139,15 +145,15 @@ int full_eval(const position_t* pos)
     score_t phase_score, component_score;
     phase_score.endgame = phase_score.midgame = 0;
     component_score = pawn_score(pos);
-    add_scaled_score(&phase_score, &component_score, 1024);
+    add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
-    add_scaled_score(&phase_score, &component_score, 1024);
+    add_scaled_score(&phase_score, &component_score, pattern_scale);
     component_score = mobility_score(pos);
-    add_scaled_score(&phase_score, &component_score, 1024);
+    add_scaled_score(&phase_score, &component_score, mobility_scale);
     component_score = evaluate_king_shield(pos);
-    add_scaled_score(&phase_score, &component_score, 1024);
+    add_scaled_score(&phase_score, &component_score, shield_scale);
     component_score = evaluate_king_attackers(pos);
-    add_scaled_score(&phase_score, &component_score, 1024);
+    add_scaled_score(&phase_score, &component_score, king_atttack_scale);
 
     int phase = game_phase(pos);
     score += blend_score(&phase_score, phase);
