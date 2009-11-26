@@ -25,5 +25,4 @@ Evaluation
     bounded eval with early exit
 
 Testing
-    smaller mate value, like 30k
     extensions, check for dubious ones
