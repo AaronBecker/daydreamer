@@ -8,10 +8,15 @@
 #endif
 
 static const int pawn_scale = 768;
+// values tested: (768), 1024, 1536
 static const int pattern_scale = 1024;
+// values tested: (1024)
 static const int mobility_scale = 1024;
+// values tested: 768, (1024), 1280
 static const int shield_scale = 1576;
-static const int king_attack_scale = 1024;
+// values tested: 1024, 1280, (1576), 2048
+static const int king_attack_scale = 768;
+// values tested: (768), 1024, 1536
 
 /*
  * Initialize all static evaluation data structures.
