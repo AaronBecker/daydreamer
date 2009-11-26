@@ -8,7 +8,7 @@ Search
     Identify "tough" moves and take more time on them
     (!) More accurate time management
     More experiments with nullmove, razoring, futility, and LMR
-    "easy move" at root
+    "easy move" at root: figure out why this wasn't working
     recognize singular replies
 
 shrink trans table entry size
