@@ -7,10 +7,10 @@
 #include "pst.inc"
 #endif
 
-static const int pawn_scale = 1024;
+static const int pawn_scale = 768;
 static const int pattern_scale = 1024;
 static const int mobility_scale = 1024;
-static const int shield_scale = 1024;
+static const int shield_scale = 1576;
 static const int king_attack_scale = 1024;
 
 /*
