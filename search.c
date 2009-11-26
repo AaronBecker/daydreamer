@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -157,6 +156,12 @@ static bool should_deepen(search_data_t* data)
     if (!data->infinite && data->time_target &&
         data->time_target-elapsed_time(&data->timer) <
         data->time_target/2) return false;
+    // Go ahead and quit if we have a mate.
+    int* scores = data->scores_by_iteration;
+    int depth = data->current_depth;
+    if (depth >= 4 && is_mate_score(abs(scores[depth--])) &&
+            is_mate_score(abs(scores[depth--])) &&
+            is_mate_score(abs(scores[depth--]))) return false;
     return true;
 }
 
@@ -432,7 +437,6 @@ static int search(position_t* pos,
             is_nullmove_allowed(pos)) {
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        // TEST: pv[ply] = NULL_MOVE;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, MAX(depth-NULL_R, 0));
         undo_nullmove(pos, &undo);
@@ -464,7 +468,6 @@ static int search(position_t* pos,
     // Internal iterative deepening.
     if (iid_enabled &&
             hash_move == NO_MOVE &&
-            //lazy_score + iid_margin >= beta &&
             is_iid_allowed(full_window, depth)) {
         const int iid_depth = full_window ?
                 depth - iid_pv_depth_reduction :
@@ -472,6 +475,7 @@ static int search(position_t* pos,
         assert(iid_depth > 0);
         search(pos, search_node, ply, alpha, beta, iid_depth);
         hash_move = search_node->pv[ply];
+        search_node->pv[ply] = NO_MOVE;
     }
 
     move_t searched_moves[256];

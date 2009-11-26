@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define MAX_SEARCH_DEPTH        64
+#define MAX_SEARCH_DEPTH        63
 
 typedef struct {
     move_t moves[256];
@@ -14,7 +14,7 @@ typedef struct {
 } move_list_t;
 
 typedef struct {
-    move_t pv[MAX_SEARCH_DEPTH];
+    move_t pv[MAX_SEARCH_DEPTH+1];
     move_t killers[2];
     move_t mate_killer;
 } search_node_t;
@@ -37,7 +37,7 @@ typedef struct {
 #define HIST_BUCKETS    15
 
 typedef struct {
-    int cutoffs[MAX_SEARCH_DEPTH];
+    int cutoffs[MAX_SEARCH_DEPTH + 1];
     int move_selection[HIST_BUCKETS + 1];
     int pv_move_selection[HIST_BUCKETS + 1];
     int razor_attempts[3];
@@ -67,9 +67,9 @@ typedef struct {
     uint64_t move_nodes[256];
     move_t best_move; // FIXME: shouldn't this be redundant with pv[0]?
     int best_score;
-    int scores_by_iteration[MAX_SEARCH_DEPTH];
-    move_t pv[MAX_SEARCH_DEPTH];
-    search_node_t search_stack[MAX_SEARCH_DEPTH];
+    int scores_by_iteration[MAX_SEARCH_DEPTH + 1];
+    move_t pv[MAX_SEARCH_DEPTH + 1];
+    search_node_t search_stack[MAX_SEARCH_DEPTH + 1];
     history_t history;
     uint64_t nodes_searched;
     uint64_t qnodes_searched;
