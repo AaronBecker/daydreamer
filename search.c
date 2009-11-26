@@ -14,7 +14,6 @@ static const bool value_prune_enabled = true;
 static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
 
-//static const int iid_margin = 100;
 static const bool enable_pv_iid = true;
 static const bool enable_non_pv_iid = false;
 static const int iid_pv_depth_reduction = 2;
@@ -50,7 +49,6 @@ void init_search_data(search_data_t* data)
     memset(&data->stats, 0, sizeof(search_stats_t));
     memset(&data->moves, 0, 256 * sizeof(move_t));
     memset(&data->move_nodes, 0, 256 * sizeof(uint64_t));
-    data->best_move = NO_MOVE;
     data->best_score = 0;
     memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
     memset(data->search_stack, 0, sizeof(search_node_t) * MAX_SEARCH_DEPTH);
@@ -306,7 +304,7 @@ void deepening_search(search_data_t* search_data)
     print_transposition_stats();
     print_pawn_stats();
     char coord_move[6];
-    move_to_coord_str(search_data->best_move, coord_move);
+    move_to_coord_str(search_data->pv[0], coord_move);
     print_pv(search_data);
     printf("bestmove %s\n", coord_move);
     search_data->engine_status = ENGINE_IDLE;
@@ -366,7 +364,6 @@ static bool root_search(search_data_t* search_data)
             alpha = score;
             if (score > search_data->best_score) {
                 search_data->best_score = score;
-                search_data->best_move = move;
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);

@@ -65,7 +65,6 @@ typedef struct {
     // search state info
     move_t moves[256];
     uint64_t move_nodes[256];
-    move_t best_move; // FIXME: shouldn't this be redundant with pv[0]?
     int best_score;
     int scores_by_iteration[MAX_SEARCH_DEPTH + 1];
     move_t pv[MAX_SEARCH_DEPTH + 1];
