@@ -73,7 +73,7 @@ char* set_position(position_t* pos, const char* fen)
     for (square_t square=A8; square!=INVALID_SQUARE; ++fen, ++square) {
         if (isdigit(*fen)) {
             if (*fen == '0' || *fen == '9') {
-                warn(false, "Invalid FEN string");
+                warn("Invalid FEN string");
                 return (char*)fen;
             } else {
                 square += *fen - '1';
@@ -100,7 +100,7 @@ char* set_position(position_t* pos, const char* fen)
                       pos->hash = hash_position(pos);
                       pos->is_check = find_checks(pos);
                       return (char*)fen;
-            default: warn(false, "Illegal character in FEN string");
+            default: warn("Illegal character in FEN string");
                      return (char*)fen;
         }
     }
@@ -110,7 +110,7 @@ char* set_position(position_t* pos, const char* fen)
     switch (tolower(*fen)) {
         case 'w': pos->side_to_move = WHITE; break;
         case 'b': pos->side_to_move = BLACK; break;
-        default:  warn(false, "Illegal en passant character in FEN string");
+        default:  warn("Illegal en passant character in FEN string");
                   return (char*)fen;
     }
     while (*fen && isspace(*(++fen))) {}
@@ -161,7 +161,7 @@ char* set_position(position_t* pos, const char* fen)
                 &consumed)) fen += consumed;
     pos->ply = pos->ply*2 + (pos->side_to_move == BLACK ? 1 : 0);
     if (pos->ply < pos->fifty_move_counter) {
-        warn(false, "50 move counter is less than current ply");
+        warn("50 move counter is less than current ply");
         pos->ply = pos->fifty_move_counter;
     }
     pos->hash = hash_position(pos);

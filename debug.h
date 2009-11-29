@@ -28,10 +28,10 @@ extern "C" {
         ((void)printf ("%s:%u: failed assertion `%s'\n", file, line, e))
 #endif
 
-#define warn(cond, msg)  \
-        ((void) ((cond) ? 0 : __warn (#cond, __FILE__, __LINE__, msg)))
-#define __warn(cond, file, line, msg) \
-        ((void)printf ("%s:%u: warning: %s `%s'\n", file, line, msg, cond))
+#define warn(msg)  \
+        ((void) (__warn (__FILE__, __LINE__, msg)))
+#define __warn(file, line, msg) \
+        ((void)printf("%s:%u: warning: %s\n", file, line, msg))
 
 void _check_board_validity(const position_t* pos);
 void _check_move_validity(const position_t* pos, move_t move);
