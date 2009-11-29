@@ -245,6 +245,15 @@ static void uci_handle_ext(char* command)
             move_to_san_str(pos, *move, san);
             printf("%s ", san);
         }
+        printf("\nordered moves: ");
+        move_selector_t sel;
+        init_move_selector(&sel, pos, PV_GEN, NULL, NO_MOVE, 0, 0);
+        for (move_t move = select_move(&sel); move != NO_MOVE;
+                move = select_move(&sel)) {
+            char san[8];
+            move_to_san_str(pos, move, san);
+            printf("%s ", san);
+        }
         printf("\n");
     }
 }
