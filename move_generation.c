@@ -525,7 +525,7 @@ static void generate_pawn_captures(const position_t* pos,
                 moves = add_move(pos, create_move(from, to, piece,
                         pos->board[to]), moves);
             }
-            else if (to == pos->ep_square) {
+            else if (to == pos->ep_square && pos->board[to] == EMPTY) {
                 moves = add_move(pos, create_move_enpassant(from, to, piece,
                         pos->board[to + pawn_push[side^1]]), moves);
             }
