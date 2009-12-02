@@ -202,12 +202,19 @@ bool is_move_legal(position_t* pos, move_t move)
 
     // See if any attacks are preventing castling.
     if (is_move_castle_long(move)) {
-        return !(is_square_attacked(pos, king_square, other_side) ||
-                is_square_attacked(pos, king_square-1, other_side) ||
-                is_square_attacked(pos, king_square-2, other_side));
+        return has_ooo_rights(pos, pos->side_to_move) &&
+            pos->board[king_square-1] == EMPTY &&
+            pos->board[king_square-2] == EMPTY &&
+            pos->board[king_square-3] == EMPTY &&
+            !(is_square_attacked(pos, king_square, other_side) ||
+                    is_square_attacked(pos, king_square-1, other_side) ||
+                    is_square_attacked(pos, king_square-2, other_side));
     }
     if (is_move_castle_short(move)) {
-        return !(is_square_attacked(pos, king_square, other_side) ||
+        return has_oo_rights(pos, pos->side_to_move) &&
+            pos->board[king_square+1] == EMPTY &&
+            pos->board[king_square+2] == EMPTY &&
+            !(is_square_attacked(pos, king_square, other_side) ||
                 is_square_attacked(pos, king_square+1, other_side) ||
                 is_square_attacked(pos, king_square+2, other_side));
     }
