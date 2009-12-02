@@ -155,9 +155,7 @@ static void handle_egbb_path(void* opt, char* value, search_options_t* options)
     (void)value;
     (void)options;
     char* s = value + 6;
-    char* d = options->egbb_path;
-    while (*s != '\n' && *s && d - options->egbb_path < 512) *d++ = *s++;
-    *d = '\0';
+    strncpy(options->egbb_path, s, 512);
     if (options->use_egbb) load_egbb(options->egbb_path, 0);
 }
 

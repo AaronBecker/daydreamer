@@ -28,6 +28,11 @@ void uci_read_stream(FILE* stream)
 
 static void uci_handle_command(char* command)
 {
+    // strip trailing newline.
+    char* c = command;
+    while (*c) ++c;
+    while (*--c == '\n') *c = '\0';
+
     if (!strncasecmp(command, "uci", 3)) {
         printf("id name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
         printf("id author %s\n", ENGINE_AUTHOR);
