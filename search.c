@@ -55,6 +55,7 @@ void init_search_data(search_data_t* data)
     memset(&data->history, 0, sizeof(history_t));
     data->nodes_searched = 0;
     data->qnodes_searched = 0;
+    data->pvnodes_searched = 0;
     data->current_depth = 0;
     data->engine_status = ENGINE_IDLE;
     init_timer(&data->timer);
