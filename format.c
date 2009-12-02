@@ -251,11 +251,11 @@ move_t san_str_to_move(position_t* pos, char* san)
  */
 int line_to_san_str(position_t* pos, move_t* line, char* san)
 {
-    assert(!*line || is_move_legal(pos, *line));
     if (!*line) {
         *san = '\0';
         return 0;
     }
+    assert(is_move_legal(pos, *line));
 
     int len = move_to_san_str(pos, *line, san);
     *(san+len) = ' ';
