@@ -97,7 +97,14 @@ static uint64_t divide(position_t* pos, int depth)
     put_transposition(pos, 0, 0, 0, NO_MOVE);
     move_t move_list[256];
     move_t* current_move = move_list;
-    int num_moves = generate_legal_moves(pos, move_list);
+    int num_moves = 0;
+    move_selector_t selector;
+    init_move_selector(&selector, pos, PV_GEN, NULL, NO_MOVE, 0, 0);
+    for (move_t move = select_move(&selector); move != NO_MOVE;
+            move = select_move(&selector), ++num_moves) {
+        move_list[num_moves] = move;
+    }
+    move_list[num_moves] = NO_MOVE;
 
     uint64_t old_trans, child_nodes, total_nodes=0;
     char coord_move[6];
@@ -134,10 +141,18 @@ static uint64_t full_search(position_t* pos, int depth)
     }
     move_t move_list[256];
     move_t* current_move = move_list;
-    int move_count = generate_legal_moves(pos, move_list);
+    int num_moves = 0;
+    move_selector_t selector;
+    init_move_selector(&selector, pos, PV_GEN, NULL, NO_MOVE, 0, 0);
+    for (move_t move = select_move(&selector); move != NO_MOVE;
+            move = select_move(&selector), ++num_moves) {
+        move_list[num_moves] = move;
+    }
+    move_list[num_moves] = NO_MOVE;
+
     if (depth == 1) {
-        put_transposition(pos, NO_MOVE, depth, move_count, SCORE_EXACT);
-        return move_count;
+        put_transposition(pos, NO_MOVE, depth, num_moves, SCORE_EXACT);
+        return num_moves;
     }
 
     uint64_t nodes = 0;
