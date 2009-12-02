@@ -57,6 +57,8 @@ void init_search_data(search_data_t* data)
     data->qnodes_searched = 0;
     data->pvnodes_searched = 0;
     data->current_depth = 0;
+    data->current_move_index = 0;
+    data->resolving_fail_high = false;
     data->engine_status = ENGINE_IDLE;
     init_timer(&data->timer);
     data->node_limit = 0;
@@ -112,10 +114,18 @@ static void open_qnode(search_data_t* data, int ply)
 static bool should_stop_searching(search_data_t* data)
 {
     if (data->engine_status == ENGINE_ABORTED) return true;
-    if (!data->infinite &&
-            data->time_target &&
-            elapsed_time(&data->timer) >= data->time_target) return true;
-    // TODO: take time_limit and search difficulty into account
+    if (data->infinite) return false;
+    int so_far = elapsed_time(&data->timer);
+    // If we've passed our hard limit, we're done.
+    if (data->time_limit && so_far >= data->time_limit) return true;
+    // If we've passed our soft limit and just started a new iteration, stop.
+    if (data->time_target && so_far >= data->time_target &&
+            data->current_move_index == 1) return true;
+    // If we've passed our soft limit but we're in the middle of resolving a
+    // fail high, try to resolve it before hitting the hard limit.
+    if (!data->resolving_fail_high &&
+            so_far > 5*data->time_target) return true;
+    // Respect node limits, if you're into that kind of thing.
     if (data->node_limit &&
             data->nodes_searched >= data->node_limit) return true;
     // TODO: we need a heuristic for when the current result is "good enough",
@@ -327,21 +337,23 @@ static bool root_search(search_data_t* search_data)
     move_selector_t selector;
     init_move_selector(&selector, pos, ROOT_GEN,
             NULL, hash_move, search_data->current_depth, 0);
-    int move_index = 0;
+    search_data->current_move_index = 0;
+    search_data->resolving_fail_high = false;
     for (move_t move = select_move(&selector); move != NO_MOVE;
-            move = select_move(&selector), ++move_index) {
+            move = select_move(&selector), ++search_data->current_move_index) {
         if (should_output(search_data)) {
             char coord_move[6];
             move_to_coord_str(move, coord_move);
             printf("info currmove %s currmovenumber %d score %"PRIu64"\n",
-                    coord_move, move_index, get_root_node_count(move));
+                    coord_move, search_data->current_move_index,
+                    get_root_node_count(move));
         }
         uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
         do_move(pos, move, &undo);
         int ext = extend(pos, move, false);
         int score;
-        if (move_index == 0) {
+        if (search_data->current_move_index == 0) {
             // First move, use full window search.
             score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-1);
@@ -353,6 +365,7 @@ static bool root_search(search_data_t* search_data)
                     char coord_move[6];
                     move_to_coord_str(move, coord_move);
                     printf("info string fail high, research %s\n", coord_move);
+                    search_data->resolving_fail_high = true;
                 }
                 score = -search(pos, search_data->search_stack,
                         1, -beta, -alpha, search_data->current_depth+ext-1);
@@ -370,6 +383,7 @@ static bool root_search(search_data_t* search_data)
             check_line(pos, search_data->pv);
             print_pv(search_data);
         }
+        search_data->resolving_fail_high = false;
     }
     return true;
 }

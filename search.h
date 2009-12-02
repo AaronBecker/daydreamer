@@ -74,6 +74,8 @@ typedef struct {
     uint64_t qnodes_searched;
     uint64_t pvnodes_searched;
     int current_depth;
+    int current_move_index;
+    bool resolving_fail_high;
     engine_status_t engine_status;
 
     // when should we stop?

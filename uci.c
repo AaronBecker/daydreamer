@@ -18,7 +18,6 @@ static void calculate_search_time(int wtime,
         int movestogo);
 static void uci_handle_ext(char* command);
 static int bios_key(void);
-static bool new_game = false;
 
 void uci_read_stream(FILE* stream)
 {
@@ -42,9 +41,9 @@ static void uci_handle_command(char* command)
     else if (!strncasecmp(command, "quit", 4)) exit(0);
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
-    else if (!strncasecmp(command, "ucinewgame", 10)) new_game = true;
     else if (!strncasecmp(command, "setoption name", 14)) {
         set_uci_option(command+15, &root_data.options);
+    } else if (!strncasecmp(command, "ucinewgame", 10)) {
     } else {
         uci_handle_ext(command);
     }
@@ -169,20 +168,21 @@ static void calculate_search_time(int wtime,
     color_t side = root_data.root_pos.side_to_move;
     int inc = side == WHITE ? winc : binc;
     int time = side == WHITE ? wtime : btime;
-    // Try to use 1/n of our remaining time, where there are n moves left.
-    // If we don't know n, guess 40. Allow using up to 8/n for tough moves.
-    if (!movestogo) movestogo = 40;
-    time += movestogo*inc;
-    if (new_game) {
-        // take more time on the first analyzed move of a new game
-        time *= 2;
-        new_game = false;
+    if (!movestogo) {
+        // x+y time control
+        root_data.time_target = time/40 + inc;
+        root_data.time_limit = MAX(time/5, inc-250);
+    } else {
+        // x/y time control
+        root_data.time_target = movestogo == 1 ?
+            time/2 :
+            time/MIN(movestogo, 20);
+        root_data.time_limit = movestogo == 1 ?
+            MAX(time-250, time*3/4) :
+            MIN(time/4, time*4/movestogo);
     }
-    // Avoid time forfeits. TODO: actually use time_limit properly;
-    // that's the non-hacky solution.
-    if (movestogo == 1 || (!inc && time < 10000)) time /= 2;
-    root_data.time_target = time/movestogo;
-    root_data.time_limit = time < time*8/movestogo ? time : time*8/movestogo;
+    // TODO: adjust polling interval based on time remaining?
+    // this might help for really low time-limit testing.
 }
 
 /*
