@@ -224,7 +224,7 @@ static void sort_root_moves(move_selector_t* sel)
     }
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;
-    if (sel->depth == 1) {
+    if (sel->depth <= 2) {
         for (i=0; sel->moves[i] != NO_MOVE; ++i) {
             move_t move = sel->moves[i];
             int score = sel->scores[i];

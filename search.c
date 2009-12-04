@@ -332,7 +332,7 @@ void deepening_search(search_data_t* search_data)
 
     int id_score = root_data.best_score = mated_in(-1);
     if (!search_data->depth_limit) search_data->depth_limit = MAX_SEARCH_DEPTH;
-    for (search_data->current_depth=1;
+    for (search_data->current_depth=2;
             search_data->current_depth <= search_data->depth_limit;
             ++search_data->current_depth) {
         if (should_output(search_data)) {
