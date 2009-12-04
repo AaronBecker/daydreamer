@@ -7,31 +7,33 @@ extern "C" {
 
 #include <assert.h>
 #include <stdio.h>
-#if 0  //non-aborting, trace-printng assert
+#if 1  // non-aborting, trace-logging assert
 #include <execinfo.h>
 #undef assert
-#undef __assert
 #define assert(e)   do { \
     if (e) break; \
-    printf ("%s:%u: failed assertion `%s'\n", __FILE__, __LINE__, #e); \
+    FILE* log; \
+    log = fopen("daydreamer.log", "a"); \
+    fprintf(log, "%s:%u: failed assertion `%s'\n", __FILE__, __LINE__, #e); \
+    printf("%s:%u: failed assertion `%s'\n", __FILE__, __LINE__, #e); \
     void* callstack[128]; \
     int frames = backtrace(callstack, 128); \
     char** strs = backtrace_symbols(callstack, frames); \
     for (int i = 0; i < frames; ++i) { \
-        printf("%s\n", strs[i]); \
+        fprintf(log, "%s\n", strs[i]); \
     } \
     free(strs); \
+    fclose(log); \
 } while (0)
-//((void) ((e) ? 0 : __assert (#e, __FILE__, __LINE__)))
 
-#define __assert(e, file, line) \
-        ((void)printf ("%s:%u: failed assertion `%s'\n", file, line, e))
+#define warn(msg)  do { \
+    FILE* log; \
+    log = fopen("daydreamer.log", "a"); \
+    fprintf(log, "%s:%u: warning: %s\n", __FILE__, __LINE__, msg); \
+    printf("%s:%u: warning: %s\n", __FILE__, __LINE__, msg); \
+    fclose(log); \
+} while (0)
 #endif
-
-#define warn(msg)  \
-        ((void) (__warn (__FILE__, __LINE__, msg)))
-#define __warn(file, line, msg) \
-        ((void)printf("%s:%u: warning: %s\n", file, line, msg))
 
 void _check_board_validity(const position_t* pos);
 void _check_move_validity(const position_t* pos, move_t move);
