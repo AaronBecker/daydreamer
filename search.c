@@ -21,7 +21,9 @@ static const int iid_non_pv_depth_reduction = 2;
 static const int iid_pv_depth_cutoff = 5;
 static const int iid_non_pv_depth_cutoff = 8;
 
+static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
+
 static const int qfutility_margin = 80;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
 static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300 };
@@ -177,7 +179,7 @@ static bool should_deepen(search_data_t* data)
             is_mate_score(abs(scores[depth--]))) return false;
 
     // We can stop early if our best move is obvious.
-    if (!data->depth_limit && !data->node_limit &&
+    if (!data->depth_limit && !data->node_limit && obvious_move_enabled &&
             depth >= 6 && data->obvious_move) return false;
     return true;
 }
