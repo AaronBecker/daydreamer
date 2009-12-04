@@ -8,12 +8,6 @@ extern "C" {
 #define MAX_SEARCH_DEPTH        63
 
 typedef struct {
-    move_t moves[256];
-    int scores[256];
-    int offset;
-} move_list_t;
-
-typedef struct {
     move_t pv[MAX_SEARCH_DEPTH+1];
     move_t killers[2];
     move_t mate_killer;
@@ -58,13 +52,19 @@ typedef struct {
     ((get_move_piece_type(m)<<6)|(square_to_index(get_move_to(m))))
 
 typedef struct {
+    uint64_t nodes;
+    move_t move;
+    int score;
+    int qsearch_score;
+} root_move_t;
+
+typedef struct {
     position_t root_pos;
     search_options_t options;
     search_stats_t stats;
 
     // search state info
-    move_t moves[256];
-    uint64_t move_nodes[256];
+    root_move_t root_moves[256];
     int best_score;
     int scores_by_iteration[MAX_SEARCH_DEPTH + 1];
     move_t pv[MAX_SEARCH_DEPTH + 1];
@@ -76,6 +76,7 @@ typedef struct {
     int current_depth;
     int current_move_index;
     bool resolving_fail_high;
+    move_t obvious_move;
     engine_status_t engine_status;
 
     // when should we stop?

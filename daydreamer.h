@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.51"
-#define ENGINE_VERSION_NAME     " egbb"
+#define ENGINE_VERSION_NAME     " obvious"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -158,7 +158,7 @@ bool is_repetition(const position_t* pos);
 
 // search.c
 void init_search_data(search_data_t* data);
-void root_search_minimax(void);
+void init_root_move(root_move_t* root_move, move_t move);
 void deepening_search(search_data_t* search_data);
 
 // static_exchange_eval.c

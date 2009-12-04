@@ -25,6 +25,7 @@ typedef int32_t move_t;
 #define get_move_piece(move)        (((move) >> 16) & 0x0f)
 #define get_move_piece_type(move)   piece_type(get_move_piece(move))
 #define get_move_capture(move)      (((move) >> 20) & 0x0f)
+#define get_move_capture_type(move) piece_type(get_move_capture(move))
 #define get_move_promote(move)      (((move) >> 24) & 0x0f)
 #define is_move_enpassant(move)     (((move) & ENPASSANT_FLAG) != 0)
 #define is_move_castle(move)        (((move) & CASTLE_FLAG) != 0)

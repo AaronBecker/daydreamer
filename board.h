@@ -57,6 +57,7 @@ typedef int square_t;
 
 #define square_rank(square)         ((square) >> 4)
 #define square_file(square)         ((square) & 0x0f)
+#define square_color(square)        (((square) ^ ((square) >> 4)) & 1)
 #define create_square(file, rank)   (((rank) << 4) | (file))
 #define valid_board_index(idx)      !((idx) & 0x88)
 #define flip_square(square)         ((square) ^ 0x70)

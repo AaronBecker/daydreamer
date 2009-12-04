@@ -142,6 +142,9 @@ void print_search_stats(const search_data_t* search_data)
         printf("%d ", search_data->scores_by_iteration[i]);
     }
     printf("\n");
+    if (search_data->obvious_move) {
+        printf("info string this move seemed obvious\n");
+    }
 }
 
 /*

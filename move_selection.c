@@ -217,8 +217,9 @@ static int score_tactical_move(position_t* pos, move_t move)
 static void sort_root_moves(move_selector_t* sel)
 {
     int i;
-    for (i=0; root_data.moves[i] != NO_MOVE; ++i) {
-        sel->moves[i] = root_data.moves[i];
+    for (i=0; root_data.root_moves[i].move != NO_MOVE; ++i) {
+        sel->moves[i] = root_data.root_moves[i].move;
+        // TODO: actually use the qsearch scores to sort.
     }
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;
@@ -229,7 +230,9 @@ static void sort_root_moves(move_selector_t* sel)
 
     uint64_t scores[256];
     move_t* moves = sel->moves;
-    for (i=0; moves[i] != NO_MOVE; ++i) scores[i] = root_data.move_nodes[i];
+    for (i=0; moves[i] != NO_MOVE; ++i) {
+        scores[i] = root_data.root_moves[i].nodes;
+    }
     for (i=0; moves[i] != NO_MOVE; ++i) {
         uint64_t score = scores[i];
         move_t move = moves[i];
@@ -248,19 +251,19 @@ static void sort_root_moves(move_selector_t* sel)
 void store_root_node_count(move_t move, uint64_t nodes)
 {
     int i;
-    for (i=0; root_data.moves[i] != move &&
-            root_data.moves[i] != NO_MOVE; ++i) {}
-    assert(root_data.moves[i] == move);
-    root_data.move_nodes[i] = nodes;
+    for (i=0; root_data.root_moves[i].move != move &&
+            root_data.root_moves[i].move != NO_MOVE; ++i) {}
+    assert(root_data.root_moves[i].move == move);
+    root_data.root_moves[i].nodes = nodes;
 }
 
 uint64_t get_root_node_count(move_t move)
 {
     int i;
-    for (i=0; root_data.moves[i] != move &&
-            root_data.moves[i] != NO_MOVE; ++i) {}
-    assert(root_data.moves[i] == move);
-    return root_data.move_nodes[i];
+    for (i=0; root_data.root_moves[i].move != move &&
+            root_data.root_moves[i].move != NO_MOVE; ++i) {}
+    assert(root_data.root_moves[i].move == move);
+    return root_data.root_moves[i].nodes;
 }
 
 /*

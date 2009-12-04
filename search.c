@@ -21,6 +21,7 @@ static const int iid_non_pv_depth_reduction = 2;
 static const int iid_pv_depth_cutoff = 5;
 static const int iid_non_pv_depth_cutoff = 8;
 
+static const int obvious_move_margin = 200;
 static const int qfutility_margin = 80;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
 static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300 };
@@ -47,8 +48,7 @@ static int quiesce(position_t* pos,
 void init_search_data(search_data_t* data)
 {
     memset(&data->stats, 0, sizeof(search_stats_t));
-    memset(&data->moves, 0, 256 * sizeof(move_t));
-    memset(&data->move_nodes, 0, 256 * sizeof(uint64_t));
+    memset(&data->root_moves, 0, 256 * sizeof(root_move_t));
     data->best_score = 0;
     memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
     memset(data->search_stack, 0, sizeof(search_node_t) * MAX_SEARCH_DEPTH);
@@ -59,6 +59,7 @@ void init_search_data(search_data_t* data)
     data->current_depth = 0;
     data->current_move_index = 0;
     data->resolving_fail_high = false;
+    data->obvious_move = NO_MOVE;
     data->engine_status = ENGINE_IDLE;
     init_timer(&data->timer);
     data->node_limit = 0;
@@ -118,18 +119,19 @@ static bool should_stop_searching(search_data_t* data)
     int so_far = elapsed_time(&data->timer);
     // If we've passed our hard limit, we're done.
     if (data->time_limit && so_far >= data->time_limit) return true;
+
     // If we've passed our soft limit and just started a new iteration, stop.
     if (data->time_target && so_far >= data->time_target &&
             data->current_move_index == 1) return true;
+
     // If we've passed our soft limit but we're in the middle of resolving a
     // fail high, try to resolve it before hitting the hard limit.
-    if (!data->resolving_fail_high &&
+    if (data->time_target && !data->resolving_fail_high &&
             so_far > 5*data->time_target) return true;
+
     // Respect node limits, if you're into that kind of thing.
     if (data->node_limit &&
             data->nodes_searched >= data->node_limit) return true;
-    // TODO: we need a heuristic for when the current result is "good enough",
-    // regardless of search params.
     return false;
 }
 
@@ -159,18 +161,24 @@ static int extend(position_t* pos, move_t move, bool single_reply)
 static bool should_deepen(search_data_t* data)
 {
     if (should_stop_searching(data)) return false;
+    if (data->infinite) return true;
+
     // If we're more than halfway through our time, we won't make it through
-    // the next iteration anyway.
-    // TODO: this margin could be tightened up.
-    if (!data->infinite && data->time_target &&
+    // the first move of the next iteration anyway.
+    if (data->time_target &&
         data->time_target-elapsed_time(&data->timer) <
-        data->time_target/2) return false;
+        data->time_target * 60 / 100) return false;
+
     // Go ahead and quit if we have a mate.
     int* scores = data->scores_by_iteration;
     int depth = data->current_depth;
     if (depth >= 4 && is_mate_score(abs(scores[depth--])) &&
             is_mate_score(abs(scores[depth--])) &&
             is_mate_score(abs(scores[depth--]))) return false;
+
+    // We can stop early if our best move is obvious.
+    if (!data->depth_limit && !data->node_limit &&
+            depth >= 6 && data->obvious_move) return false;
     return true;
 }
 
@@ -237,11 +245,10 @@ static bool is_history_reduction_allowed(history_t* h, move_t move)
  */
 static bool is_iid_allowed(bool full_window, int depth)
 {
-    if (full_window) {
-        if (!enable_pv_iid || iid_pv_depth_cutoff >= depth) return false;
-    } else {
-        if (!enable_non_pv_iid || iid_non_pv_depth_cutoff >= depth) return false;
-    }
+    if (full_window && (!enable_pv_iid ||
+                iid_pv_depth_cutoff >= depth)) return false;
+    else if (!enable_non_pv_iid ||
+            iid_non_pv_depth_cutoff >= depth) return false;
     return true;
 }
 
@@ -263,6 +270,40 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
     return alpha >= beta;
 }
 
+void init_root_move(root_move_t* root_move, move_t move)
+{
+    root_move->nodes = 0;
+    root_move->score = 0;
+    root_move->move = move;
+    undo_info_t undo;
+    do_move(&root_data.root_pos, move, &undo);
+    root_move->qsearch_score = -quiesce(&root_data.root_pos,
+            root_data.search_stack, 1, mated_in(-1), mate_in(-1), 0);
+    undo_move(&root_data.root_pos, move, &undo);
+}
+
+void find_obvious_move(search_data_t* data)
+{
+    root_move_t* r = data->root_moves;
+    int best_score = INT_MIN;
+    for (int i=0; r[i].move; ++i) {
+        if (r[i].qsearch_score > best_score) {
+            best_score = r[i].qsearch_score;
+            data->obvious_move = r[i].move;
+        }
+    }
+    for (int i=0; r[i].move; ++i) {
+        if (r[i].move == data->obvious_move) continue;
+        if (r[i].qsearch_score + obvious_move_margin > best_score) {
+            printf("info string no obvious move\n");
+            data->obvious_move = NO_MOVE;
+            return;
+        }
+    }
+    printf("info string candidate obvious move ");
+    print_coord_move(data->obvious_move);
+    printf("\n");
+}
 
 /*
  * Iterative deepening search of the root position. This is the external
@@ -278,10 +319,14 @@ void deepening_search(search_data_t* search_data)
     // If |search_data| already has a list of root moves, we search only
     // those moves. Otherwise, search everything. This allows support for the
     // uci searchmoves command.
-    if (search_data->moves[0] == NO_MOVE) {
-        generate_legal_moves(&search_data->root_pos,
-                search_data->moves);
+    if (search_data->root_moves[0].move == NO_MOVE) {
+        move_t moves[256];
+        generate_legal_moves(&search_data->root_pos, moves);
+        for (int i=0; moves[i]; ++i) {
+            init_root_move(&search_data->root_moves[i], moves[i]);
+        }
     }
+    find_obvious_move(search_data);
 
     int id_score = root_data.best_score = mated_in(-1);
     if (!search_data->depth_limit) search_data->depth_limit = MAX_SEARCH_DEPTH;
@@ -298,6 +343,9 @@ void deepening_search(search_data_t* search_data)
                 search_data->pv,
                 search_data->current_depth,
                 search_data->best_score);
+        if (search_data->pv[0] != search_data->obvious_move) {
+            search_data->obvious_move = NO_MOVE;
+        }
         id_score = search_data->best_score;
         search_data->scores_by_iteration[search_data->current_depth] = id_score;
         if (!should_deepen(search_data)) {
@@ -310,8 +358,10 @@ void deepening_search(search_data_t* search_data)
     --search_data->current_depth;
     search_data->best_score = id_score;
     print_search_stats(search_data);
-    printf("info string targettime %d elapsedtime %d\n",
-            search_data->time_target, elapsed_time(&search_data->timer));
+    printf("info string time target %d time limit %d elapsed time %d\n",
+            search_data->time_target,
+            search_data->time_limit,
+            elapsed_time(&search_data->timer));
     print_transposition_stats();
     print_pawn_stats();
     char coord_move[6];
@@ -449,8 +499,9 @@ static int search(position_t* pos,
             is_nullmove_allowed(pos)) {
         undo_info_t undo;
         do_nullmove(pos, &undo);
+        int null_depth = MAX(depth - NULL_R, 0);
         int null_score = -search(pos, search_node+1, ply+1,
-                -beta, -beta+1, MAX(depth-NULL_R, 0));
+                -beta, -beta+1, null_depth);
         undo_nullmove(pos, &undo);
         if (is_mated_score(null_score)) mate_threat = true;
         if (null_score >= beta) {
@@ -494,6 +545,7 @@ static int search(position_t* pos,
     move_selector_t selector;
     init_move_selector(&selector, pos, full_window ? PV_GEN : NONPV_GEN,
             search_node, hash_move, depth, ply);
+    // TODO: test
     bool single_reply = has_single_reply(&selector);
     int futility_score = mated_in(-1);
     int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;

@@ -6,7 +6,6 @@ Search
     TBB?
     Ponder
     Identify "tough" moves and take more time on them
-    (!) More accurate time management
     More experiments with nullmove, razoring, futility, and LMR
     "easy move" at root: figure out why this wasn't working
     recognize singular replies
@@ -21,7 +20,8 @@ Interface
     PGN parsing
 
 Evaluation
-    test weighting for different components
+    add some basic endgame knowledge (opp bishops, etc)
+    outpost bonus
     bounded eval with early exit
 
 Testing
