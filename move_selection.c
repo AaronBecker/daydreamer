@@ -219,12 +219,24 @@ static void sort_root_moves(move_selector_t* sel)
     int i;
     for (i=0; root_data.root_moves[i].move != NO_MOVE; ++i) {
         sel->moves[i] = root_data.root_moves[i].move;
-        // TODO: actually use the qsearch scores to sort.
+        sel->scores[i] = root_data.root_moves[i].qsearch_score;
+        if (sel->moves[i] == sel->hash_move) sel->scores[i] = INT_MAX;
     }
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;
-    if (sel->depth < 3) {
-        score_moves(sel);
+    if (sel->depth == 1) {
+        for (i=0; sel->moves[i] != NO_MOVE; ++i) {
+            move_t move = sel->moves[i];
+            int score = sel->scores[i];
+            int j = i-1;
+            while (j >= 0 && sel->scores[j] < score) {
+                sel->scores[j+1] = sel->scores[j];
+                sel->moves[j+1] = sel->moves[j];
+                --j;
+            }
+            sel->scores[j+1] = score;
+            sel->moves[j+1] = move;
+        }
         return;
     }
 
@@ -232,11 +244,11 @@ static void sort_root_moves(move_selector_t* sel)
     move_t* moves = sel->moves;
     for (i=0; moves[i] != NO_MOVE; ++i) {
         scores[i] = root_data.root_moves[i].nodes;
+        if (moves[i] == sel->hash_move) scores[i] = UINT64_MAX;
     }
     for (i=0; moves[i] != NO_MOVE; ++i) {
-        uint64_t score = scores[i];
         move_t move = moves[i];
-        if (move == sel->hash_move) score = UINT64_MAX;
+        uint64_t score = scores[i];
         int j = i-1;
         while (j >= 0 && scores[j] < score) {
             scores[j+1] = scores[j];
