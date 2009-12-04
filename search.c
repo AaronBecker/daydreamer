@@ -63,7 +63,6 @@ void init_search_data(search_data_t* data)
     data->resolving_fail_high = false;
     data->obvious_move = NO_MOVE;
     data->engine_status = ENGINE_IDLE;
-    init_timer(&data->timer);
     data->node_limit = 0;
     data->depth_limit = 0;
     data->time_limit = 0;
@@ -71,6 +70,7 @@ void init_search_data(search_data_t* data)
     data->mate_search = 0;
     data->infinite = 0;
     data->ponder = 0;
+    init_timer(&data->timer);
 }
 
 /*
@@ -145,6 +145,8 @@ static bool should_stop_searching(search_data_t* data)
  * efficiency.
  * TODO: recapture extensions might be good. Also, fractional extensions,
  * and fractional plies in general.
+ * TODO: test the value of pawn push extensions. Maybe limit the situations
+ * in which the pushes are extended to pv?
  */
 static int extend(position_t* pos, move_t move, bool single_reply)
 {
@@ -157,8 +159,8 @@ static int extend(position_t* pos, move_t move, bool single_reply)
 
 /*
  * Should we go on to the next level of iterative deepening in our root
- * search? This considers regular stopping conditions and also guesses whether
- * or not we can finish the next depth in the remaining time.
+ * search? This considers regular stopping conditions and also
+ * tries to decide when we should stop early.
  */
 static bool should_deepen(search_data_t* data)
 {
@@ -180,10 +182,13 @@ static bool should_deepen(search_data_t* data)
 
     // We can stop early if our best move is obvious.
     if (!data->depth_limit && !data->node_limit && obvious_move_enabled &&
-            depth >= 6 && data->obvious_move) return false;
+            data->current_depth >= 6 && data->obvious_move) return false;
     return true;
 }
 
+/*
+ * Should we look up the current position in an endgame database?
+ */
 static bool should_probe_egbb(position_t* pos,
         int depth,
         int ply,
@@ -211,6 +216,9 @@ static bool is_nullmove_allowed(position_t* pos)
     return !(pos->num_pieces[WHITE] == 1 && pos->num_pieces[BLACK] == 1);
 }
 
+/*
+ * Record quiet moves that cause fail-highs in the history table.
+ */
 static void record_success(history_t* h, move_t move, int depth)
 {
     int index = history_index(move);
@@ -225,17 +233,27 @@ static void record_success(history_t* h, move_t move, int depth)
     }
 }
 
+/*
+ * Record quiet moves that cause failed to cause a fail-high on a fail-high
+ * node in the history table.
+ */
 static void record_failure(history_t* h, move_t move)
 {
     h->failure[history_index(move)]++;
 }
 
+/*
+ * History heuristic for forward pruning.
+ */
 static bool is_history_prune_allowed(history_t* h, move_t move, int depth)
 {
     int index = history_index(move);
     return (depth * h->success[index] < h->failure[index]);
 }
 
+/*
+ * History heuristic for depth reduction.
+ */
 static bool is_history_reduction_allowed(history_t* h, move_t move)
 {
     int index = history_index(move);
@@ -272,6 +290,9 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
     return alpha >= beta;
 }
 
+/*
+ * Initialize a move at the root with the score of its depth-1 search.
+ */
 void init_root_move(root_move_t* root_move, move_t move)
 {
     root_move->nodes = 0;
@@ -284,6 +305,12 @@ void init_root_move(root_move_t* root_move, move_t move)
     undo_move(&root_data.root_pos, move, &undo);
 }
 
+/*
+ * Look for a root move that's better than its competitors by at least
+ * |obvious_move_margin|. If there is one, and it consistently remains the
+ * best move for the first several iterations, we just stop and return
+ * the obvious move.
+ */
 void find_obvious_move(search_data_t* data)
 {
     root_move_t* r = data->root_moves;
@@ -470,10 +497,10 @@ static int search(position_t* pos,
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
     if (!full_window && trans_entry &&
             is_trans_cutoff_allowed(trans_entry, depth, alpha, beta)) {
-            search_node->pv[ply] = hash_move;
-            search_node->pv[ply+1] = NO_MOVE;
-            root_data.stats.cutoffs[root_data.current_depth]++;
-            return MAX(alpha, trans_entry->score);
+        search_node->pv[ply] = hash_move;
+        search_node->pv[ply+1] = NO_MOVE;
+        root_data.stats.cutoffs[root_data.current_depth]++;
+        return MAX(alpha, trans_entry->score);
     }
 
     // Check endgame bitbases if appropriate
@@ -491,7 +518,7 @@ static int search(position_t* pos,
     score = mated_in(-1);
     int lazy_score = simple_eval(pos);
     bool mate_threat = false;
-    // Nullmove reduction.
+    // Nullmove search.
     if (nullmove_enabled &&
             depth != 1 &&
             !full_window &&
