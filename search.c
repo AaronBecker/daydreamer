@@ -444,8 +444,8 @@ static bool root_search(search_data_t* search_data)
                     char coord_move[6];
                     move_to_coord_str(move, coord_move);
                     printf("info string fail high, research %s\n", coord_move);
-                    search_data->resolving_fail_high = true;
                 }
+                search_data->resolving_fail_high = true;
                 score = -search(pos, search_data->search_stack,
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
@@ -661,8 +661,9 @@ static int search(position_t* pos,
                 if (!get_move_capture(move) &&
                         !get_move_promote(move)) {
                     record_success(&root_data.history, move, depth);
-                    for (int i=0; i<num_searched_moves; ++i) {
+                    for (int i=0; i<num_searched_moves-1; ++i) {
                         move_t m = searched_moves[i];
+                        assert(m != move);
                         if (!get_move_capture(m) && !get_move_promote(m)) {
                             record_failure(&root_data.history, m);
                         }
