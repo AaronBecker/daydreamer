@@ -228,7 +228,9 @@ int generate_evasions(const position_t* pos, move_t* moves)
     // capture is available, the only way the en passant capture would evade
     // the check is if it's the newly moved pawn that's checking us.
     direction_t pin_dir;
-    if (pos->ep_square != EMPTY && check_sq+pawn_push[side] == pos->ep_square) {
+    if (pos->ep_square != EMPTY &&
+            check_sq+pawn_push[side] == pos->ep_square &&
+            pos->board[pos->ep_square] == EMPTY) {
         piece_t our_pawn = create_piece(side, PAWN);
         to = pos->ep_square;
         for (int i=0; i<2; ++i) {
