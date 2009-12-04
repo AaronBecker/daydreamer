@@ -1,14 +1,15 @@
 
 Search
     Aspiration
+    Ponder
+    MultiPV
     Store move ordering for PV nodes
     Better statistics gathering/reporting
-    TBB?
-    Ponder
     Identify "tough" moves and take more time on them
     More experiments with nullmove, razoring, futility, and LMR
     "easy move" at root: figure out why this wasn't working
     recognize singular replies
+    TBB?
 
 shrink trans table entry size
 evaluation hashing
@@ -22,6 +23,7 @@ Interface
 Evaluation
     add some basic endgame knowledge (opp bishops, etc)
     outpost bonus
+    material imbalance tables
     bounded eval with early exit
 
 Testing
