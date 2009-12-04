@@ -5,3 +5,6 @@ daydreamer
 daydreamer.log
 polyglot
 .DS_Store
+*.dylib
+daydreamer.uci
+tests
