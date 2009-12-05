@@ -94,7 +94,7 @@ uint64_t perft(position_t* position, int depth, bool div)
  */
 static uint64_t divide(position_t* pos, int depth)
 {
-    put_transposition(pos, 0, 0, 0, NO_MOVE);
+    put_transposition(pos, 0, 0, 0, NO_MOVE, false);
     move_t move_list[256];
     move_t* current_move = move_list;
     int num_moves = 0;
@@ -151,7 +151,7 @@ static uint64_t full_search(position_t* pos, int depth)
     move_list[num_moves] = NO_MOVE;
 
     if (depth == 1) {
-        put_transposition(pos, NO_MOVE, depth, num_moves, SCORE_EXACT);
+        put_transposition(pos, NO_MOVE, depth, num_moves, SCORE_EXACT, false);
         return num_moves;
     }
 
@@ -163,7 +163,7 @@ static uint64_t full_search(position_t* pos, int depth)
         undo_move(pos, *current_move, &undo);
         ++current_move;
     }
-    put_transposition(pos, NO_MOVE, depth, nodes, SCORE_EXACT);
+    put_transposition(pos, NO_MOVE, depth, nodes, SCORE_EXACT, false);
     return nodes;
 }
 

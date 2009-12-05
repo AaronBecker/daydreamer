@@ -10,10 +10,10 @@ extern "C" {
 typedef struct {
     hashkey_t key;
     move_t move;
-    uint16_t depth;
-    int32_t score;
+    int16_t depth;
+    int16_t score;
     uint8_t age;
-    score_type_t score_type;
+    uint8_t flags;
 } transposition_entry_t;
 
 #ifdef __cplusplus

@@ -17,9 +17,12 @@ typedef enum {
     ENGINE_IDLE=0, ENGINE_PONDERING, ENGINE_THINKING, ENGINE_ABORTED
 } engine_status_t;
 
-typedef enum {
-    SCORE_EXACT, SCORE_LOWERBOUND, SCORE_UPPERBOUND
-} score_type_t;
+typedef int score_type_t;
+#define SCORE_LOWERBOUND    0x01
+#define SCORE_UPPERBOUND    0x02
+#define SCORE_EXACT         0x03
+#define SCORE_MASK          0x03
+#define MATE_THREAT         0x04
 
 typedef struct {
     int multi_pv;

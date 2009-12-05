@@ -102,7 +102,8 @@ void put_transposition(position_t* pos,
         move_t move,
         int depth,
         int score,
-        score_type_t score_type)
+        score_type_t score_type,
+        bool mate_threat)
 {
     transposition_entry_t* entry, *best_entry = NULL;
     int replace_score, best_replace_score = INT_MIN;
@@ -114,17 +115,17 @@ void put_transposition(position_t* pos,
             entry->depth = depth;
             entry->move = move;
             entry->score = score;
+            entry->flags = score_type | mate_threat;
             switch (score_type) {
                 case SCORE_LOWERBOUND: hash_stats.beta++; break;
                 case SCORE_UPPERBOUND: hash_stats.alpha++; break;
                 case SCORE_EXACT: hash_stats.exact++;
             }
-            switch (entry->score_type) {
+            switch (entry->flags & SCORE_MASK) {
                 case SCORE_LOWERBOUND: hash_stats.beta--; break;
                 case SCORE_UPPERBOUND: hash_stats.alpha--; break;
                 case SCORE_EXACT: hash_stats.exact--;
             }
-            entry->score_type = score_type;
             return;
         }
         replace_score = entry_replace_score(entry);
@@ -148,7 +149,7 @@ void put_transposition(position_t* pos,
     entry->move = move;
     entry->depth = depth;
     entry->score = score;
-    entry->score_type = score_type;
+    entry->flags = score_type | mate_threat;
 }
 
 /*
@@ -162,7 +163,7 @@ void put_transposition_line(position_t* pos,
         int score)
 {
     if (!*moves) return;
-    put_transposition(pos, *moves, depth, score, SCORE_EXACT);
+    put_transposition(pos, *moves, depth, score, SCORE_EXACT, false);
     undo_info_t undo;
     do_move(pos, *moves, &undo);
     put_transposition_line(pos, moves+1, depth-1, score);

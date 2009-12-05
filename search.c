@@ -245,9 +245,7 @@ static void record_success(history_t* h, move_t move, int depth)
 
     // Keep history values inside the correct range.
     if (h->history[index] > MAX_HISTORY) {
-        for (int i=0; i<MAX_HISTORY_INDEX; ++i) {
-            h->history[i] /= 2;
-        }
+        for (int i=0; i<MAX_HISTORY_INDEX; ++i) h->history[i] /= 2;
     }
 }
 
@@ -266,16 +264,18 @@ static void record_failure(history_t* h, move_t move)
 static bool is_history_prune_allowed(history_t* h, move_t move, int depth)
 {
     int index = history_index(move);
-    return (depth * h->success[index] < h->failure[index]);
+    // TODO: keep experimenting. The 2 is "double history"
+    return depth * h->success[index] < h->failure[index];
 }
 
 /*
  * History heuristic for depth reduction.
+ * TODO: try actually using this
  */
 static bool is_history_reduction_allowed(history_t* h, move_t move)
 {
     int index = history_index(move);
-    return (h->success[index] / 2 < h->failure[index]);
+    return h->success[index] / 8 < h->failure[index];
 }
 
 /*
@@ -295,17 +295,17 @@ static bool is_iid_allowed(bool full_window, int depth)
  */
 static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
         int depth,
-        int alpha,
-        int beta)
+        int* alpha,
+        int* beta)
 {
     if (depth > entry->depth) return false;
-    if (entry->score_type != SCORE_UPPERBOUND && entry->score > alpha) {
-        alpha = entry->score;
+    if (entry->flags & SCORE_LOWERBOUND && entry->score > *alpha) {
+        *alpha = entry->score;
     }
-    if (entry->score_type != SCORE_LOWERBOUND && entry->score < beta) {
-        beta = entry->score;
+    if (entry->flags & SCORE_UPPERBOUND && entry->score < *beta) {
+        *beta = entry->score;
     }
-    return alpha >= beta;
+    return *alpha >= *beta;
 }
 
 /*
@@ -514,8 +514,10 @@ static int search(position_t* pos,
     // Get move from transposition table if possible.
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
+    bool mate_threat = false;
+    if (trans_entry) mate_threat = trans_entry->flags & MATE_THREAT;
     if (!full_window && trans_entry &&
-            is_trans_cutoff_allowed(trans_entry, depth, alpha, beta)) {
+            is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
         search_node->pv[ply] = hash_move;
         search_node->pv[ply+1] = NO_MOVE;
         root_data.stats.cutoffs[root_data.current_depth]++;
@@ -536,15 +538,15 @@ static int search(position_t* pos,
     if (full_window) root_data.pvnodes_searched++;
     score = mated_in(-1);
     int lazy_score = simple_eval(pos);
-    bool mate_threat = false;
-    // Nullmove search.
     if (nullmove_enabled &&
             depth != 1 &&
+            !mate_threat &&
             !full_window &&
             pos->prev_move != NULL_MOVE &&
             lazy_score + NULL_EVAL_MARGIN > beta &&
             !is_mate_score(beta) &&
             is_nullmove_allowed(pos)) {
+        // Nullmove search.
         undo_info_t undo;
         do_nullmove(pos, &undo);
         int null_depth = MAX(depth - NULL_R, 0);
@@ -593,7 +595,7 @@ static int search(position_t* pos,
     move_selector_t selector;
     init_move_selector(&selector, pos, full_window ? PV_GEN : NONPV_GEN,
             search_node, hash_move, depth, ply);
-    // TODO: test
+    // TODO: test extensions. Also try fractional extensions.
     bool single_reply = has_single_reply(&selector);
     int futility_score = mated_in(-1);
     int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
@@ -693,7 +695,8 @@ static int search(position_t* pos,
                     }
                 }
                 if (is_mate_score(score)) search_node->mate_killer = move;
-                put_transposition(pos, move, depth, beta, SCORE_LOWERBOUND);
+                put_transposition(pos, move, depth, beta,
+                        SCORE_LOWERBOUND, mate_threat);
                 root_data.stats.move_selection[
                     MIN(num_legal_moves-1, HIST_BUCKETS)]++;
                 if (full_window) root_data.stats.pv_move_selection[
@@ -714,9 +717,11 @@ static int search(position_t* pos,
     if (full_window) root_data.stats.pv_move_selection[
         MIN(num_legal_moves-1, HIST_BUCKETS)]++;
     if (alpha == orig_alpha) {
-        put_transposition(pos, NO_MOVE, depth, alpha, SCORE_UPPERBOUND);
+        put_transposition(pos, NO_MOVE, depth, alpha,
+                SCORE_UPPERBOUND, mate_threat);
     } else {
-        put_transposition(pos, search_node->pv[ply], depth, alpha, SCORE_EXACT);
+        put_transposition(pos, search_node->pv[ply], depth, alpha,
+                SCORE_EXACT, mate_threat);
     }
     return alpha;
 }
@@ -737,6 +742,7 @@ static int quiesce(position_t* pos,
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
     if (alpha > mate_in(ply-1)) return alpha; // can't beat this
     if (is_draw(pos)) return DRAW_VALUE;
+    bool full_window = (beta-alpha > 1);
 
     // Check endgame bitbases if appropriate
     int score;
@@ -757,7 +763,6 @@ static int quiesce(position_t* pos,
         if (alpha >= beta) return beta;
     }
 
-    bool full_window = (beta-alpha > 1);
     bool allow_futility = qfutility_enabled &&
         !full_window &&
         !is_check(pos) &&

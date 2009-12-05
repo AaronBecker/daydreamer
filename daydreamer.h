@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.51"
-#define ENGINE_VERSION_NAME     " try_multi"
+#define ENGINE_VERSION_NAME     " r7_base"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -179,7 +179,8 @@ void put_transposition(position_t* pos,
         move_t move,
         int depth,
         int score,
-        score_type_t score_type);
+        score_type_t score_type,
+        bool mate_threat);
 void put_transposition_line(position_t* pos,
         move_t* moves,
         int depth,
