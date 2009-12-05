@@ -49,28 +49,15 @@ static int quiesce(position_t* pos,
  */
 void init_search_data(search_data_t* data)
 {
-    memset(&data->stats, 0, sizeof(search_stats_t));
-    memset(&data->root_moves, 0, 256 * sizeof(root_move_t));
-    data->best_score = 0;
-    memset(data->pv, 0, sizeof(move_t) * MAX_SEARCH_DEPTH);
-    memset(data->search_stack, 0, sizeof(search_node_t) * MAX_SEARCH_DEPTH);
-    memset(&data->history, 0, sizeof(history_t));
-    data->nodes_searched = 0;
-    data->qnodes_searched = 0;
-    data->pvnodes_searched = 0;
-    data->current_depth = 0;
-    data->current_move_index = 0;
-    data->resolving_fail_high = false;
-    data->obvious_move = NO_MOVE;
+    position_t root_pos_copy;
+    copy_position(&root_pos_copy, &data->root_pos);
+    memset(data, 0, sizeof(search_data_t));
+    copy_position(&data->root_pos, &root_pos_copy);
     data->engine_status = ENGINE_IDLE;
-    data->node_limit = 0;
-    data->depth_limit = 0;
-    data->time_limit = 0;
-    data->time_target = 0;
-    data->mate_search = 0;
-    data->infinite = 0;
-    data->ponder = 0;
     init_timer(&data->timer);
+    data->options.output_delay = get_option_int("Output delay");
+    data->options.use_egbb = get_option_bool("Use endgame bitbases");
+    data->options.multi_pv = get_option_int("MultiPV");
 }
 
 /*
@@ -217,6 +204,37 @@ static bool is_nullmove_allowed(position_t* pos)
 }
 
 /*
+ * Record the number of nodes searched for a particular root move.
+ */
+void store_root_data(search_data_t* data,
+        move_t move,
+        int score,
+        uint64_t nodes_before)
+{
+    int i;
+    for (i=0; data->root_moves[i].move != move &&
+            data->root_moves[i].move != NO_MOVE; ++i) {}
+    assert(data->root_moves[i].move == move);
+    data->root_moves[i].nodes = data->nodes_searched - nodes_before;
+    data->root_moves[i].multipv_index = data->current_move_index;
+    data->root_moves[i].score = score;
+    data->root_moves[i].pv[0] = move;
+    update_pv(data->root_moves[i].pv, data->search_stack->pv, 0, move);
+}
+
+/*
+ * Get number of nodes searched for a root move in the last iteration.
+ */
+uint64_t get_root_node_count(move_t move)
+{
+    int i;
+    for (i=0; root_data.root_moves[i].move != move &&
+            root_data.root_moves[i].move != NO_MOVE; ++i) {}
+    assert(root_data.root_moves[i].move == move);
+    return root_data.root_moves[i].nodes;
+}
+
+/*
  * Record quiet moves that cause fail-highs in the history table.
  */
 static void record_success(history_t* h, move_t move, int depth)
@@ -295,14 +313,14 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
  */
 void init_root_move(root_move_t* root_move, move_t move)
 {
-    root_move->nodes = 0;
-    root_move->score = 0;
+    memset(root_move, 0, sizeof(root_move_t));
     root_move->move = move;
     undo_info_t undo;
     do_move(&root_data.root_pos, move, &undo);
     root_move->qsearch_score = -quiesce(&root_data.root_pos,
             root_data.search_stack, 1, mated_in(-1), mate_in(-1), 0);
     undo_move(&root_data.root_pos, move, &undo);
+    root_move->pv[0] = move;
 }
 
 /*
@@ -395,7 +413,7 @@ void deepening_search(search_data_t* search_data)
     print_pawn_stats();
     char coord_move[6];
     move_to_coord_str(search_data->pv[0], coord_move);
-    print_pv(search_data);
+    print_multipv(search_data);
     printf("bestmove %s\n", coord_move);
     search_data->engine_status = ENGINE_IDLE;
 }
@@ -432,8 +450,9 @@ static bool root_search(search_data_t* search_data)
         do_move(pos, move, &undo);
         int ext = extend(pos, move, false);
         int score;
-        if (search_data->current_move_index == 0) {
-            // First move, use full window search.
+        if (search_data->current_move_index < search_data->options.multi_pv) {
+            // Use full window search.
+            alpha = mated_in(-1);
             score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-1);
         } else {
@@ -450,7 +469,7 @@ static bool root_search(search_data_t* search_data)
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
-        store_root_node_count(move, search_data->nodes_searched-nodes_before);
+        store_root_data(search_data, move, score, nodes_before);
         undo_move(pos, move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
         if (score > alpha) {
@@ -460,7 +479,7 @@ static bool root_search(search_data_t* search_data)
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
-            print_pv(search_data);
+            print_multipv(search_data);
         }
         search_data->resolving_fail_high = false;
     }

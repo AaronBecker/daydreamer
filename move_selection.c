@@ -260,24 +260,6 @@ static void sort_root_moves(move_selector_t* sel)
     }
 }
 
-void store_root_node_count(move_t move, uint64_t nodes)
-{
-    int i;
-    for (i=0; root_data.root_moves[i].move != move &&
-            root_data.root_moves[i].move != NO_MOVE; ++i) {}
-    assert(root_data.root_moves[i].move == move);
-    root_data.root_moves[i].nodes = nodes;
-}
-
-uint64_t get_root_node_count(move_t move)
-{
-    int i;
-    for (i=0; root_data.root_moves[i].move != move &&
-            root_data.root_moves[i].move != NO_MOVE; ++i) {}
-    assert(root_data.root_moves[i].move == move);
-    return root_data.root_moves[i].nodes;
-}
-
 /*
  * The old move scoring function, kept for reference.
  */

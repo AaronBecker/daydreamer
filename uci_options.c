@@ -12,14 +12,14 @@ typedef enum {
     OPTION_STRING
 } uci_option_type_t;
 
-typedef void(*option_handler)(void*, char*, search_options_t*);
+typedef void(*option_handler)(void*, char*);
 
 typedef struct {
     uci_option_type_t type;
     char name[128];
-    char value[32];
-    char vars[16][32];
-    char default_value[32];
+    char value[128];
+    char vars[16][128];
+    char default_value[128];
     int min;
     int max;
     option_handler handler;
@@ -94,87 +94,109 @@ void print_uci_options(void)
     }
 }
 
+static uci_option_t* get_uci_option(const char* name)
+{
+    for (int i=0; i<uci_option_count; ++i) {
+        int name_length = strlen(uci_options[i].name);
+        if (!strncasecmp(name, uci_options[i].name, name_length)) {
+            return &uci_options[i];
+        }
+    }
+    return NULL;
+}
+
 /*
  * Handle a console command that sets a uci option. We receive the part of the
  * command that looks like:
  * <name> value <value>
  * Each option has its own handler callback which is invoked.
  */
-void set_uci_option(char* command, search_options_t* options)
+void set_uci_option(char* command)
 {
     while (isspace(*command)) ++command;
-    for (int i=0; i<uci_option_count; ++i) {
-        int name_length = strlen(uci_options[i].name);
-        if (!strncasecmp(command, uci_options[i].name, name_length)) {
-            command += name_length;
-            while(isspace(*command)) ++command;
-            uci_options[i].handler(&uci_options[i], command, options);
-            return;
-        }
+    uci_option_t* option = get_uci_option(command);
+    if (!option) return;
+    command = strcasestr(command, "value ");
+    if (command) {
+        command += 6;
+        while(isspace(*command)) ++command;
     }
+    option->handler(option, command);
 }
 
-static void handle_hash(void* opt, char* value, search_options_t* options)
+int get_option_int(const char* name)
 {
-    (void)options;
+    uci_option_t* option = get_uci_option(name);
+    assert(option);
+    int value;
+    sscanf(option->value, "%d", &value);
+    return value;
+}
+
+char* get_option_string(const char* name)
+{
+    uci_option_t* option = get_uci_option(name);
+    assert(option);
+    return option->value;
+}
+
+bool get_option_bool(const char* name)
+{
+    uci_option_t* option = get_uci_option(name);
+    assert(option);
+    return strcasestr(option->value, "true") ? true : false;
+}
+
+static void default_handler(void* opt, char* value)
+{
+    uci_option_t* option = opt;
+    strncpy(option->value, value, 128);
+}
+
+static void handle_hash(void* opt, char* value)
+{
     uci_option_t* option = opt;
     int mbytes = 0;
-    sscanf(value, "value %d", &mbytes);
+    strncpy(option->value, value, 128);
+    sscanf(value, "%d", &mbytes);
     if (mbytes < option->min || mbytes > option->max) {
         sscanf(option->default_value, "%d", &mbytes);
     }
     init_transposition_table(mbytes * (1<<20));
 }
 
-static void handle_output_delay(void* opt,
-        char* value,
-        search_options_t* options)
+static void handle_egbb_use(void* opt, char* value)
 {
     uci_option_t* option = opt;
-    int delay = 0;
-    sscanf(value, "value %d", &delay);
-    if (delay < option->min || delay > option->max) {
-        sscanf(option->default_value, "%d", &delay);
+    strncpy(option->value, value, 128);
+    if (!strcasecmp(value, "true")) {
+        load_egbb(get_option_string("Endgame bitbase path"), 0);
+    } else unload_egbb();
+}
+
+static void handle_egbb_path(void* opt, char* value)
+{
+    uci_option_t* option = opt;
+    strncpy(option->value, value, 128);
+    if (get_option_bool("Use endgame bitbases")) {
+        load_egbb(value, 0);
     }
-    options->output_delay = delay;
-}
-
-static void handle_egbb_use(void* opt, char* value, search_options_t* options)
-{
-    (void)opt;
-    if (!strncasecmp(value, "value true", 10)) options->use_egbb = true;
-    else if (!strncasecmp(value, "value false", 11)) options->use_egbb = false;
-    else printf("did not recognize option value \"%s\"\n", value);
-    if (options->use_egbb) load_egbb(options->egbb_path, 0);
-    else unload_egbb();
-}
-
-static void handle_egbb_path(void* opt, char* value, search_options_t* options)
-{
-    (void)opt;
-    (void)value;
-    (void)options;
-    char* s = value + 6;
-    strncpy(options->egbb_path, s, 512);
-    if (options->use_egbb) load_egbb(options->egbb_path, 0);
 }
 
 /*
  * Create all uci options and set them to their default values. Also set
  * default values for any options that aren't exposed to the uci interface.
  */
-void init_uci_options(search_options_t* options)
+void init_uci_options()
 {
     add_uci_option("Hash", OPTION_SPIN, "32", 1, 4096, NULL, &handle_hash);
-    set_uci_option("Hash value 32", options);
+    set_uci_option("Hash value 32");
     add_uci_option("Output Delay", OPTION_SPIN, "2000", 0, 1000000, NULL,
-            &handle_output_delay);
-    set_uci_option("Output Delay value 2000", options);
+            &default_handler);
     add_uci_option("Use endgame bitbases", OPTION_CHECK, "false", 0, 0, NULL,
             &handle_egbb_use);
-    set_uci_option("Use endgame bitbases value false", options);
     add_uci_option("Endgame bitbase path", OPTION_STRING, ".", 0, 0, NULL,
             &handle_egbb_path);
-    set_uci_option("Endgame bitbase path value .", options);
+    add_uci_option("MultiPV", OPTION_SPIN, "1", 1, 256, NULL, &default_handler);
 }
 

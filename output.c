@@ -44,38 +44,39 @@ void print_coord_square(square_t square)
 /*
  * Print a principal variation in uci format.
  */
-void print_pv(search_data_t* search_data)
+static void print_pv(search_data_t* data, int ordinal, int index)
 {
-    const move_t* pv = search_data->pv;
-    const int depth = search_data->current_depth;
-    const int score = search_data->best_score;
+    const move_t* pv = data->root_moves[index].pv;
+    const int depth = data->current_depth;
+    const int score = data->root_moves[index].score;
     // note: use time+1 to avoid divide-by-zero
-    const int time = elapsed_time(&search_data->timer) + 1;
-    const uint64_t nodes = search_data->nodes_searched;
+    const int time = elapsed_time(&data->timer) + 1;
+    const uint64_t nodes = data->nodes_searched;
 
     char sanpv[1024];
-    line_to_san_str(&search_data->root_pos, (move_t*)pv, sanpv);
+    line_to_san_str(&data->root_pos, (move_t*)pv, sanpv);
     printf("info string sanpv %s\n", sanpv);
     if (is_mate_score(score) || is_mated_score(score)) {
-        printf("info depth %d score mate %d time %d nodes %"PRIu64
+        printf("info multipv %d depth %d score mate %d time %d nodes %"PRIu64
                 " qnodes %"PRIu64" pvnodes %"PRIu64
                 " nps %"PRIu64" tbhits %d pv ",
+                ordinal,
                 depth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),
                 time,
                 nodes,
-                search_data->qnodes_searched,
-                search_data->pvnodes_searched,
+                data->qnodes_searched,
+                data->pvnodes_searched,
                 nodes/(time+1)*1000,
-                search_data->stats.egbb_hits);
+                data->stats.egbb_hits);
     } else {
-        printf("info depth %d score cp %d time %d nodes %"PRIu64
+        printf("info multipv %d depth %d score cp %d time %d nodes %"PRIu64
                 " qnodes %"PRIu64" pvnodes %"PRIu64
                 " nps %"PRIu64" tbhits %d pv ",
-                depth, score, time, nodes,
-                search_data->qnodes_searched,
-                search_data->pvnodes_searched, nodes/(time+1)*1000,
-                search_data->stats.egbb_hits);
+                ordinal, depth, score, time, nodes,
+                data->qnodes_searched,
+                data->pvnodes_searched, nodes/(time+1)*1000,
+                data->stats.egbb_hits);
     }
     int moves = print_coord_move_list(pv);
     if (moves < depth) {
@@ -83,7 +84,7 @@ void print_pv(search_data_t* search_data)
         // try to get more moves from the hash table.
         position_t pos;
         undo_info_t undo;
-        copy_position(&pos, &search_data->root_pos);
+        copy_position(&pos, &data->root_pos);
         for (int i=0; pv[i] != NO_MOVE; ++i) do_move(&pos, pv[i], &undo);
 
         transposition_entry_t* entry;
@@ -97,6 +98,21 @@ void print_pv(search_data_t* search_data)
     }
     printf("\n");
 }
+
+/*
+ * Print the n best PVs found during search.
+ */
+void print_multipv(search_data_t* data)
+{
+    for (int i=1; i<=data->options.multi_pv; ++i) {
+        for (int j=0; data->root_moves[j].move; ++j) {
+            if (data->root_moves[j].multipv_index == i) {
+                print_pv(data, i, j);
+            }
+        }
+    }
+}
+
 
 void print_search_stats(const search_data_t* search_data)
 {

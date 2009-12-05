@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.51"
-#define ENGINE_VERSION_NAME     " obvious"
+#define ENGINE_VERSION_NAME     " try_multi"
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -124,8 +124,6 @@ void init_move_selector(move_selector_t* sel,
         int ply);
 bool has_single_reply(move_selector_t* sel);
 move_t select_move(move_selector_t* sel);
-void store_root_node_count(move_t move, uint64_t nodes);
-uint64_t get_root_node_count(move_t move);
 
 // output.c
 void print_coord_move(move_t move);
@@ -133,7 +131,7 @@ void print_coord_square(square_t square);
 int print_coord_move_list(const move_t* move);
 void print_search_stats(const search_data_t* search_data);
 void print_board(const position_t* pos, bool uci_prefix);
-void print_pv(search_data_t* search_data);
+void print_multipv(search_data_t* data);
 
 // pattern.c
 score_t pattern_score(const position_t*pos);
@@ -159,6 +157,8 @@ bool is_repetition(const position_t* pos);
 // search.c
 void init_search_data(search_data_t* data);
 void init_root_move(root_move_t* root_move, move_t move);
+void store_root_node_count(move_t move, uint64_t nodes);
+uint64_t get_root_node_count(move_t move);
 void deepening_search(search_data_t* search_data);
 
 // static_exchange_eval.c
@@ -191,8 +191,11 @@ void uci_read_stream(FILE* stream);
 void uci_check_input(search_data_t* search_data);
 
 // uci_option.c
-void init_uci_options(search_options_t* options);
-void set_uci_option(char* command, search_options_t* options);
+void init_uci_options();
+void set_uci_option(char* command);
+int get_option_int(const char* name);
+bool get_option_bool(const char* name);
+char* get_option_string(const char* name);
 void print_uci_options(void);
 
 

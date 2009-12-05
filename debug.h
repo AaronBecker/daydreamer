@@ -25,6 +25,7 @@ extern "C" {
     free(strs); \
     fclose(log); \
 } while (0)
+#endif
 
 #define warn(msg)  do { \
     FILE* log; \
@@ -33,7 +34,6 @@ extern "C" {
     printf("%s:%u: warning: %s\n", __FILE__, __LINE__, msg); \
     fclose(log); \
 } while (0)
-#endif
 
 void _check_board_validity(const position_t* pos);
 void _check_move_validity(const position_t* pos, move_t move);

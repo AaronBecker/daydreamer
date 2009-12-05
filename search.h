@@ -22,10 +22,9 @@ typedef enum {
 } score_type_t;
 
 typedef struct {
-    int poll_interval;
+    int multi_pv;
     int output_delay;
     bool use_egbb;
-    char egbb_path[512];
 } search_options_t;
 
 #define HIST_BUCKETS    15
@@ -56,6 +55,8 @@ typedef struct {
     move_t move;
     int score;
     int qsearch_score;
+    move_t pv[MAX_SEARCH_DEPTH + 1];
+    int multipv_index;
 } root_move_t;
 
 typedef struct {

@@ -42,7 +42,7 @@ static void uci_handle_command(char* command)
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
     else if (!strncasecmp(command, "setoption name", 14)) {
-        set_uci_option(command+15, &root_data.options);
+        set_uci_option(command+15);
     } else if (!strncasecmp(command, "ucinewgame", 10)) {
     } else {
         uci_handle_ext(command);
