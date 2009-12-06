@@ -28,3 +28,5 @@ Evaluation
 
 Testing
     extensions, check for dubious ones
+    try egbb's on vs off
+    try different move ordering counts. 16 didn't help. maybe 12.
