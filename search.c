@@ -264,7 +264,6 @@ static void record_failure(history_t* h, move_t move)
 static bool is_history_prune_allowed(history_t* h, move_t move, int depth)
 {
     int index = history_index(move);
-    // TODO: keep experimenting. The 2 is "double history"
     return depth * h->success[index] < h->failure[index];
 }
 
@@ -275,7 +274,7 @@ static bool is_history_prune_allowed(history_t* h, move_t move, int depth)
 static bool is_history_reduction_allowed(history_t* h, move_t move)
 {
     int index = history_index(move);
-    return h->success[index] / 8 < h->failure[index];
+    return h->success[index] / 2 < h->failure[index];
 }
 
 /*
