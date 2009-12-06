@@ -81,7 +81,7 @@ static void open_node(search_data_t* data, int ply)
 {
     if ((++data->nodes_searched & POLL_INTERVAL) == 0) {
         if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
-        uci_check_input(data);
+        uci_check_for_command();
     }
     data->search_stack[ply].killers[0] = NO_MOVE;
     data->search_stack[ply].killers[1] = NO_MOVE;
@@ -104,7 +104,8 @@ static void open_qnode(search_data_t* data, int ply)
 static bool should_stop_searching(search_data_t* data)
 {
     if (data->engine_status == ENGINE_ABORTED) return true;
-    if (data->infinite) return false;
+    if (data->engine_status == ENGINE_PONDERING || data->infinite) return false;
+
     int so_far = elapsed_time(&data->timer);
     // If we've passed our hard limit, we're done.
     if (data->time_limit && so_far >= data->time_limit) return true;
@@ -152,13 +153,7 @@ static int extend(position_t* pos, move_t move, bool single_reply)
 static bool should_deepen(search_data_t* data)
 {
     if (should_stop_searching(data)) return false;
-    if (data->infinite) return true;
-
-    // If we're more than halfway through our time, we won't make it through
-    // the first move of the next iteration anyway.
-    if (data->time_target &&
-        data->time_target-elapsed_time(&data->timer) <
-        data->time_target * 60 / 100) return false;
+    if (data->infinite || data->engine_status == ENGINE_PONDERING) return true;
 
     // Go ahead and quit if we have a mate.
     int* scores = data->scores_by_iteration;
@@ -166,6 +161,12 @@ static bool should_deepen(search_data_t* data)
     if (depth >= 4 && is_mate_score(abs(scores[depth--])) &&
             is_mate_score(abs(scores[depth--])) &&
             is_mate_score(abs(scores[depth--]))) return false;
+
+    // If we're more than halfway through our time, we won't make it through
+    // the first move of the next iteration anyway.
+    if (data->time_target &&
+        data->time_target-elapsed_time(&data->timer) <
+        data->time_target * 60 / 100) return false;
 
     // We can stop early if our best move is obvious.
     if (!data->depth_limit && !data->node_limit && obvious_move_enabled &&
@@ -216,7 +217,6 @@ void store_root_data(search_data_t* data,
             data->root_moves[i].move != NO_MOVE; ++i) {}
     assert(data->root_moves[i].move == move);
     data->root_moves[i].nodes = data->nodes_searched - nodes_before;
-    data->root_moves[i].multipv_index = data->current_move_index;
     data->root_moves[i].score = score;
     data->root_moves[i].pv[0] = move;
     update_pv(data->root_moves[i].pv, data->search_stack->pv, 0, move);
@@ -322,6 +322,24 @@ void init_root_move(root_move_t* root_move, move_t move)
     root_move->pv[0] = move;
 }
 
+static int compare_root_moves(const void* _m1, const void* _m2)
+{
+    root_move_t* m1 = (root_move_t*)_m1;
+    root_move_t* m2 = (root_move_t*)_m2;
+    bool multipv = get_option_int("MultiPV") != 1;
+    if (m1->move == root_data.pv[0]) return -1;
+    else if (m2->move == root_data.pv[0]) return 1;
+    else if (!multipv) return (m1->nodes > m2->nodes) ? -1 : 1;
+    else return (m1->score > m2->score) ? -1 : 1;
+}
+
+void sort_root_moves_actual(search_data_t* data)
+{
+    int num_moves;
+    for (num_moves=0; data->root_moves[num_moves].move; ++num_moves) {}
+    qsort(data->root_moves, num_moves, sizeof(root_move_t), compare_root_moves);
+}
+
 /*
  * Look for a root move that's better than its competitors by at least
  * |obvious_move_margin|. If there is one, and it consistently remains the
@@ -356,9 +374,9 @@ void find_obvious_move(search_data_t* data)
  * function that is called by the console interface. For each depth,
  * |root_search| performs the actual search.
  */
-void deepening_search(search_data_t* search_data)
+void deepening_search(search_data_t* search_data, bool ponder)
 {
-    search_data->engine_status = ENGINE_THINKING;
+    search_data->engine_status = ponder ? ENGINE_PONDERING : ENGINE_THINKING;
     increment_transposition_age();
     init_timer(&search_data->timer);
     start_timer(&search_data->timer);
@@ -400,6 +418,7 @@ void deepening_search(search_data_t* search_data)
         }
     }
     stop_timer(&search_data->timer);
+    if (search_data->engine_status == ENGINE_PONDERING) uci_wait_for_command();
 
     --search_data->current_depth;
     search_data->best_score = id_score;
@@ -410,10 +429,13 @@ void deepening_search(search_data_t* search_data)
             elapsed_time(&search_data->timer));
     print_transposition_stats();
     print_pawn_stats();
-    char coord_move[6];
-    move_to_coord_str(search_data->pv[0], coord_move);
     print_multipv(search_data);
-    printf("bestmove %s\n", coord_move);
+    char best_move[6], ponder_move[6];
+    move_to_coord_str(search_data->pv[0], best_move);
+    move_to_coord_str(search_data->pv[1], ponder_move);
+    printf("bestmove %s", best_move);
+    if (search_data->pv[1]) printf(" ponder %s", ponder_move);
+    printf("\n");
     search_data->engine_status = ENGINE_IDLE;
 }
 
@@ -430,6 +452,7 @@ static bool root_search(search_data_t* search_data)
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
 
+    sort_root_moves_actual(search_data);
     move_selector_t selector;
     init_move_selector(&selector, pos, ROOT_GEN,
             NULL, hash_move, search_data->current_depth, 0);
@@ -468,6 +491,7 @@ static bool root_search(search_data_t* search_data)
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
+        if (score <= alpha) score = mated_in(-1);
         store_root_data(search_data, move, score, nodes_before);
         undo_move(pos, move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
@@ -478,6 +502,7 @@ static bool root_search(search_data_t* search_data)
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
+            sort_root_moves_actual(search_data);
             print_multipv(search_data);
         }
         search_data->resolving_fail_high = false;
@@ -513,8 +538,7 @@ static int search(position_t* pos,
     // Get move from transposition table if possible.
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
-    bool mate_threat = false;
-    if (trans_entry) mate_threat = trans_entry->flags & MATE_THREAT;
+    bool mate_threat = trans_entry && trans_entry->flags & MATE_THREAT;
     if (!full_window && trans_entry &&
             is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
         search_node->pv[ply] = hash_move;

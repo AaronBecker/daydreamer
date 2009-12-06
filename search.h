@@ -59,7 +59,6 @@ typedef struct {
     int score;
     int qsearch_score;
     move_t pv[MAX_SEARCH_DEPTH + 1];
-    int multipv_index;
 } root_move_t;
 
 typedef struct {
@@ -91,7 +90,6 @@ typedef struct {
     int time_target;
     int mate_search; // TODO:implement
     bool infinite;
-    bool ponder;
 } search_data_t;
 
 #define POLL_INTERVAL   0x3fff

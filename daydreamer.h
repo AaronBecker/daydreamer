@@ -159,7 +159,7 @@ void init_search_data(search_data_t* data);
 void init_root_move(root_move_t* root_move, move_t move);
 void store_root_node_count(move_t move, uint64_t nodes);
 uint64_t get_root_node_count(move_t move);
-void deepening_search(search_data_t* search_data);
+void deepening_search(search_data_t* search_data, bool ponder);
 
 // static_exchange_eval.c
 int static_exchange_eval(const position_t* pos, move_t move);
@@ -189,7 +189,8 @@ void print_transposition_stats(void);
 
 // uci.c
 void uci_read_stream(FILE* stream);
-void uci_check_input(search_data_t* search_data);
+void uci_check_for_command();
+void uci_wait_for_command();
 
 // uci_option.c
 void init_uci_options();

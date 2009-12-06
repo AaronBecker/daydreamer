@@ -44,7 +44,7 @@ void print_coord_square(square_t square)
 /*
  * Print a principal variation in uci format.
  */
-static void print_pv(search_data_t* data, int ordinal, int index)
+static void print_pv(search_data_t* data, int index)
 {
     const move_t* pv = data->root_moves[index].pv;
     const int depth = data->current_depth;
@@ -60,7 +60,7 @@ static void print_pv(search_data_t* data, int ordinal, int index)
         printf("info multipv %d depth %d score mate %d time %d nodes %"PRIu64
                 " qnodes %"PRIu64" pvnodes %"PRIu64
                 " nps %"PRIu64" tbhits %d pv ",
-                ordinal,
+                index+1,
                 depth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),
                 time,
@@ -73,7 +73,7 @@ static void print_pv(search_data_t* data, int ordinal, int index)
         printf("info multipv %d depth %d score cp %d time %d nodes %"PRIu64
                 " qnodes %"PRIu64" pvnodes %"PRIu64
                 " nps %"PRIu64" tbhits %d pv ",
-                ordinal, depth, score, time, nodes,
+                index+1, depth, score, time, nodes,
                 data->qnodes_searched,
                 data->pvnodes_searched, nodes/(time+1)*1000,
                 data->stats.egbb_hits);
@@ -104,13 +104,7 @@ static void print_pv(search_data_t* data, int ordinal, int index)
  */
 void print_multipv(search_data_t* data)
 {
-    for (int i=1; i<=data->options.multi_pv; ++i) {
-        for (int j=0; data->root_moves[j].move; ++j) {
-            if (data->root_moves[j].multipv_index == i) {
-                print_pv(data, i, j);
-            }
-        }
-    }
+    for (int i=0; i<data->options.multi_pv; ++i) print_pv(data, i);
 }
 
 

@@ -19,6 +19,7 @@ int main(void)
     init_daydreamer();
 
     // Read from uci script, if possible.
+    // TODO: read from script specified on command-line
     FILE* script;
     if ((script = fopen("daydreamer.uci", "r"))) {
         uci_read_stream(script);

@@ -45,7 +45,7 @@ void epd_testsuite(char* filename, int time_per_problem)
         bool failure = false;
         start_timer(&epd_timer);
         root_data.time_target = root_data.time_limit = time_per_problem;
-        deepening_search(&root_data);
+        deepening_search(&root_data, false);
         move_t result = root_data.pv[0];
         int time = stop_timer(&epd_timer);
         if (result != best_move) {
