@@ -47,7 +47,7 @@ const direction_t piece_deltas[17][16] = {
 };
 
 const direction_t pawn_push[] = {N, S};
-const rank_t relative_pawn_rank[2][8] = {
+const rank_t relative_rank[2][8] = {
     {RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8},
     {RANK_8, RANK_7, RANK_6, RANK_5, RANK_4, RANK_3, RANK_2, RANK_1}
 };

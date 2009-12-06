@@ -96,7 +96,7 @@ typedef int direction_t;
 extern const direction_t piece_deltas[17][16];
 
 extern const direction_t pawn_push[];
-extern const rank_t relative_pawn_rank[2][8];
+extern const rank_t relative_rank[2][8];
 
 #ifdef __cplusplus
 } // extern "C"
