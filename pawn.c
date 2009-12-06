@@ -117,7 +117,7 @@ pawn_data_t* analyze_pawns(const position_t* pos)
         for (int i=0; pos->pawns[color][i] != INVALID_SQUARE; ++i) {
             sq = pos->pawns[color][i];
             file_t file = square_file(sq);
-            rank_t rank = relative_pawn_rank[color][square_rank(sq)];
+            rank_t rank = relative_rank[color][square_rank(sq)];
             
             // Passed pawns.
             bool passed = true;
@@ -224,7 +224,7 @@ score_t pawn_score(const position_t* pos)
     for (color_t side=WHITE; side<=BLACK; ++side) {
         for (int i=0; i<pd->num_passed[side]; ++i) {
             square_t passer = pd->passed[side][i];
-            rank_t rank = relative_pawn_rank[side][square_rank(passer)];
+            rank_t rank = relative_rank[side][square_rank(passer)];
             if (pos->num_pieces[side^1] == 1) {
                 // Other side is down to king+pawns. Is this passer stoppable?
                 // This measure is conservative, which is fine.
