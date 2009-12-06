@@ -141,8 +141,8 @@ void do_move(position_t* pos, move_t move, undo_info_t* undo)
     assert(valid_board_index(from) && valid_board_index(to));
     pos->ep_square = EMPTY;
     if (piece_type(get_move_piece(move)) == PAWN) {
-        if (relative_pawn_rank[side][square_rank(to)] -
-                relative_pawn_rank[side][square_rank(from)] != 1) {
+        if (relative_rank[side][square_rank(to)] -
+                relative_rank[side][square_rank(from)] != 1) {
             piece_t opp_pawn = create_piece(other_side, PAWN);
             if (pos->board[to-1] == opp_pawn || pos->board[to+1] == opp_pawn) {
                 pos->ep_square = from + pawn_push[side];

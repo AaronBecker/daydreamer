@@ -174,8 +174,8 @@ static int generate_promotions(const position_t* pos, move_t* moves)
     piece_t piece = create_piece(side, PAWN);
     for (int i = 0; i < pos->num_pawns[side]; ++i) {
         square_t from = pos->pawns[side][i];
-        rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
-        if (relative_rank < RANK_7) continue;
+        rank_t r_rank = relative_rank[side][square_rank(from)];
+        if (r_rank < RANK_7) continue;
         square_t to = from + pawn_push[side];
         if (pos->board[to]) continue;
         for (piece_type_t type=KNIGHT; type<=QUEEN; ++type) {
@@ -251,7 +251,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
         pin_dir = pin_direction(pos, from, king_sq);
         if (pin_dir) continue;
         if (!possible_attack(from, check_sq, piece)) continue;
-        if (relative_pawn_rank[side][square_rank(from)] == RANK_7) {
+        if (relative_rank[side][square_rank(from)] == RANK_7) {
             // Capture and promote.
             for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
                 moves = add_move(pos,
@@ -302,7 +302,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
         if (pin_dir) continue;
         to = from + pawn_push[side];
         if (pos->board[to] != EMPTY) continue;
-        rank_t rank = relative_pawn_rank[side][square_rank(from)];
+        rank_t rank = relative_rank[side][square_rank(from)];
         k_dir = direction(to, king_sq);
         if (k_dir == block_dir &&
                 ((king_sq < to && check_sq > to) ||
@@ -413,9 +413,9 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
         will_discover_check = discover_check_dir && abs(discover_check_dir)!=N;
         to = from + pawn_push[side];
         if (pos->board[to] != EMPTY) continue;
-        rank_t relative_rank =
-            relative_pawn_rank[side][square_rank(from)];
-        if (relative_rank == RANK_7) continue; // non-promotes only
+        rank_t r_rank =
+            relative_rank[side][square_rank(from)];
+        if (r_rank == RANK_7) continue; // non-promotes only
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             if (will_discover_check || to + *delta == king_sq) {
                 moves = add_move(pos,
@@ -425,7 +425,7 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
             }
         }
         to += pawn_push[side];
-        if (relative_rank == RANK_2 && pos->board[to] == EMPTY) {
+        if (r_rank == RANK_2 && pos->board[to] == EMPTY) {
             for (const direction_t* delta = piece_deltas[piece];
                     *delta; ++delta) {
                 if (will_discover_check || to + *delta == king_sq) {
@@ -517,9 +517,9 @@ static void generate_pawn_captures(const position_t* pos,
 {
     color_t side = pos->side_to_move;
     square_t to;
-    rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
+    rank_t r_rank = relative_rank[side][square_rank(from)];
     move_t* moves = *moves_head;
-    if (relative_rank < RANK_7) {
+    if (r_rank < RANK_7) {
         for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
             // non-promote captures
             to = from + *delta;
@@ -554,13 +554,13 @@ static void generate_pawn_quiet_moves(const position_t* pos,
 {
     color_t side = pos->side_to_move;
     square_t to;
-    rank_t relative_rank = relative_pawn_rank[side][square_rank(from)];
+    rank_t r_rank = relative_rank[side][square_rank(from)];
     move_t* moves = *moves_head;
     to = from + pawn_push[side];
-    if (relative_rank == RANK_7 || pos->board[to] != EMPTY) return;
+    if (r_rank == RANK_7 || pos->board[to] != EMPTY) return;
     moves = add_move(pos, create_move(from, to, piece, EMPTY), moves);
     to += pawn_push[side];
-    if (relative_rank == RANK_2 && pos->board[to] == EMPTY) {
+    if (r_rank == RANK_2 && pos->board[to] == EMPTY) {
         // initial two-square push
         moves = add_move(pos,
                 create_move(from, to, piece, EMPTY),
