@@ -64,7 +64,7 @@ score_t pieces_score(const position_t* pos)
         for (int i=1; (from = pos->pieces[side][i]) != INVALID_SQUARE; ++i) {
             piece = pos->board[from];
             piece_type_t type = piece_type(piece);
-            if (type == PAWN || type == KING) continue;
+            assert(type != PAWN && type != KING);
             int ps = 0;
             switch (type) {
                 case KNIGHT:
@@ -150,8 +150,8 @@ score_t pieces_score(const position_t* pos)
     }
     int major_index = CLAMP(majors[WHITE] - majors[BLACK] + 4, 0, 8);
     int minor_index = CLAMP(minors[WHITE] - minors[BLACK] + 4, 0, 8);
-    mid_score[WHITE] += material_imbalance[major_index][minor_index];
-    end_score[WHITE] += material_imbalance[major_index][minor_index];
+    //mid_score[WHITE] += material_imbalance[major_index][minor_index];
+    //end_score[WHITE] += material_imbalance[major_index][minor_index];
     mid_score[WHITE] += pat_score[WHITE] - pat_score[BLACK];
     end_score[WHITE] += pat_score[WHITE] - pat_score[BLACK];
     side = pos->side_to_move;
