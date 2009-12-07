@@ -147,16 +147,17 @@ score_t pieces_score(const position_t* pos)
             mid_score[side] += mobility_score_table[0][type][ps];
             end_score[side] += mobility_score_table[1][type][ps];
         }
+        mid_score[side] += pat_score[side];
+        end_score[side] += pat_score[side];
     }
-    int major_index = CLAMP(majors[WHITE] - majors[BLACK] + 4, 0, 8);
-    int minor_index = CLAMP(minors[WHITE] - minors[BLACK] + 4, 0, 8);
-    //mid_score[WHITE] += material_imbalance[major_index][minor_index];
-    //end_score[WHITE] += material_imbalance[major_index][minor_index];
-    mid_score[WHITE] += pat_score[WHITE] - pat_score[BLACK];
-    end_score[WHITE] += pat_score[WHITE] - pat_score[BLACK];
     side = pos->side_to_move;
-    score.midgame = mid_score[side] - mid_score[side^1];
-    score.endgame = end_score[side] - end_score[side^1];
+    int major_index = majors[side] - majors[side^1] + 4;
+    int minor_index = minors[side] - minors[side^1] + 4;
+    int imbalance = material_imbalance
+        [CLAMP(major_index,0,8)][CLAMP(minor_index,0,8)];
+    score.midgame = mid_score[side] - mid_score[side^1] + imbalance;
+    score.endgame = end_score[side] - end_score[side^1] + imbalance;
+    
     return score;
 }
 
