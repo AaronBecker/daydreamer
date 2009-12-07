@@ -17,7 +17,7 @@ extern "C" {
     #define KNIGHT_VAL    325
     #define BISHOP_VAL    325
     #define ROOK_VAL      500
-    #define QUEEN_VAL     975
+    #define QUEEN_VAL     1050
     #define KING_VAL      20000
 #endif
 
