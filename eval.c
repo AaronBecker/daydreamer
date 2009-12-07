@@ -9,8 +9,6 @@
 
 static const int pawn_scale = 768;
 // values tested: (768), 1024, 1536
-static const int pattern_scale = 1024;
-// values tested: (1024)
 static const int pieces_scale = 1024;
 // values tested: 768, (1024), 1280
 static const int shield_scale = 1576;
@@ -151,8 +149,6 @@ int full_eval(const position_t* pos)
     phase_score.endgame = phase_score.midgame = 0;
     component_score = pawn_score(pos);
     add_scaled_score(&phase_score, &component_score, pawn_scale);
-    component_score = pattern_score(pos);
-    add_scaled_score(&phase_score, &component_score, pattern_scale);
     component_score = pieces_score(pos);
     add_scaled_score(&phase_score, &component_score, pieces_scale);
     component_score = evaluate_king_shield(pos);
