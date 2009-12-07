@@ -27,6 +27,21 @@ static const int color_table[2][17] = {
     {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // black
 };
 
+// FIXME: this is straight from crafty. Test and customize.
+static const int material_imbalance[9][9] = {
+/* n=-4  n=-3  n=-2  n=-1   n=0  n=+1  n=+2  n=+3 +n=+4 */
+  {-126, -126, -126, -126, -126, -126, -126, -126,  -42 }, /* R=-4 */
+  {-126, -126, -126, -126, -126, -126, -126,  -42,   42 }, /* R=-3 */
+  {-126, -126, -126, -126, -126, -126,  -42,   42,   84 }, /* R=-2 */
+  {-126, -126, -126, -126, -104,  -42,   42,   84,  126 }, /* R=-1 */
+  {-126, -126, -126,  -88,    0,   88,  126,  126,  126 }, /*  R=0 */
+  {-126,  -84,  -42,   42,  104,  126,  126,  126,  126 }, /* R=+1 */
+  { -84,  -42,   42,  126,  126,  126,  126,  126,  126 }, /* R=+2 */
+  { -42,   42,  126,  126,  126,  126,  126,  126,  126 }, /* R=+3 */
+  {  42,  126,  126,  126,  126,  126,  126,  126,  126 }  /* R=+4 */
+};
+
+
 static const int trapped_bishop = 150;
 
 /*
@@ -39,6 +54,8 @@ score_t pieces_score(const position_t* pos)
     int mid_score[2] = {0, 0};
     int end_score[2] = {0, 0};
     int pat_score[2] = {0, 0};
+    int majors[2] = {0, 0};
+    int minors[2] = {0, 0};
     color_t side;
     for (side=WHITE; side<=BLACK; ++side) {
         const int* mobile = color_table[side];
@@ -59,6 +76,7 @@ score_t pieces_score(const position_t* pos)
                     ps += mobile[pos->board[from+18]];
                     ps += mobile[pos->board[from+31]];
                     ps += mobile[pos->board[from+33]];
+                    minors[side]++;
                     break;
                 case QUEEN:
                     //TODO: reorder
@@ -78,6 +96,7 @@ score_t pieces_score(const position_t* pos)
                     ps += mobile[pos->board[to]];
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
+                    majors[side] += 2;
                     break;
                 case BISHOP:
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
@@ -110,6 +129,7 @@ score_t pieces_score(const position_t* pos)
                             pat_score[BLACK] -= trapped_bishop;
                         }
                     }
+                    minors[side]++;
                     break;
                 case ROOK:
                     for (to=from-16; pos->board[to]==EMPTY; to-=16, ++ps) {}
@@ -120,6 +140,7 @@ score_t pieces_score(const position_t* pos)
                     ps += mobile[pos->board[to]];
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
+                    majors[side]++;
                     break;
                 default: break;
             }
@@ -127,6 +148,10 @@ score_t pieces_score(const position_t* pos)
             end_score[side] += mobility_score_table[1][type][ps];
         }
     }
+    int major_index = CLAMP(majors[WHITE] - majors[BLACK] + 4, 0, 8);
+    int minor_index = CLAMP(minors[WHITE] - minors[BLACK] + 4, 0, 8);
+    mid_score += material_imbalance[major_index][minor_index];
+    end_score += material_imbalance[major_index][minor_index];
     mid_score[side] += pat_score[side];
     end_score[side] += pat_score[side];
     side = pos->side_to_move;
