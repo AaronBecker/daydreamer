@@ -326,15 +326,11 @@ static int compare_root_moves(const void* _m1, const void* _m2)
 {
     root_move_t* m1 = (root_move_t*)_m1;
     root_move_t* m2 = (root_move_t*)_m2;
-    if (root_data.current_depth <= 2) {
-        return (m1->qsearch_score > m2->qsearch_score) ? -1 : 1;
-    } else if (m1->move == root_data.pv[0]) {
-        return -1;
-    } else if (m2->move == root_data.pv[0]) {
-        return 1;
-    } else if (get_option_int("MultiPV") == 1) {
-        return (m1->nodes > m2->nodes) ? -1 : 1;
-    } else return (m1->score > m2->score) ? -1 : 1;
+    bool multipv = get_option_int("MultiPV") != 1;
+    if (m1->move == root_data.pv[0]) return -1;
+    else if (m2->move == root_data.pv[0]) return 1;
+    else if (!multipv) return (m1->nodes > m2->nodes) ? -1 : 1;
+    else return (m1->score > m2->score) ? -1 : 1;
 }
 
 void sort_root_moves_actual(search_data_t* data)
