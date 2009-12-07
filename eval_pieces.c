@@ -30,16 +30,6 @@ static const int color_table[2][17] = {
 static const int trapped_bishop = 150;
 
 /*
- * Find simple bad patterns that won't show up within reasonable search
- * depths. This is mostly trapped and blocked pieces.
- */
-score_t pattern_score(const position_t*pos)
-{
-    int s = 0;
-    return score;
-}
-
-/*
  * Compute the number of squares each non-pawn, non-king piece could move to,
  * and assign a bonus or penalty accordingly.
  */
