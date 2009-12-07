@@ -11,7 +11,7 @@ static const int pawn_scale = 768;
 // values tested: (768), 1024, 1536
 static const int pattern_scale = 1024;
 // values tested: (1024)
-static const int mobility_scale = 1024;
+static const int pieces_scale = 1024;
 // values tested: 768, (1024), 1280
 static const int shield_scale = 1576;
 // values tested: 1024, 1280, (1576), 2048
@@ -153,8 +153,8 @@ int full_eval(const position_t* pos)
     add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
     add_scaled_score(&phase_score, &component_score, pattern_scale);
-    component_score = mobility_score(pos);
-    add_scaled_score(&phase_score, &component_score, mobility_scale);
+    component_score = pieces_score(pos);
+    add_scaled_score(&phase_score, &component_score, pieces_scale);
     component_score = evaluate_king_shield(pos);
     add_scaled_score(&phase_score, &component_score, shield_scale);
     component_score = evaluate_king_attackers(pos);
@@ -227,10 +227,10 @@ void report_eval(const position_t* pos)
     printf("info string pawns (mid,end): (%d, %d)\n",
             p_score.midgame, p_score.endgame);
     add_scaled_score(&phase_score, &p_score, 1024);
-    score_t mob_score = mobility_score(pos);
-    printf("info string mob (mid,end): (%d, %d)\n",
-            mob_score.midgame, mob_score.endgame);
-    add_scaled_score(&phase_score, &mob_score, 1024);
+    score_t pc_score = pieces_score(pos);
+    printf("info string pieces (mid,end): (%d, %d)\n",
+            pc_score.midgame, pc_score.endgame);
+    add_scaled_score(&phase_score, &pc_score, 1024);
     int score = material_eval + piece_square_eval + material_adjust +
         blend_score(&phase_score, phase);
     printf("info string score: %d\n", score);

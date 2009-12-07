@@ -31,7 +31,7 @@ static const int color_table[2][17] = {
  * Compute the number of squares each non-pawn, non-king piece could move to,
  * and assign a bonus or penalty accordingly.
  */
-score_t mobility_score(const position_t* pos)
+score_t pieces_score(const position_t* pos)
 {
     score_t score;
     int mid_score[2] = {0, 0};
