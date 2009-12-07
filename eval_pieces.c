@@ -27,22 +27,9 @@ static const int color_table[2][17] = {
     {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // black
 };
 
-// FIXME: this is straight from crafty. Test and customize.
-static const int material_imbalance[9][9] = {
-/* n=-4  n=-3  n=-2  n=-1   n=0  n=+1  n=+2  n=+3 +n=+4 */
-  {-126, -126, -126, -126, -126, -126, -126, -126,  -42 }, /* R=-4 */
-  {-126, -126, -126, -126, -126, -126, -126,  -42,   42 }, /* R=-3 */
-  {-126, -126, -126, -126, -126, -126,  -42,   42,   84 }, /* R=-2 */
-  {-126, -126, -126, -126, -104,  -42,   42,   84,  126 }, /* R=-1 */
-  {-126, -126, -126,  -88,    0,   88,  126,  126,  126 }, /*  R=0 */
-  {-126,  -84,  -42,   42,  104,  126,  126,  126,  126 }, /* R=+1 */
-  { -84,  -42,   42,  126,  126,  126,  126,  126,  126 }, /* R=+2 */
-  { -42,   42,  126,  126,  126,  126,  126,  126,  126 }, /* R=+3 */
-  {  42,  126,  126,  126,  126,  126,  126,  126,  126 }  /* R=+4 */
-};
-
 
 static const int trapped_bishop = 150;
+static const int rook_on_7[2] = { 20, 40 };
 
 /*
  * Compute the number of squares each non-pawn, non-king piece could move to,
@@ -97,6 +84,10 @@ score_t pieces_score(const position_t* pos)
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
                     majors[side] += 2;
+                    if (relative_rank[side][square_rank(from)] == RANK_7) {
+                        mid_score[side] += rook_on_7[0] / 2;
+                        end_score[side] += rook_on_7[1] / 2;
+                    }
                     break;
                 case BISHOP:
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
@@ -141,6 +132,10 @@ score_t pieces_score(const position_t* pos)
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
                     majors[side]++;
+                    if (relative_rank[side][square_rank(from)] == RANK_7) {
+                        mid_score[side] += rook_on_7[0];
+                        end_score[side] += rook_on_7[1];
+                    }
                     break;
                 default: break;
             }
@@ -151,14 +146,8 @@ score_t pieces_score(const position_t* pos)
         end_score[side] += pat_score[side];
     }
     side = pos->side_to_move;
-    // FIXME: the imbalance stuff doesn't help at all, so far
-    int major_index = majors[WHITE] - majors[BLACK] + 4;
-    int minor_index = minors[WHITE] - minors[BLACK] + 4;
-    int imbalance = (side == WHITE ? 1 : -1) *
-        material_imbalance[CLAMP(major_index,0,8)][CLAMP(minor_index,0,8)];
-    imbalance = 0;
-    score.midgame = mid_score[side] - mid_score[side^1] + imbalance;
-    score.endgame = end_score[side] - end_score[side^1] + imbalance;
+    score.midgame = mid_score[side] - mid_score[side^1];
+    score.endgame = end_score[side] - end_score[side^1];
     
     return score;
 }
