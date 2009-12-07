@@ -151,10 +151,10 @@ score_t pieces_score(const position_t* pos)
         end_score[side] += pat_score[side];
     }
     side = pos->side_to_move;
-    int major_index = majors[side] - majors[side^1] + 4;
-    int minor_index = minors[side] - minors[side^1] + 4;
-    int imbalance = material_imbalance
-        [CLAMP(major_index,0,8)][CLAMP(minor_index,0,8)];
+    int major_index = majors[WHITE] - majors[BLACK] + 4;
+    int minor_index = minors[WHITE] - minors[BLACK] + 4;
+    int imbalance = (side == WHITE ? 1 : -1) *
+        material_imbalance[CLAMP(major_index,0,8)][CLAMP(minor_index,0,8)];
     score.midgame = mid_score[side] - mid_score[side^1] + imbalance;
     score.endgame = end_score[side] - end_score[side^1] + imbalance;
     
