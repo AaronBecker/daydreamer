@@ -4,7 +4,7 @@
 #include <strings.h>
 #include <stdio.h>
 
-int main(void)
+int main(int argc, char* argv[])
 {
     // Set unbuffered i/o.
     setbuf(stdout, NULL);
@@ -19,9 +19,9 @@ int main(void)
     init_daydreamer();
 
     // Read from uci script, if possible.
-    // TODO: read from script specified on command-line
+    char* script_name = argc > 1 ? argv[1] : "daydreamer.uci";
     FILE* script;
-    if ((script = fopen("daydreamer.uci", "r"))) {
+    if ((script = fopen(script_name, "r"))) {
         uci_read_stream(script);
         fclose(script);
     }
