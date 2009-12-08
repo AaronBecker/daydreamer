@@ -22,6 +22,7 @@ CFLAGS = $(DEFAULTFLAGS)
 DBGCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEBUGFLAGS)\\\"\"
 OPTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(OPTFLAGS)\\\"\"
 DFTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEFAULTFLAGS)\\\"\"
+GITFLAGS = -DGIT_VERSION=\"\\\"`git rev-parse --short HEAD`\\\"\"
 
 SRCFILES := $(wildcard *.c)
 HEADERS  := $(wildcard *.h)
@@ -35,13 +36,13 @@ analyze:
 	    CC="$(ANALYZER)" CFLAGS="$(ANALYZEFLAGS)"
 
 debug:
-	$(MAKE) daydreamer CFLAGS="$(DEBUGFLAGS) $(DBGCOMPILESTR)"
+	$(MAKE) daydreamer CFLAGS="$(DEBUGFLAGS) $(GITFLAGS) $(DBGCOMPILESTR)"
 
 default:
-	$(MAKE) daydreamer CFLAGS="$(DEFAULTFLAGS) $(DFTCOMPILESTR)"
+	$(MAKE) daydreamer CFLAGS="$(DEFAULTFLAGS) $(GITFLAGS) $(DFTCOMPILESTR)"
 
 opt:
-	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS) $(OPTCOMPILESTR)"
+	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS) $(GITFLAGS) $(OPTCOMPILESTR)"
 
 all: default
 
