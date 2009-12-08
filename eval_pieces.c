@@ -29,7 +29,8 @@ static const int color_table[2][17] = {
 
 
 static const int trapped_bishop = 150;
-static const int rook_on_7[2] = { 20, 40 };
+//static const int rook_on_7[2] = { 20, 40 };
+static const int rook_on_7[2] = { 0, 0 };
 
 /*
  * Compute the number of squares each non-pawn, non-king piece could move to,
