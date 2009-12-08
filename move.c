@@ -181,6 +181,7 @@ void do_move(position_t* pos, move_t move, undo_info_t* undo)
 
     ++pos->fifty_move_counter;
     pos->hash_history[pos->ply++] = undo->hash;
+    assert(pos->ply <= HASH_HISTORY_LENGTH);
     pos->side_to_move ^= 1;
     pos->is_check = find_checks(pos);
     pos->prev_move = move;

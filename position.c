@@ -159,11 +159,7 @@ char* set_position(position_t* pos, const char* fen)
     int consumed;
     if (sscanf(fen, "%d %d%n", &pos->fifty_move_counter, &pos->ply,
                 &consumed)) fen += consumed;
-    pos->ply = pos->ply*2 + (pos->side_to_move == BLACK ? 1 : 0);
-    if (pos->ply < pos->fifty_move_counter) {
-        warn("50 move counter is less than current ply");
-        pos->ply = pos->fifty_move_counter;
-    }
+    pos->ply = 0;
     pos->hash = hash_position(pos);
     check_board_validity(pos);
     return (char*)fen;
