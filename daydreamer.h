@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.51"
-#define ENGINE_VERSION_NAME     " r7_base"
+#define ENGINE_VERSION_NAME     " long_game_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -91,8 +91,8 @@ void position_to_fen_str(const position_t* pos, char* fen);
 // hash.c
 hashkey_t hash_position(const position_t* pos);
 
-// mobility.c
-score_t mobility_score(const position_t* pos);
+// eval_pieces.c
+score_t pieces_score(const position_t* pos);
 
 // move.c
 void place_piece(position_t* position, piece_t piece, square_t square);
@@ -132,9 +132,6 @@ int print_coord_move_list(const move_t* move);
 void print_search_stats(const search_data_t* search_data);
 void print_board(const position_t* pos, bool uci_prefix);
 void print_multipv(search_data_t* data);
-
-// pattern.c
-score_t pattern_score(const position_t*pos);
 
 // pawn.c
 void init_pawn_table(const int max_bytes);

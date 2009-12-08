@@ -326,11 +326,15 @@ static int compare_root_moves(const void* _m1, const void* _m2)
 {
     root_move_t* m1 = (root_move_t*)_m1;
     root_move_t* m2 = (root_move_t*)_m2;
-    bool multipv = get_option_int("MultiPV") != 1;
-    if (m1->move == root_data.pv[0]) return -1;
-    else if (m2->move == root_data.pv[0]) return 1;
-    else if (!multipv) return (m1->nodes > m2->nodes) ? -1 : 1;
-    else return (m1->score > m2->score) ? -1 : 1;
+    if (root_data.current_depth <= 2) {
+        return (m1->qsearch_score > m2->qsearch_score) ? -1 : 1;
+    } else if (m1->move == root_data.pv[0]) {
+        return -1;
+    } else if (m2->move == root_data.pv[0]) {
+        return 1;
+    } else if (get_option_int("MultiPV") == 1) {
+        return (m1->nodes > m2->nodes) ? -1 : 1;
+    } else return (m1->score > m2->score) ? -1 : 1;
 }
 
 void sort_root_moves_actual(search_data_t* data)
@@ -463,9 +467,8 @@ static bool root_search(search_data_t* search_data)
         if (should_output(search_data)) {
             char coord_move[6];
             move_to_coord_str(move, coord_move);
-            printf("info currmove %s currmovenumber %d score %"PRIu64"\n",
-                    coord_move, search_data->current_move_index,
-                    get_root_node_count(move));
+            printf("info currmove %s currmovenumber %d\n",
+                    coord_move, search_data->current_move_index);
         }
         uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
