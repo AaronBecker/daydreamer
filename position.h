@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #define FEN_STARTPOS "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-#define HASH_HISTORY_LENGTH  512
+#define HASH_HISTORY_LENGTH  2048
 
 typedef struct {
     piece_t _board_storage[256];        // 16x16 padded board
