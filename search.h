@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define MAX_SEARCH_DEPTH        63
+#define MAX_SEARCH_DEPTH    127
 
 typedef struct {
     move_t pv[MAX_SEARCH_DEPTH+1];
