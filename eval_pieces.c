@@ -27,6 +27,18 @@ static const int color_table[2][17] = {
     {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // black
 };
 
+// TODO: test and tune
+int imbalance[9][9] = {
+    {-126, -126, -126, -126, -126, -126, -126, -126,  -42 },
+    {-126, -126, -126, -126, -126, -126, -126,  -42,   42 },
+    {-126, -126, -126, -126, -126, -126,  -42,   42,   84 },
+    {-126, -126, -126, -126, -104,  -42,   42,   84,  126 },
+    {-126, -126, -126,  -88,    0,   88,  126,  126,  126 },
+    {-126,  -84,  -42,   42,  104,  126,  126,  126,  126 },
+    { -84,  -42,   42,  126,  126,  126,  126,  126,  126 },
+    { -42,   42,  126,  126,  126,  126,  126,  126,  126 },
+    {  42,  126,  126,  126,  126,  126,  126,  126,  126 } 
+};
 
 static const int trapped_bishop = 150;
 static const int rook_on_7[2] = { 20, 40 };
@@ -38,11 +50,13 @@ static const int rook_on_7[2] = { 20, 40 };
 score_t pieces_score(const position_t* pos)
 {
     score_t score;
-    int mid_score[2] = {0, 0};
-    int end_score[2] = {0, 0};
     int pat_score[2] = {0, 0};
     int majors[2] = {0, 0};
     int minors[2] = {0, 0};
+    int mg_mob[2] = {0, 0};
+    int eg_mob[2] = {0, 0};
+    int mg_bonus[2] = {0, 0};
+    int eg_bonus[2] = {0, 0};
     color_t side;
     for (side=WHITE; side<=BLACK; ++side) {
         const int* mobile = color_table[side];
@@ -66,28 +80,27 @@ score_t pieces_score(const position_t* pos)
                     minors[side]++;
                     break;
                 case QUEEN:
-                    //TODO: reorder
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
                     ps += mobile[pos->board[to]];
-                    for (to=from-15; pos->board[to]==EMPTY; to-=15, ++ps) {}
-                    ps += mobile[pos->board[to]];
-                    for (to=from+15; pos->board[to]==EMPTY; to+=15, ++ps) {}
-                    ps += mobile[pos->board[to]];
-                    for (to=from+17; pos->board[to]==EMPTY; to+=17, ++ps) {}
-                    ps += mobile[pos->board[to]];
                     for (to=from-16; pos->board[to]==EMPTY; to-=16, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from-15; pos->board[to]==EMPTY; to-=15, ++ps) {}
                     ps += mobile[pos->board[to]];
                     for (to=from-1; pos->board[to]==EMPTY; to-=1, ++ps) {}
                     ps += mobile[pos->board[to]];
                     for (to=from+1; pos->board[to]==EMPTY; to+=1, ++ps) {}
                     ps += mobile[pos->board[to]];
+                    for (to=from+15; pos->board[to]==EMPTY; to+=15, ++ps) {}
+                    ps += mobile[pos->board[to]];
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
-                    majors[side] += 2;
+                    for (to=from+17; pos->board[to]==EMPTY; to+=17, ++ps) {}
+                    ps += mobile[pos->board[to]];
                     if (relative_rank[side][square_rank(from)] == RANK_7) {
-                        mid_score[side] += rook_on_7[0] / 2;
-                        end_score[side] += rook_on_7[1] / 2;
+                        mg_bonus[side] += rook_on_7[0] / 2;
+                        eg_bonus[side] += rook_on_7[1] / 2;
                     }
+                    majors[side] += 2;
                     break;
                 case BISHOP:
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
@@ -131,24 +144,30 @@ score_t pieces_score(const position_t* pos)
                     ps += mobile[pos->board[to]];
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
-                    majors[side]++;
                     if (relative_rank[side][square_rank(from)] == RANK_7) {
-                        mid_score[side] += rook_on_7[0];
-                        end_score[side] += rook_on_7[1];
+                        mg_bonus[side] += rook_on_7[0];
+                        eg_bonus[side] += rook_on_7[1];
                     }
+                    majors[side]++;
                     break;
                 default: break;
             }
-            mid_score[side] += mobility_score_table[0][type][ps];
-            end_score[side] += mobility_score_table[1][type][ps];
+            mg_mob[side] += mobility_score_table[0][type][ps];
+            eg_mob[side] += mobility_score_table[1][type][ps];
         }
-        mid_score[side] += pat_score[side];
-        end_score[side] += pat_score[side];
     }
-    side = pos->side_to_move;
-    score.midgame = mid_score[side] - mid_score[side^1];
-    score.endgame = end_score[side] - end_score[side^1];
-    
+    int imb_score = imbalance
+        [CLAMP(majors[WHITE]-majors[BLACK]+4, 0, 8)]
+        [CLAMP(minors[WHITE]-minors[BLACK]+4, 0, 8)];
+    score.midgame = mg_mob[WHITE] + pat_score[WHITE] -
+        (mg_mob[BLACK] + pat_score[BLACK]) + imb_score;
+    score.endgame = eg_mob[WHITE] + pat_score[WHITE] -
+        (eg_mob[BLACK] + pat_score[BLACK]) + imb_score;
+
+    if (pos->side_to_move == BLACK) {
+        score.midgame *= -1;
+        score.endgame *= -1;
+    }
     return score;
 }
 
