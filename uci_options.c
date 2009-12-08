@@ -59,6 +59,9 @@ static void add_uci_option(char* name,
         ++*vars;
     }
     option->vars[var_index][0] = '\0';
+    char option_command[256];
+    sprintf(option_command, "%s value %s", option->name, option->default_value);
+    set_uci_option(option_command);
 }
 
 /*
@@ -150,7 +153,7 @@ bool get_option_bool(const char* name)
 static void default_handler(void* opt, char* value)
 {
     uci_option_t* option = opt;
-    strncpy(option->value, value, 128);
+    if (value) strncpy(option->value, value, 128);
 }
 
 static void handle_hash(void* opt, char* value)
@@ -163,6 +166,12 @@ static void handle_hash(void* opt, char* value)
         sscanf(option->default_value, "%d", &mbytes);
     }
     init_transposition_table(mbytes * (1<<20));
+}
+
+static void handle_clear_hash(void* opt, char* value)
+{
+    (void) opt; (void) value;
+    clear_transposition_table();
 }
 
 static void handle_egbb_use(void* opt, char* value)
@@ -190,13 +199,17 @@ static void handle_egbb_path(void* opt, char* value)
 void init_uci_options()
 {
     add_uci_option("Hash", OPTION_SPIN, "32", 1, 4096, NULL, &handle_hash);
-    set_uci_option("Hash value 32");
-    add_uci_option("Output Delay", OPTION_SPIN, "2000", 0, 1000000, NULL,
-            &default_handler);
-    add_uci_option("Use endgame bitbases", OPTION_CHECK, "false", 0, 0, NULL,
-            &handle_egbb_use);
-    add_uci_option("Endgame bitbase path", OPTION_STRING, ".", 0, 0, NULL,
-            &handle_egbb_path);
-    add_uci_option("MultiPV", OPTION_SPIN, "1", 1, 256, NULL, &default_handler);
+    add_uci_option("Clear Hash", OPTION_BUTTON, "",
+            0, 0, NULL, &handle_clear_hash);
+    add_uci_option("Ponder", OPTION_CHECK, "false",
+            0, 0, NULL, &default_handler);
+    add_uci_option("MultiPV", OPTION_SPIN, "1",
+            1, 256, NULL, &default_handler);
+    add_uci_option("Use endgame bitbases", OPTION_CHECK, "false",
+            0, 0, NULL, &handle_egbb_use);
+    add_uci_option("Endgame bitbase path", OPTION_STRING, ".",
+            0, 0, NULL, &handle_egbb_path);
+    add_uci_option("Output Delay", OPTION_SPIN, "2000",
+            0, 1000000, NULL, &default_handler);
 }
 

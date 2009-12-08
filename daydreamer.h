@@ -15,7 +15,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.51"
-#define ENGINE_VERSION_NAME     " r7_base_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " rollback_1_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -189,7 +189,7 @@ void print_transposition_stats(void);
 
 // uci.c
 void uci_read_stream(FILE* stream);
-void uci_check_input(search_data_t* search_data);
+void uci_check_for_command();
 
 // uci_option.c
 void init_uci_options();

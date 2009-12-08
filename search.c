@@ -81,7 +81,7 @@ static void open_node(search_data_t* data, int ply)
 {
     if ((++data->nodes_searched & POLL_INTERVAL) == 0) {
         if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
-        uci_check_input(data);
+        uci_check_for_command();
     }
     data->search_stack[ply].killers[0] = NO_MOVE;
     data->search_stack[ply].killers[1] = NO_MOVE;

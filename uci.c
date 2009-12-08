@@ -27,6 +27,8 @@ void uci_read_stream(FILE* stream)
 
 static void uci_handle_command(char* command)
 {
+    if (!command) exit(0);
+
     // strip trailing newline.
     char* c = command;
     while (*c) ++c;
@@ -41,13 +43,17 @@ static void uci_handle_command(char* command)
     else if (!strncasecmp(command, "quit", 4)) exit(0);
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
-    else if (!strncasecmp(command, "setoption name", 14)) {
+    else if (!strncasecmp(command, "ucinewgame", 10)) {
+    } else if (!strncasecmp(command, "setoption name", 14)) {
         set_uci_option(command+15);
-    } else if (!strncasecmp(command, "ucinewgame", 10)) {
+    } else if (!strncasecmp(command, "stop", 4)) {
+        root_data.engine_status = ENGINE_ABORTED;
+    } else if (strncasecmp(command, "ponderhit", 9) == 0) {
+        root_data.engine_status = ENGINE_THINKING;
     } else {
         uci_handle_ext(command);
     }
-    // TODO: handling for debug and ponderhit
+    // TODO: handling for debug
 }
 
 /*
@@ -88,8 +94,10 @@ static void uci_position(char* uci_pos)
  */
 static void uci_go(char* command)
 {
+    assert(command);
     char* info;
     int wtime=0, btime=0, winc=0, binc=0, movestogo=0, movetime=0;
+    bool ponder = false;
 
     init_search_data(&root_data);
     if ((info = strcasestr(command, "searchmoves"))) {
@@ -110,7 +118,7 @@ static void uci_go(char* command)
         }
     }
     if ((strcasestr(command, "ponder"))) {
-        root_data.ponder = true;
+        ponder = true;
     }
     if ((info = strcasestr(command, "wtime"))) {
         sscanf(info+5, " %d", &wtime);
@@ -181,28 +189,35 @@ static void calculate_search_time(int wtime,
             MAX(time-250, time*3/4) :
             MIN(time/4, time*4/movestogo);
     }
+    if (get_option_bool("Ponder")) {
+        root_data.time_target =
+            MIN(root_data.time_limit, root_data.time_target * 5 / 4);
+    }
     // TODO: adjust polling interval based on time remaining?
     // this might help for really low time-limit testing.
 }
 
 /*
- * Look for and handle console uci commands. Called periodically during search.
+ * Handle any ready uci commands. Called periodically during search.
  */
-void uci_check_input(search_data_t* search_data)
+void uci_check_for_command()
 {
-    char input[4096];
-    int data = bios_key();
-    if (data) {
-        if (!fgets(input, 4096, stdin))
-            strcpy(input, "quit\n");
-        if (!strncasecmp(input, "quit", 4)) {
-            search_data->engine_status = ENGINE_ABORTED;
-        } else if (!strncasecmp(input, "stop", 4)) {
-            search_data->engine_status = ENGINE_ABORTED;
-        } else if (strncasecmp(input, "ponderhit", 9) == 0) {
-            // TODO: handle ponderhits
-        }
+    char command[4096];
+    if (bios_key()) {
+        fgets(command, 4096, stdin);
+        uci_handle_command(command);
     }
+}
+
+/*
+ * Wait for the next uci command. Called when we're done pondering but
+ * haven't gotten a ponder hit or miss yet.
+ */
+void uci_wait_for_command()
+{
+    char command[4096];
+    fgets(command, 4096, stdin);
+    uci_handle_command(command);
 }
 
 /*
