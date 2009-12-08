@@ -9,6 +9,7 @@ Search
     More experiments with nullmove, razoring, futility, and LMR
     "easy move" at root: figure out why this wasn't working
     recognize singular replies
+    prefetching for trans table entries
     TBB?
 
 shrink trans table entry size
@@ -28,3 +29,4 @@ Evaluation
 
 Testing
     extensions, check for dubious ones
+    try different move ordering counts. 16 didn't help. maybe 12.

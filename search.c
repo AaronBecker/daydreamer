@@ -467,9 +467,8 @@ static bool root_search(search_data_t* search_data)
         if (should_output(search_data)) {
             char coord_move[6];
             move_to_coord_str(move, coord_move);
-            printf("info currmove %s currmovenumber %d score %"PRIu64"\n",
-                    coord_move, search_data->current_move_index,
-                    get_root_node_count(move));
+            printf("info currmove %s currmovenumber %d\n",
+                    coord_move, search_data->current_move_index);
         }
         uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
