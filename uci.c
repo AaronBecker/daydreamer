@@ -202,11 +202,26 @@ static void calculate_search_time(int wtime,
  */
 void uci_check_for_command()
 {
+    char input[4096];
+    int data = bios_key();
+    if (data) {
+        if (!fgets(input, 4096, stdin))
+            strcpy(input, "quit\n");
+        if (!strncasecmp(input, "quit", 4)) {
+            root_data.engine_status = ENGINE_ABORTED;
+        } else if (!strncasecmp(input, "stop", 4)) {
+            root_data.engine_status = ENGINE_ABORTED;
+        } else if (strncasecmp(input, "ponderhit", 9) == 0) {
+            // TODO: handle ponderhits
+        }
+    }
+    /*
     char command[4096];
     if (bios_key()) {
         fgets(command, 4096, stdin);
         uci_handle_command(command);
     }
+    */
 }
 
 /*
