@@ -28,6 +28,7 @@ typedef struct {
     int multi_pv;
     int output_delay;
     bool use_egbb;
+    bool verbose;
 } search_options_t;
 
 #define HIST_BUCKETS    15

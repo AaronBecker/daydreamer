@@ -222,6 +222,11 @@ static void sort_root_moves(move_selector_t* sel)
         sel->scores[i] = root_data.root_moves[i].qsearch_score;
         if (sel->moves[i] == sel->hash_move) sel->scores[i] = INT_MAX;
     }
+
+    // In multipv case, root moves are already sorted
+    // FIXME: should probably always sort root moves in search.c
+    if (root_data.options.multi_pv > 1) return;
+
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;
     if (sel->depth <= 2) {
@@ -240,7 +245,6 @@ static void sort_root_moves(move_selector_t* sel)
         return;
     }
 
-    // FIXME: need correct sorting for multipv case
     uint64_t scores[256];
     move_t* moves = sel->moves;
     for (i=0; moves[i] != NO_MOVE; ++i) {

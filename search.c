@@ -57,6 +57,7 @@ void init_search_data(search_data_t* data)
     init_timer(&data->timer);
     data->options.output_delay = get_option_int("Output delay");
     data->options.use_egbb = get_option_bool("Use endgame bitbases");
+    data->options.verbose = get_option_bool("Verbose output");
     data->options.multi_pv = get_option_int("MultiPV");
 }
 
@@ -248,7 +249,7 @@ static int compare_root_moves(const void* _m1, const void* _m2)
 
 void multipv_sort_root_moves(search_data_t* data)
 {
-    if (get_option_int("MultiPV") == 1) return;
+    if (data->options.multi_pv == 1) return;
     int num_moves;
     for (num_moves=0; data->root_moves[num_moves].move; ++num_moves) {}
     qsort(data->root_moves, num_moves, sizeof(root_move_t), compare_root_moves);
@@ -362,14 +363,18 @@ void find_obvious_move(search_data_t* data)
     for (int i=0; r[i].move; ++i) {
         if (r[i].move == data->obvious_move) continue;
         if (r[i].qsearch_score + obvious_move_margin > best_score) {
-            printf("info string no obvious move\n");
+            if (data->options.verbose && data->engine_status != ENGINE_PONDERING) {
+                printf("info string no obvious move\n");
+            }
             data->obvious_move = NO_MOVE;
             return;
         }
     }
-    printf("info string candidate obvious move ");
-    print_coord_move(data->obvious_move);
-    printf("\n");
+    if (data->options.verbose && data->engine_status != ENGINE_PONDERING) {
+        printf("info string candidate obvious move ");
+        print_coord_move(data->obvious_move);
+        printf("\n");
+    }
 }
 
 /*
@@ -401,7 +406,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
             search_data->current_depth <= search_data->depth_limit;
             ++search_data->current_depth) {
         if (should_output(search_data)) {
-            //print_transposition_stats();
+            if (search_data->options.verbose) print_transposition_stats();
             printf("info depth %d\n", search_data->current_depth);
         }
         bool no_abort = root_search(search_data);
@@ -425,14 +430,16 @@ void deepening_search(search_data_t* search_data, bool ponder)
 
     --search_data->current_depth;
     search_data->best_score = id_score;
-    //print_search_stats(search_data);
-    printf("info string time target %d time limit %d elapsed time %d\n",
-            search_data->time_target,
-            search_data->time_limit,
-            elapsed_time(&search_data->timer));
-    //print_transposition_stats();
-    //print_pawn_stats();
-    print_multipv(search_data);
+    if (search_data->options.verbose) {
+        print_search_stats(search_data);
+        printf("info string time target %d time limit %d elapsed time %d\n",
+                search_data->time_target,
+                search_data->time_limit,
+                elapsed_time(&search_data->timer));
+        print_transposition_stats();
+        print_pawn_stats();
+        print_multipv(search_data);
+    }
     char best_move[6], ponder_move[6];
     move_to_coord_str(search_data->pv[0], best_move);
     move_to_coord_str(search_data->pv[1], ponder_move);
@@ -455,7 +462,7 @@ static bool root_search(search_data_t* search_data)
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
 
-    //multipv_sort_root_moves(search_data);
+    multipv_sort_root_moves(search_data);
     move_selector_t selector;
     init_move_selector(&selector, pos, ROOT_GEN,
             NULL, hash_move, search_data->current_depth, 0);
@@ -486,14 +493,17 @@ static bool root_search(search_data_t* search_data)
                 if (should_output(search_data)) {
                     char coord_move[6];
                     move_to_coord_str(move, coord_move);
-                    printf("info string fail high, research %s\n", coord_move);
+                    if (search_data->options.verbose &&
+                            search_data->engine_status != ENGINE_PONDERING) {
+                        printf("info string fail high, research %s\n", coord_move);
+                    }
                 }
                 search_data->resolving_fail_high = true;
                 score = -search(pos, search_data->search_stack,
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
-        //if (score <= alpha) score = mated_in(-1);
+        if (score <= alpha) score = mated_in(-1);
         store_root_data(search_data, move, score, nodes_before);
         undo_move(pos, move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
@@ -504,7 +514,7 @@ static bool root_search(search_data_t* search_data)
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
-            //multipv_sort_root_moves(search_data);
+            multipv_sort_root_moves(search_data);
             print_multipv(search_data);
         }
         search_data->resolving_fail_high = false;

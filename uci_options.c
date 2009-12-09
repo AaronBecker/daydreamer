@@ -211,5 +211,7 @@ void init_uci_options()
             0, 0, NULL, &handle_egbb_path);
     add_uci_option("Output Delay", OPTION_SPIN, "2000",
             0, 1000000, NULL, &default_handler);
+    add_uci_option("Verbose output", OPTION_CHECK, "true",
+            0, 0, NULL, &default_handler);
 }
 
