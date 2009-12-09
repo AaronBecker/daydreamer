@@ -455,7 +455,7 @@ static bool root_search(search_data_t* search_data)
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
 
-    multipv_sort_root_moves(search_data);
+    //multipv_sort_root_moves(search_data);
     move_selector_t selector;
     init_move_selector(&selector, pos, ROOT_GEN,
             NULL, hash_move, search_data->current_depth, 0);
@@ -504,7 +504,7 @@ static bool root_search(search_data_t* search_data)
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
-            multipv_sort_root_moves(search_data);
+            //multipv_sort_root_moves(search_data);
             print_multipv(search_data);
         }
         search_data->resolving_fail_high = false;
