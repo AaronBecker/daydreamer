@@ -91,7 +91,6 @@ typedef struct {
     int time_target;
     int mate_search; // TODO:implement
     bool infinite;
-    bool ponder;
 } search_data_t;
 
 #define POLL_INTERVAL   0x3fff
@@ -113,7 +112,8 @@ typedef struct {
 #define mate_in(ply)                (MATE_VALUE-ply)
 #define mated_in(ply)               (-MATE_VALUE+ply)
 #define should_output(s)    \
-    (elapsed_time(&((s)->timer)) > (s)->options.output_delay)
+    (elapsed_time(&((s)->timer)) > (s)->options.output_delay && \
+     (s)->engine_status != ENGINE_PONDERING)
 
 
 #ifdef __cplusplus

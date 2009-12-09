@@ -104,7 +104,7 @@ static void open_qnode(search_data_t* data, int ply)
 static bool should_stop_searching(search_data_t* data)
 {
     if (data->engine_status == ENGINE_ABORTED) return true;
-    if (data->infinite) return false;
+    if (data->engine_status == ENGINE_PONDERING || data->infinite) return false;
     int so_far = elapsed_time(&data->timer);
     // If we've passed our hard limit, we're done.
     if (data->time_limit && so_far >= data->time_limit) return true;
@@ -152,7 +152,7 @@ static int extend(position_t* pos, move_t move, bool single_reply)
 static bool should_deepen(search_data_t* data)
 {
     if (should_stop_searching(data)) return false;
-    if (data->infinite) return true;
+    if (data->infinite || data->engine_status == ENGINE_PONDERING) return true;
 
     // If we're more than halfway through our time, we won't make it through
     // the first move of the next iteration anyway.
@@ -357,9 +357,9 @@ void find_obvious_move(search_data_t* data)
  * function that is called by the console interface. For each depth,
  * |root_search| performs the actual search.
  */
-void deepening_search(search_data_t* search_data)
+void deepening_search(search_data_t* search_data, bool ponder)
 {
-    search_data->engine_status = ENGINE_THINKING;
+    search_data->engine_status = ponder ? ENGINE_PONDERING : ENGINE_THINKING;
     increment_transposition_age();
     init_timer(&search_data->timer);
     start_timer(&search_data->timer);
@@ -401,6 +401,7 @@ void deepening_search(search_data_t* search_data)
         }
     }
     stop_timer(&search_data->timer);
+    if (search_data->engine_status == ENGINE_PONDERING) uci_wait_for_command();
 
     --search_data->current_depth;
     search_data->best_score = id_score;
@@ -411,10 +412,13 @@ void deepening_search(search_data_t* search_data)
             elapsed_time(&search_data->timer));
     print_transposition_stats();
     print_pawn_stats();
-    char coord_move[6];
-    move_to_coord_str(search_data->pv[0], coord_move);
     print_multipv(search_data);
-    printf("bestmove %s\n", coord_move);
+    char best_move[6], ponder_move[6];
+    move_to_coord_str(search_data->pv[0], best_move);
+    move_to_coord_str(search_data->pv[1], ponder_move);
+    printf("bestmove %s", best_move);
+    if (search_data->pv[1]) printf(" ponder %s", ponder_move);
+    printf("\n");
     search_data->engine_status = ENGINE_IDLE;
 }
 

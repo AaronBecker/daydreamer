@@ -46,6 +46,7 @@ void print_coord_square(square_t square)
  */
 static void print_pv(search_data_t* data, int ordinal, int index)
 {
+    if (data->engine_status == ENGINE_PONDERING) return;
     const move_t* pv = data->root_moves[index].pv;
     const int depth = data->current_depth;
     const int score = data->root_moves[index].score;
