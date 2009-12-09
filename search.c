@@ -251,6 +251,8 @@ static int compare_root_moves(const void* _m1, const void* _m2)
 
 void multipv_sort_root_moves(search_data_t* data)
 {
+    return;
+    // FIXME
     int num_moves;
     for (num_moves=0; data->root_moves[num_moves].move; ++num_moves) {}
     qsort(data->root_moves, num_moves, sizeof(root_move_t), compare_root_moves);

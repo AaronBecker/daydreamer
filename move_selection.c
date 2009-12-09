@@ -211,17 +211,39 @@ static int score_tactical_move(position_t* pos, move_t move)
 
 /*
  * Sort moves at the root based on total nodes searched under that move.
- * The actual sorting happens in search, this just copies the sorted
- * moves to |sel|.
+ * Since the moves are sorted into position, |sel->scores| is not used to
+ * select moves during root move selection.
  */
 static void sort_root_moves(move_selector_t* sel)
 {
     int i;
+    uint64_t scores[256];
     for (i=0; root_data.root_moves[i].move != NO_MOVE; ++i) {
         sel->moves[i] = root_data.root_moves[i].move;
+        if (sel->depth <= 2) {
+            scores[i] = root_data.root_moves[i].qsearch_score;
+        } else if (root_data.options.multi_pv > 1) {
+            scores[i] = root_data.root_moves[i].score;
+        } else {
+            scores[i] = root_data.root_moves[i].nodes;
+        }
+        if (sel->moves[i] == sel->hash_move) scores[i] = UINT64_MAX;
     }
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;
+
+    for (i=0; sel->moves[i] != NO_MOVE; ++i) {
+        move_t move = sel->moves[i];
+        uint64_t score = scores[i];
+        int j = i-1;
+        while (j >= 0 && scores[j] < score) {
+            scores[j+1] = scores[j];
+            sel->moves[j+1] = sel->moves[j];
+            --j;
+        }
+        scores[j+1] = score;
+        sel->moves[j+1] = move;
+    }
 }
 
 /*
