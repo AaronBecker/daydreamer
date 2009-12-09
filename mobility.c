@@ -40,9 +40,8 @@ int imbalance[9][9] = {
     {  42,  126,  126,  126,  126,  126,  126,  126,  126 }
 };
 
-static const int trapped_bishop = 150;
-//static const int rook_on_7[2] = { 20, 40 };
-static const int rook_on_7[2] = { 0, 0 };
+static const int rook_on_7[2] = { 20, 40 };
+//static const int rook_on_7[2] = { 0, 0 };
 
 /*
  * Compute the number of squares each non-pawn, non-king piece could move to,
@@ -55,6 +54,7 @@ score_t mobility_score(const position_t* pos)
     int end_score[2] = {0, 0};
     int majors[2] = {0, 0};
     int minors[2] = {0, 0};
+
     color_t side;
     for (side=WHITE; side<=BLACK; ++side) {
         const int* mobile = color_table[side];
@@ -117,6 +117,10 @@ score_t mobility_score(const position_t* pos)
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
                     majors[side]++;
+                    if (relative_rank[side][square_rank(from)] == RANK_7) {
+                        mid_score[side] += rook_on_7[0];
+                        end_score[side] += rook_on_7[1];
+                    }
                     break;
                 default: break;
             }
@@ -130,6 +134,7 @@ score_t mobility_score(const position_t* pos)
     int imb_score = imbalance
         [CLAMP(majors[side]-majors[side^1]+4, 0, 8)]
         [CLAMP(minors[side]-minors[side^1]+4, 0, 8)];
+    imb_score = 0;
     score.midgame += imb_score;
     score.endgame += imb_score;
     return score;
