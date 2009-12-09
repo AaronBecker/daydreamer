@@ -244,12 +244,13 @@ static int compare_root_moves(const void* _m1, const void* _m2)
         return -1;
     } else if (m2->move == root_data.pv[0]) {
         return 1;
+    } else if (root_data.options.multi_pv == 1) {
+        return (m1->nodes > m2->nodes) ? -1 : 1;
     } else return (m1->score > m2->score) ? -1 : 1;
 }
 
 void multipv_sort_root_moves(search_data_t* data)
 {
-    if (data->options.multi_pv == 1) return;
     int num_moves;
     for (num_moves=0; data->root_moves[num_moves].move; ++num_moves) {}
     qsort(data->root_moves, num_moves, sizeof(root_move_t), compare_root_moves);

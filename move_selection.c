@@ -211,58 +211,17 @@ static int score_tactical_move(position_t* pos, move_t move)
 
 /*
  * Sort moves at the root based on total nodes searched under that move.
- * Since the moves are sorted into position, |sel->scores| is not used to
- * select moves during root move selection.
+ * The actual sorting happens in search, this just copies the sorted
+ * moves to |sel|.
  */
 static void sort_root_moves(move_selector_t* sel)
 {
     int i;
     for (i=0; root_data.root_moves[i].move != NO_MOVE; ++i) {
         sel->moves[i] = root_data.root_moves[i].move;
-        sel->scores[i] = root_data.root_moves[i].qsearch_score;
-        if (sel->moves[i] == sel->hash_move) sel->scores[i] = INT_MAX;
     }
-
-    // In multipv case, root moves are already sorted
-    // FIXME: should probably always sort root moves in search.c
-    if (root_data.options.multi_pv > 1) return;
-
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;
-    if (sel->depth <= 2) {
-        for (i=0; sel->moves[i] != NO_MOVE; ++i) {
-            move_t move = sel->moves[i];
-            int score = sel->scores[i];
-            int j = i-1;
-            while (j >= 0 && sel->scores[j] < score) {
-                sel->scores[j+1] = sel->scores[j];
-                sel->moves[j+1] = sel->moves[j];
-                --j;
-            }
-            sel->scores[j+1] = score;
-            sel->moves[j+1] = move;
-        }
-        return;
-    }
-
-    uint64_t scores[256];
-    move_t* moves = sel->moves;
-    for (i=0; moves[i] != NO_MOVE; ++i) {
-        scores[i] = root_data.root_moves[i].nodes;
-        if (moves[i] == sel->hash_move) scores[i] = UINT64_MAX;
-    }
-    for (i=0; moves[i] != NO_MOVE; ++i) {
-        move_t move = moves[i];
-        uint64_t score = scores[i];
-        int j = i-1;
-        while (j >= 0 && scores[j] < score) {
-            scores[j+1] = scores[j];
-            moves[j+1] = moves[j];
-            --j;
-        }
-        scores[j+1] = score;
-        moves[j+1] = move;
-    }
 }
 
 /*
