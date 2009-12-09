@@ -29,31 +29,29 @@ static void uci_handle_command(char* command)
 {
     if (!command) exit(0);
 
-    if (!strncasecmp(command, "isready", 7)) printf("readyok\n");
-    else if (!strncasecmp(command, "quit", 4)) exit(0);
-    else if (!strncasecmp(command, "stop", 4)) {
-        root_data.engine_status = ENGINE_ABORTED;
-    } else if (strncasecmp(command, "ponderhit", 9) == 0) {
-        root_data.engine_status = ENGINE_THINKING;
-    } else if (!strncasecmp(command, "uci", 3)) {
+    // strip trailing newline.
+    char* c = command;
+    while (*c) ++c;
+    while (*--c == '\n') *c = '\0';
+
+    if (!strncasecmp(command, "uci", 3)) {
         printf("id name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
         printf("id author %s\n", ENGINE_AUTHOR);
         print_uci_options();
         printf("uciok\n");
-    } else if (!strncasecmp(command, "ucinewgame", 10)) {
+    } else if (!strncasecmp(command, "isready", 7)) printf("readyok\n");
+    else if (!strncasecmp(command, "quit", 4)) exit(0);
+    else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
+    else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
+    else if (!strncasecmp(command, "ucinewgame", 10)) {
+    } else if (!strncasecmp(command, "setoption name", 14)) {
+        set_uci_option(command+15);
+    } else if (!strncasecmp(command, "stop", 4)) {
+        root_data.engine_status = ENGINE_ABORTED;
+    } else if (strncasecmp(command, "ponderhit", 9) == 0) {
+        root_data.engine_status = ENGINE_THINKING;
     } else {
-        // strip trailing newline.
-        char* c = command;
-        while (*c) ++c;
-        while (*--c == '\n') *c = '\0';
-
-        if (!strncasecmp(command, "position", 8)) uci_position(command+9);
-        else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
-        else if (!strncasecmp(command, "setoption name", 14)) {
-            set_uci_option(command+15);
-        }  else {
-            uci_handle_ext(command);
-        }
+        uci_handle_ext(command);
     }
     // TODO: handling for debug
 }
@@ -200,19 +198,21 @@ static void calculate_search_time(int wtime,
 }
 
 /*
- * Handle uci commands issued during search.
+ * Handle any ready uci commands. Called periodically during search.
  */
 void uci_check_for_command()
 {
     char input[4096];
     if (bios_key()) {
-        if (!fgets(input, 4096, stdin) || !strncasecmp(input, "quit", 4)) {
-            exit(0);
-        } else if (!strncasecmp(input, "stop", 4)) {
+        if (!fgets(input, 4096, stdin)) exit(0);
+        else if (!strncasecmp(input, "quit", 4)) exit(0);
+        else if (!strncasecmp(input, "stop", 4)) {
             root_data.engine_status = ENGINE_ABORTED;
         } else if (strncasecmp(input, "ponderhit", 9) == 0) {
             root_data.engine_status = ENGINE_THINKING;
-        } else if (!strncasecmp(input, "isready", 7)) printf("readyok\n");
+        } else if (strncasecmp(input, "isready", 7) == 0) {
+            printf("readyok\n");
+        }
     }
 }
 
