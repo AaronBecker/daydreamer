@@ -155,7 +155,7 @@ static void uci_go(char* command)
     if (!movetime && !root_data.infinite) {
         calculate_search_time(wtime, btime, winc, binc, movestogo);
     }
-    if (!ponder) print_board(&root_data.root_pos, true);
+    //if (!ponder) print_board(&root_data.root_pos, true);
     deepening_search(&root_data, ponder);
 }
 

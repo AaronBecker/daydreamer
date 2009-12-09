@@ -401,7 +401,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
             search_data->current_depth <= search_data->depth_limit;
             ++search_data->current_depth) {
         if (should_output(search_data)) {
-            print_transposition_stats();
+            //print_transposition_stats();
             printf("info depth %d\n", search_data->current_depth);
         }
         bool no_abort = root_search(search_data);
@@ -425,13 +425,13 @@ void deepening_search(search_data_t* search_data, bool ponder)
 
     --search_data->current_depth;
     search_data->best_score = id_score;
-    print_search_stats(search_data);
+    //print_search_stats(search_data);
     printf("info string time target %d time limit %d elapsed time %d\n",
             search_data->time_target,
             search_data->time_limit,
             elapsed_time(&search_data->timer));
-    print_transposition_stats();
-    print_pawn_stats();
+    //print_transposition_stats();
+    //print_pawn_stats();
     print_multipv(search_data);
     char best_move[6], ponder_move[6];
     move_to_coord_str(search_data->pv[0], best_move);

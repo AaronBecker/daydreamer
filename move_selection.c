@@ -240,6 +240,7 @@ static void sort_root_moves(move_selector_t* sel)
         return;
     }
 
+    // FIXME: need correct sorting for multipv case
     uint64_t scores[256];
     move_t* moves = sel->moves;
     for (i=0; moves[i] != NO_MOVE; ++i) {
