@@ -493,7 +493,7 @@ static bool root_search(search_data_t* search_data)
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
-        if (score <= alpha) score = mated_in(-1);
+        //if (score <= alpha) score = mated_in(-1);
         store_root_data(search_data, move, score, nodes_before);
         undo_move(pos, move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
