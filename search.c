@@ -234,30 +234,6 @@ uint64_t get_root_node_count(move_t move)
     return root_data.root_moves[i].nodes;
 }
 
-static int compare_root_moves(const void* _m1, const void* _m2)
-{
-    root_move_t* m1 = (root_move_t*)_m1;
-    root_move_t* m2 = (root_move_t*)_m2;
-    if (root_data.current_depth <= 2) {
-        return (m1->qsearch_score > m2->qsearch_score) ? -1 : 1;
-    } else if (m1->move == root_data.pv[0]) {
-        return -1;
-    } else if (m2->move == root_data.pv[0]) {
-        return 1;
-    } else if (root_data.options.multi_pv == 1) {
-        return (m1->nodes > m2->nodes) ? -1 : 1;
-    } else return (m1->score > m2->score) ? -1 : 1;
-}
-
-void multipv_sort_root_moves(search_data_t* data)
-{
-    return;
-    // FIXME
-    int num_moves;
-    for (num_moves=0; data->root_moves[num_moves].move; ++num_moves) {}
-    qsort(data->root_moves, num_moves, sizeof(root_move_t), compare_root_moves);
-}
-
 /*
  * Record quiet moves that cause fail-highs in the history table.
  */
@@ -288,7 +264,6 @@ static void record_failure(history_t* h, move_t move)
 static bool is_history_prune_allowed(history_t* h, move_t move, int depth)
 {
     int index = history_index(move);
-    // TODO: keep experimenting. The 2 is "double history"
     return depth * h->success[index] < h->failure[index];
 }
 
@@ -465,7 +440,6 @@ static bool root_search(search_data_t* search_data)
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
 
-    multipv_sort_root_moves(search_data);
     move_selector_t selector;
     init_move_selector(&selector, pos, ROOT_GEN,
             NULL, hash_move, search_data->current_depth, 0);
@@ -517,7 +491,6 @@ static bool root_search(search_data_t* search_data)
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
-            multipv_sort_root_moves(search_data);
             print_multipv(search_data);
         }
         search_data->resolving_fail_high = false;
@@ -553,8 +526,7 @@ static int search(position_t* pos,
     // Get move from transposition table if possible.
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
-    bool mate_threat = false;
-    if (trans_entry) mate_threat = trans_entry->flags & MATE_THREAT;
+    bool mate_threat = trans_entry && trans_entry->flags & MATE_THREAT;
     if (!full_window && trans_entry &&
             is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
         search_node->pv[ply] = hash_move;
