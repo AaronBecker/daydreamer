@@ -59,7 +59,6 @@ typedef struct {
     int score;
     int qsearch_score;
     move_t pv[MAX_SEARCH_DEPTH + 1];
-    int multipv_index;
 } root_move_t;
 
 typedef struct {

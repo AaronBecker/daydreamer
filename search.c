@@ -216,7 +216,6 @@ void store_root_data(search_data_t* data,
             data->root_moves[i].move != NO_MOVE; ++i) {}
     assert(data->root_moves[i].move == move);
     data->root_moves[i].nodes = data->nodes_searched - nodes_before;
-    data->root_moves[i].multipv_index = data->current_move_index;
     data->root_moves[i].score = score;
     data->root_moves[i].pv[0] = move;
     update_pv(data->root_moves[i].pv, data->search_stack->pv, 0, move);
@@ -232,6 +231,27 @@ uint64_t get_root_node_count(move_t move)
             root_data.root_moves[i].move != NO_MOVE; ++i) {}
     assert(root_data.root_moves[i].move == move);
     return root_data.root_moves[i].nodes;
+}
+
+static int compare_root_moves(const void* _m1, const void* _m2)
+{
+    root_move_t* m1 = (root_move_t*)_m1;
+    root_move_t* m2 = (root_move_t*)_m2;
+    if (root_data.current_depth <= 2) {
+        return (m1->qsearch_score > m2->qsearch_score) ? -1 : 1;
+    } else if (m1->move == root_data.pv[0]) {
+        return -1;
+    } else if (m2->move == root_data.pv[0]) {
+        return 1;
+    } else return (m1->score > m2->score) ? -1 : 1;
+}
+
+void multipv_sort_root_moves(search_data_t* data)
+{
+    if (get_option_int("MultiPV") == 1) return;
+    int num_moves;
+    for (num_moves=0; data->root_moves[num_moves].move; ++num_moves) {}
+    qsort(data->root_moves, num_moves, sizeof(root_move_t), compare_root_moves);
 }
 
 /*
@@ -435,6 +455,7 @@ static bool root_search(search_data_t* search_data)
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
 
+    multipv_sort_root_moves(search_data);
     move_selector_t selector;
     init_move_selector(&selector, pos, ROOT_GEN,
             NULL, hash_move, search_data->current_depth, 0);
@@ -472,6 +493,7 @@ static bool root_search(search_data_t* search_data)
                         1, -beta, -alpha, search_data->current_depth+ext-1);
             }
         }
+        if (score <= alpha) score = mated_in(-1);
         store_root_data(search_data, move, score, nodes_before);
         undo_move(pos, move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return false;
@@ -482,6 +504,7 @@ static bool root_search(search_data_t* search_data)
             }
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
+            multipv_sort_root_moves(search_data);
             print_multipv(search_data);
         }
         search_data->resolving_fail_high = false;
