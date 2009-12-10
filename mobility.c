@@ -140,10 +140,12 @@ score_t mobility_score(const position_t* pos)
     side = pos->side_to_move;
     score.midgame = mid_score[side] - mid_score[side^1];
     score.endgame = end_score[side] - end_score[side^1];
+
     int imb_score = imbalance
         [CLAMP(majors[side]-majors[side^1]+4, 0, 8)]
         [CLAMP(minors[side]-minors[side^1]+4, 0, 8)];
     imb_score = 0;
+
     score.midgame += imb_score;
     score.endgame += imb_score;
     return score;

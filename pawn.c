@@ -3,7 +3,6 @@
 #include <string.h>
 
 // TODO: Tune these values, in particular the endgame values.
-// TODO: scoring for pawn storms.
 // TODO: identify outpost squares and open/half-open files.
 // TODO: bonus/penalty for occupying a lot of space.
 static const int isolation_penalty[2][8] = {
@@ -32,6 +31,26 @@ static const int unstoppable_passer_bonus[8] = {
 };
 static const int advanceable_passer_bonus[8] = {
     0, 20, 25, 30, 35, 40, 80, 0
+};
+static const int king_storm[0x80] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,-10,-10,-10,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0, -8, -8, -8,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  4,  4,  4,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  8,  8,  8,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0, 12, 12, 12,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0, 14, 16, 14,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+};
+static const int queen_storm[0x80] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  -10,-10,-10, -5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   -8, -8, -8, -4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    4,  4,  4,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    8,  8,  8,  4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   12, 12, 12,  6,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   14, 16, 14,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
 
 static pawn_data_t* pawn_table = NULL;
@@ -108,6 +127,8 @@ pawn_data_t* analyze_pawns(const position_t* pos)
     pd->key = pos->pawn_hash;
     pd->score[WHITE].midgame = pd->score[WHITE].endgame = 0;
     pd->score[BLACK].midgame = pd->score[BLACK].endgame = 0;
+    pd->kingside_storm[0] = pd->kingside_storm[1] = 0;
+    pd->queenside_storm[0] = pd->queenside_storm[1] = 0;
     square_t sq;
     for (color_t color=WHITE; color<=BLACK; ++color) {
         pd->num_passed[color] = 0;
@@ -119,6 +140,10 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             sq = pos->pawns[color][i];
             file_t file = square_file(sq);
             rank_t rank = relative_rank[color][square_rank(sq)];
+
+            // Pawn storm scores.
+            pd->kingside_storm[color] += king_storm[sq ^ (0x70*color)];
+            pd->queenside_storm[color] += queen_storm[sq ^ (0x70*color)];
             
             // Passed pawns.
             bool passed = true;
@@ -219,6 +244,9 @@ score_t pawn_score(const position_t* pos)
 {
     pawn_data_t* pd = analyze_pawns(pos);
     int passer_bonus[2] = {0, 0};
+    int storm_score[2] = {0, 0};
+    file_t king_file[2] = { square_file(pos->pieces[WHITE][0]),
+                            square_file(pos->pieces[BLACK][0]) };
     for (color_t side=WHITE; side<=BLACK; ++side) {
         for (int i=0; i<pd->num_passed[side]; ++i) {
             square_t passer = pd->passed[side][i];
@@ -246,11 +274,18 @@ score_t pawn_score(const position_t* pos)
                 passer_bonus[side] += advanceable_passer_bonus[rank];
             }
         }
+        if (king_file[side] < FILE_E && king_file[side^1] > FILE_E) {
+            storm_score[side] = pd->kingside_storm[side];
+        } else if (king_file[side] > FILE_E && king_file[side^1] < FILE_E) {
+            storm_score[side] = pd->queenside_storm[side];
+        }
     }
+
     color_t side = pos->side_to_move;
     score_t score;
     score.midgame = pd->score[side].midgame + passer_bonus[side] -
-        (pd->score[side^1].midgame + passer_bonus[side^1]);
+        (pd->score[side^1].midgame + passer_bonus[side^1]) +
+        storm_score[side] - storm_score[side^1];
     score.endgame = pd->score[side].endgame + passer_bonus[side] -
         (pd->score[side^1].endgame + passer_bonus[side^1]);
     return score;
