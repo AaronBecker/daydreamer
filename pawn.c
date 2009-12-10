@@ -210,7 +210,7 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 }
             }
         }
-        int defect_penalty = cumulative_defect_penalty[MIN(8, num_defects)];
+        int defect_penalty = cumulative_defect_penalty[MIN(7, num_defects)];
         pd->score[color].midgame -= defect_penalty;
         pd->score[color].endgame -= defect_penalty;
     }
