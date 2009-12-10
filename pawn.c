@@ -24,7 +24,8 @@ static const int backward_penalty[2][8] = {
 };
 static const int connected_bonus[2] = {10, 20};
 static const int cumulative_defect_penalty[8] = {
-    0, 0, 5, 10, 25, 50, 60, 75
+//    0, 0, 5, 10, 25, 50, 60, 75
+    0, 0, 0, 0, 0, 0, 0, 0
 };
 static const int unstoppable_passer_bonus[8] = {
     0, 500, 525, 550, 575, 600, 650, 0
@@ -210,7 +211,7 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 }
             }
         }
-        int defect_penalty = cumulative_defect_penalty[MIN(8, num_defects)];
+        int defect_penalty = cumulative_defect_penalty[MIN(7, num_defects)];
         pd->score[color].midgame -= defect_penalty;
         pd->score[color].endgame -= defect_penalty;
     }
