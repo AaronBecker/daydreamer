@@ -27,7 +27,8 @@ static const int color_table[2][17] = {
     {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // black
 };
 
-// TODO: test and tune
+// TODO: This is the material imbalance table from crafty. One day I will
+// figure out how to do material imbalance in a way that actually works.
 int imbalance[9][9] = {
     {-126, -126, -126, -126, -126, -126, -126, -126,  -42 },
     {-126, -126, -126, -126, -126, -126, -126,  -42,   42 },
@@ -41,7 +42,6 @@ int imbalance[9][9] = {
 };
 
 static const int rook_on_7[2] = { 20, 40 };
-//static const int rook_on_7[2] = { 0, 0 };
 
 /*
  * Compute the number of squares each non-pawn, non-king piece could move to,
@@ -145,9 +145,9 @@ score_t mobility_score(const position_t* pos)
         [CLAMP(majors[side]-majors[side^1]+4, 0, 8)]
         [CLAMP(minors[side]-minors[side^1]+4, 0, 8)];
     imb_score = 0;
-
     score.midgame += imb_score;
     score.endgame += imb_score;
+
     return score;
 }
 

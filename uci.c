@@ -17,7 +17,7 @@ static void calculate_search_time(int wtime,
         int binc,
         int movestogo);
 static void uci_handle_ext(char* command);
-static int bios_key(void);
+static int input_available(void);
 
 void uci_read_stream(FILE* stream)
 {
@@ -54,6 +54,64 @@ static void uci_handle_command(char* command)
         uci_handle_ext(command);
     }
     // TODO: handling for debug
+}
+
+/*
+ * Handle non-standard uci extensions. These are diagnostic and debugging
+ * commands that print more information about a position or more or execute
+ * test suites.
+ */
+static void uci_handle_ext(char* command)
+{
+    position_t* pos = &root_data.root_pos;
+    if (!strncasecmp(command, "perftsuite", 10)) {
+        command+=10;
+        while (isspace(*command)) command++;
+        perft_testsuite(command);
+    } else if (!strncasecmp(command, "perft", 5)) {
+        int depth=1;
+        sscanf(command+5, " %d", &depth);
+        perft(pos, depth, false);
+    } else if (!strncasecmp(command, "divide", 6)) {
+        int depth=1;
+        sscanf(command+6, " %d", &depth);
+        perft(pos, depth, true);
+    } else if (!strncasecmp(command, "bench", 5)) {
+        int depth = 1;
+        sscanf(command+5, " %d", &depth);
+        benchmark(depth, 0);
+    } else if (!strncasecmp(command, "see", 3)) {
+        command += 3;
+        while (isspace(*command)) command++;
+        move_t move = coord_str_to_move(pos, command);
+        printf("see: %d\n", static_exchange_eval(pos, move));
+    } else if (!strncasecmp(command, "epd", 3)) {
+        char filename[256];
+        int time_per_move = 5;
+        sscanf(command+3, " %s %d", filename, &time_per_move);
+        time_per_move *= 1000;
+        epd_testsuite(filename, time_per_move);
+    } else if (!strncasecmp(command, "print", 5)) {
+        print_board(pos, false);
+        move_t moves[255];
+        printf("moves: ");
+        generate_legal_moves(pos, moves);
+        for (move_t* move = moves; *move; ++move) {
+            char san[8];
+            move_to_san_str(pos, *move, san);
+            printf("%s ", san);
+        }
+        printf("\nordered moves: ");
+        move_selector_t sel;
+        init_move_selector(&sel, pos, PV_GEN, NULL, NO_MOVE, 0, 0);
+        for (move_t move = select_move(&sel); move != NO_MOVE;
+                move = select_move(&sel)) {
+            char san[8];
+            move_to_san_str(pos, move, san);
+            printf("%s ", san);
+        }
+        printf("\n");
+    }
 }
 
 /*
@@ -205,7 +263,7 @@ static void calculate_search_time(int wtime,
 void uci_check_for_command()
 {
     char input[4096];
-    if (bios_key()) {
+    if (input_available()) {
         if (!fgets(input, 4096, stdin)) exit(0);
         else if (!strncasecmp(input, "quit", 4)) exit(0);
         else if (!strncasecmp(input, "stop", 4)) {
@@ -230,64 +288,6 @@ void uci_wait_for_command()
 }
 
 /*
- * Handle non-standard uci extensions. These are diagnostic and debugging
- * commands that print more information about a position or more or execute
- * test suites.
- */
-static void uci_handle_ext(char* command)
-{
-    position_t* pos = &root_data.root_pos;
-    if (!strncasecmp(command, "perftsuite", 10)) {
-        command+=10;
-        while (isspace(*command)) command++;
-        perft_testsuite(command);
-    } else if (!strncasecmp(command, "perft", 5)) {
-        int depth=1;
-        sscanf(command+5, " %d", &depth);
-        perft(pos, depth, false);
-    } else if (!strncasecmp(command, "divide", 6)) {
-        int depth=1;
-        sscanf(command+6, " %d", &depth);
-        perft(pos, depth, true);
-    } else if (!strncasecmp(command, "bench", 5)) {
-        int depth = 1;
-        sscanf(command+5, " %d", &depth);
-        benchmark(depth, 0);
-    } else if (!strncasecmp(command, "see", 3)) {
-        command += 3;
-        while (isspace(*command)) command++;
-        move_t move = coord_str_to_move(pos, command);
-        printf("see: %d\n", static_exchange_eval(pos, move));
-    } else if (!strncasecmp(command, "epd", 3)) {
-        char filename[256];
-        int time_per_move = 5;
-        sscanf(command+3, " %s %d", filename, &time_per_move);
-        time_per_move *= 1000;
-        epd_testsuite(filename, time_per_move);
-    } else if (!strncasecmp(command, "print", 5)) {
-        print_board(pos, false);
-        move_t moves[255];
-        printf("moves: ");
-        generate_legal_moves(pos, moves);
-        for (move_t* move = moves; *move; ++move) {
-            char san[8];
-            move_to_san_str(pos, *move, san);
-            printf("%s ", san);
-        }
-        printf("\nordered moves: ");
-        move_selector_t sel;
-        init_move_selector(&sel, pos, PV_GEN, NULL, NO_MOVE, 0, 0);
-        for (move_t move = select_move(&sel); move != NO_MOVE;
-                move = select_move(&sel)) {
-            char san[8];
-            move_to_san_str(pos, move, san);
-            printf("%s ", san);
-        }
-        printf("\n");
-    }
-}
-
-/*
  * Boilerplate code to see if data is available to be read on stdin.
  * Cross-platform for unix/windows.
  *
@@ -297,26 +297,26 @@ static void uci_handle_ext(char* command)
  * do this on windows.
  */
 #ifndef _WIN32
-/* Unix version */
-int bios_key(void)
+// Posix version.
+int input_available(void)
 {
     fd_set readfds;
     struct timeval timeout;
 
     FD_ZERO(&readfds);
     FD_SET(fileno(stdin), &readfds);
-    /* Set to timeout immediately */
+    // Set to timeout immediately
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
     select(16, &readfds, 0, 0, &timeout);
-
     return (FD_ISSET(fileno(stdin), &readfds));
 }
 
 #else
-/* Windows version */
+
+// Windows version.
 #include <conio.h>
-int bios_key(void)
+int input_available(void)
 {
     static int init=0, pipe=0;
     static HANDLE inh;
