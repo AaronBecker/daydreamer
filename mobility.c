@@ -54,7 +54,10 @@ score_t mobility_score(const position_t* pos)
     int end_score[2] = {0, 0};
     int majors[2] = {0, 0};
     int minors[2] = {0, 0};
-
+    rank_t king_rank[2] = { relative_rank[WHITE]
+                                [square_rank(pos->pieces[WHITE][0])],
+                            relative_rank[BLACK]
+                                [square_rank(pos->pieces[BLACK][0])] };
     color_t side;
     for (side=WHITE; side<=BLACK; ++side) {
         const int* mobile = color_table[side];
@@ -95,6 +98,11 @@ score_t mobility_score(const position_t* pos)
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
                     majors[side] += 2;
+                    if (relative_rank[side][square_rank(from)] == RANK_7 &&
+                            king_rank[side^1] == RANK_8) {
+                        mid_score[side] += rook_on_7[0] / 2;
+                        end_score[side] += rook_on_7[1] / 2;
+                    }
                     break;
                 case BISHOP:
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
@@ -117,7 +125,8 @@ score_t mobility_score(const position_t* pos)
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
                     majors[side]++;
-                    if (relative_rank[side][square_rank(from)] == RANK_7) {
+                    if (relative_rank[side][square_rank(from)] == RANK_7 &&
+                            king_rank[side^1] == RANK_8) {
                         mid_score[side] += rook_on_7[0];
                         end_score[side] += rook_on_7[1];
                     }
