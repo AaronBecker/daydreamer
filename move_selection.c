@@ -93,7 +93,7 @@ static void generate_moves(move_selector_t* sel)
             score_moves(sel);
             break;
     }
-    sel->single_reply = sel->moves_end == 1;
+    sel->single_reply = sel->generator == ESCAPE_GEN && sel->moves_end == 1;
     assert(sel->moves[sel->moves_end] == NO_MOVE);
     assert(sel->current_move_index == 0);
 }
