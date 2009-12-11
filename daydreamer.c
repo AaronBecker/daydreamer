@@ -4,7 +4,9 @@
 #include <strings.h>
 
 extern void init_eval(void);
-extern search_data_t root_data;
+
+search_data_t root_data;
+options_t options;
 
 /*
  * Set up the stuff that only needs to be done once, during initialization.
@@ -57,3 +59,6 @@ const piece_flag_t piece_flags[] = {
     0, BP_FLAG, N_FLAG, B_FLAG, R_FLAG, Q_FLAG, K_FLAG, 0, 0
 };
 
+square_t king_rook_home = H1;
+square_t queen_rook_home = A1;
+square_t king_home = E1;

@@ -126,7 +126,7 @@ void print_multipv(search_data_t* data)
         indices[j+1] = index;
     }
 
-    for (i=0; i<data->options.multi_pv; ++i) print_pv(data, i+1, indices[i]);
+    for (i=0; i<options.multi_pv; ++i) print_pv(data, i+1, indices[i]);
 }
 
 

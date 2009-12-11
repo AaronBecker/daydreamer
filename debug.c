@@ -57,7 +57,7 @@ void _check_move_validity(const position_t* pos, move_t move)
     assert(pos->board[from] == piece);
     if (capture && !is_move_enpassant(move)) {
         assert(pos->board[to] == capture);
-    } else {
+    } else if (!(options.chess960 && is_move_castle(move))) {
         assert(pos->board[to] == EMPTY);
     }
 }

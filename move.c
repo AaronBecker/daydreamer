@@ -85,6 +85,7 @@ void remove_piece(position_t* pos, square_t square)
 void transfer_piece(position_t* pos, square_t from, square_t to)
 {
     assert(pos->board[from]);
+    if (from == to) return;
     if (pos->board[to] != EMPTY) {
         remove_piece(pos, to);
     }
@@ -154,25 +155,39 @@ void do_move(position_t* pos, move_t move, undo_info_t* undo)
     }
     
     // Remove castling rights as necessary.
-    if (from == (square_t)(A1 + side*A8)) remove_ooo_rights(pos, side);
-    else if (from == (square_t)(H1 + side*A8)) remove_oo_rights(pos, side);
-    else if (from == (square_t)(E1 + side*A8))  {
+    if (from == (square_t)(queen_rook_home + side*A8)) {
+        remove_ooo_rights(pos, side);
+    } else if (from == (square_t)(king_rook_home + side*A8)) {
+        remove_oo_rights(pos, side);
+    } else if (from == (square_t)(king_home + side*A8))  {
         remove_oo_rights(pos, side);
         remove_ooo_rights(pos, side);
     } 
-    if (to == (square_t)(A1 + other_side*A8)) {
+    if (to == (square_t)(queen_rook_home + other_side*A8)) {
         remove_ooo_rights(pos, other_side);
-    } else if (to == (square_t)(H1 + other_side*A8)) {
+    } else if (to == (square_t)(king_rook_home + other_side*A8)) {
         remove_oo_rights(pos, other_side);
     }
 
-    transfer_piece(pos, from, to);
+    if (!is_move_castle(move)) transfer_piece(pos, from, to);
 
     const piece_type_t promote_type = get_move_promote(move);
     if (is_move_castle_short(move)) {
-        transfer_piece(pos, H1 + A8*side, F1 + A8*side);
+        assert(pos->board[king_home + A8*side] == create_piece(side, KING));
+        assert(pos->board[king_rook_home + A8*side] ==
+                create_piece(side, ROOK));
+        remove_piece(pos, king_home + A8*side);
+        transfer_piece(pos, king_rook_home + A8*side, F1 + A8*side);
+        place_piece(pos, create_piece(side, KING), G1 + A8*side);
+        //transfer_piece(pos, king_rook_home + A8*side, F1 + A8*side);
     } else if (is_move_castle_long(move)) {
-        transfer_piece(pos, A1 + A8*side, D1 + A8*side);
+        assert(pos->board[king_home + A8*side] == create_piece(side, KING));
+        assert(pos->board[queen_rook_home + A8*side] ==
+                create_piece(side, ROOK));
+        remove_piece(pos, king_home + A8*side);
+        transfer_piece(pos, queen_rook_home + A8*side, D1 + A8*side);
+        place_piece(pos, create_piece(side, KING), C1 + A8*side);
+        //transfer_piece(pos, queen_rook_home + A8*side, D1 + A8*side);
     } else if (is_move_enpassant(move)) {
         remove_piece(pos, to-pawn_push[side]);
     } else if (promote_type) {
@@ -202,8 +217,8 @@ void undo_move(position_t* pos, move_t move, undo_info_t* undo)
     const square_t from = get_move_from(move);
     const square_t to = get_move_to(move);
 
-    // Move the piece back.
-    transfer_piece(pos, to, from);
+    // Move the piece back, and fix en passant captures.
+    if (!is_move_castle(move)) transfer_piece(pos, to, from);
     piece_type_t captured = get_move_capture(move);
     if (captured != EMPTY) {
         if (is_move_enpassant(move)) {
@@ -213,12 +228,16 @@ void undo_move(position_t* pos, move_t move, undo_info_t* undo)
         }
     }
 
-    // Un-promote/castle, if necessary, and fix en passant captures.
+    // Un-promote/castle, if necessary.
     const piece_type_t promote_type = get_move_promote(move);
     if (is_move_castle_short(move)) {
-        transfer_piece(pos, F1 + A8*side, H1 + A8*side);
+        remove_piece(pos, G1 + A8*side);
+        transfer_piece(pos, F1 + A8*side, king_rook_home + A8*side);
+        place_piece(pos, create_piece(side, KING), king_home + A8*side);
     } else if (is_move_castle_long(move)) {
-        transfer_piece(pos, D1 + A8*side, A1 + A8*side);
+        remove_piece(pos, C1 + A8*side);
+        transfer_piece(pos, D1 + A8*side, queen_rook_home + A8*side);
+        place_piece(pos, create_piece(side, KING), king_home + A8*side);
     } else if (promote_type) {
         place_piece(pos, create_piece(side, PAWN), from);
     }

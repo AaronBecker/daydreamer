@@ -45,11 +45,18 @@ void move_to_coord_str(move_t move, char* str)
         return;
     }
     if (move == NULL_MOVE) {
-        strcpy(str, "(null)");
+        strcpy(str, "0000");
         return;
     }
     square_t from = get_move_from(move);
     square_t to = get_move_to(move);
+    if (options.chess960) {
+        if (is_move_castle_long(move)) {
+            to = queen_rook_home + get_move_piece_color(move)*A8;
+        } else if (is_move_castle_short(move)) {
+            to = king_rook_home + get_move_piece_color(move)*A8;
+        }
+    }
     str += snprintf(str, 5, "%c%c%c%c",
            (char)square_file(from) + 'a', (char)square_rank(from) + '1',
            (char)square_file(to) + 'a', (char)square_rank(to) + '1');
@@ -82,8 +89,18 @@ move_t coord_str_to_move(position_t* pos, const char* coord_move)
         move = possible_moves[i];
         if (from == get_move_from(move) &&
                 to == get_move_to(move) &&
-                get_move_promote(move) == promote_type)
-            return move;
+                get_move_promote(move) == promote_type) return move;
+        else if (options.chess960) {
+            if (is_move_castle_long(move) &&
+                    from == get_move_from(move) &&
+                    to == (square_t)(queen_rook_home + A8*pos->side_to_move)) {
+                return move;
+            } else if (is_move_castle_short(move) &&
+                    from == get_move_from(move) &&
+                    to == (square_t)(king_rook_home + A8*pos->side_to_move)) {
+                return move;
+            }
+        }
     }
     return NO_MOVE;
 }
@@ -293,7 +310,12 @@ void position_to_fen_str(const position_t* pos, char* fen)
     *fen++ = pos->side_to_move == WHITE ? 'w' : 'b';
     *fen++ = ' ';
     if (pos->castle_rights == CASTLE_NONE) *fen++ = '-';
-    else {
+    else if (options.chess960) {
+        if (has_oo_rights(pos, WHITE)) *fen++ = king_rook_home + 'A';
+        if (has_ooo_rights(pos, WHITE)) *fen++ = queen_rook_home + 'A';
+        if (has_oo_rights(pos, BLACK)) *fen++ = king_rook_home + 'a';
+        if (has_ooo_rights(pos, BLACK)) *fen++ = queen_rook_home + 'a';
+    } else {
         if (has_oo_rights(pos, WHITE)) *fen++ = 'K';
         if (has_ooo_rights(pos, WHITE)) *fen++ = 'Q';
         if (has_oo_rights(pos, BLACK)) *fen++ = 'k';

@@ -68,6 +68,9 @@ void copy_position(position_t* dst, const position_t* src)
 char* set_position(position_t* pos, const char* fen)
 {
     init_position(pos);
+    king_home = E1;
+    king_rook_home = H1;
+    queen_rook_home = A1;
 
     // Read piece positions.
     for (square_t square=A8; square!=INVALID_SQUARE; ++fen, ++square) {
@@ -123,16 +126,33 @@ char* set_position(position_t* pos, const char* fen)
             case 'Q': add_ooo_rights(pos, WHITE); break;
             case 'k': add_oo_rights(pos, BLACK); break;
             case 'K': add_oo_rights(pos, WHITE); break;
-            default: 
-                      // Either '-': no castle rights (do nothing), or
-                      // A-Ha-h (960 castling notation).
-                      // TODO: support A-Ha-h
-                      if (*fen != '-') {
-                          // the fen string must have ended
-                          check_board_validity(pos);
-                          pos->hash = hash_position(pos);
-                          return (char*)fen;
-                      }
+            case '-': break;
+            default:
+                // Chess960 castling flags.
+                if (*fen >= 'A' && *fen <= 'H') {
+                    king_home = pos->pieces[WHITE][0];
+                    if (*fen - 'A' < square_file(king_home)) {
+                        add_ooo_rights(pos, WHITE);
+                        queen_rook_home = *fen - 'A';
+                    } else {
+                        add_oo_rights(pos, WHITE);
+                        king_rook_home = *fen - 'A';
+                    }
+                } else if (*fen >= 'a' && *fen <= 'h') {
+                    king_home = pos->pieces[BLACK][0] - A8;
+                    if (*fen - 'a' < square_file(king_home)) {
+                        add_ooo_rights(pos, BLACK);
+                        queen_rook_home = *fen - 'a';
+                    } else {
+                        add_oo_rights(pos, BLACK);
+                        king_rook_home = *fen - 'a';
+                    }
+                } else {
+                    // The fen string must have ended prematurely.
+                    check_board_validity(pos);
+                    pos->hash = hash_position(pos);
+                    return (char*)fen;
+                }
         }
         ++fen;
     }
@@ -179,8 +199,8 @@ bool is_check(const position_t* pos)
  */
 bool is_move_legal(position_t* pos, move_t move)
 {
+    const color_t side = pos->side_to_move;
     const color_t other_side = pos->side_to_move^1;
-    const square_t king_square = pos->pieces[other_side^1][0];
 
     // Identify invalid/inconsistent moves.
     const square_t from = get_move_from(move);
@@ -192,27 +212,72 @@ bool is_move_legal(position_t* pos, move_t move)
     if (pos->board[from] != piece) return false;
     if (capture && !is_move_enpassant(move)) {
         if (pos->board[to] != capture) return false;
-    } else {
+    } else if (!(options.chess960 && is_move_castle(move))) {
         if (pos->board[to] != EMPTY) return false;
     }
 
     // See if any attacks are preventing castling.
+    square_t my_king_home = king_home + A8*side;
     if (is_move_castle_long(move)) {
-        return has_ooo_rights(pos, pos->side_to_move) &&
-            pos->board[king_square-1] == EMPTY &&
-            pos->board[king_square-2] == EMPTY &&
-            pos->board[king_square-3] == EMPTY &&
-            !(is_square_attacked(pos, king_square, other_side) ||
-                    is_square_attacked(pos, king_square-1, other_side) ||
-                    is_square_attacked(pos, king_square-2, other_side));
+        if (!has_ooo_rights(pos, side)) return false;
+        square_t my_d1 = D1 + side*A8;
+        square_t my_c1 = C1 + side*A8;
+        square_t my_qr = queen_rook_home + side*A8;
+        bool castle_ok = true;
+        // Check that rook is unimpeded.
+        for (square_t sq = MIN(my_qr, my_d1); sq <= MAX(my_qr, my_d1); ++sq) {
+            if (sq != my_qr && sq != my_king_home && pos->board[sq] != EMPTY) {
+                castle_ok = false;
+                break;
+            }
+        }
+        // Check that the king is unimpeded and unattacked
+        if (castle_ok) {
+            for (square_t sq = MIN(my_king_home, my_c1);
+                    sq <= MAX(my_king_home, my_c1); ++sq) {
+                if (sq != my_king_home && sq != my_qr &&
+                        pos->board[sq] != EMPTY) {
+                    castle_ok = false;
+                    break;
+                }
+                if (sq != my_c1 &&
+                        is_square_attacked((position_t*)pos, sq, side^1)) {
+                    castle_ok = false;
+                    break;
+                }
+            }
+        }
+        return castle_ok;
     }
     if (is_move_castle_short(move)) {
-        return has_oo_rights(pos, pos->side_to_move) &&
-            pos->board[king_square+1] == EMPTY &&
-            pos->board[king_square+2] == EMPTY &&
-            !(is_square_attacked(pos, king_square, other_side) ||
-                is_square_attacked(pos, king_square+1, other_side) ||
-                is_square_attacked(pos, king_square+2, other_side));
+        if (!has_oo_rights(pos, side)) return false;
+        square_t my_f1 = F1 + side*A8;
+        square_t my_g1 = G1 + side*A8;
+        square_t my_kr = king_rook_home + side*A8;
+        bool castle_ok = true;
+        // Check that rook is unimpeded.
+        for (square_t sq = MIN(my_kr, my_f1); sq <= MAX(my_kr, my_f1); ++sq) {
+            if (sq != my_kr  && sq != my_king_home && pos->board[sq] != EMPTY) {
+                castle_ok = false;
+                break;
+            }
+        }
+        // Check that the king is unimpeded and unattacked
+        if (castle_ok) {
+            for (square_t sq = MIN(my_king_home, my_g1); sq <= my_g1; ++sq) {
+                if (sq != my_king_home && sq != my_kr &&
+                        pos->board[sq] != EMPTY) {
+                    castle_ok = false;
+                    break;
+                }
+                if (sq != my_g1 &&
+                        is_square_attacked((position_t*)pos, sq, side^1)) {
+                    castle_ok = false;
+                    break;
+                }
+            }
+        }
+        return castle_ok;
     }
 
     // Just try the move and see if the king is being attacked afterwards.
