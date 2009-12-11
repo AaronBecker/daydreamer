@@ -170,9 +170,9 @@ void do_move(position_t* pos, move_t move, undo_info_t* undo)
 
     const piece_type_t promote_type = get_move_promote(move);
     if (is_move_castle_short(move)) {
-        transfer_piece(pos, H1 + A8*side, F1 + A8*side);
+        transfer_piece(pos, king_rook_home + A8*side, F1 + A8*side);
     } else if (is_move_castle_long(move)) {
-        transfer_piece(pos, A1 + A8*side, D1 + A8*side);
+        transfer_piece(pos, queen_rook_home + A8*side, D1 + A8*side);
     } else if (is_move_enpassant(move)) {
         remove_piece(pos, to-pawn_push[side]);
     } else if (promote_type) {

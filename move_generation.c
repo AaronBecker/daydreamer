@@ -125,24 +125,58 @@ int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves)
     // castling rights, the squares between king and rook are unoccupied,
     // and the intermediate square is unattacked. Therefore checking for
     // legality just requires seeing if we're in check afterwards.
-    // Note: this would require some overhauling to support Chess960.
-    square_t king_home = E1 + side*A8;
-    if (has_oo_rights(pos, side) &&
-            pos->board[king_home+1] == EMPTY &&
-            pos->board[king_home+2] == EMPTY &&
-            !is_square_attacked((position_t*)pos,king_home+1,side^1)) {
-        moves = add_move(pos,
-                create_move_castle(king_home, king_home+2,
-                    create_piece(side, KING)),
-                moves);
+    square_t my_king_home = king_home + side*A8;
+    if (has_oo_rights(pos, side)) {
+        square_t my_f1 = F1 + side*A8;
+        square_t my_g1 = G1 + side*A8;
+        square_t my_kr = king_rook_home + side*A8;
+        bool castle_ok = true;
+        // Check that rook is unimpeded.
+        for (square_t sq = MIN(my_kr, my_f1); sq <= MAX(my_kr, my_f1); ++sq) {
+            if (sq != my_kr && pos->board[sq] != EMPTY) {
+                castle_ok = false;
+                break;
+            }
+        }
+        // Check that the king is unimpeded and unattacked
+        if (castle_ok) {
+            for (square_t sq = MIN(my_king_home, my_g1); sq <= my_g1; ++sq) {
+                if (sq != my_king_home && (pos->board[sq] != EMPTY ||
+                            is_square_attacked((position_t*)pos, sq, side^1))) {
+                    castle_ok = false;
+                    break;
+                }
+            }
+        }
+        if (castle_ok) moves = add_move(pos,
+                create_move_castle(my_king_home, my_g1,
+                    create_piece(side, KING)), moves);
     }
-    if (has_ooo_rights(pos, side) &&
-            pos->board[king_home-1] == EMPTY &&
-            pos->board[king_home-2] == EMPTY &&
-            pos->board[king_home-3] == EMPTY &&
-            !is_square_attacked((position_t*)pos,king_home-1,side^1)) {
-        moves = add_move(pos,
-                create_move_castle(king_home, king_home-2,
+    if (has_ooo_rights(pos, side)) {
+        square_t my_d1 = D1 + side*A8;
+        square_t my_c1 = C1 + side*A8;
+        square_t my_qr = queen_rook_home + side*A8;
+        bool castle_ok = true;
+        // Check that rook is unimpeded.
+        for (square_t sq = MIN(my_qr, my_d1); sq <= MAX(my_qr, my_d1); ++sq) {
+            if (sq != my_qr && pos->board[sq] != EMPTY) {
+                castle_ok = false;
+                break;
+            }
+        }
+        // Check that the king is unimpeded and unattacked
+        if (castle_ok) {
+            for (square_t sq = MIN(my_king_home, my_c1);
+                    sq <= MAX(my_king_home, my_c1); ++sq) {
+                if (sq != my_king_home && (pos->board[sq] != EMPTY ||
+                            is_square_attacked((position_t*)pos, sq, side^1))) {
+                    castle_ok = false;
+                    break;
+                }
+            }
+        }
+        if (castle_ok) moves = add_move(pos,
+                create_move_castle(my_king_home, my_c1,
                     create_piece(side, KING)),
                 moves);
     }

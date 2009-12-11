@@ -98,6 +98,10 @@ extern const direction_t piece_deltas[17][16];
 extern const direction_t pawn_push[];
 extern const rank_t relative_rank[2][8];
 
+extern square_t king_home;
+extern square_t king_rook_home;
+extern square_t queen_rook_home;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

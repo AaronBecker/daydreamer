@@ -5,6 +5,7 @@
 #include <string.h>
 #include <strings.h>
 
+extern search_data_t root_data;
 extern const char glyphs[];
 #define piece_type_char(x) glyphs[x]
 
@@ -37,7 +38,6 @@ square_t coord_str_to_square(const char* alg_square)
 
 /*
  * Convert a move to its coordinate string form.
- * TODO: adapt for Chess960
  */
 void move_to_coord_str(move_t move, char* str)
 {
@@ -51,6 +51,13 @@ void move_to_coord_str(move_t move, char* str)
     }
     square_t from = get_move_from(move);
     square_t to = get_move_to(move);
+    if (root_data.options.chess960) {
+        if (is_move_castle_long(move)) {
+            to = queen_rook_home + get_move_piece_color(move)*A8;
+        } else if (is_move_castle_short(move)) {
+            to = king_rook_home + get_move_piece_color(move)*A8;
+        }
+    }
     str += snprintf(str, 5, "%c%c%c%c",
            (char)square_file(from) + 'a', (char)square_rank(from) + '1',
            (char)square_file(to) + 'a', (char)square_rank(to) + '1');
@@ -63,7 +70,6 @@ void move_to_coord_str(move_t move, char* str)
  * Convert a long algebraic move string (e.g. E2E4, c7c8q) to a move_t.
  * Only legal moves are generated--if the given move is impossible, NO_MOVE
  * is returned instead.
- * TODO: adapt for Chess960
  */
 move_t coord_str_to_move(position_t* pos, const char* coord_move)
 {
@@ -84,8 +90,15 @@ move_t coord_str_to_move(position_t* pos, const char* coord_move)
         move = possible_moves[i];
         if (from == get_move_from(move) &&
                 to == get_move_to(move) &&
-                get_move_promote(move) == promote_type)
-            return move;
+                get_move_promote(move) == promote_type) return move;
+        else if (root_data.options.chess960) {
+            if (is_move_castle_long(move) &&
+                    from == get_move_from(move) &&
+                    to == queen_rook_home + A8*pos->side_to_move) return move;
+            else if (is_move_castle_short(move) &&
+                    from == get_move_from(move) &&
+                    to == king_rook_home + A8*pos->side_to_move) return move;
+        }
     }
     return NO_MOVE;
 }
@@ -271,7 +284,6 @@ int line_to_san_str(position_t* pos, move_t* line, char* san)
 /*
  * Convert a position to its FEN form.
  * (see wikipedia.org/wiki/Forsyth-Edwards_Notation)
- * TODO: adapt for Chess960
  */
 void position_to_fen_str(const position_t* pos, char* fen)
 {
@@ -296,7 +308,12 @@ void position_to_fen_str(const position_t* pos, char* fen)
     *fen++ = pos->side_to_move == WHITE ? 'w' : 'b';
     *fen++ = ' ';
     if (pos->castle_rights == CASTLE_NONE) *fen++ = '-';
-    else {
+    else if (root_data.options.chess960) {
+        if (has_oo_rights(pos, WHITE)) *fen++ = king_rook_home + 'A';
+        if (has_ooo_rights(pos, WHITE)) *fen++ = queen_rook_home + 'A';
+        if (has_oo_rights(pos, BLACK)) *fen++ = king_rook_home + 'a';
+        if (has_ooo_rights(pos, BLACK)) *fen++ = queen_rook_home + 'a';
+    } else {
         if (has_oo_rights(pos, WHITE)) *fen++ = 'K';
         if (has_ooo_rights(pos, WHITE)) *fen++ = 'Q';
         if (has_oo_rights(pos, BLACK)) *fen++ = 'k';

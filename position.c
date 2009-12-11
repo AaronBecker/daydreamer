@@ -148,7 +148,7 @@ char* set_position(position_t* pos, const char* fen)
                         king_rook_home = *fen - 'a';
                     }
                 } else {
-                    // the fen string must have ended
+                    // The fen string must have ended prematurely.
                     check_board_validity(pos);
                     pos->hash = hash_position(pos);
                     return (char*)fen;

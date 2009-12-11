@@ -29,6 +29,7 @@ typedef struct {
     int output_delay;
     bool use_egbb;
     bool verbose;
+    bool chess960;
 } search_options_t;
 
 #define HIST_BUCKETS    15

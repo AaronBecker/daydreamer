@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+// TODO: global options struct, that's automatically written into.
+
 typedef enum {
     OPTION_CHECK,
     OPTION_SPIN,
@@ -205,6 +207,8 @@ void init_uci_options()
             0, 0, NULL, &default_handler);
     add_uci_option("MultiPV", OPTION_SPIN, "1",
             1, 256, NULL, &default_handler);
+    add_uci_option("UCI_Chess960", OPTION_CHECK, "false",
+            0, 0, NULL, &default_handler);
     add_uci_option("Use endgame bitbases", OPTION_CHECK, "false",
             0, 0, NULL, &handle_egbb_use);
     add_uci_option("Endgame bitbase path", OPTION_STRING, ".",

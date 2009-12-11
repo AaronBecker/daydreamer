@@ -59,6 +59,7 @@ void init_search_data(search_data_t* data)
     data->options.use_egbb = get_option_bool("Use endgame bitbases");
     data->options.verbose = get_option_bool("Verbose output");
     data->options.multi_pv = get_option_int("MultiPV");
+    data->options.chess960 = get_option_bool("UCI_Chess960");
 }
 
 /*
