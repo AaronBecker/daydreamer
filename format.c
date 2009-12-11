@@ -37,6 +37,7 @@ square_t coord_str_to_square(const char* alg_square)
 
 /*
  * Convert a move to its coordinate string form.
+ * TODO: adapt for Chess960
  */
 void move_to_coord_str(move_t move, char* str)
 {
@@ -45,7 +46,7 @@ void move_to_coord_str(move_t move, char* str)
         return;
     }
     if (move == NULL_MOVE) {
-        strcpy(str, "(null)");
+        strcpy(str, "0000");
         return;
     }
     square_t from = get_move_from(move);
@@ -62,6 +63,7 @@ void move_to_coord_str(move_t move, char* str)
  * Convert a long algebraic move string (e.g. E2E4, c7c8q) to a move_t.
  * Only legal moves are generated--if the given move is impossible, NO_MOVE
  * is returned instead.
+ * TODO: adapt for Chess960
  */
 move_t coord_str_to_move(position_t* pos, const char* coord_move)
 {
@@ -269,6 +271,7 @@ int line_to_san_str(position_t* pos, move_t* line, char* san)
 /*
  * Convert a position to its FEN form.
  * (see wikipedia.org/wiki/Forsyth-Edwards_Notation)
+ * TODO: adapt for Chess960
  */
 void position_to_fen_str(const position_t* pos, char* fen)
 {

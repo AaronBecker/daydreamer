@@ -68,6 +68,9 @@ void copy_position(position_t* dst, const position_t* src)
 char* set_position(position_t* pos, const char* fen)
 {
     init_position(pos);
+    king_home = E1;
+    king_rook_home = H1;
+    queen_rook_home = A1;
 
     // Read piece positions.
     for (square_t square=A8; square!=INVALID_SQUARE; ++fen, ++square) {
@@ -123,16 +126,33 @@ char* set_position(position_t* pos, const char* fen)
             case 'Q': add_ooo_rights(pos, WHITE); break;
             case 'k': add_oo_rights(pos, BLACK); break;
             case 'K': add_oo_rights(pos, WHITE); break;
-            default: 
-                      // Either '-': no castle rights (do nothing), or
-                      // A-Ha-h (960 castling notation).
-                      // TODO: support A-Ha-h
-                      if (*fen != '-') {
-                          // the fen string must have ended
-                          check_board_validity(pos);
-                          pos->hash = hash_position(pos);
-                          return (char*)fen;
-                      }
+            case '-': break;
+            default:
+                // Chess960 castling flags.
+                if (*fen >= 'A' && *fen <= 'H') {
+                    king_home = pos->pieces[WHITE][0];
+                    if (*fen - 'A' < square_file(king_home)) {
+                        add_ooo_rights(pos, WHITE);
+                        queen_rook_home = *fen - 'A';
+                    } else {
+                        add_oo_rights(pos, WHITE);
+                        king_rook_home = *fen - 'A';
+                    }
+                } else if (*fen >= 'a' && *fen <= 'h') {
+                    king_home = pos->pieces[BLACK][0];
+                    if (*fen - 'a' < square_file(king_home)) {
+                        add_ooo_rights(pos, BLACK);
+                        queen_rook_home = *fen - 'a';
+                    } else {
+                        add_oo_rights(pos, BLACK);
+                        king_rook_home = *fen - 'a';
+                    }
+                } else {
+                    // the fen string must have ended
+                    check_board_validity(pos);
+                    pos->hash = hash_position(pos);
+                    return (char*)fen;
+                }
         }
         ++fen;
     }
