@@ -6,7 +6,6 @@
 
 static uint64_t full_search(position_t* pos, int depth);
 static uint64_t divide(position_t* pos, int depth);
-static uint64_t transpositions;
 
 /*
  * Execute a series of perft tests from a given file. The test file consists of
@@ -69,8 +68,6 @@ void perft_testsuite(char* filename)
  */
 uint64_t perft(position_t* position, int depth, bool div)
 {
-    transpositions = 0;
-    clear_transposition_table();
     milli_timer_t perft_timer;
     init_timer(&perft_timer);
     start_timer(&perft_timer);
@@ -79,12 +76,10 @@ uint64_t perft(position_t* position, int depth, bool div)
         nodes = divide(position, depth);
     } else {
         nodes = full_search(position, depth);
-        printf("%"PRIu64" nodes, %"PRIu64" transpositions",
-                nodes, transpositions);
+        printf("%"PRIu64" nodes", nodes);
     }
     stop_timer(&perft_timer);
     printf(", elapsed time %d ms\n", elapsed_time(&perft_timer));
-    print_transposition_stats();
     return nodes;
 }
 
@@ -94,7 +89,6 @@ uint64_t perft(position_t* position, int depth, bool div)
  */
 static uint64_t divide(position_t* pos, int depth)
 {
-    put_transposition(pos, 0, 0, 0, NO_MOVE, false);
     move_t move_list[256];
     move_t* current_move = move_list;
     int num_moves = 0;
@@ -106,22 +100,19 @@ static uint64_t divide(position_t* pos, int depth)
     }
     move_list[num_moves] = NO_MOVE;
 
-    uint64_t old_trans, child_nodes, total_nodes=0;
+    uint64_t child_nodes, total_nodes=0;
     char coord_move[6];
     while (*current_move) {
         undo_info_t undo;
-        old_trans = transpositions;
         do_move(pos, *current_move, &undo);
         child_nodes = full_search(pos, depth-1);
         total_nodes += child_nodes;
         undo_move(pos, *current_move, &undo);
         move_to_coord_str(*current_move, coord_move);
-        printf("%s: %8"PRIu64" %8"PRIu64"\n",
-                coord_move, child_nodes, transpositions-old_trans);
+        printf("%s: %8"PRIu64"\n", coord_move, child_nodes);
         ++current_move;
     }
-    printf("%d moves, %"PRIu64" nodes, %"PRIu64" transpositions",
-            num_moves, total_nodes, transpositions);
+    printf("%d moves, %"PRIu64" nodes", num_moves, total_nodes);
     return total_nodes;
 }
 
@@ -132,13 +123,6 @@ static uint64_t divide(position_t* pos, int depth)
 static uint64_t full_search(position_t* pos, int depth)
 {
     if (depth <= 0) return 1;
-    transposition_entry_t* entry;
-    if ((entry = get_transposition(pos))) {
-        if (depth == entry->depth) {
-            transpositions++;
-            return entry->score;
-        }
-    }
     move_t move_list[256];
     move_t* current_move = move_list;
     int num_moves = 0;
@@ -150,10 +134,7 @@ static uint64_t full_search(position_t* pos, int depth)
     }
     move_list[num_moves] = NO_MOVE;
 
-    if (depth == 1) {
-        put_transposition(pos, NO_MOVE, depth, num_moves, SCORE_EXACT, false);
-        return num_moves;
-    }
+    if (depth == 1) return num_moves;
 
     uint64_t nodes = 0;
     while (*current_move) {
@@ -163,7 +144,6 @@ static uint64_t full_search(position_t* pos, int depth)
         undo_move(pos, *current_move, &undo);
         ++current_move;
     }
-    put_transposition(pos, NO_MOVE, depth, nodes, SCORE_EXACT, false);
     return nodes;
 }
 
