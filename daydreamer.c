@@ -4,7 +4,9 @@
 #include <strings.h>
 
 extern void init_eval(void);
-extern search_data_t root_data;
+
+search_data_t root_data;
+options_t options;
 
 /*
  * Set up the stuff that only needs to be done once, during initialization.

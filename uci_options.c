@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-// TODO: global options struct, that's automatically written into.
-
 typedef enum {
     OPTION_CHECK,
     OPTION_SPIN,
@@ -24,6 +22,7 @@ typedef struct {
     char default_value[128];
     int min;
     int max;
+    void* address;
     option_handler handler;
 } uci_option_t;
 
@@ -41,6 +40,7 @@ static void add_uci_option(char* name,
         int min,
         int max,
         char** vars,
+        void* address,
         option_handler handler)
 {
     assert(uci_option_count < 128);
@@ -53,9 +53,9 @@ static void add_uci_option(char* name,
     option->max = max;
     option->handler = handler;
     option->vars[0][0] = '\0';
-    if (!vars) return;
+    option->address = address;
     int var_index=0;
-    while (*vars) {
+    while (vars && *vars) {
         assert(var_index < 15);
         strcpy(option->vars[var_index++], *vars);
         ++*vars;
@@ -156,6 +156,16 @@ static void default_handler(void* opt, char* value)
 {
     uci_option_t* option = opt;
     if (value) strncpy(option->value, value, 128);
+    if (option->address) {
+        if (option->type == OPTION_CHECK) {
+            bool val = strcasestr(option->value, "true") ? true : false;
+            memcpy(option->address, &val, sizeof(bool));
+        } else if (option->type == OPTION_SPIN) {
+            int val;
+            sscanf(option->value, "%d", &val);
+            memcpy(option->address, &val, sizeof(int));
+        } else assert(false);
+    }
 }
 
 static void handle_hash(void* opt, char* value)
@@ -180,16 +190,18 @@ static void handle_egbb_use(void* opt, char* value)
 {
     uci_option_t* option = opt;
     strncpy(option->value, value, 128);
-    if (!strcasecmp(value, "true")) {
+    bool val = !strcasecmp(value, "true");
+    if (val) {
         load_egbb(get_option_string("Endgame bitbase path"), 0);
     } else unload_egbb();
+    memcpy(option->address, &val, sizeof(bool));
 }
 
 static void handle_egbb_path(void* opt, char* value)
 {
     uci_option_t* option = opt;
     strncpy(option->value, value, 128);
-    if (get_option_bool("Use endgame bitbases")) {
+    if (options.use_egbb) {
         load_egbb(value, 0);
     }
 }
@@ -200,22 +212,23 @@ static void handle_egbb_path(void* opt, char* value)
  */
 void init_uci_options()
 {
-    add_uci_option("Hash", OPTION_SPIN, "32", 1, 4096, NULL, &handle_hash);
+    add_uci_option("Hash", OPTION_SPIN, "32",
+            1, 4096, NULL, NULL, &handle_hash);
     add_uci_option("Clear Hash", OPTION_BUTTON, "",
-            0, 0, NULL, &handle_clear_hash);
+            0, 0, NULL, NULL, &handle_clear_hash);
     add_uci_option("Ponder", OPTION_CHECK, "false",
-            0, 0, NULL, &default_handler);
+            0, 0, NULL, &options.ponder, &default_handler);
     add_uci_option("MultiPV", OPTION_SPIN, "1",
-            1, 256, NULL, &default_handler);
+            1, 256, NULL, &options.multi_pv, &default_handler);
     add_uci_option("UCI_Chess960", OPTION_CHECK, "false",
-            0, 0, NULL, &default_handler);
+            0, 0, NULL, &options.chess960, &default_handler);
     add_uci_option("Use endgame bitbases", OPTION_CHECK, "false",
-            0, 0, NULL, &handle_egbb_use);
+            0, 0, NULL, &options.use_egbb, &handle_egbb_use);
     add_uci_option("Endgame bitbase path", OPTION_STRING, ".",
-            0, 0, NULL, &handle_egbb_path);
+            0, 0, NULL, NULL, &handle_egbb_path);
     add_uci_option("Output Delay", OPTION_SPIN, "2000",
-            0, 1000000, NULL, &default_handler);
+            0, 1000000, NULL, &options.output_delay, &default_handler);
     add_uci_option("Verbose output", OPTION_CHECK, "true",
-            0, 0, NULL, &default_handler);
+            0, 0, NULL, &options.verbose, &default_handler);
 }
 

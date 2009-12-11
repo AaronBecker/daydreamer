@@ -3,7 +3,6 @@
 #include <strings.h>
 #include "daydreamer.h"
 
-search_data_t root_data;
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
@@ -55,11 +54,6 @@ void init_search_data(search_data_t* data)
     copy_position(&data->root_pos, &root_pos_copy);
     data->engine_status = ENGINE_IDLE;
     init_timer(&data->timer);
-    data->options.output_delay = get_option_int("Output delay");
-    data->options.use_egbb = get_option_bool("Use endgame bitbases");
-    data->options.verbose = get_option_bool("Verbose output");
-    data->options.multi_pv = get_option_int("MultiPV");
-    data->options.chess960 = get_option_bool("UCI_Chess960");
 }
 
 /*
@@ -185,7 +179,7 @@ static bool should_probe_egbb(position_t* pos,
         int alpha,
         int beta)
 {
-    if (!root_data.options.use_egbb) return false;
+    if (!options.use_egbb) return false;
     //TODO: evaluate 5 man bases
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 4) return false;
@@ -342,14 +336,14 @@ void find_obvious_move(search_data_t* data)
     for (int i=0; r[i].move; ++i) {
         if (r[i].move == data->obvious_move) continue;
         if (r[i].qsearch_score + obvious_move_margin > best_score) {
-            if (data->options.verbose && data->engine_status != ENGINE_PONDERING) {
+            if (options.verbose && data->engine_status != ENGINE_PONDERING) {
                 printf("info string no obvious move\n");
             }
             data->obvious_move = NO_MOVE;
             return;
         }
     }
-    if (data->options.verbose && data->engine_status != ENGINE_PONDERING) {
+    if (options.verbose && data->engine_status != ENGINE_PONDERING) {
         printf("info string candidate obvious move ");
         print_coord_move(data->obvious_move);
         printf("\n");
@@ -385,7 +379,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
             search_data->current_depth <= search_data->depth_limit;
             ++search_data->current_depth) {
         if (should_output(search_data)) {
-            if (search_data->options.verbose) print_transposition_stats();
+            if (options.verbose) print_transposition_stats();
             printf("info depth %d\n", search_data->current_depth);
         }
         bool no_abort = root_search(search_data);
@@ -409,7 +403,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
 
     --search_data->current_depth;
     search_data->best_score = id_score;
-    if (search_data->options.verbose) {
+    if (options.verbose) {
         print_search_stats(search_data);
         printf("info string time target %d time limit %d elapsed time %d\n",
                 search_data->time_target,
@@ -459,7 +453,7 @@ static bool root_search(search_data_t* search_data)
         do_move(pos, move, &undo);
         int ext = extend(pos, move, false);
         int score;
-        if (search_data->current_move_index < search_data->options.multi_pv) {
+        if (search_data->current_move_index < options.multi_pv) {
             // Use full window search.
             alpha = mated_in(-1);
             score = -search(pos, search_data->search_stack,
@@ -471,9 +465,10 @@ static bool root_search(search_data_t* search_data)
                 if (should_output(search_data)) {
                     char coord_move[6];
                     move_to_coord_str(move, coord_move);
-                    if (search_data->options.verbose &&
+                    if (options.verbose &&
                             search_data->engine_status != ENGINE_PONDERING) {
-                        printf("info string fail high, research %s\n", coord_move);
+                        printf("info string fail high, research %s\n",
+                                coord_move);
                     }
                 }
                 search_data->resolving_fail_high = true;

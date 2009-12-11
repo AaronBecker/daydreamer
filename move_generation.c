@@ -133,7 +133,7 @@ int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves)
         bool castle_ok = true;
         // Check that rook is unimpeded.
         for (square_t sq = MIN(my_kr, my_f1); sq <= MAX(my_kr, my_f1); ++sq) {
-            if (sq != my_kr && pos->board[sq] != EMPTY) {
+            if (sq != my_kr  && sq != my_king_home && pos->board[sq] != EMPTY) {
                 castle_ok = false;
                 break;
             }
@@ -141,8 +141,13 @@ int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves)
         // Check that the king is unimpeded and unattacked
         if (castle_ok) {
             for (square_t sq = MIN(my_king_home, my_g1); sq <= my_g1; ++sq) {
-                if (sq != my_king_home && (pos->board[sq] != EMPTY ||
-                            is_square_attacked((position_t*)pos, sq, side^1))) {
+                if (sq != my_king_home && sq != my_kr &&
+                        pos->board[sq] != EMPTY) {
+                    castle_ok = false;
+                    break;
+                }
+                if (sq != my_g1 &&
+                        is_square_attacked((position_t*)pos, sq, side^1)) {
                     castle_ok = false;
                     break;
                 }
@@ -159,7 +164,7 @@ int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves)
         bool castle_ok = true;
         // Check that rook is unimpeded.
         for (square_t sq = MIN(my_qr, my_d1); sq <= MAX(my_qr, my_d1); ++sq) {
-            if (sq != my_qr && pos->board[sq] != EMPTY) {
+            if (sq != my_qr && sq != my_king_home && pos->board[sq] != EMPTY) {
                 castle_ok = false;
                 break;
             }
@@ -168,8 +173,13 @@ int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves)
         if (castle_ok) {
             for (square_t sq = MIN(my_king_home, my_c1);
                     sq <= MAX(my_king_home, my_c1); ++sq) {
-                if (sq != my_king_home && (pos->board[sq] != EMPTY ||
-                            is_square_attacked((position_t*)pos, sq, side^1))) {
+                if (sq != my_king_home && sq != my_qr &&
+                        pos->board[sq] != EMPTY) {
+                    castle_ok = false;
+                    break;
+                }
+                if (sq != my_c1 &&
+                        is_square_attacked((position_t*)pos, sq, side^1)) {
                     castle_ok = false;
                     break;
                 }

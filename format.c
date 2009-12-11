@@ -5,7 +5,6 @@
 #include <string.h>
 #include <strings.h>
 
-extern search_data_t root_data;
 extern const char glyphs[];
 #define piece_type_char(x) glyphs[x]
 
@@ -51,7 +50,7 @@ void move_to_coord_str(move_t move, char* str)
     }
     square_t from = get_move_from(move);
     square_t to = get_move_to(move);
-    if (root_data.options.chess960) {
+    if (options.chess960) {
         if (is_move_castle_long(move)) {
             to = queen_rook_home + get_move_piece_color(move)*A8;
         } else if (is_move_castle_short(move)) {
@@ -91,13 +90,16 @@ move_t coord_str_to_move(position_t* pos, const char* coord_move)
         if (from == get_move_from(move) &&
                 to == get_move_to(move) &&
                 get_move_promote(move) == promote_type) return move;
-        else if (root_data.options.chess960) {
+        else if (options.chess960) {
             if (is_move_castle_long(move) &&
                     from == get_move_from(move) &&
-                    to == queen_rook_home + A8*pos->side_to_move) return move;
-            else if (is_move_castle_short(move) &&
+                    to == (square_t)(queen_rook_home + A8*pos->side_to_move)) {
+                return move;
+            } else if (is_move_castle_short(move) &&
                     from == get_move_from(move) &&
-                    to == king_rook_home + A8*pos->side_to_move) return move;
+                    to == (square_t)(king_rook_home + A8*pos->side_to_move)) {
+                return move;
+            }
         }
     }
     return NO_MOVE;
@@ -308,7 +310,7 @@ void position_to_fen_str(const position_t* pos, char* fen)
     *fen++ = pos->side_to_move == WHITE ? 'w' : 'b';
     *fen++ = ' ';
     if (pos->castle_rights == CASTLE_NONE) *fen++ = '-';
-    else if (root_data.options.chess960) {
+    else if (options.chess960) {
         if (has_oo_rights(pos, WHITE)) *fen++ = king_rook_home + 'A';
         if (has_ooo_rights(pos, WHITE)) *fen++ = queen_rook_home + 'A';
         if (has_oo_rights(pos, BLACK)) *fen++ = king_rook_home + 'a';

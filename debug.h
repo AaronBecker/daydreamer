@@ -27,13 +27,20 @@ extern "C" {
 } while (0)
 #endif
 
-#define warn(msg)  do { \
+#define warn(msg)   do { \
     FILE* log; \
     log = fopen("daydreamer.log", "a"); \
-    fprintf(log, "%s:%u: warning: %s\n", __FILE__, __LINE__, msg); \
-    printf("%s:%u: warning: %s\n", __FILE__, __LINE__, msg); \
+    printf("%s:%u: %s\n", __FILE__, __LINE__, msg); \
+    fprintf(log, "%s:%u: %s\n", __FILE__, __LINE__, msg); \
     fclose(log); \
 } while (0)
+
+#define log(msg)    do { \
+    FILE* log; \
+    log = fopen("daydreamer.log", "a"); \
+    fprintf(log, "%s\n", msg); \
+    fclose(log); \
+} while (0)    
 
 void _check_board_validity(const position_t* pos);
 void _check_move_validity(const position_t* pos, move_t move);

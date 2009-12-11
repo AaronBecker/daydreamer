@@ -222,7 +222,7 @@ static void sort_root_moves(move_selector_t* sel)
         sel->moves[i] = root_data.root_moves[i].move;
         if (sel->depth <= 2) {
             scores[i] = root_data.root_moves[i].qsearch_score;
-        } else if (root_data.options.multi_pv > 1) {
+        } else if (options.multi_pv > 1) {
             scores[i] = root_data.root_moves[i].score;
         } else {
             scores[i] = root_data.root_moves[i].nodes;

@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern search_data_t root_data;
-
 static void uci_get_input(void);
 static void uci_handle_command(char* command);
 static void uci_position(char* uci_pos);
@@ -28,6 +26,7 @@ void uci_read_stream(FILE* stream)
 static void uci_handle_command(char* command)
 {
     if (!command) exit(0);
+    log(command);
 
     // strip trailing newline.
     char* c = command;
@@ -213,7 +212,7 @@ static void uci_go(char* command)
     if (!movetime && !root_data.infinite) {
         calculate_search_time(wtime, btime, winc, binc, movestogo);
     }
-    if (!ponder && root_data.options.verbose) {
+    if (!ponder && options.verbose) {
         print_board(&root_data.root_pos, true);
     }
     deepening_search(&root_data, ponder);
@@ -249,7 +248,7 @@ static void calculate_search_time(int wtime,
             MAX(time-250, time*3/4) :
             MIN(time/4, time*4/movestogo);
     }
-    if (get_option_bool("Ponder")) {
+    if (options.ponder) {
         root_data.time_target =
             MIN(root_data.time_limit, root_data.time_target * 5 / 4);
     }

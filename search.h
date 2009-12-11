@@ -30,7 +30,10 @@ typedef struct {
     bool use_egbb;
     bool verbose;
     bool chess960;
-} search_options_t;
+    bool ponder;
+} options_t;
+
+extern options_t options;
 
 #define HIST_BUCKETS    15
 
@@ -65,7 +68,6 @@ typedef struct {
 
 typedef struct {
     position_t root_pos;
-    search_options_t options;
     search_stats_t stats;
 
     // search state info
@@ -94,6 +96,8 @@ typedef struct {
     bool infinite;
 } search_data_t;
 
+extern search_data_t root_data;
+
 #define POLL_INTERVAL   0x3fff
 #define MATE_VALUE      32000
 #define DRAW_VALUE      0
@@ -113,7 +117,7 @@ typedef struct {
 #define mate_in(ply)                (MATE_VALUE-ply)
 #define mated_in(ply)               (-MATE_VALUE+ply)
 #define should_output(s)    \
-    (elapsed_time(&((s)->timer)) > (s)->options.output_delay && \
+    (elapsed_time(&((s)->timer)) > options.output_delay && \
      (s)->engine_status != ENGINE_PONDERING)
 
 
