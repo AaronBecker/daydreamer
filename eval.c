@@ -123,6 +123,9 @@ int simple_eval(const position_t* pos)
                 pos->piece_square_eval[side^1].endgame)) / 1024;
     int material_adjust = 0;
 #ifndef UFO_EVAL
+    material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
+    material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
+    if (side != WHITE) material_adjust *= -1;
 #endif
     return material_eval + piece_square_eval + material_adjust;
 }
@@ -156,17 +159,13 @@ int full_eval(const position_t* pos)
     // bishop pair: +50
     // knight += 5 * (pawns-5)
     // rook -= 10 * (pawns-5)
-    /*
     int material_adjust = 0;
-    material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
-    material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
-    material_adjust += pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5);
-    material_adjust -= pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5);
-    material_adjust -= pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5);
-    material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
+    //material_adjust += pos->piece_count[WN] * 6 * (pos->piece_count[WP] - 5);
+    //material_adjust -= pos->piece_count[BN] * 6 * (pos->piece_count[BP] - 5);
+    //material_adjust -= pos->piece_count[WR] * 12 * (pos->piece_count[WP] - 5);
+    //material_adjust += pos->piece_count[BR] * 12 * (pos->piece_count[BP] - 5);
     if (pos->side_to_move == BLACK) material_adjust *= -1;
     score += material_adjust;
-    */
 #endif
     if (!can_win(pos, pos->side_to_move)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, pos->side_to_move^1)) score = MAX(score, DRAW_VALUE);
