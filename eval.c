@@ -156,6 +156,7 @@ int full_eval(const position_t* pos)
     // bishop pair: +50
     // knight += 5 * (pawns-5)
     // rook -= 10 * (pawns-5)
+    /*
     int material_adjust = 0;
     material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
     material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
@@ -165,6 +166,7 @@ int full_eval(const position_t* pos)
     material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
     if (pos->side_to_move == BLACK) material_adjust *= -1;
     score += material_adjust;
+    */
 #endif
     if (!can_win(pos, pos->side_to_move)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, pos->side_to_move^1)) score = MAX(score, DRAW_VALUE);
