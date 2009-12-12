@@ -122,35 +122,6 @@ int simple_eval(const position_t* pos)
             (1024-phase)*(pos->piece_square_eval[side].endgame -
                 pos->piece_square_eval[side^1].endgame)) / 1024;
 #ifndef UFO_EVAL
-#endif
-    return material_eval + piece_square_eval;
-}
-
-/*
- * Do full, more expensive evaluation of the position. Not implemented yet,
- * so just return the simple evaluation.
- */
-int full_eval(const position_t* pos)
-{
-    int score = simple_eval(pos);
-#ifndef UFO_EVAL
-    score_t phase_score, component_score;
-    phase_score.endgame = phase_score.midgame = 0;
-    component_score = pawn_score(pos);
-    add_scaled_score(&phase_score, &component_score, pawn_scale);
-    component_score = pattern_score(pos);
-    add_scaled_score(&phase_score, &component_score, pattern_scale);
-    component_score = mobility_score(pos);
-    add_scaled_score(&phase_score, &component_score, mobility_scale);
-    component_score = evaluate_king_shield(pos);
-    add_scaled_score(&phase_score, &component_score, shield_scale);
-    component_score = evaluate_king_attackers(pos);
-    add_scaled_score(&phase_score, &component_score, king_attack_scale);
-    // TODO: add and test tempo bonus
-
-    int phase = game_phase(pos);
-    score += blend_score(&phase_score, phase);
-
     // Adjust material based on Larry Kaufmans's formula in
     // "The Evaluation of Material Imbalances"
     // bishop pair: +50
@@ -183,7 +154,35 @@ int full_eval(const position_t* pos)
     }
 
     if (pos->side_to_move == BLACK) material_adjust *= -1;
-    score += material_adjust;
+#endif
+    return material_eval + piece_square_eval + material_adjust;
+}
+
+/*
+ * Do full, more expensive evaluation of the position. Not implemented yet,
+ * so just return the simple evaluation.
+ */
+int full_eval(const position_t* pos)
+{
+    int score = simple_eval(pos);
+#ifndef UFO_EVAL
+    score_t phase_score, component_score;
+    phase_score.endgame = phase_score.midgame = 0;
+    component_score = pawn_score(pos);
+    add_scaled_score(&phase_score, &component_score, pawn_scale);
+    component_score = pattern_score(pos);
+    add_scaled_score(&phase_score, &component_score, pattern_scale);
+    component_score = mobility_score(pos);
+    add_scaled_score(&phase_score, &component_score, mobility_scale);
+    component_score = evaluate_king_shield(pos);
+    add_scaled_score(&phase_score, &component_score, shield_scale);
+    component_score = evaluate_king_attackers(pos);
+    add_scaled_score(&phase_score, &component_score, king_attack_scale);
+    // TODO: add and test tempo bonus
+
+    int phase = game_phase(pos);
+    score += blend_score(&phase_score, phase);
+
 #endif
     if (!can_win(pos, pos->side_to_move)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, pos->side_to_move^1)) score = MAX(score, DRAW_VALUE);
