@@ -121,9 +121,12 @@ int simple_eval(const position_t* pos)
                 pos->piece_square_eval[side^1].midgame) +
             (1024-phase)*(pos->piece_square_eval[side].endgame -
                 pos->piece_square_eval[side^1].endgame)) / 1024;
+
+   // score_t p_score = pawn_score(pos);
+   // FIXME: this hasn't been tested properly yet
 #ifndef UFO_EVAL
 #endif
-    return material_eval + piece_square_eval;
+    return material_eval + piece_square_eval;// + blend_score(&p_score, phase);
 }
 
 /*
@@ -146,7 +149,7 @@ int full_eval(const position_t* pos)
     add_scaled_score(&phase_score, &component_score, shield_scale);
     component_score = evaluate_king_attackers(pos);
     add_scaled_score(&phase_score, &component_score, king_attack_scale);
-    // TODO: add and test tempo bonus
+
     phase_score.midgame += 5;
     phase_score.endgame += 8;
 
@@ -186,6 +189,7 @@ int full_eval(const position_t* pos)
 
     if (pos->side_to_move == BLACK) material_adjust *= -1;
     score += material_adjust;
+
 #endif
     if (!can_win(pos, pos->side_to_move)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, pos->side_to_move^1)) score = MAX(score, DRAW_VALUE);
