@@ -122,11 +122,10 @@ int simple_eval(const position_t* pos)
             (1024-phase)*(pos->piece_square_eval[side].endgame -
                 pos->piece_square_eval[side^1].endgame)) / 1024;
 
-   // score_t p_score = pawn_score(pos);
-   // FIXME: this hasn't been tested properly yet
+    score_t p_score = pawn_score(pos);
 #ifndef UFO_EVAL
 #endif
-    return material_eval + piece_square_eval;// + blend_score(&p_score, phase);
+    return material_eval + piece_square_eval + blend_score(&p_score, phase);
 }
 
 /*
@@ -139,8 +138,8 @@ int full_eval(const position_t* pos)
 #ifndef UFO_EVAL
     score_t phase_score, component_score;
     phase_score.endgame = phase_score.midgame = 0;
-    component_score = pawn_score(pos);
-    add_scaled_score(&phase_score, &component_score, pawn_scale);
+    //component_score = pawn_score(pos);
+    //add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
     add_scaled_score(&phase_score, &component_score, pattern_scale);
     component_score = mobility_score(pos);
