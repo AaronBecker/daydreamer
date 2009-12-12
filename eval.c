@@ -121,22 +121,9 @@ int simple_eval(const position_t* pos)
                 pos->piece_square_eval[side^1].midgame) +
             (1024-phase)*(pos->piece_square_eval[side].endgame -
                 pos->piece_square_eval[side^1].endgame)) / 1024;
-    int material_adjust = 0;
 #ifndef UFO_EVAL
-    // Adjust material based on Larry Kaufmans's formula in
-    // "The Evaluation of Material Imbalances"
-    // bishop pair: +50
-    // knight += 5 * (pawns-5)
-    // rook -= 10 * (pawns-5)
-    material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
-    material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
-    material_adjust += pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5);
-    material_adjust -= pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5);
-    material_adjust -= pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5);
-    material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
-    if (side == BLACK) material_adjust *= -1;
 #endif
-    return material_eval + piece_square_eval + material_adjust;
+    return material_eval + piece_square_eval;
 }
 
 /*
@@ -159,9 +146,44 @@ int full_eval(const position_t* pos)
     add_scaled_score(&phase_score, &component_score, shield_scale);
     component_score = evaluate_king_attackers(pos);
     add_scaled_score(&phase_score, &component_score, king_attack_scale);
+    // TODO: add and test tempo bonus
 
     int phase = game_phase(pos);
     score += blend_score(&phase_score, phase);
+
+    // Adjust material based on Larry Kaufmans's formula in
+    // "The Evaluation of Material Imbalances"
+    // bishop pair: +50
+    // knight += 6 * (pawns-5)
+    // rook -= 12 * (pawns-5)
+    int material_adjust = 0;
+    if (pos->piece_count[WB] > 1) {
+        material_adjust += 50;
+        if (pos->piece_count[BB] + pos->piece_count[BN] == 0) {
+            material_adjust += 25;
+        }
+    }
+    if (pos->piece_count[BB] > 1) {
+        material_adjust -= 50;
+        if (pos->piece_count[WB] + pos->piece_count[WN] == 0) {
+            material_adjust -= 25;
+        }
+    }
+    material_adjust += pos->piece_count[WN]*6*(pos->piece_count[WP] - 5);
+    material_adjust -= pos->piece_count[BN]*6*(pos->piece_count[BP] - 5);
+    material_adjust -= pos->piece_count[WR]*12*(pos->piece_count[WP] - 5);
+    material_adjust += pos->piece_count[BR]*12*(pos->piece_count[BP] - 5);
+    if (pos->piece_count[WR]) {
+        material_adjust += 12*(pos->piece_count[WR] - 1) +
+            6*pos->piece_count[WQ];
+    }
+    if (pos->piece_count[BR]) {
+        material_adjust += 12*(pos->piece_count[BR] - 1) +
+            6*pos->piece_count[BQ];
+    }
+
+    if (pos->side_to_move == BLACK) material_adjust *= -1;
+    score += material_adjust;
 #endif
     if (!can_win(pos, pos->side_to_move)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, pos->side_to_move^1)) score = MAX(score, DRAW_VALUE);
