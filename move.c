@@ -275,6 +275,7 @@ void do_nullmove(position_t* pos, undo_info_t* undo)
     pos->side_to_move ^= 1;
     pos->hash ^= side_hash(pos);
     pos->ep_square = EMPTY;
+    pos->hash ^= ep_hash(pos);
     pos->fifty_move_counter++;
     pos->hash_history[pos->ply++] = undo->hash;
     pos->prev_move = NULL_MOVE;
