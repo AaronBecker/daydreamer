@@ -462,14 +462,10 @@ static bool root_search(search_data_t* search_data)
             score = -search(pos, search_data->search_stack,
                     1, -alpha-1, -alpha, search_data->current_depth+ext-1);
             if (score > alpha) {
-                if (should_output(search_data)) {
+                if (options.verbose && should_output(search_data)) {
                     char coord_move[6];
                     move_to_coord_str(move, coord_move);
-                    if (options.verbose &&
-                            search_data->engine_status != ENGINE_PONDERING) {
-                        printf("info string fail high, research %s\n",
-                                coord_move);
-                    }
+                    printf("info string fail high, research %s\n", coord_move);
                 }
                 search_data->resolving_fail_high = true;
                 score = -search(pos, search_data->search_stack,
