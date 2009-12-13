@@ -122,8 +122,7 @@ extern search_data_t root_data;
 #define mate_in(ply)                (MATE_VALUE-ply)
 #define mated_in(ply)               (-MATE_VALUE+ply)
 #define should_output(s)    \
-    (elapsed_time(&((s)->timer)) > options.output_delay && \
-     (s)->engine_status != ENGINE_PONDERING)
+    (elapsed_time(&((s)->timer)) > options.output_delay)
 
 
 #ifdef __cplusplus

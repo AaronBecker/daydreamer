@@ -70,6 +70,7 @@ static void set_transposition_age(int age)
         if (age < 0) age += generation_limit;
         age_score_table[i] = age * 128;
     }
+    memset(&hash_stats, 0, sizeof(hash_stats));
 }
 
 void increment_transposition_age(void)
@@ -185,3 +186,9 @@ void print_transposition_stats(void)
     printf(" beta: %d", hash_stats.beta);
     printf(" exact: %d\n", hash_stats.exact);
 }
+
+int get_hashfull(void)
+{
+    return MIN(1000 * hash_stats.occupied / (num_buckets * bucket_size), 1000);
+}
+

@@ -90,6 +90,7 @@ void position_to_fen_str(const position_t* pos, char* fen);
 
 // hash.c
 void init_hash(void);
+int get_hashfull(void);
 hashkey_t hash_position(const position_t* pos);
 hashkey_t hash_pawns(const position_t* pos);
 

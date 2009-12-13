@@ -78,6 +78,18 @@ static void open_node(search_data_t* data, int ply)
     if ((++data->nodes_searched & POLL_INTERVAL) == 0) {
         if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
         uci_check_for_command();
+        int so_far = elapsed_time(&data->timer);
+        static int last_info = 0;
+        if (so_far < 1000) {
+            last_info = 0;
+        } else if (so_far - last_info > 1000) {
+            last_info = so_far;
+            uint64_t nps = data->nodes_searched/so_far*1000;
+            printf("info time %d nodes %"PRIu64" qnodes %"PRIu64" "
+                    "pvnodes %"PRIu64" nps %"PRIu64" hashfull %d\n",
+                    so_far, data->nodes_searched, data->qnodes_searched,
+                    data->pvnodes_searched, nps, get_hashfull());
+        }
     }
     data->search_stack[ply].killers[0] = NO_MOVE;
     data->search_stack[ply].killers[1] = NO_MOVE;
@@ -102,6 +114,7 @@ static bool should_stop_searching(search_data_t* data)
     if (data->engine_status == ENGINE_ABORTED) return true;
     if (data->engine_status == ENGINE_PONDERING || data->infinite) return false;
     int so_far = elapsed_time(&data->timer);
+
     // If we've passed our hard limit, we're done.
     if (data->time_limit && so_far >= data->time_limit) return true;
 
