@@ -14,7 +14,6 @@ static hashkey_t random_hashkey(void)
         hash <<= 32;
         hash |= random();
     }
-    printf("hashkey: %llx\n", hash);
     return hash;
 }
 
