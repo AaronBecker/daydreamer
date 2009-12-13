@@ -40,6 +40,7 @@ void _check_board_validity(const position_t* pos)
         assert(pos->piece_index[pos->pawns[1][i]] == i);
     }
     assert(hash_position(pos) == pos->hash);
+    assert(hash_pawns(pos) == pos->pawn_hash);
 }
 
 /*

@@ -20,7 +20,7 @@ extern const hashkey_t enpassant_random[64];
     castle_random[has_ooo_rights(pos, WHITE) ? 1 : 0][0][1] ^ \
     castle_random[has_oo_rights(pos, BLACK) ? 1 : 0][1][0] ^ \
     castle_random[has_ooo_rights(pos, BLACK) ? 1 : 0][1][1])
-#define side_hash(pos)  ((pos)->side_to_move * 0x629b66dbf31b7adbull)
+#define side_hash(pos)  ((pos)->side_to_move * 0x823a67c5f88337e7ull)
 
 #ifdef __cplusplus
 } // extern "C"
