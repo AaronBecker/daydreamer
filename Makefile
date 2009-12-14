@@ -2,6 +2,7 @@
 CLANGFLAGS =
 GCCFLAGS = --std=c99
 ARCHFLAGS = -m64
+#ARCHFLAGS = -m32
 
 CLANGHOME = $(HOME)/local/clang
 SCANVIEW = $(CLANGHOME)/scan-build
