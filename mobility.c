@@ -49,6 +49,8 @@ static const int bishop_outpost[0x80] = {
 };
 
 static const int rook_on_7[2] = { 20, 40 };
+static const int rook_open_file_bonus[2] = { 40, 20 };
+static const int rook_half_open_file_bonus[2] = { 10, 10 };
 
 static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
 {
@@ -87,7 +89,6 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
     int end_score[2] = {0, 0};
     int majors[2] = {0, 0};
     int minors[2] = {0, 0};
-    int ops_score[2] = {0, 0};
     rank_t king_rank[2] = { relative_rank[WHITE]
                                 [square_rank(pos->pieces[WHITE][0])],
                             relative_rank[BLACK]
@@ -114,7 +115,9 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                     ps += mobile[pos->board[from+33]];
                     minors[side]++;
                     if (square_is_outpost(pd, from, side)) {
-                        ops_score[side] += outpost_score(pos, from, KNIGHT);
+                        int bonus = outpost_score(pos, from, KNIGHT);
+                        mid_score[side] += bonus;
+                        end_score[side] += bonus;
                     }
                     break;
                 case QUEEN:
@@ -152,7 +155,9 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                     ps += mobile[pos->board[to]];
                     minors[side]++;
                     if (square_is_outpost(pd, from, side)) {
-                        ops_score[side] += outpost_score(pos, from, BISHOP);
+                        int bonus = outpost_score(pos, from, BISHOP);
+                        mid_score[side] += bonus;
+                        end_score[side] += bonus;
                     }
                     break;
                 case ROOK:
@@ -170,6 +175,15 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                         mid_score[side] += rook_on_7[0];
                         end_score[side] += rook_on_7[1];
                     }
+                    file_t file = square_file(from);
+                    if (file_is_half_open(pd, file, side)) {
+                        mid_score[side] += rook_half_open_file_bonus[0];
+                        end_score[side] += rook_half_open_file_bonus[1];
+                        if (file_is_half_open(pd, file, side^1)) {
+                            mid_score[side] += rook_open_file_bonus[0];
+                            end_score[side] += rook_open_file_bonus[1];
+                        }
+                    }
                     break;
                 default: break;
             }
@@ -178,9 +192,8 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
         }
     }
     side = pos->side_to_move;
-    int ops = ops_score[side] - ops_score[side^1];
-    score.midgame = mid_score[side] - mid_score[side^1] + ops;
-    score.endgame = end_score[side] - end_score[side^1] + ops;
+    score.midgame = mid_score[side] - mid_score[side^1];
+    score.endgame = end_score[side] - end_score[side^1];
     return score;
 }
 
