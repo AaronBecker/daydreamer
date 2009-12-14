@@ -20,7 +20,7 @@ typedef struct {
 #define square_is_outpost(pd, sq, side) \
     (sq_bit_is_set(pd->outposts_bb[side], sq))
 #define file_is_half_open(pd, file, side) \
-    ((pd)->pawns_bb[side] & file_mask[file])
+    (((pd)->pawns_bb[side] & file_mask[file]) == EMPTY_BB)
 
 #ifdef __cplusplus
 }
