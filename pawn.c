@@ -129,7 +129,30 @@ pawn_data_t* analyze_pawns(const position_t* pos)
     pd->score[BLACK].midgame = pd->score[BLACK].endgame = 0;
     pd->kingside_storm[0] = pd->kingside_storm[1] = 0;
     pd->queenside_storm[0] = pd->queenside_storm[1] = 0;
+    pd->pawns_bb[WHITE] = pd->pawns_bb[BLACK] = EMPTY_BB;
+    pd->outposts_bb[WHITE] = pd->outposts_bb[BLACK] = EMPTY_BB;
+    pd->passed_bb[WHITE] = pd->passed_bb[BLACK] = EMPTY_BB;
     square_t sq;
+    for (color_t color=WHITE; color<=BLACK; ++color) {
+        for (int i=0; pos->pawns[color][i] != INVALID_SQUARE; ++i) {
+            set_sq_bit(pd->pawns_bb[color], pos->pawns[color][i]);
+        }
+    }
+    for (color_t color=WHITE; color<=BLACK; ++color) {
+        for (sq=0; sq<64; ++sq) {
+            if ((outpost_mask[color][sq] & pd->pawns_bb[color^1]) ==
+                    EMPTY_BB) {
+                set_bit(pd->outposts_bb[color], sq);
+            }
+            if (piece_type(pos->board[index_to_square(sq)]) == PAWN) {
+                if (bit_is_set(pd->pawns_bb[color], sq) &&
+                        (passed_mask[color][sq] & pd->pawns_bb[color^1]) ==
+                        EMPTY_BB) {
+                    set_bit(pd->passed_bb[color], sq);
+                }
+            }
+        }
+    }
     for (color_t color=WHITE; color<=BLACK; ++color) {
         pd->num_passed[color] = 0;
         int push = pawn_push[color];
@@ -240,9 +263,10 @@ pawn_data_t* analyze_pawns(const position_t* pos)
     return pd;
 }
 
-score_t pawn_score(const position_t* pos)
+score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
 {
     pawn_data_t* pd = analyze_pawns(pos);
+    if (pawn_data) *pawn_data = pd;
     int passer_bonus[2] = {0, 0};
     int storm_score[2] = {0, 0};
     file_t king_file[2] = { square_file(pos->pieces[WHITE][0]),

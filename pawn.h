@@ -6,6 +6,9 @@ extern "C" {
 #endif
     
 typedef struct {
+    bitboard_t pawns_bb[2];
+    bitboard_t outposts_bb[2];
+    bitboard_t passed_bb[2];
     square_t passed[2][8];
     int num_passed[2];
     score_t score[2];
@@ -13,6 +16,9 @@ typedef struct {
     int queenside_storm[2];
     hashkey_t key;
 } pawn_data_t;
+
+#define square_is_outpost(pd, sq, side) \
+    (sq_bit_is_set(pd->outposts_bb[side], sq))
 
 #ifdef __cplusplus
 }

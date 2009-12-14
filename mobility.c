@@ -27,33 +27,67 @@ static const int color_table[2][17] = {
     {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // black
 };
 
-// TODO: This is the material imbalance table from crafty. One day I will
-// figure out how to do material imbalance in a way that actually works.
-int imbalance[9][9] = {
-    {-126, -126, -126, -126, -126, -126, -126, -126,  -42 },
-    {-126, -126, -126, -126, -126, -126, -126,  -42,   42 },
-    {-126, -126, -126, -126, -126, -126,  -42,   42,   84 },
-    {-126, -126, -126, -126, -104,  -42,   42,   84,  126 },
-    {-126, -126, -126,  -88,    0,   88,  126,  126,  126 },
-    {-126,  -84,  -42,   42,  104,  126,  126,  126,  126 },
-    { -84,  -42,   42,  126,  126,  126,  126,  126,  126 },
-    { -42,   42,  126,  126,  126,  126,  126,  126,  126 },
-    {  42,  126,  126,  126,  126,  126,  126,  126,  126 }
+static const int knight_outpost[0x80] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  1,  4,  4,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  2,  4,  5,  5,  4,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  3,  6,  9,  9,  6,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  1,  3,  4,  4,  3,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+};
+static const int bishop_outpost[0x80] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    1,  2,  2,  2,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    3,  5,  6,  6,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    3,  5,  6,  9,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    1,  2,  2,  2,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
 
 static const int rook_on_7[2] = { 20, 40 };
+
+static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
+{
+    int bonus = type == KNIGHT ? knight_outpost[sq] : bishop_outpost[sq];
+    int score = bonus;
+    if (bonus) {
+        // It's better when supported by pawns.
+        color_t side = piece_color(pos->board[sq]);
+        piece_t our_pawn = create_piece(side, PAWN);
+        if (pos->board[sq - pawn_push[side] - 1] == our_pawn ||
+                pos->board[sq - pawn_push[side] + 1] == our_pawn) {
+            score += bonus/2;
+            // Even better if an opposing knight/bishop can't capture it.
+            // TODO: take care of the case where there's one opposing bishop
+            // that's the wrong color. The position data structure needs to
+            // be modified a little to make this efficient.
+            piece_t their_knight = create_piece(side^1, KNIGHT);
+            piece_t their_bishop = create_piece(side^1, BISHOP);
+            if (pos->piece_count[their_knight] == 0 &&
+                    pos->piece_count[their_bishop] == 0) {
+                score += bonus;
+            }
+        }
+    }
+    return score;
+}
 
 /*
  * Compute the number of squares each non-pawn, non-king piece could move to,
  * and assign a bonus or penalty accordingly.
  */
-score_t mobility_score(const position_t* pos)
+score_t mobility_score(const position_t* pos, pawn_data_t* pd)
 {
     score_t score;
     int mid_score[2] = {0, 0};
     int end_score[2] = {0, 0};
     int majors[2] = {0, 0};
     int minors[2] = {0, 0};
+    int ops_score[2] = {0, 0};
     rank_t king_rank[2] = { relative_rank[WHITE]
                                 [square_rank(pos->pieces[WHITE][0])],
                             relative_rank[BLACK]
@@ -79,6 +113,9 @@ score_t mobility_score(const position_t* pos)
                     ps += mobile[pos->board[from+31]];
                     ps += mobile[pos->board[from+33]];
                     minors[side]++;
+                    if (square_is_outpost(pd, from, side)) {
+                        ops_score[side] += outpost_score(pos, from, KNIGHT);
+                    }
                     break;
                 case QUEEN:
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
@@ -114,6 +151,9 @@ score_t mobility_score(const position_t* pos)
                     for (to=from+17; pos->board[to]==EMPTY; to+=17, ++ps) {}
                     ps += mobile[pos->board[to]];
                     minors[side]++;
+                    if (square_is_outpost(pd, from, side)) {
+                        ops_score[side] += outpost_score(pos, from, BISHOP);
+                    }
                     break;
                 case ROOK:
                     for (to=from-16; pos->board[to]==EMPTY; to-=16, ++ps) {}
@@ -138,16 +178,9 @@ score_t mobility_score(const position_t* pos)
         }
     }
     side = pos->side_to_move;
-    score.midgame = mid_score[side] - mid_score[side^1];
-    score.endgame = end_score[side] - end_score[side^1];
-
-    int imb_score = imbalance
-        [CLAMP(majors[side]-majors[side^1]+4, 0, 8)]
-        [CLAMP(minors[side]-minors[side^1]+4, 0, 8)];
-    imb_score = 0;
-    score.midgame += imb_score;
-    score.endgame += imb_score;
-
+    int ops = ops_score[side] - ops_score[side^1];
+    score.midgame = mid_score[side] - mid_score[side^1] + ops;
+    score.endgame = end_score[side] - end_score[side^1] + ops;
     return score;
 }
 

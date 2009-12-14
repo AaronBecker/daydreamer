@@ -37,6 +37,10 @@ extern options_t options;
 
 #define HIST_BUCKETS    15
 
+// FIXME: max_depth gives overall maximum search depth, which isn't what we
+// want when reporting seldepth in multipv mode. To fix this efficiently, we
+// need a better way to access the root_move_t of the currently searched root
+// move when we're farther down in the tree.
 typedef struct {
     int cutoffs[MAX_SEARCH_DEPTH + 1];
     int move_selection[HIST_BUCKETS + 1];
@@ -44,6 +48,7 @@ typedef struct {
     int razor_attempts[3];
     int razor_prunes[3];
     int egbb_hits;
+    int max_depth;
 } search_stats_t;
 
 typedef struct {
@@ -117,8 +122,7 @@ extern search_data_t root_data;
 #define mate_in(ply)                (MATE_VALUE-ply)
 #define mated_in(ply)               (-MATE_VALUE+ply)
 #define should_output(s)    \
-    (elapsed_time(&((s)->timer)) > options.output_delay && \
-     (s)->engine_status != ENGINE_PONDERING)
+    (elapsed_time(&((s)->timer)) > options.output_delay)
 
 
 #ifdef __cplusplus

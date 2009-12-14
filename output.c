@@ -48,6 +48,7 @@ static void print_pv(search_data_t* data, int ordinal, int index)
 {
     const move_t* pv = data->root_moves[index].pv;
     const int depth = data->current_depth;
+    const int seldepth = data->stats.max_depth;
     const int score = data->root_moves[index].score;
     // note: use time+1 to avoid divide-by-zero
     const int time = elapsed_time(&data->timer) + 1;
@@ -57,26 +58,20 @@ static void print_pv(search_data_t* data, int ordinal, int index)
     line_to_san_str(&data->root_pos, (move_t*)pv, sanpv);
     printf("info string sanpv %s\n", sanpv);
     if (is_mate_score(score) || is_mated_score(score)) {
-        printf("info multipv %d depth %d score mate %d time %d nodes %"PRIu64
-                " qnodes %"PRIu64" pvnodes %"PRIu64
-                " nps %"PRIu64" tbhits %d pv ",
-                ordinal,
-                depth,
+        printf("info multipv %d depth %d seldepth %d score mate %d time %d "
+                "nodes %"PRIu64" qnodes %"PRIu64" pvnodes %"PRIu64
+                " nps %"PRIu64" hashfull %d tbhits %d pv ",
+                ordinal, depth, seldepth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),
-                time,
-                nodes,
-                data->qnodes_searched,
-                data->pvnodes_searched,
-                nodes/(time+1)*1000,
-                data->stats.egbb_hits);
+                time, nodes, data->qnodes_searched, data->pvnodes_searched,
+                nodes/(time+1)*1000, get_hashfull(), data->stats.egbb_hits);
     } else {
-        printf("info multipv %d depth %d score cp %d time %d nodes %"PRIu64
-                " qnodes %"PRIu64" pvnodes %"PRIu64
-                " nps %"PRIu64" tbhits %d pv ",
-                ordinal, depth, score, time, nodes,
-                data->qnodes_searched,
-                data->pvnodes_searched, nodes/(time+1)*1000,
-                data->stats.egbb_hits);
+        printf("info multipv %d depth %d seldepth %d score cp %d time %d "
+                "nodes %"PRIu64" qnodes %"PRIu64" pvnodes %"PRIu64
+                " nps %"PRIu64" hashfull %d tbhits %d pv ",
+                ordinal, depth, seldepth, score, time,
+                nodes, data->qnodes_searched, data->pvnodes_searched,
+                nodes/(time+1)*1000, get_hashfull(), data->stats.egbb_hits);
     }
     int moves = print_coord_move_list(pv);
     if (moves < depth) {

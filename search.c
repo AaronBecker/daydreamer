@@ -78,6 +78,18 @@ static void open_node(search_data_t* data, int ply)
     if ((++data->nodes_searched & POLL_INTERVAL) == 0) {
         if (should_stop_searching(data)) data->engine_status = ENGINE_ABORTED;
         uci_check_for_command();
+        int so_far = elapsed_time(&data->timer);
+        static int last_info = 0;
+        if (so_far < 1000) {
+            last_info = 0;
+        } else if (so_far - last_info > 1000) {
+            last_info = so_far;
+            uint64_t nps = data->nodes_searched/so_far*1000;
+            printf("info time %d nodes %"PRIu64" qnodes %"PRIu64" "
+                    "pvnodes %"PRIu64" nps %"PRIu64" hashfull %d\n",
+                    so_far, data->nodes_searched, data->qnodes_searched,
+                    data->pvnodes_searched, nps, get_hashfull());
+        }
     }
     data->search_stack[ply].killers[0] = NO_MOVE;
     data->search_stack[ply].killers[1] = NO_MOVE;
@@ -102,6 +114,7 @@ static bool should_stop_searching(search_data_t* data)
     if (data->engine_status == ENGINE_ABORTED) return true;
     if (data->engine_status == ENGINE_PONDERING || data->infinite) return false;
     int so_far = elapsed_time(&data->timer);
+
     // If we've passed our hard limit, we're done.
     if (data->time_limit && so_far >= data->time_limit) return true;
 
@@ -462,14 +475,10 @@ static bool root_search(search_data_t* search_data)
             score = -search(pos, search_data->search_stack,
                     1, -alpha-1, -alpha, search_data->current_depth+ext-1);
             if (score > alpha) {
-                if (should_output(search_data)) {
+                if (options.verbose && should_output(search_data)) {
                     char coord_move[6];
                     move_to_coord_str(move, coord_move);
-                    if (options.verbose &&
-                            search_data->engine_status != ENGINE_PONDERING) {
-                        printf("info string fail high, research %s\n",
-                                coord_move);
-                    }
+                    printf("info string fail high, research %s\n", coord_move);
                 }
                 search_data->resolving_fail_high = true;
                 score = -search(pos, search_data->search_stack,
@@ -745,6 +754,7 @@ static int quiesce(position_t* pos,
         int beta,
         int depth)
 {
+    if (ply > root_data.stats.max_depth) root_data.stats.max_depth = ply;
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
     if (alpha > mate_in(ply-1)) return alpha; // can't beat this
