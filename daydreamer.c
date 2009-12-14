@@ -14,6 +14,7 @@ options_t options;
 void init_daydreamer(void)
 {
     init_hash();
+    init_bitboards();
     generate_attack_data();
     init_eval();
     init_transposition_table(64 * 1<<20);

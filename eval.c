@@ -149,11 +149,12 @@ int full_eval(const position_t* pos)
 #ifndef UFO_EVAL
     score_t phase_score, component_score;
     phase_score.endgame = phase_score.midgame = 0;
-    component_score = pawn_score(pos);
+    pawn_data_t* pd;
+    component_score = pawn_score(pos, &pd);
     add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
     add_scaled_score(&phase_score, &component_score, pattern_scale);
-    component_score = mobility_score(pos);
+    component_score = mobility_score(pos, pd);
     add_scaled_score(&phase_score, &component_score, mobility_scale);
     component_score = evaluate_king_shield(pos);
     add_scaled_score(&phase_score, &component_score, shield_scale);
@@ -223,11 +224,12 @@ void report_eval(const position_t* pos)
 
     score_t phase_score;
     phase_score.endgame = phase_score.midgame = 0;
-    score_t p_score = pawn_score(pos);
+    pawn_data_t* pd;
+    score_t p_score = pawn_score(pos, &pd);
     printf("info string pawns (mid,end): (%d, %d)\n",
             p_score.midgame, p_score.endgame);
     add_scaled_score(&phase_score, &p_score, 1024);
-    score_t mob_score = mobility_score(pos);
+    score_t mob_score = mobility_score(pos, pd);
     printf("info string mob (mid,end): (%d, %d)\n",
             mob_score.midgame, mob_score.endgame);
     add_scaled_score(&phase_score, &mob_score, 1024);

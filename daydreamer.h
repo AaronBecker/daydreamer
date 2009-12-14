@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 #include "board.h"
+#include "bitboard.h"
 #include "move.h"
 #include "hash.h"
 #include "eval.h"
@@ -57,6 +58,10 @@ uint8_t find_checks(position_t* pos);
 
 // benchmark.c
 void benchmark(int depth, int time_limit);
+
+// bitboard.c
+void init_bitboards(void);
+void print_bitboard(bitboard_t bb);
 
 // daydreamer.c
 void init_daydreamer(void);
@@ -95,7 +100,7 @@ hashkey_t hash_position(const position_t* pos);
 hashkey_t hash_pawns(const position_t* pos);
 
 // mobility.c
-score_t mobility_score(const position_t* pos);
+score_t mobility_score(const position_t* pos, pawn_data_t* pd);
 
 // move.c
 void place_piece(position_t* position, piece_t piece, square_t square);
@@ -142,7 +147,7 @@ score_t pattern_score(const position_t*pos);
 // pawn.c
 void init_pawn_table(const int max_bytes);
 void clear_pawn_table(void);
-score_t pawn_score(const position_t* pos);
+score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data);
 void print_pawn_stats(void);
 
 // perft.c
