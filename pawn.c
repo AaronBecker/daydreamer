@@ -52,6 +52,12 @@ static const int queen_storm[0x80] = {
    14, 16, 14,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
+static const int king_storm_open_file[8] = {
+    0, 0, 0, 0, 0, 10, 15, 15
+};
+static const int queen_storm_open_file[8] = {
+    10, 15, 10, 0, 0, 0, 0, 0
+};
 
 static pawn_data_t* pawn_table = NULL;
 static int num_buckets;
@@ -124,67 +130,56 @@ pawn_data_t* analyze_pawns(const position_t* pos)
     pawn_data_t* pd = get_pawn_data(pos);
     if (pd->key == pos->pawn_hash) return pd;
 
+    // Zero everything out and create pawn bitboards.
+    memset(pd, 0, sizeof(pawn_data_t));
     pd->key = pos->pawn_hash;
-    pd->score[WHITE].midgame = pd->score[WHITE].endgame = 0;
-    pd->score[BLACK].midgame = pd->score[BLACK].endgame = 0;
-    pd->kingside_storm[0] = pd->kingside_storm[1] = 0;
-    pd->queenside_storm[0] = pd->queenside_storm[1] = 0;
-    pd->pawns_bb[WHITE] = pd->pawns_bb[BLACK] = EMPTY_BB;
-    pd->outposts_bb[WHITE] = pd->outposts_bb[BLACK] = EMPTY_BB;
-    pd->passed_bb[WHITE] = pd->passed_bb[BLACK] = EMPTY_BB;
-    square_t sq;
+    square_t sq, to;
     for (color_t color=WHITE; color<=BLACK; ++color) {
         for (int i=0; pos->pawns[color][i] != INVALID_SQUARE; ++i) {
             set_sq_bit(pd->pawns_bb[color], pos->pawns[color][i]);
         }
     }
-    for (color_t color=WHITE; color<=BLACK; ++color) {
-        for (sq=0; sq<64; ++sq) {
-            if ((outpost_mask[color][sq] & pd->pawns_bb[color^1]) ==
-                    EMPTY_BB) {
-                set_bit(pd->outposts_bb[color], sq);
-            }
-            if (piece_type(pos->board[index_to_square(sq)]) == PAWN) {
-                if (bit_is_set(pd->pawns_bb[color], sq) &&
-                        (passed_mask[color][sq] & pd->pawns_bb[color^1]) ==
-                        EMPTY_BB) {
-                    set_bit(pd->passed_bb[color], sq);
-                }
-            }
-        }
-    }
+
+    // Create outpost bitboard and analyze pawns.
     for (color_t color=WHITE; color<=BLACK; ++color) {
         pd->num_passed[color] = 0;
         int push = pawn_push[color];
         const piece_t pawn = create_piece(color, PAWN);
         const piece_t opp_pawn = create_piece(color^1, PAWN);
-        int num_defects = 0;
-        for (int i=0; pos->pawns[color][i] != INVALID_SQUARE; ++i) {
-            sq = pos->pawns[color][i];
-            file_t file = square_file(sq);
-            rank_t rank = relative_rank[color][square_rank(sq)];
+        bitboard_t our_pawns = pd->pawns_bb[color];
+        bitboard_t their_pawns = pd->pawns_bb[color^1];
 
-            // Pawn storm scores.
-            pd->kingside_storm[color] += king_storm[sq ^ (0x70*color)];
-            pd->queenside_storm[color] += queen_storm[sq ^ (0x70*color)];
-            
-            // Passed pawns.
-            bool passed = true;
-            square_t to = sq + push;
-            for (; pos->board[to] != OUT_OF_BOUNDS; to += push) {
-                if (pos->board[to-1] == opp_pawn ||
-                        pos->board[to] == opp_pawn ||
-                        pos->board[to+1] == opp_pawn) {
-                    passed = false;
-                    break;
-                }
+        // Give pawn storm bonuses for open files
+        for (int file=0; file<7; ++file) {
+            if (!(our_pawns & file_mask[file])) {
+                pd->kingside_storm[color] += king_storm_open_file[file];
+                pd->queenside_storm[color] += queen_storm_open_file[file];
             }
+        }
+        
+        for (int ind=0; ind<64; ++ind) {
+            // Fill in mask of outpost squares.
+            sq = index_to_square(ind);
+            if (!(outpost_mask[color][ind] & their_pawns)) {
+                set_bit(pd->outposts_bb[color], ind);
+            }
+            if (pos->board[sq] != create_piece(color, PAWN)) continue;
+
+            // Pawn analysis.
+            file_t file = square_file(sq);
+            rank_t rank = square_rank(sq);
+            rank_t rrank = relative_rank[color][rank];
+
+            // Passed pawns and passed pawn candidates.
+            bool passed = !(passed_mask[color][ind] & their_pawns);
             if (passed) {
+                set_bit(pd->passed_bb[color], ind);
                 pd->passed[color][pd->num_passed[color]++] = sq;
-                pd->score[color].midgame += passed_bonus[0][rank];
-                pd->score[color].endgame += passed_bonus[1][rank];
+                pd->score[color].midgame += passed_bonus[0][rrank];
+                pd->score[color].endgame += passed_bonus[1][rrank];
             } else {
                 // Candidate passed pawns (one enemy pawn one file away).
+                // TODO: this condition could be more sophisticated.
                 int blockers = 0;
                 for (to = sq + push;
                         pos->board[to] != OUT_OF_BOUNDS; to += push) {
@@ -193,44 +188,39 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                     if (pos->board[to+1] == opp_pawn) ++blockers;
                 }
                 if (blockers < 2) {
-                    pd->score[color].midgame += candidate_bonus[0][rank];
-                    pd->score[color].endgame += candidate_bonus[1][rank];
+                    pd->score[color].midgame += candidate_bonus[0][rrank];
+                    pd->score[color].endgame += candidate_bonus[1][rrank];
                 }
+            }
+
+            // Pawn storm scores.
+            pd->kingside_storm[color] += king_storm[sq ^ (0x70*color)];
+            pd->queenside_storm[color] += queen_storm[sq ^ (0x70*color)];
+
+            // Isolated pawns.
+            bool isolated = !(neighbor_file_mask[file] & our_pawns);
+            if (isolated) {
+                pd->score[color].midgame -= isolation_penalty[0][file];
+                pd->score[color].endgame -= isolation_penalty[1][file];
             }
 
             // Doubled pawns.
-            for (to = sq+push; pos->board[to] != OUT_OF_BOUNDS; to += push) {
-                if (pos->board[to] == pawn) {
-                    pd->score[color].midgame -= doubled_penalty[0][file];
-                    pd->score[color].endgame -= doubled_penalty[1][file];
-                    ++num_defects;
-                    break;
-                }
-            }
-
-            // Isolated pawns.
-            bool isolated = false;
-            to = file + N;
-            for (; pos->board[to] != OUT_OF_BOUNDS; to += N) {
-                if (pos->board[to-1] == pawn || pos->board[to+1] == pawn) {
-                    pd->score[color].midgame -= isolation_penalty[0][file];
-                    pd->score[color].endgame -= isolation_penalty[1][file];
-                    isolated = true;
-                    ++num_defects;
-                    break;
-                }
+            bool doubled = (in_front_mask[color^1][ind] & our_pawns) != 0;
+            if (doubled) {
+                pd->score[color].midgame -= doubled_penalty[0][file];
+                pd->score[color].endgame -= doubled_penalty[1][file];
             }
 
             // Connected pawns.
-            if (((pos->board[sq+1] == pawn && pos->board[sq-1] == pawn) ||
-                    pos->board[sq+push+1] == pawn ||
-                    pos->board[sq+push-1] == pawn)) {
+            bool connected = neighbor_file_mask[file] & our_pawns &
+                (rank_mask[rank] | rank_mask[rank + (color == WHITE ? 1:-1)]);
+            if (connected) {
                 pd->score[color].midgame += connected_bonus[0];
                 pd->score[color].endgame += connected_bonus[1];
             }
-
+            
             // Backward pawns (unsupportable by pawns, can't advance)
-            if (!passed && !isolated &&
+            if (!passed && !isolated && !connected &&
                     pos->board[sq+push-1] != opp_pawn &&
                     pos->board[sq+push+1] != opp_pawn) {
                 bool backward = true;
@@ -254,7 +244,6 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                     if (backward) {
                         pd->score[color].midgame -= backward_penalty[0][file];
                         pd->score[color].endgame -= backward_penalty[1][file];
-                        ++num_defects;
                     }
                 }
             }

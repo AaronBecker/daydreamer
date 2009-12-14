@@ -33,8 +33,11 @@ extern bitboard_t set_mask[64];
 extern bitboard_t clear_mask[64];
 extern bitboard_t rank_mask[8];
 extern bitboard_t file_mask[8];
+extern bitboard_t neighbor_file_mask[8];
+extern bitboard_t in_front_mask[2][64];
 extern bitboard_t outpost_mask[2][64];
 extern bitboard_t passed_mask[2][64];
+extern const int bit_table[64];
 
 #define set_bit(bb, ind)        ((bb) |= set_mask[ind])
 #define set_sq_bit(bb, sq)      ((bb) |= set_mask[square_to_index(sq)])
@@ -42,6 +45,8 @@ extern bitboard_t passed_mask[2][64];
 #define clear_sq_bit(bb, sq)    ((bb) &= clear_mask[square_to_index(sq)])
 #define bit_is_set(bb, ind)     ((bb) & set_mask[ind])
 #define sq_bit_is_set(bb, sq)   ((bb) & set_mask[square_to_index(sq)])
+#define first_bit(bb)           \
+    (bit_table[(((bb) & (~(bb)+1)) * 0x0218A392CD3D5DBFull) >> 58])
 
 #ifdef __cplusplus
 }
