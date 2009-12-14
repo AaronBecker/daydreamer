@@ -49,7 +49,7 @@ static const int bishop_outpost[0x80] = {
 };
 
 static const int rook_on_7[2] = { 20, 40 };
-static const int rook_open_file_bonus[2] = { 40, 20 };
+static const int rook_open_file_bonus[2] = { 20, 10 };
 static const int rook_half_open_file_bonus[2] = { 10, 10 };
 
 static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
