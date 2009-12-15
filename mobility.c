@@ -187,8 +187,8 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                             end_score[side] += rook_open_file_bonus[1];
                         }
                     } else if (rrank == RANK_1 && king_rank[side] == RANK_1 &&
-                            !can_castle(pos, side) &&
-                            abs(file - king_file[side]) <= 3) {
+                            ((king_file[side] > FILE_E && file > king_file[side]) ||
+                             (king_file[side] < FILE_D && file < king_file[side]))) {
                         // Avoid king moves that trap the rook.
                         mid_score[side] -= trapped_rook;
                         end_score[side] -= trapped_rook;
