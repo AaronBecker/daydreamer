@@ -414,10 +414,10 @@ void deepening_search(search_data_t* search_data, bool ponder)
         // Calculate aspiration search window.
         int alpha = mated_in(-1);
         int beta = mate_in(-1);
-        if (depth > 4 && options.multi_pv == 1) {
-            int window = 40;
-            alpha = MAX(search_data->scores_by_iteration[depth-1] - window, alpha);
-            beta = MIN(search_data->scores_by_iteration[depth-1] + window, beta);
+        if (options.multi_pv == 1) {
+            int window = 40; 
+            alpha = search_data->scores_by_iteration[depth-1] - window;
+            beta = search_data->scores_by_iteration[depth-1] + window;
         }
 
         search_result_t result = root_search(search_data, alpha, beta);
