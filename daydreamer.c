@@ -16,7 +16,7 @@ void init_daydreamer(void)
     generate_attack_data();
     init_eval();
     init_transposition_table(64 * 1<<20);
-    init_pawn_table(5 * 1<<20);
+    init_pawn_table(1 * 1<<20);
     init_uci_options();
     set_position(&root_data.root_pos, FEN_STARTPOS);
 }
