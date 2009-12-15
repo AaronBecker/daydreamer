@@ -97,8 +97,6 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                                 [square_rank(pos->pieces[WHITE][0])],
                             relative_rank[BLACK]
                                 [square_rank(pos->pieces[BLACK][0])] };
-    rank_t king_file[2] = { square_file(pos->pieces[WHITE][0]),
-                                square_file(pos->pieces[BLACK][0]) };
     color_t side;
     for (side=WHITE; side<=BLACK; ++side) {
         const int* mobile = color_table[side];
