@@ -172,6 +172,10 @@ void print_search_stats(const search_data_t* search_data)
     if (search_data->obvious_move) {
         printf("info string this move seemed obvious\n");
     }
+    int high = search_data->stats.root_fail_highs;
+    int low = search_data->stats.root_fail_lows;
+    printf("info string root fail high %d root fail low %d root exact %d\n",
+            high, low, search_data->current_depth-high-low);
 }
 
 /*

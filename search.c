@@ -28,7 +28,9 @@ static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
 static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300 };
 
 static bool should_stop_searching(search_data_t* data);
-static bool root_search(search_data_t* search_data);
+static search_result_t root_search(search_data_t* search_data,
+        int alpha,
+        int beta);
 static int search(position_t* pos,
         search_node_t* search_node,
         int ply,
@@ -213,6 +215,18 @@ static bool is_nullmove_allowed(position_t* pos)
 }
 
 /*
+ * Point |data->current_root_move| at the structure representing |move|.
+ */
+void set_current_root_move(search_data_t* data, move_t move)
+{
+    int i;
+    for (i=0; data->root_moves[i].move != move &&
+            data->root_moves[i].move != NO_MOVE; ++i) {}
+    assert(data->root_moves[i].move == move);
+    data->current_root_move = &data->root_moves[i];
+}
+
+/*
  * Record the number of nodes searched for a particular root move.
  */
 void store_root_data(search_data_t* data,
@@ -391,21 +405,46 @@ void deepening_search(search_data_t* search_data, bool ponder)
     for (search_data->current_depth=2;
             search_data->current_depth <= search_data->depth_limit;
             ++search_data->current_depth) {
+        int depth = search_data->current_depth;
         if (should_output(search_data)) {
             if (options.verbose) print_transposition_stats();
-            printf("info depth %d\n", search_data->current_depth);
+            printf("info depth %d\n", depth);
         }
-        bool no_abort = root_search(search_data);
-        if (!no_abort) break;
+
+        // Calculate aspiration search window.
+        int alpha = mated_in(-1);
+        int beta = mate_in(-1);
+        if (depth > 4) {
+            int window = abs(search_data->guesses_by_iteration[depth-1] -
+                search_data->guesses_by_iteration[depth-2]);
+            alpha = search_data->scores_by_iteration[depth-1] - window;
+            beta = search_data->scores_by_iteration[depth-1] + window;
+        }
+
+        search_result_t result = root_search(search_data, alpha, beta);
+        if (result == SEARCH_ABORTED) break;
+
+        // Replace any displaced pv entries in the hash table.
         put_transposition_line(&search_data->root_pos,
                 search_data->pv,
-                search_data->current_depth,
+                depth,
                 search_data->best_score);
+
+        // Check the obvious move, if any.
         if (search_data->pv[0] != search_data->obvious_move) {
             search_data->obvious_move = NO_MOVE;
         }
+
+        // Record scores.
         id_score = search_data->best_score;
-        search_data->scores_by_iteration[search_data->current_depth] = id_score;
+        search_data->scores_by_iteration[depth] = id_score;
+        if (result != SEARCH_EXACT) {
+            search_data->guesses_by_iteration[depth] =
+                2*id_score - search_data->guesses_by_iteration[depth - 1];
+        } else {
+            search_data->guesses_by_iteration[depth] = id_score;
+        }
+
         if (!should_deepen(search_data)) {
             ++search_data->current_depth;
             break;
@@ -440,9 +479,12 @@ void deepening_search(search_data_t* search_data, bool ponder)
  * search information, which is set in |deepening_search|.
  * TODO: aspiration window?
  */
-static bool root_search(search_data_t* search_data)
+static search_result_t root_search(search_data_t* search_data,
+        int alpha,
+        int beta)
 {
-    int alpha = mated_in(-1), beta = mate_in(-1);
+    int orig_alpha = alpha;
+    //int alpha = mated_in(-1), beta = mate_in(-1);
     search_data->best_score = alpha;
     position_t* pos = &search_data->root_pos;
     transposition_entry_t* trans_entry = get_transposition(pos);
@@ -455,6 +497,12 @@ static bool root_search(search_data_t* search_data)
     search_data->resolving_fail_high = false;
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector), ++search_data->current_move_index) {
+        set_current_root_move(search_data, move);
+        if (alpha >= beta) {
+            // Fail high, bail out and try a bigger window.
+            search_data->current_root_move->score = mated_in(-1);
+            continue;
+        }
         if (should_output(search_data)) {
             char coord_move[6];
             move_to_coord_str(move, coord_move);
@@ -488,7 +536,7 @@ static bool root_search(search_data_t* search_data)
         if (score <= alpha) score = mated_in(-1);
         store_root_data(search_data, move, score, nodes_before);
         undo_move(pos, move, &undo);
-        if (search_data->engine_status == ENGINE_ABORTED) return false;
+        if (search_data->engine_status == ENGINE_ABORTED) return SEARCH_ABORTED;
         if (score > alpha) {
             alpha = score;
             if (score > search_data->best_score) {
@@ -500,7 +548,22 @@ static bool root_search(search_data_t* search_data)
         }
         search_data->resolving_fail_high = false;
     }
-    return true;
+    if (alpha == orig_alpha) {
+        if (options.verbose && should_output(search_data)) {
+            printf("info string Root search failed low, window was (%d, %d)\n",
+                    alpha, beta);
+        }
+        search_data->stats.root_fail_lows++;
+        return SEARCH_FAIL_LOW;
+    } else if (alpha >= beta) {
+        if (options.verbose && should_output(search_data)) {
+            printf("info string Root search failed high, window was (%d, %d)\n",
+                    orig_alpha, beta);
+        }
+        search_data->stats.root_fail_highs++;
+        return SEARCH_FAIL_HIGH;
+    }
+    return SEARCH_EXACT;
 }
 
 /*

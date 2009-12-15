@@ -7,6 +7,10 @@ extern "C" {
 
 #define MAX_SEARCH_DEPTH    127
 
+typedef enum {
+    SEARCH_ABORTED, SEARCH_FAIL_HIGH, SEARCH_FAIL_LOW, SEARCH_EXACT
+} search_result_t;
+
 typedef struct {
     move_t pv[MAX_SEARCH_DEPTH+1];
     move_t killers[2];
@@ -47,6 +51,8 @@ typedef struct {
     int pv_move_selection[HIST_BUCKETS + 1];
     int razor_attempts[3];
     int razor_prunes[3];
+    int root_fail_highs;
+    int root_fail_lows;
     int egbb_hits;
     int max_depth;
 } search_stats_t;
@@ -77,8 +83,10 @@ typedef struct {
 
     // search state info
     root_move_t root_moves[256];
+    root_move_t* current_root_move;
     int best_score;
     int scores_by_iteration[MAX_SEARCH_DEPTH + 1];
+    int guesses_by_iteration[MAX_SEARCH_DEPTH + 1];
     move_t pv[MAX_SEARCH_DEPTH + 1];
     search_node_t search_stack[MAX_SEARCH_DEPTH + 1];
     history_t history;
