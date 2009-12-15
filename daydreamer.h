@@ -6,12 +6,8 @@ extern "C" {
 #endif
 
 #include "compatibility.h"
-#include <inttypes.h>
 #include <limits.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdlib.h>
-#include <sys/time.h>
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.51"
@@ -75,6 +71,7 @@ bool probe_egbb(position_t* pos, int* value, int ply);
 void epd_testsuite(char* filename, int time_per_problem);
 
 // eval.c
+void init_eval(void);
 int simple_eval(const position_t* pos);
 int full_eval(const position_t* pos);
 void report_eval(const position_t* pos);
@@ -166,7 +163,6 @@ bool is_repetition(const position_t* pos);
 void init_search_data(search_data_t* data);
 void init_root_move(root_move_t* root_move, move_t move);
 void store_root_node_count(move_t move, uint64_t nodes);
-uint64_t get_root_node_count(move_t move);
 void deepening_search(search_data_t* search_data, bool ponder);
 
 // static_exchange_eval.c
@@ -197,11 +193,11 @@ void print_transposition_stats(void);
 
 // uci.c
 void uci_read_stream(FILE* stream);
-void uci_check_for_command();
-void uci_wait_for_command();
+void uci_check_for_command(void);
+void uci_wait_for_command(void);
 
 // uci_option.c
-void init_uci_options();
+void init_uci_options(void);
 void set_uci_option(char* command);
 int get_option_int(const char* name);
 bool get_option_bool(const char* name);

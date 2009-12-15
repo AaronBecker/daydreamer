@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-extern search_data_t root_data;
-
 void epd_testsuite(char* filename, int time_per_problem)
 {
     char test_storage[4096];

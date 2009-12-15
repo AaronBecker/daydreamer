@@ -217,7 +217,7 @@ static bool is_nullmove_allowed(position_t* pos)
 /*
  * Point |data->current_root_move| at the structure representing |move|.
  */
-void set_current_root_move(search_data_t* data, move_t move)
+static void set_current_root_move(search_data_t* data, move_t move)
 {
     int i;
     for (i=0; data->root_moves[i].move != move &&
@@ -229,7 +229,7 @@ void set_current_root_move(search_data_t* data, move_t move)
 /*
  * Record the number of nodes searched for a particular root move.
  */
-void store_root_data(search_data_t* data,
+static void store_root_data(search_data_t* data,
         move_t move,
         int score,
         uint64_t nodes_before)
@@ -247,7 +247,7 @@ void store_root_data(search_data_t* data,
 /*
  * Get number of nodes searched for a root move in the last iteration.
  */
-uint64_t get_root_node_count(move_t move)
+static uint64_t get_root_node_count(move_t move)
 {
     int i;
     for (i=0; root_data.root_moves[i].move != move &&

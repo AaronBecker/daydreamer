@@ -18,6 +18,19 @@ static const int shield_scale = 1576;
 static const int king_attack_scale = 768;
 // values tested: (768), 1024, 1536
 
+const int shield_value[2][17] = {
+    { 0, 4, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 2, 0, 0, 0, 0, 0 },
+};
+
+const int king_attack_score[16] = {
+    0, 5, 20, 20, 40, 80, 0, 0, 0, 5, 20, 20, 40, 80, 0, 0
+};
+const int multiple_king_attack_scale[16] = {
+    0, 128, 512, 640, 896, 960, 1024, 1024,
+    1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024
+};
+
 /*
  * Initialize all static evaluation data structures.
  */
@@ -34,26 +47,13 @@ void init_eval(void)
     }
 }
 
-const int shield_value[2][17] = {
-    { 0, 4, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 2, 0, 0, 0, 0, 0 },
-};
-
-const int king_attack_score[16] = {
-    0, 5, 20, 20, 40, 80, 0, 0, 0, 5, 20, 20, 40, 80, 0, 0
-};
-const int multiple_king_attack_scale[16] = {
-    0, 128, 512, 640, 896, 960, 1024, 1024,
-    1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024
-};
-
-void add_scaled_score(score_t* score, score_t* addend, int scale)
+static void add_scaled_score(score_t* score, score_t* addend, int scale)
 {
     score->midgame += addend->midgame * scale / 1024;
     score->endgame += addend->endgame * scale / 1024;
 }
 
-int blend_score(score_t* score, int phase)
+static int blend_score(score_t* score, int phase)
 {
     return (phase*score->midgame + (1024-phase)*score->endgame) / 1024;
 }

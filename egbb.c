@@ -59,8 +59,8 @@ bool load_egbb(char* egbb_dir, int cache_size_bytes)
         return false;
     }
 
-    load_egbb_fn load_egbb = load_function(lib, "load_egbb_5men");
-    probe_egbb_internal = load_function(lib, "probe_egbb_5men");
+    load_egbb_fn load_egbb = (load_egbb_fn)load_function(lib, "load_egbb_5men");
+    probe_egbb_internal = (probe_egbb_fn)load_function(lib, "probe_egbb_5men");
     load_egbb(egbb_dir, cache_size_bytes, SMART_LOAD);
     egbb_is_loaded = true;
     return true;
