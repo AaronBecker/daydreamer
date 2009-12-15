@@ -1,13 +1,7 @@
 
 Search
-    Aspiration
-    Ponder
-    MultiPV
     Store move ordering for PV nodes
     Better statistics gathering/reporting
-    Identify "tough" moves and take more time on them
-    More experiments with nullmove, razoring, futility, and LMR
-    "easy move" at root: figure out why this wasn't working
     recognize singular replies
     prefetching for trans table entries
     TBB?
@@ -15,7 +9,6 @@ Search
 shrink trans table entry size
 evaluation hashing
 Track pinned pieces in SEE, test for improvement
-Chess960 support
 
 Interface
     ECO classification
@@ -23,10 +16,10 @@ Interface
 
 Evaluation
     add some basic endgame knowledge (opp bishops, etc)
-    outpost bonus
     material imbalance tables
     bounded eval with early exit
 
 Testing
+    re-test top-level eval weights
     extensions, check for dubious ones
     try different move ordering counts. 16 didn't help. maybe 12.
