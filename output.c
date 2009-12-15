@@ -144,7 +144,7 @@ void print_search_stats(const search_data_t* search_data)
         search_data->stats.razor_attempts[2],
         search_data->stats.razor_prunes[2]);
 
-    printf("\ninfo string move selection ");
+    printf("info string move selection ");
     int total_moves = search_data->nodes_searched;
     int hist_moves = 0;
     for (int i=0; i<HIST_BUCKETS; ++i) {
@@ -172,7 +172,7 @@ void print_search_stats(const search_data_t* search_data)
                 search_data->stats.pv_move_selection[i]) break;
     }
 
-    printf("info string scores by iteration ");
+    printf("\ninfo string scores by iteration ");
     for (int i=0; i<=search_data->current_depth; ++i) {
         printf("%d ", search_data->scores_by_iteration[i]);
     }

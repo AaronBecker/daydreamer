@@ -12,6 +12,19 @@ focus on the game and its mind was wandering aimlessly.
 Changes from 1.5 to 1.6
 -----------------------
 
+My goal with the 1.6 release was to cram in all the features I want and get
+them all stable before trying to tackle parallel searching. Therefore, the
+number of new features is quite long. The most notable are ponder, multipv,
+and Chess960 support.
+
+The biggest change from 1.5 to 1.6 is my testing methodology. I'm now testing
+all my changes using a statistically significant number of very fast games
+against a constant set of opponents. This requires a lot of patience, but it's
+really had a positive impact on my results. Several important parameters from
+1.5 have been improved as a result of this testing.
+
+Here's the full list of changes:
+
 * Chess960 support
 * MultiPV support
 * Ponder support
