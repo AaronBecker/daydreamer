@@ -54,6 +54,10 @@ int generate_legal_moves(position_t* pos, move_t* moves)
     return moves_tail-moves;
 }
 
+/*
+ * Generate pseudo-legal captures and promotions. These moves are considered
+ * first by the move selection algorithm.
+ */
 int generate_pseudo_tactical_moves(const position_t* pos, move_t* moves)
 {
     move_t* moves_head = moves;
@@ -114,6 +118,9 @@ static int generate_pseudo_captures(const position_t* pos, move_t* moves)
     return moves-moves_head;
 }
 
+/*
+ * Generate pseudo-legal moves which are neither captures nor promotions.
+ */
 int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves)
 {
     move_t* moves_head = moves;
@@ -619,6 +626,9 @@ static void generate_pawn_captures(const position_t* pos,
     *moves_head = moves;
 }
 
+/*
+ * Generate all non-capturing, non-promoting pawn moves.
+ */
 static void generate_pawn_quiet_moves(const position_t* pos,
         square_t from,
         piece_t piece,

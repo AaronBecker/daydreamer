@@ -99,6 +99,9 @@ void print_uci_options(void)
     }
 }
 
+/*
+ * Find the uci option structure with the given name.
+ */
 static uci_option_t* get_uci_option(const char* name)
 {
     for (int i=0; i<uci_option_count; ++i) {
@@ -129,15 +132,9 @@ void set_uci_option(char* command)
     option->handler(option, command);
 }
 
-int get_option_int(const char* name)
-{
-    uci_option_t* option = get_uci_option(name);
-    assert(option);
-    int value;
-    sscanf(option->value, "%d", &value);
-    return value;
-}
-
+/*
+ * Get the current value string associated with an option.
+ */
 char* get_option_string(const char* name)
 {
     uci_option_t* option = get_uci_option(name);
@@ -145,13 +142,11 @@ char* get_option_string(const char* name)
     return option->value;
 }
 
-bool get_option_bool(const char* name)
-{
-    uci_option_t* option = get_uci_option(name);
-    assert(option);
-    return strcasestr(option->value, "true") ? true : false;
-}
-
+/*
+ * The default option handler. It copies the input into the value buffer, and
+ * if an address is defined for the option, the string is interpreted as
+ * either an int or a bool and is read into that address.
+ */
 static void default_handler(void* opt, char* value)
 {
     uci_option_t* option = opt;
@@ -168,6 +163,9 @@ static void default_handler(void* opt, char* value)
     }
 }
 
+/*
+ * Initialize the transposition table.
+ */
 static void handle_hash(void* opt, char* value)
 {
     uci_option_t* option = opt;
@@ -180,12 +178,18 @@ static void handle_hash(void* opt, char* value)
     init_transposition_table(mbytes * (1<<20));
 }
 
+/*
+ * Clear the transposition table.
+ */
 static void handle_clear_hash(void* opt, char* value)
 {
     (void) opt; (void) value;
     clear_transposition_table();
 }
 
+/*
+ * Turns Scorpio bitbase use on and off.
+ */
 static void handle_egbb_use(void* opt, char* value)
 {
     uci_option_t* option = opt;
@@ -197,6 +201,10 @@ static void handle_egbb_use(void* opt, char* value)
     memcpy(option->address, &val, sizeof(bool));
 }
 
+/*
+ * Sets the path used to look for Scorpio bitbases, reloading them if the
+ * appropriate option is set.
+ */
 static void handle_egbb_path(void* opt, char* value)
 {
     uci_option_t* option = opt;

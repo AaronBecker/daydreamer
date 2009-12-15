@@ -29,6 +29,9 @@ const int bit_table[64] = {
     61, 22, 43, 51, 60, 42, 59, 58
 };
 
+/*
+ * Set all static bitboards to their appropriate values.
+ */
 void init_bitboards(void)
 {
     for (int sq=0; sq<64; ++sq) {
@@ -61,6 +64,9 @@ void init_bitboards(void)
     }
 }
 
+/*
+ * Print an ascii representation of the given bitboard. Useful for debugging.
+ */
 void print_bitboard(bitboard_t bb)
 {
     printf("%llx\n", bb);

@@ -10,6 +10,7 @@ int main(int argc, char* argv[])
     setbuf(stdout, NULL);
     setbuf(stdin, NULL);
 
+    // Print some identifying information, then do initialization.
     printf("%s %s, by %s\n", ENGINE_NAME, ENGINE_VERSION, ENGINE_AUTHOR);
     printf("Compiled %s %s", __DATE__, __TIME__);
 #ifdef COMPILE_COMMAND
@@ -25,6 +26,7 @@ int main(int argc, char* argv[])
         uci_read_stream(script);
         fclose(script);
     }
+
     // Main loop input processing.
     uci_read_stream(stdin);
 }

@@ -19,6 +19,10 @@ square_t near_attack_deltas[16][256][4];
 #define near_attack(from, to, piece) \
     ((near_attack_data[(from)-(to)] & piece_flags[(piece)]) != 0)
 
+/*
+ * Set attack data for a given combination of source and destination squares
+ * and piece types. This is a helper function for |generate_attack_data|.
+ */
 static void add_near_attack(square_t target,
         square_t from,
         int delta,

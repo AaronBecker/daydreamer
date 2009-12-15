@@ -73,6 +73,10 @@ static void set_transposition_age(int age)
     memset(&hash_stats, 0, sizeof(hash_stats));
 }
 
+/*
+ * Bump the transposition age, indicating that all entries belong to a
+ * previous search and should be replaced first.
+ */
 void increment_transposition_age(void)
 {
     set_transposition_age((generation + 1) % generation_limit);
@@ -171,6 +175,9 @@ void put_transposition_line(position_t* pos,
     undo_move(pos, *moves, &undo);
 }
 
+/*
+ * Print some stats about the transposition table.
+ */
 void print_transposition_stats(void)
 {
     int num_entries = num_buckets * bucket_size;
@@ -187,6 +194,9 @@ void print_transposition_stats(void)
     printf(" exact: %d\n", hash_stats.exact);
 }
 
+/*
+ * How full is the hash table, in thousandths? Used for UCI info strings.
+ */
 int get_hashfull(void)
 {
     return MIN(1000 * hash_stats.occupied / (num_buckets * bucket_size), 1000);
