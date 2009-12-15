@@ -42,7 +42,8 @@ extern options_t options;
 #define HIST_BUCKETS    15
 
 typedef struct {
-    int cutoffs[MAX_SEARCH_DEPTH + 1];
+    int transposition_cutoffs[MAX_SEARCH_DEPTH + 1];
+    int nullmove_cutoffs[MAX_SEARCH_DEPTH + 1];
     int move_selection[HIST_BUCKETS + 1];
     int pv_move_selection[HIST_BUCKETS + 1];
     int razor_attempts[3];

@@ -599,7 +599,7 @@ static int search(position_t* pos,
             is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
         search_node->pv[ply] = hash_move;
         search_node->pv[ply+1] = NO_MOVE;
-        root_data.stats.cutoffs[root_data.current_depth]++;
+        root_data.stats.transposition_cutoffs[root_data.current_depth]++;
         return MAX(alpha, trans_entry->score);
     }
 
@@ -636,9 +636,10 @@ static int search(position_t* pos,
         if (null_score >= beta) {
             if (verification_enabled) {
                 int rdepth = depth - NULLMOVE_VERIFICATION_REDUCTION;
-                if (rdepth <= 0) return beta;
-                null_score = search(pos, search_node, ply, alpha, beta, rdepth);
+                if (rdepth > 0) null_score = search(pos,
+                        search_node, ply, alpha, beta, rdepth);
             }
+            root_data.stats.nullmove_cutoffs[root_data.current_depth]++;
             if (null_score >= beta) return beta;
         }
     } else if (razoring_enabled &&
