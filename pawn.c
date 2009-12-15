@@ -51,12 +51,6 @@ static const int queen_storm[0x80] = {
    14, 16, 14,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
-static const int king_storm_open_file[8] = {
-    0, 0, 0, 0, 0, 10, 15, 15
-};
-static const int queen_storm_open_file[8] = {
-    10, 15, 10, 0, 0, 0, 0, 0
-};
 
 static pawn_data_t* pawn_table = NULL;
 static int num_buckets;
@@ -154,14 +148,6 @@ pawn_data_t* analyze_pawns(const position_t* pos)
         bitboard_t our_pawns = pd->pawns_bb[color];
         bitboard_t their_pawns = pd->pawns_bb[color^1];
 
-        // Give pawn storm bonuses for open files
-        for (int file=0; file<7; ++file) {
-            if (!(our_pawns & file_mask[file])) {
-                pd->kingside_storm[color] += king_storm_open_file[file];
-                pd->queenside_storm[color] += queen_storm_open_file[file];
-            }
-        }
-        
         for (int ind=0; ind<64; ++ind) {
             // Fill in mask of outpost squares.
             sq = index_to_square(ind);
