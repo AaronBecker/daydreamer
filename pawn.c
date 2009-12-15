@@ -108,14 +108,16 @@ static pawn_data_t* get_pawn_data(const position_t* pos)
  */
 void print_pawn_stats(void)
 {
-    int hits = pawn_hash_stats.hits;
-    int probes = hits + pawn_hash_stats.misses + pawn_hash_stats.evictions;
-    printf("info string pawn hash entries %d hashfull %d hits %d misses %d "
-            "evictions %d hitrate %2.2f\n",
-            num_buckets, pawn_hash_stats.occupied*1000/num_buckets,
-            hits, pawn_hash_stats.misses,
-            pawn_hash_stats.evictions,
-            ((float)pawn_hash_stats.hits)/probes);
+    printf("info string pawn hash entries %d", num_buckets);
+    printf(" filled %d (%.2f%%)", pawn_hash_stats.occupied,
+            (float)pawn_hash_stats.occupied / (float)num_buckets*100.);
+    printf(" evictions %d", pawn_hash_stats.evictions);
+    printf(" hits %d (%.2f%%)", pawn_hash_stats.hits,
+            (float)pawn_hash_stats.hits /
+            (pawn_hash_stats.hits + pawn_hash_stats.misses)*100.);
+    printf(" misses %d (%.2f%%)\n", pawn_hash_stats.misses,
+            (float)pawn_hash_stats.misses /
+            (pawn_hash_stats.hits + pawn_hash_stats.misses)*100.);
 }
 
 /*

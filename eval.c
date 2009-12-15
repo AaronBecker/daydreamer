@@ -47,17 +47,26 @@ void init_eval(void)
     }
 }
 
+/*
+ * Combine two scores, scaling |addend| by the given factor.
+ */
 static void add_scaled_score(score_t* score, score_t* addend, int scale)
 {
     score->midgame += addend->midgame * scale / 1024;
     score->endgame += addend->endgame * scale / 1024;
 }
 
+/*
+ * Blend endgame and midgame values linearly according to |phase|.
+ */
 static int blend_score(score_t* score, int phase)
 {
     return (phase*score->midgame + (1024-phase)*score->endgame) / 1024;
 }
 
+/*
+ * Give some points for pawns directly in front of your king.
+ */
 static int king_shield_score(const position_t* pos, color_t side, square_t king)
 {
     int s = 0;
@@ -73,6 +82,9 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
     return s;
 }
 
+/*
+ * Compute the overall balance of king safety offered by pawn shields.
+ */
 static score_t evaluate_king_shield(const position_t* pos)
 {
     int score[2];
@@ -84,6 +96,11 @@ static score_t evaluate_king_shield(const position_t* pos)
     return phase_score;
 }
 
+/*
+ * Compute a measure of king safety given by the number and type of pieces
+ * attacking a square adjacent to the king.
+ * TODO: This could probably be a lot more sophisticated.
+ */
 static score_t evaluate_king_attackers(const position_t* pos)
 {
     int score[2] = {0, 0};
