@@ -52,6 +52,12 @@ static const int rook_on_7[2] = { 20, 40 };
 static const int rook_open_file_bonus[2] = { 20, 10 };
 static const int rook_half_open_file_bonus[2] = { 10, 10 };
 
+/*
+ * Score a weak square that's occupied by a minor piece. The basic bonus
+ * is given by a score table, and additional points are awarded for being
+ * defended by a friendly pawn and for being difficult to take with an
+ * opponent's minor piece.
+ */
 static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
 {
     int bonus = type == KNIGHT ? knight_outpost[sq] : bishop_outpost[sq];
