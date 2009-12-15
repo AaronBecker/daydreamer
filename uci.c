@@ -20,7 +20,7 @@ static int input_available(void);
 static void uci_print_help(void)
 {
     printf(
-"Daydreamer is a chess engine that follows the UCI protocol, as described\n"
+"\nDaydreamer is a chess engine that follows the UCI protocol, as described\n"
 "at http://wbec-ridderkerk.nl/html/UCIProtocol.html. In addition to the  \n"
 "standard UCI commands, Daydreamer understands some non-standard commands:\n"
 "\n"
