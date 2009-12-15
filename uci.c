@@ -17,6 +17,32 @@ static void calculate_search_time(int wtime,
 static void uci_handle_ext(char* command);
 static int input_available(void);
 
+static void uci_print_help(void)
+{
+    printf(
+"Daydreamer is a chess engine that follows the UCI protocol, as described\n"
+"at http://wbec-ridderkerk.nl/html/UCIProtocol.html. In addition to the  \n"
+"standard UCI commands, Daydreamer understands some non-standard commands:\n"
+"\n"
+"    print    \tPrint the current position, along with some evaluation info.\n"
+"    perft <n>\tPrint the number of positions that could be reached from the "
+"             \tcurrent position in exactly <n> moves.\n"
+"    divide <n>\tThe same as perft, but break numbers down by root move.\n"
+"    see <move>\tPrint the static exchange evaluation score of the given "
+"move.\n"
+"    bench <depth>\n"
+"             \tSearch a fixed set of positions to the given depth, and\n"
+"             \treport the total nodes searched and time taken.\n"
+"    perftsuite <filename>\n"
+"             \tRun a suite of perft tests from a file in the format\n"
+"             \tdescribed at www.rocechess.ch/rocee.html\n"
+"   epd <filename> <time>\n"
+"             \tRead the given epd file, and search each position for <time>\n"
+"             \tseconds.\n"
+"   help      \tPrint this help message."
+"\n\n");
+}
+
 /*
  * Read uci commands out of the given stream, until it's closed or we recieve
  * a quit command.
@@ -117,6 +143,9 @@ static void uci_handle_ext(char* command)
             printf("%s ", san);
         }
         printf("\n");
+    } else if (!strncasecmp(command, "help", 4) ||
+            !strncasecmp(command, "?", 1)) {
+        uci_print_help();
     }
 }
 

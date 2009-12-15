@@ -182,16 +182,16 @@ void print_transposition_stats(void)
 {
     int num_entries = num_buckets * bucket_size;
     printf("info string hash entries %d", num_entries);
-    printf(" filled: %d (%.2f%%)", hash_stats.occupied,
+    printf(" filled %d (%.2f%%)", hash_stats.occupied,
             (float)hash_stats.occupied / (float)num_entries * 100.);
-    printf(" evictions: %d", hash_stats.evictions);
-    printf(" hits: %d (%.2f%%)", hash_stats.hits,
+    printf(" evictions %d", hash_stats.evictions);
+    printf(" hits %d (%.2f%%)", hash_stats.hits,
             (float)hash_stats.hits / (hash_stats.hits+hash_stats.misses)*100.);
-    printf(" misses: %d (%.2f%%)", hash_stats.misses,
+    printf(" misses %d (%.2f%%)", hash_stats.misses,
             (float)hash_stats.misses/(hash_stats.hits+hash_stats.misses)*100.);
-    printf(" alpha: %d", hash_stats.alpha);
-    printf(" beta: %d", hash_stats.beta);
-    printf(" exact: %d\n", hash_stats.exact);
+    printf(" alpha %d", hash_stats.alpha);
+    printf(" beta %d", hash_stats.beta);
+    printf(" exact %d\n", hash_stats.exact);
 }
 
 /*
