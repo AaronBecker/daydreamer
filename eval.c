@@ -131,13 +131,18 @@ static score_t evaluate_king_attackers(const position_t* pos)
 int simple_eval(const position_t* pos)
 {
     color_t side = pos->side_to_move;
-    int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
     int phase = game_phase(pos);
-    int piece_square_eval =
-            ((phase)*(pos->piece_square_eval[side].midgame -
-                pos->piece_square_eval[side^1].midgame) +
-            (1024-phase)*(pos->piece_square_eval[side].endgame -
-                pos->piece_square_eval[side^1].endgame)) / 1024;
+    score_t phase_score;
+    phase_score.midgame =
+        pos->material_eval[side].midgame +
+        pos->piece_square_eval[side].midgame -
+        (pos->material_eval[side^1].midgame +
+        pos->piece_square_eval[side^1].midgame);
+    phase_score.endgame =
+        pos->material_eval[side].endgame +
+        pos->piece_square_eval[side].endgame -
+        (pos->material_eval[side^1].endgame +
+        pos->piece_square_eval[side^1].endgame);
     int material_adjust = 0;
 #ifndef UFO_EVAL
     // Adjust material based on Larry Kaufmans's formula in
@@ -153,7 +158,7 @@ int simple_eval(const position_t* pos)
     material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
     if (side == BLACK) material_adjust *= -1;
 #endif
-    return material_eval + piece_square_eval + material_adjust;
+    return blend_score(&phase_score, phase) + material_adjust;
 }
 
 /*
@@ -192,10 +197,15 @@ int full_eval(const position_t* pos)
 void report_eval(const position_t* pos)
 {
     color_t side = pos->side_to_move;
-    int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
+    score_t material_eval;
+    material_eval.midgame =
+        pos->material_eval[side].midgame - pos->material_eval[side^1].midgame;
+    material_eval.endgame =
+        pos->material_eval[side].endgame - pos->material_eval[side^1].endgame;
     int phase = game_phase(pos);
     printf("info string game phase: %d\n", phase);
-    printf("info string material: %d\n", material_eval);
+    printf("info string material midgame: %d\n", material_eval.midgame);
+    printf("info string material endgame: %d\n", material_eval.endgame);
     printf("info string psq midgame: %d - %d = %d\n",
             pos->piece_square_eval[side].midgame,
             pos->piece_square_eval[side^1].midgame,
@@ -250,7 +260,8 @@ void report_eval(const position_t* pos)
     printf("info string mob (mid,end): (%d, %d)\n",
             mob_score.midgame, mob_score.endgame);
     add_scaled_score(&phase_score, &mob_score, 1024);
-    int score = material_eval + piece_square_eval + material_adjust +
+    int score = blend_score(&material_eval, phase) +
+        piece_square_eval + material_adjust +
         blend_score(&phase_score, phase);
     printf("info string score: %d\n", score);
 }
@@ -262,8 +273,8 @@ bool insufficient_material(const position_t* pos)
 {
     return (pos->num_pawns[WHITE] == 0 &&
         pos->num_pawns[BLACK] == 0 &&
-        pos->material_eval[WHITE] < ROOK_VAL + KING_VAL &&
-        pos->material_eval[BLACK] < ROOK_VAL + KING_VAL);
+        pos->material_eval[WHITE].midgame < ROOK_VAL + KING_VAL &&
+        pos->material_eval[BLACK].midgame < ROOK_VAL + KING_VAL);
 }
 
 /*
@@ -272,7 +283,7 @@ bool insufficient_material(const position_t* pos)
 bool can_win(const position_t* pos, color_t side)
 {
     return !(pos->num_pawns[side] == 0 &&
-            pos->material_eval[side] < ROOK_VAL + KING_VAL);
+            pos->material_eval[side].midgame < ROOK_VAL + KING_VAL);
 }
 
 /*

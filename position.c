@@ -30,7 +30,8 @@ static void init_position(position_t* position)
         for (int index=0; index<16; ++index) {
             position->pawns[color][index] = INVALID_SQUARE;
         }
-        position->material_eval[color] = 0;
+        position->material_eval[color].midgame = 0;
+        position->material_eval[color].endgame = 0;
         position->piece_square_eval[color].midgame = 0;
         position->piece_square_eval[color].endgame= 0;
     }
