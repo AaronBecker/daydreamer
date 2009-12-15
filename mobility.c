@@ -186,13 +186,13 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                             mid_score[side] += rook_open_file_bonus[0];
                             end_score[side] += rook_open_file_bonus[1];
                         }
-                    } else if (ps < 5 && !can_castle(pos, side) &&
+                    } /*else if (ps < 5 && !can_castle(pos, side) &&
                             rrank == RANK_1 && king_rank[side] == RANK_1 &&
                             abs(file - king_file[side]) <= 3) {
                         // Avoid king moves that trap the rook.
                         mid_score[side] -= trapped_rook - 5*ps;
                         end_score[side] -= trapped_rook - 5*ps;
-                    }
+                    } */
                     break;
                 default: break;
             }
