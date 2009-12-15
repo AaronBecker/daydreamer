@@ -217,7 +217,7 @@ static bool is_nullmove_allowed(position_t* pos)
 /*
  * Point |data->current_root_move| at the structure representing |move|.
  */
-void set_current_root_move(search_data_t* data, move_t move)
+static void set_current_root_move(search_data_t* data, move_t move)
 {
     int i;
     for (i=0; data->root_moves[i].move != move &&
@@ -229,7 +229,7 @@ void set_current_root_move(search_data_t* data, move_t move)
 /*
  * Record the number of nodes searched for a particular root move.
  */
-void store_root_data(search_data_t* data,
+static void store_root_data(search_data_t* data,
         move_t move,
         int score,
         uint64_t nodes_before)
@@ -247,7 +247,7 @@ void store_root_data(search_data_t* data,
 /*
  * Get number of nodes searched for a root move in the last iteration.
  */
-uint64_t get_root_node_count(move_t move)
+static uint64_t get_root_node_count(move_t move)
 {
     int i;
     for (i=0; root_data.root_moves[i].move != move &&
@@ -592,7 +592,7 @@ static int search(position_t* pos,
             is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
         search_node->pv[ply] = hash_move;
         search_node->pv[ply+1] = NO_MOVE;
-        root_data.stats.cutoffs[root_data.current_depth]++;
+        root_data.stats.transposition_cutoffs[root_data.current_depth]++;
         return MAX(alpha, trans_entry->score);
     }
 
@@ -629,9 +629,10 @@ static int search(position_t* pos,
         if (null_score >= beta) {
             if (verification_enabled) {
                 int rdepth = depth - NULLMOVE_VERIFICATION_REDUCTION;
-                if (rdepth <= 0) return beta;
-                null_score = search(pos, search_node, ply, alpha, beta, rdepth);
+                if (rdepth > 0) null_score = search(pos,
+                        search_node, ply, alpha, beta, rdepth);
             }
+            root_data.stats.nullmove_cutoffs[root_data.current_depth]++;
             if (null_score >= beta) return beta;
         }
     } else if (razoring_enabled &&
@@ -810,7 +811,10 @@ static int quiesce(position_t* pos,
         int beta,
         int depth)
 {
-    if (ply > root_data.stats.max_depth) root_data.stats.max_depth = ply;
+    if (root_data.current_root_move &&
+            ply > root_data.current_root_move->max_depth) {
+        root_data.current_root_move->max_depth = ply;
+    }
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
     if (alpha > mate_in(ply-1)) return alpha; // can't beat this

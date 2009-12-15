@@ -1,5 +1,5 @@
 
-Daydreamer 1.5
+Daydreamer 1.6
 ==============
 
 Daydreamer is a chess-playing program I've been writing in my spare time. I'm
@@ -9,15 +9,98 @@ I named it Daydreamer after a bug in an early version caused it to occasionally
 follow up very strong play with bizarre blunders, as though it had lost its
 focus on the game and its mind was wandering aimlessly.
 
-Changes since 1.5
------------------
+Changes from 1.5 to 1.6
+-----------------------
 
-* Improved time management
+My goal with the 1.6 release was to cram in all the features I want and get
+them all stable before trying to tackle parallel searching. Therefore, the
+number of new features is quite long. The most notable are ponder, multipv,
+and Chess960 support.
+
+The biggest change from 1.5 to 1.6 is my testing methodology. I'm now testing
+all my changes using a statistically significant number of very fast games
+against a constant set of opponents. This requires a lot of patience, but it's
+really had a positive impact on my results. Several important parameters from
+1.5 have been improved as a result of this testing.
+
+Here's the full list of changes:
+
+* Chess960 support
+* MultiPV support
+* Ponder support
+* Scorpio bitbase support
 * Improved futility pruning
 * Razoring
+* Aspiration in root search
+* Weak square identification
+* Open and half-open file identification
+* Pawn storm bonuses
+* Improved fidelity to uci specifications
+* Improved time management, and improved behavior at very fast time controls
+* Improved search behavior in positions with short mates or obvious moves
+* Fixed a bug that caused losses on time in some sudden death situations
+* Fixed a bug that prevented a hash size over 2GB
+* Fixed a bug that caused crashes in very long games (over 250 moves)
+* Fixed a bug that generated incorrect en passant moves while in check
 
-Changes since 1.0
------------------
+
+Using Daydreamer
+----------------
+
+Daydreamer uses the universal chess interface (UCI) to communicate with
+graphical front-end programs. You can use it directly on the command-line, but
+that's not something most people will probably want to do. Daydreamer supports
+the UCI specification pretty faithfully, and supports ponder and MultiPV modes.
+At startup, it looks for a file named daydreamer.rc, and automatically executes
+any UCI commands that it finds inside. You can specifiy a different file to
+read from by passing a file name as an argument to the Daydreamer executable.
+You can use the rc file to automatically set options every time Daydreamer
+starts. For example, in my daydreamer.rc I have the following lines, which
+automatically register my Scorpio bitbases:
+
+    setoption name Endgame bitbase path value /Users/abecker/src/chess_engines/egbb/
+    setoption name Use endgame bitbases value true
+
+
+Compiling
+---------
+
+If you have a C compiler that can handle C99, this should be easy. Just edit
+the CC variable in the Makefile to point at your compiler, set the compile
+flags you want in CFLAGS, and you should be good to go. If you compile with
+-DCOMPILE_COMMAND, you can pass a string that will be reported when you start
+the engine up. I find this pretty helpful for remembering what version I'm
+working with. I've tested with gcc on Mac and Linux, clang on Mac, and the
+MinGW cross-compiler for Windows. 
+
+Installing
+----------
+
+The whole thing is a single executable, so there's nothing to install, really.
+Just put it wherever you want. I've included a polyglot.ini file for
+compatibility with Winboard interfaces, but aside from that there aren't any
+configuration files.
+
+Thanks
+------
+
+I'm the only person who actually writes the code of Daydreamer, but the ideas
+and structure of the code owe a lot to the chess programming community. I read
+through the source of a lot of open source engines before starting this
+project, and they've all influenced my design for Daydreamer. In particular,
+Fruit by Fabian Letouzey and Glaurung and Viper by Tord Romstad have strongly
+influenced the way I approached this project, and Daydreamer would be much
+worse without them.
+
+I also had access to a lot of good writing about the design, implementation,
+and testing of chess engines. Bruce Moreland's site and the blogs of [Jonatan
+Pettersson (Mediocre)](http://mediocrechess.blogspot.com/) and [Matt Gingell
+(Chesley)](http://sourceforge.net/apps/wordpress/chesley/) have been
+particularly interesting. Thanks also to the authors of the many engines I've
+tested against, and to composers of EPD testing suites.
+
+Changes from 1.0 to 1.5
+-----------------------
 
 Replaced the standard simplified evaluation with a custom job. The simple
 version is still available for testing purposes. In addition to re-doing the
@@ -49,53 +132,6 @@ at 10s per problem:
 
     WAC     293/300
     ECMGMP  120/182
-
-Using Daydreamer
-----------------
-
-Daydreamer uses the universal chess interface (UCI) to communicate with
-graphical front-end programs. You can use it directly on the command-line, but
-that's not something most people will probably want to do. Daydreamer supports
-the UCI specification pretty faithfully, but it doesn't support pondering yet,
-and it doesn't report some of the more esoteric search info that UCI defines.
-It reports only a single variation.
-
-Compiling
----------
-
-If you have a C compiler that can handle C99, this should be easy. Just edit
-the CC variable in the Makefile to point at your compiler, set the compile
-flags you want in CFLAGS, and you should be good to go. If you compile with
--DCOMPILE_COMMAND, you can pass a string that will be reported when you start
-the engine up. I find this pretty helpful for remembering what version I'm
-working with. I've tested with gcc on Mac and Linux, clang on Mac, and the
-MinGW cross-compiler for Windows.
-
-Installing
-----------
-
-The whole thing is a single executable, so there's nothing to install, really.
-Just put it wherever you want. I've included a polyglot.ini file for
-compatibility with Winboard interfaces, but aside from that there aren't any
-configuration files.
-
-Thanks
-------
-
-I'm the only person who actually writes the code of Daydreamer, but the ideas
-and structure of the code owe a lot to the chess programming community. I read
-through the source of a lot of open source engines before starting this
-project, and they've all influenced my design for Daydreamer. In particular,
-Fruit by Fabian Letouzey and Glaurung and Viper by Tord Romstad have strongly
-influenced the way I approached this project, and Daydreamer would be much
-worse without them.
-
-I also had access to a lot of good writing about the design, implementation,
-and testing of chess engines. Bruce Moreland's site and the blogs of [Jonatan
-Pettersson (Mediocre)](http://mediocrechess.blogspot.com/) and [Matt Gingell
-(Chesley)](http://sourceforge.net/apps/wordpress/chesley/) have been
-particularly interesting. Thanks also to the authors of the many engines I've
-tested against, and to composers of EPD testing suites.
 
 Design (1.0)
 ------------

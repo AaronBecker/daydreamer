@@ -66,7 +66,7 @@ static void set_transposition_age(int age)
     assert(age >= 0 && age < generation_limit);
     generation = age;
     for (int i=0; i<generation_limit; ++i) {
-        int age = generation - i;
+        age = generation - i;
         if (age < 0) age += generation_limit;
         age_score_table[i] = age * 128;
     }

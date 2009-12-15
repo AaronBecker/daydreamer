@@ -87,8 +87,6 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
     score_t score;
     int mid_score[2] = {0, 0};
     int end_score[2] = {0, 0};
-    int majors[2] = {0, 0};
-    int minors[2] = {0, 0};
     rank_t king_rank[2] = { relative_rank[WHITE]
                                 [square_rank(pos->pieces[WHITE][0])],
                             relative_rank[BLACK]
@@ -113,7 +111,6 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                     ps += mobile[pos->board[from+18]];
                     ps += mobile[pos->board[from+31]];
                     ps += mobile[pos->board[from+33]];
-                    minors[side]++;
                     if (square_is_outpost(pd, from, side)) {
                         int bonus = outpost_score(pos, from, KNIGHT);
                         mid_score[side] += bonus;
@@ -137,7 +134,6 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                     ps += mobile[pos->board[to]];
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
-                    majors[side] += 2;
                     if (relative_rank[side][square_rank(from)] == RANK_7 &&
                             king_rank[side^1] == RANK_8) {
                         mid_score[side] += rook_on_7[0] / 2;
@@ -153,7 +149,6 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                     ps += mobile[pos->board[to]];
                     for (to=from+17; pos->board[to]==EMPTY; to+=17, ++ps) {}
                     ps += mobile[pos->board[to]];
-                    minors[side]++;
                     if (square_is_outpost(pd, from, side)) {
                         int bonus = outpost_score(pos, from, BISHOP);
                         mid_score[side] += bonus;
@@ -169,7 +164,6 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                     ps += mobile[pos->board[to]];
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
-                    majors[side]++;
                     if (relative_rank[side][square_rank(from)] == RANK_7 &&
                             king_rank[side^1] == RANK_8) {
                         mid_score[side] += rook_on_7[0];

@@ -48,7 +48,7 @@ static void print_pv(search_data_t* data, int ordinal, int index)
 {
     const move_t* pv = data->root_moves[index].pv;
     const int depth = data->current_depth;
-    const int seldepth = data->stats.max_depth;
+    const int seldepth = data->root_moves[index].max_depth;
     const int score = data->root_moves[index].score;
     // note: use time+1 to avoid divide-by-zero
     const int time = elapsed_time(&data->timer) + 1;
@@ -127,12 +127,24 @@ void print_multipv(search_data_t* data)
 
 void print_search_stats(const search_data_t* search_data)
 {
-    printf("info string cutoffs ");
+    printf("info string transposition cutoffs ");
     for (int i=0; i<=search_data->current_depth; ++i) {
-        printf("%d ", search_data->stats.cutoffs[i]);
+        printf("%d ", search_data->stats.transposition_cutoffs[i]);
     }
+    printf("\ninfo string nullmove cutoffs ");
+    for (int i=0; i<=search_data->current_depth; ++i) {
+        printf("%d ", search_data->stats.nullmove_cutoffs[i]);
+    }
+    printf("\ninfo string razoring attempts/cutoffs by depth "
+            "%d/%d %d/%d %d/%d\n",
+        search_data->stats.razor_attempts[0],
+        search_data->stats.razor_prunes[0],
+        search_data->stats.razor_attempts[1],
+        search_data->stats.razor_prunes[1],
+        search_data->stats.razor_attempts[2],
+        search_data->stats.razor_prunes[2]);
 
-    printf("\ninfo string move selection ");
+    printf("info string move selection ");
     int total_moves = search_data->nodes_searched;
     int hist_moves = 0;
     for (int i=0; i<HIST_BUCKETS; ++i) {
@@ -140,8 +152,10 @@ void print_search_stats(const search_data_t* search_data)
     }
     printf("%.2f ", (float)(total_moves-hist_moves)/total_moves);
     for (int i=0; i<HIST_BUCKETS; ++i) {
-        printf("%.2f ", (float)search_data->stats.move_selection[i] /
-                total_moves);
+        float pct = (float)search_data->stats.move_selection[i]/total_moves;
+        printf("%.2f ", pct);
+        if (pct < 0.005 && search_data->stats.move_selection[i+1] <=
+                search_data->stats.move_selection[i]) break;
     }
 
     printf("\ninfo string pv move selection ");
@@ -152,19 +166,13 @@ void print_search_stats(const search_data_t* search_data)
     }
     printf("%.2f ", (float)(total_moves-hist_moves)/total_moves);
     for (int i=0; i<HIST_BUCKETS; ++i) {
-        printf("%.2f ", (float)search_data->stats.pv_move_selection[i] /
-                total_moves);
+        float pct = (float)search_data->stats.pv_move_selection[i]/total_moves;
+        printf("%.2f ", pct);
+        if (pct < 0.005 && search_data->stats.pv_move_selection[i+1] <=
+                search_data->stats.pv_move_selection[i]) break;
     }
 
-    printf("\ninfo string razoring attempts/cutoffs by depth "
-            "%d/%d %d/%d %d/%d\n",
-        search_data->stats.razor_attempts[0],
-        search_data->stats.razor_prunes[0],
-        search_data->stats.razor_attempts[1],
-        search_data->stats.razor_prunes[1],
-        search_data->stats.razor_attempts[2],
-        search_data->stats.razor_prunes[2]);
-    printf("info string scores by iteration ");
+    printf("\ninfo string scores by iteration ");
     for (int i=0; i<=search_data->current_depth; ++i) {
         printf("%d ", search_data->scores_by_iteration[i]);
     }
@@ -174,7 +182,7 @@ void print_search_stats(const search_data_t* search_data)
     }
     int high = search_data->stats.root_fail_highs;
     int low = search_data->stats.root_fail_lows;
-    printf("info string root fail high %d root fail low %d root exact %d\n",
+    printf("info string root fail highs %d fail lows %d exact results %d\n",
             high, low, search_data->current_depth-high-low);
 }
 

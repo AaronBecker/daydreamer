@@ -29,6 +29,23 @@ char* strcasestr(register char *s, register char *find);
 char* strsep(char **stringp, const char *delim);
 #endif
 
+#ifdef _MSC_VER
+typedef __int8 int8_t;
+typedef unsigned __int8 uint8_t;
+typedef __int16 int16;
+typedef unsigned __int16 uint16_t;
+typedef __int32 int32_t;
+typedef unsigned __int32 uint32_t;
+typedef __int64 int64;
+typedef unsigned __int64 uint64_t;
+typedef __int16 int16_t;
+#else
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <sys/time.h>
+#endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -6,5 +6,6 @@ daydreamer.log
 polyglot
 .DS_Store
 *.dylib
-daydreamer.uci
+daydreamer.rc
 tests
+old_binaries
