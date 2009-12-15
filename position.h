@@ -22,7 +22,7 @@ typedef struct {
     square_t ep_square;
     int fifty_move_counter;
     int ply;
-    int material_eval[2];
+    score_t material_eval[2];
     score_t piece_square_eval[2];
     castle_rights_t castle_rights;
     uint8_t is_check;

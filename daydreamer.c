@@ -21,6 +21,18 @@ void init_daydreamer(void)
     set_position(&root_data.root_pos, FEN_STARTPOS);
 }
 
+const int material_values[] = {
+    0, PAWN_VAL, KNIGHT_VAL, BISHOP_VAL, ROOK_VAL, QUEEN_VAL, KING_VAL, 0,
+    0, PAWN_VAL, KNIGHT_VAL, BISHOP_VAL, ROOK_VAL, QUEEN_VAL, KING_VAL, 0, 0
+};
+
+const int endgame_material_values[] = {
+    0, PAWN_VAL_ENDGAME, KNIGHT_VAL_ENDGAME, BISHOP_VAL_ENDGAME,
+    ROOK_VAL_ENDGAME, QUEEN_VAL_ENDGAME, KING_VAL_ENDGAME, 0,
+    0, PAWN_VAL_ENDGAME, KNIGHT_VAL_ENDGAME, BISHOP_VAL_ENDGAME,
+    ROOK_VAL_ENDGAME, QUEEN_VAL_ENDGAME, KING_VAL_ENDGAME, 0, 0
+};
+
 const char glyphs[] = ".PNBRQK  pnbrqk";
 
 const slide_t sliding_piece_types[] = {
