@@ -71,7 +71,7 @@ flags you want in CFLAGS, and you should be good to go. If you compile with
 -DCOMPILE_COMMAND, you can pass a string that will be reported when you start
 the engine up. I find this pretty helpful for remembering what version I'm
 working with. I've tested with gcc on Mac and Linux, clang on Mac, and the
-MinGW cross-compiler for Windows. 
+MinGW cross-compiler for Windows.
 
 Installing
 ----------

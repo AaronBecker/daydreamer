@@ -48,7 +48,6 @@ static const int bishop_outpost[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
 
-static const int trapped_rook = 50;
 static const int rook_on_7[2] = { 20, 40 };
 static const int rook_open_file_bonus[2] = { 20, 10 };
 static const int rook_half_open_file_bonus[2] = { 10, 10 };
@@ -186,12 +185,6 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                             mid_score[side] += rook_open_file_bonus[0];
                             end_score[side] += rook_open_file_bonus[1];
                         }
-                    } else if (rrank == RANK_1 && king_rank[side] == RANK_1 &&
-                            ((king_file[side] > FILE_E && file > king_file[side]) ||
-                             (king_file[side] < FILE_D && file < king_file[side]))) {
-                        // Avoid king moves that trap the rook.
-                        mid_score[side] -= trapped_rook;
-                        end_score[side] -= trapped_rook;
                     }
                     break;
                 default: break;
