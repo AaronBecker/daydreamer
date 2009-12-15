@@ -415,9 +415,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         int alpha = mated_in(-1);
         int beta = mate_in(-1);
         if (depth > 4 && options.multi_pv == 1) {
-            int window = 2*abs(search_data->guesses_by_iteration[depth-1] -
-                search_data->guesses_by_iteration[depth-2]);
-            window = MAX(window, 15);
+            int window = 40;
             alpha = MAX(search_data->scores_by_iteration[depth-1] - window, alpha);
             beta = MIN(search_data->scores_by_iteration[depth-1] + window, beta);
         }
@@ -439,12 +437,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
         // Record scores.
         id_score = search_data->best_score;
         search_data->scores_by_iteration[depth] = id_score;
-        if (result != SEARCH_EXACT) {
-            search_data->guesses_by_iteration[depth] =
-                2*id_score - search_data->guesses_by_iteration[depth - 1];
-        } else {
-            search_data->guesses_by_iteration[depth] = id_score;
-        }
 
         if (!should_deepen(search_data)) {
             ++search_data->current_depth;
