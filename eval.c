@@ -147,10 +147,10 @@ int simple_eval(const position_t* pos)
     // rook -= 10 * (pawns-5)
     material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
     material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
-    material_adjust += pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5);
-    material_adjust -= pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5);
-    material_adjust -= pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5);
-    material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
+    //material_adjust += pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5);
+    //material_adjust -= pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5);
+    //material_adjust -= pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5);
+    //material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
     if (side == BLACK) material_adjust *= -1;
 #endif
     return material_eval + piece_square_eval + material_adjust;
