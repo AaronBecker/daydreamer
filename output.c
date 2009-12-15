@@ -48,7 +48,7 @@ static void print_pv(search_data_t* data, int ordinal, int index)
 {
     const move_t* pv = data->root_moves[index].pv;
     const int depth = data->current_depth;
-    const int seldepth = data->stats.max_depth;
+    const int seldepth = data->root_moves[index].max_depth;
     const int score = data->root_moves[index].score;
     // note: use time+1 to avoid divide-by-zero
     const int time = elapsed_time(&data->timer) + 1;

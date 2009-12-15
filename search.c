@@ -817,7 +817,10 @@ static int quiesce(position_t* pos,
         int beta,
         int depth)
 {
-    if (ply > root_data.stats.max_depth) root_data.stats.max_depth = ply;
+    if (root_data.current_root_move &&
+            ply > root_data.current_root_move->max_depth) {
+        root_data.current_root_move->max_depth = ply;
+    }
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
     if (alpha > mate_in(ply-1)) return alpha; // can't beat this
