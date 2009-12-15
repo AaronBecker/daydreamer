@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
     init_daydreamer();
 
     // Read from uci script, if possible.
-    char* script_name = argc > 1 ? argv[1] : "daydreamer.uci";
+    char* script_name = argc > 1 ? argv[1] : "daydreamer.rc";
     FILE* script;
     if ((script = fopen(script_name, "r"))) {
         uci_read_stream(script);

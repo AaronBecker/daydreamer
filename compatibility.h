@@ -29,6 +29,10 @@ char* strcasestr(register char *s, register char *find);
 char* strsep(char **stringp, const char *delim);
 #endif
 
+#ifdef _MSC_VER
+#else
+#endif
+
 #ifdef __cplusplus
 }
 #endif
