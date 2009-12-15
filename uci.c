@@ -17,12 +17,19 @@ static void calculate_search_time(int wtime,
 static void uci_handle_ext(char* command);
 static int input_available(void);
 
+/*
+ * Read uci commands out of the given stream, until it's closed or we recieve
+ * a quit command.
+ */
 void uci_read_stream(FILE* stream)
 {
     char command[4096];
     while (fgets(command, 4096, stream)) uci_handle_command(command);
 }
 
+/*
+ * Handle one line of uci input.
+ */
 static void uci_handle_command(char* command)
 {
     if (!command) exit(0);
@@ -52,7 +59,7 @@ static void uci_handle_command(char* command)
     } else {
         uci_handle_ext(command);
     }
-    // TODO: handling for debug
+    // TODO: handling for debug. Maybe just set verbose mode on?
 }
 
 /*

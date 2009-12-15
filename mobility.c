@@ -48,16 +48,23 @@ static const int bishop_outpost[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
 
+static const int trapped_rook = 75;
 static const int rook_on_7[2] = { 20, 40 };
 static const int rook_open_file_bonus[2] = { 20, 10 };
 static const int rook_half_open_file_bonus[2] = { 10, 10 };
 
+/*
+ * Score a weak square that's occupied by a minor piece. The basic bonus
+ * is given by a score table, and additional points are awarded for being
+ * defended by a friendly pawn and for being difficult to take with an
+ * opponent's minor piece.
+ */
 static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
 {
     int bonus = type == KNIGHT ? knight_outpost[sq] : bishop_outpost[sq];
     int score = bonus;
     if (bonus) {
-        // It's better when supported by pawns.
+        // An outpost is better when supported by pawns.
         color_t side = piece_color(pos->board[sq]);
         piece_t our_pawn = create_piece(side, PAWN);
         if (pos->board[sq - pawn_push[side] - 1] == our_pawn ||
@@ -91,6 +98,8 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                                 [square_rank(pos->pieces[WHITE][0])],
                             relative_rank[BLACK]
                                 [square_rank(pos->pieces[BLACK][0])] };
+    rank_t king_file[2] = { square_file(pos->pieces[WHITE][0]),
+                                square_file(pos->pieces[BLACK][0]) };
     color_t side;
     for (side=WHITE; side<=BLACK; ++side) {
         const int* mobile = color_table[side];
@@ -164,8 +173,8 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                     ps += mobile[pos->board[to]];
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
-                    if (relative_rank[side][square_rank(from)] == RANK_7 &&
-                            king_rank[side^1] == RANK_8) {
+                    int rrank = relative_rank[side][square_rank(from)];
+                    if (rrank == RANK_7 && king_rank[side^1] == RANK_8) {
                         mid_score[side] += rook_on_7[0];
                         end_score[side] += rook_on_7[1];
                     }
@@ -177,6 +186,12 @@ score_t mobility_score(const position_t* pos, pawn_data_t* pd)
                             mid_score[side] += rook_open_file_bonus[0];
                             end_score[side] += rook_open_file_bonus[1];
                         }
+                    } else if (ps < 5 && !can_castle(pos, side) &&
+                            rrank == RANK_1 && king_rank[side] == RANK_1 &&
+                            abs(file - king_file[side]) <= 3) {
+                        // Avoid king moves that trap the rook.
+                        mid_score[side] -= trapped_rook - 5*ps;
+                        end_score[side] -= trapped_rook - 5*ps;
                     }
                     break;
                 default: break;

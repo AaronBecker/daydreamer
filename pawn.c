@@ -3,7 +3,6 @@
 #include <string.h>
 
 // TODO: Tune these values, in particular the endgame values.
-// TODO: identify outpost squares and open/half-open files.
 // TODO: bonus/penalty for occupying a lot of space.
 static const int isolation_penalty[2][8] = {
     {10, 10, 10, 15, 15, 10, 10, 10},
@@ -89,6 +88,9 @@ void clear_pawn_table(void)
     memset(&pawn_hash_stats, 0, sizeof(pawn_hash_stats));
 }
 
+/*
+ * Look up the pawn data for the pawns in the given position.
+ */
 static pawn_data_t* get_pawn_data(const position_t* pos)
 {
     pawn_data_t* pd = &pawn_table[pos->pawn_hash % num_buckets];
@@ -101,6 +103,9 @@ static pawn_data_t* get_pawn_data(const position_t* pos)
     return pd;
 }
 
+/*
+ * Print stats about the pawn hash.
+ */
 void print_pawn_stats(void)
 {
     int hits = pawn_hash_stats.hits;
@@ -238,6 +243,11 @@ pawn_data_t* analyze_pawns(const position_t* pos)
     return pd;
 }
 
+/*
+ * Retrieve (and calculate if necessary) the pawn data associated with |pos|,
+ * and use it to determine the overall pawn score for the given position. The
+ * pawn data is also used as an input to other evaluation functions.
+ */
 score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
 {
     pawn_data_t* pd = analyze_pawns(pos);

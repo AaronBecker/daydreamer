@@ -124,7 +124,9 @@ void print_multipv(search_data_t* data)
     for (i=0; i<options.multi_pv; ++i) print_pv(data, i+1, indices[i]);
 }
 
-
+/*
+ * Print a collection of esoteric statistics gathered while searching.
+ */
 void print_search_stats(const search_data_t* search_data)
 {
     printf("info string transposition cutoffs ");

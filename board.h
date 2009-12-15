@@ -76,6 +76,8 @@ typedef uint8_t castle_rights_t;
                                             (WHITE_OO<<(side)))
 #define has_ooo_rights(pos, side)       ((pos)->castle_rights & \
                                             (WHITE_OOO<<(side)))
+#define can_castle(pos, side)           (has_oo_rights(pos,side) || \
+                                            has_ooo_rights(pos,side))
 #define add_oo_rights(pos, side)        ((pos)->castle_rights |= \
                                             (WHITE_OO<<(side)))
 #define add_ooo_rights(pos, side)       ((pos)->castle_rights |= \
