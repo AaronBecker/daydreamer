@@ -9,8 +9,8 @@ static const int isolation_penalty[2][8] = {
     {20, 20, 20, 20, 20, 20, 20, 20}
 };
 static const int doubled_penalty[2][8] = {
-    { 5, 10, 15, 20, 20, 15, 10,  5},
-    {20, 20, 20, 20, 20, 20, 20, 20}
+    { 5,  6,  8, 10, 10,  8,  6,  5},
+    { 6,  8, 10, 14, 14, 10,  8,  6}
 };
 static const int passed_bonus[2][8] = {
     { 0,  5, 10, 20, 60, 120, 200, 0},
