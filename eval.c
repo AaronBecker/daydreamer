@@ -7,7 +7,7 @@
 #include "pst.inc"
 #endif
 
-static const int pawn_scale = 768;
+static const int pawn_scale = 640;
 // values tested: (768), 896, 1024, 1536
 static const int pattern_scale = 1024;
 // values tested: (1024)
