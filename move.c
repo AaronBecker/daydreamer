@@ -12,6 +12,7 @@ void place_piece(position_t* pos, piece_t piece, square_t square)
     }
     color_t color = piece_color(piece);
     piece_type_t type = piece_type(piece);
+    (void)type;
     assert(color == WHITE || color == BLACK);
     assert(type >= PAWN && type <= KING);
     assert(square != INVALID_SQUARE);

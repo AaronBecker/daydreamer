@@ -10,13 +10,13 @@
 static const int pawn_scale = 768;
 // values tested: 640, (768), 896, 1024, 1536
 static const int pattern_scale = 1024;
-// values tested: (1024)
+// values tested: 768, (1024), 1280
 static const int mobility_scale = 1024;
 // values tested: 768, (1024), 1280
 static const int shield_scale = 1576;
 // values tested: 1024, 1280, (1576), 2048
-static const int king_attack_scale = 896;
-// values tested: 640, (768), 1024, 1536
+static const int king_attack_scale = 768;
+// values tested: 640, (768), 896, 1024, 1536
 
 const int shield_value[2][17] = {
     { 0, 4, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },

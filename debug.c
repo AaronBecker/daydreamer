@@ -17,6 +17,7 @@ void _check_board_validity(const position_t* pos)
         if (!valid_board_index(sq) || !pos->board[sq]) continue;
         piece_t piece = pos->board[sq];
         color_t side = piece_color(piece);
+        (void)side;
         my_piece_count[piece]++;
         if (piece_is_type(piece, PAWN)) {
             assert(pos->pawns[side][pos->piece_index[sq]] == sq);
