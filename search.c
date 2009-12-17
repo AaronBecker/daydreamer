@@ -821,6 +821,18 @@ static int quiesce(position_t* pos,
     if (is_draw(pos)) return DRAW_VALUE;
     bool full_window = (beta-alpha > 1);
 
+    // Get move from transposition table if possible.
+    int orig_alpha = alpha;
+    transposition_entry_t* trans_entry = get_transposition(pos);
+    move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
+    if (trans_entry && 
+            is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
+        search_node->pv[ply] = hash_move;
+        search_node->pv[ply+1] = NO_MOVE;
+        root_data.stats.transposition_cutoffs[root_data.current_depth]++;
+        return MAX(alpha, trans_entry->score);
+    }
+
     // Check endgame bitbases if appropriate
     int score;
     if (should_probe_egbb(pos, depth, ply,
@@ -866,6 +878,8 @@ static int quiesce(position_t* pos,
             update_pv(search_node->pv, (search_node+1)->pv, ply, move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
+                put_transposition(pos, move, depth, beta,
+                        SCORE_LOWERBOUND, false);
                 return beta;
             }
         }
@@ -873,7 +887,13 @@ static int quiesce(position_t* pos,
     if (!num_qmoves && is_check(pos)) {
         return mated_in(ply);
     }
-
+    if (alpha == orig_alpha) {
+        put_transposition(pos, NO_MOVE, depth, alpha,
+                SCORE_UPPERBOUND, false);
+    } else {
+        put_transposition(pos, search_node->pv[ply], depth, alpha,
+                SCORE_EXACT, false);
+    }
     return alpha;
 }
 
