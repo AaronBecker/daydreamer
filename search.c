@@ -633,7 +633,7 @@ static int search(position_t* pos,
                         search_node, ply, alpha, beta, rdepth);
             }
             root_data.stats.nullmove_cutoffs[root_data.current_depth]++;
-            if (null_score >= beta) return null_score;
+            if (null_score >= beta) return beta;
         }
     } else if (razoring_enabled &&
             pos->prev_move != NULL_MOVE &&
@@ -775,7 +775,7 @@ static int search(position_t* pos,
                 if (full_window) root_data.stats.pv_move_selection[
                     MIN(num_legal_moves-1, HIST_BUCKETS)]++;
                 search_node->pv[ply] = NO_MOVE;
-                return score;
+                return beta;
             }
         }
     }
@@ -849,7 +849,7 @@ static int quiesce(position_t* pos,
     open_qnode(&root_data, ply);
     if (!is_check(pos)) {
         if (alpha < score) alpha = score;
-        if (alpha >= beta) return alpha;
+        if (alpha >= beta) return beta;
     }
 
     bool allow_futility = qfutility_enabled &&
@@ -880,7 +880,7 @@ static int quiesce(position_t* pos,
             if (score >= beta) {
                 put_transposition(pos, move, depth, beta,
                         SCORE_LOWERBOUND, false);
-                return score;
+                return beta;
             }
         }
     }
