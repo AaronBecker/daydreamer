@@ -8,12 +8,9 @@ const hashkey_t enpassant_random[64];
 
 static hashkey_t random_hashkey(void)
 {
-    assert(sizeof(long) == 4 || sizeof(long) == 8);
     hashkey_t hash = random();
-    if (sizeof(long) == 4) {
-        hash <<= 32;
-        hash |= random();
-    }
+    hash <<= 32;
+    hash |= random();
     return hash;
 }
 
