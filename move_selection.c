@@ -131,7 +131,7 @@ move_t select_move(move_selector_t* sel)
     move_t move;
     switch (*sel->phase) {
         case PHASE_TRANS:
-            move = sel->moves[sel->current_move_index++];
+            move = sel->hash_move[sel->current_move_index++];
             if (!move || !is_move_legal(sel->pos, move)) break;
             sel->moves_so_far++;
             return move;
@@ -143,7 +143,7 @@ move_t select_move(move_selector_t* sel)
         case PHASE_EVASIONS:
             while (sel->current_move_index >= sel->ordered_moves) {
                 move = sel->moves[sel->current_move_index++];
-                if (move == NO_MOVE || move == sel->hash_move[0]) break;
+                if (move == NO_MOVE /*|| move == sel->hash_move[0]*/) break;
                 if (sel->generator != ESCAPE_GEN &&
                         sel->generator != ROOT_GEN &&
                         !is_pseudo_move_legal(sel->pos, move)) {
@@ -175,7 +175,7 @@ move_t select_move(move_selector_t* sel)
                     sel->scores[offset] = score;
                     sel->current_move_index++;
                 }
-                if (move == NO_MOVE || move == sel->hash_move[0]) break;
+                if (move == NO_MOVE /*|| move == sel->hash_move[0]*/) break;
                 if ((sel->generator == Q_CHECK_GEN ||
                      sel->generator == Q_GEN) &&
                     (!get_move_promote(move) ||
