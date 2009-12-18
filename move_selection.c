@@ -70,7 +70,9 @@ void init_move_selector(move_selector_t* sel,
  */
 bool has_single_reply(move_selector_t* sel)
 {
-    return sel->single_reply;
+    // FIXME
+    return false;
+    //return sel->single_reply;
 }
 
 /*
@@ -90,6 +92,7 @@ static void generate_moves(move_selector_t* sel)
             return;
         case PHASE_TRANS:
             sel->moves = sel->hash_move;
+            sel->moves_end = 1;
             break;
         case PHASE_EVASIONS:
             sel->moves_end = generate_evasions(sel->pos, sel->moves);
@@ -143,10 +146,11 @@ move_t select_move(move_selector_t* sel)
         case PHASE_EVASIONS:
             while (sel->current_move_index >= sel->ordered_moves) {
                 move = sel->moves[sel->current_move_index++];
-                if (move == NO_MOVE || move == sel->hash_move[0]) break;
+                if (move == NO_MOVE) break;
                 if (sel->generator != ESCAPE_GEN &&
                         sel->generator != ROOT_GEN &&
-                        !is_pseudo_move_legal(sel->pos, move)) {
+                        (move == sel->hash_move[0] ||
+                        !is_pseudo_move_legal(sel->pos, move))) {
                     continue;
                 }
                 sel->moves_so_far++;
@@ -175,7 +179,7 @@ move_t select_move(move_selector_t* sel)
                     sel->scores[offset] = score;
                     sel->current_move_index++;
                 }
-                if (move == NO_MOVE || move == sel->hash_move[0]) break;
+                if (move == NO_MOVE) break;
                 if ((sel->generator == Q_CHECK_GEN ||
                      sel->generator == Q_GEN) &&
                     (!get_move_promote(move) ||
@@ -184,7 +188,8 @@ move_t select_move(move_selector_t* sel)
                     MAX_HISTORY) continue;
                 if (sel->generator != ESCAPE_GEN &&
                         sel->generator != ROOT_GEN &&
-                        !is_pseudo_move_legal(sel->pos, move)) continue;
+                        (move == sel->hash_move[0] ||
+                        !is_pseudo_move_legal(sel->pos, move))) continue;
                 check_pseudo_move_legality(sel->pos, move);
                 sel->moves_so_far++;
                 return move;
