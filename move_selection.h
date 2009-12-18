@@ -10,7 +10,20 @@ typedef enum {
     ESCAPE_GEN, Q_GEN, Q_CHECK_GEN,
 } generation_t;
 
+typedef enum {
+    PHASE_BEGIN,
+    PHASE_END,
+    PHASE_ROOT,
+    PHASE_TRANS,
+    PHASE_EVASIONS,
+    PHASE_PV,
+    PHASE_NON_PV,
+    PHASE_QSEARCH,
+    PHASE_QSEARCH_CH,
+} selection_phase_t;
+
 typedef struct {
+    selection_phase_t* phase;
     move_t moves[256];
     int scores[256];
     int moves_end;

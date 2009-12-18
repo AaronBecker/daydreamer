@@ -3,6 +3,15 @@
 
 extern search_data_t root_data;
 
+selection_phase_t phase_table[6][8] = {
+    { PHASE_BEGIN, PHASE_ROOT, PHASE_END },
+    { PHASE_BEGIN, PHASE_PV, PHASE_END },
+    { PHASE_BEGIN, PHASE_NON_PV, PHASE_END },
+    { PHASE_BEGIN, PHASE_EVASIONS, PHASE_END },
+    { PHASE_BEGIN, PHASE_QSEARCH, PHASE_END },
+    { PHASE_BEGIN, PHASE_QSEARCH_CH, PHASE_END },
+};
+
 // How many moves should be selected by scanning through the score list and
 // picking the highest available, as opposed to picking them in order? Note
 // that root selection is 0 because the moves are already sorted into the
@@ -32,6 +41,7 @@ void init_move_selector(move_selector_t* sel,
     } else {
         sel->generator = gen_type;
     }
+    sel->phase = phase_table[sel->generator];
     sel->hash_move = hash_move;
     sel->depth = depth;
     sel->moves_so_far = 0;
@@ -67,27 +77,31 @@ bool has_single_reply(move_selector_t* sel)
  */
 static void generate_moves(move_selector_t* sel)
 {
+    sel->phase++;
     sel->moves_end = 0;
     sel->current_move_index = 0;
-    switch (sel->generator) {
-        case ESCAPE_GEN:
+    switch (*sel->phase) {
+        case PHASE_BEGIN: assert(false);
+        case PHASE_END: return;
+        case PHASE_TRANS: assert(false);
+        case PHASE_EVASIONS:
             sel->moves_end = generate_evasions(sel->pos, sel->moves);
             score_moves(sel);
             break;
-        case ROOT_GEN:
+        case PHASE_ROOT:
             sort_root_moves(sel);
             break;
-        case PV_GEN:
-        case NONPV_GEN:
+        case PHASE_PV:
+        case PHASE_NON_PV:
             sel->moves_end = generate_pseudo_moves(sel->pos, sel->moves);
             score_moves(sel);
             break;
-        case Q_CHECK_GEN:
+        case PHASE_QSEARCH_CH:
             sel->moves_end = generate_quiescence_moves(
                     sel->pos, sel->moves, true);
             score_moves(sel);
             break;
-        case Q_GEN:
+        case PHASE_QSEARCH:
             sel->moves_end = generate_quiescence_moves(
                     sel->pos, sel->moves, false);
             score_moves(sel);
