@@ -59,7 +59,6 @@ void uci_read_stream(FILE* stream)
 static void uci_handle_command(char* command)
 {
     if (!command) exit(0);
-    log(command);
 
     // strip trailing newline.
     char* c = command;
