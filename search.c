@@ -860,7 +860,7 @@ static int quiesce(position_t* pos,
     move_selector_t selector;
     generation_t gen_type = depth == 0 ? Q_CHECK_GEN : Q_GEN;
     init_move_selector(&selector, pos, gen_type,
-            search_node, NO_MOVE, depth, ply);
+            search_node, hash_move, depth, ply);
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector), ++num_qmoves) {
         // TODO: prevent futility for passed pawn moves and checks
