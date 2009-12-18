@@ -5,11 +5,11 @@ extern search_data_t root_data;
 
 selection_phase_t phase_table[6][8] = {
     { PHASE_BEGIN, PHASE_ROOT, PHASE_END },
-    { PHASE_BEGIN, PHASE_PV, PHASE_END },
-    { PHASE_BEGIN, PHASE_NON_PV, PHASE_END },
-    { PHASE_BEGIN, PHASE_EVASIONS, PHASE_END },
-    { PHASE_BEGIN, PHASE_QSEARCH, PHASE_END },
-    { PHASE_BEGIN, PHASE_QSEARCH_CH, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_PV, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_NON_PV, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_EVASIONS, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_QSEARCH, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_QSEARCH_CH, PHASE_END },
 };
 
 // How many moves should be selected by scanning through the score list and
@@ -143,7 +143,7 @@ move_t select_move(move_selector_t* sel)
         case PHASE_EVASIONS:
             while (sel->current_move_index >= sel->ordered_moves) {
                 move = sel->moves[sel->current_move_index++];
-                if (move == NO_MOVE /*|| move == sel->hash_move[0]*/) break;
+                if (move == NO_MOVE || move == sel->hash_move[0]) break;
                 if (sel->generator != ESCAPE_GEN &&
                         sel->generator != ROOT_GEN &&
                         !is_pseudo_move_legal(sel->pos, move)) {
@@ -175,7 +175,7 @@ move_t select_move(move_selector_t* sel)
                     sel->scores[offset] = score;
                     sel->current_move_index++;
                 }
-                if (move == NO_MOVE /*|| move == sel->hash_move[0]*/) break;
+                if (move == NO_MOVE || move == sel->hash_move[0]) break;
                 if ((sel->generator == Q_CHECK_GEN ||
                      sel->generator == Q_GEN) &&
                     (!get_move_promote(move) ||
