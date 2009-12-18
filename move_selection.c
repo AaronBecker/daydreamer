@@ -7,7 +7,7 @@ selection_phase_t phase_table[6][8] = {
     { PHASE_BEGIN, PHASE_ROOT, PHASE_END },
     { PHASE_BEGIN, PHASE_TRANS, PHASE_PV, PHASE_END },
     { PHASE_BEGIN, PHASE_TRANS, PHASE_NON_PV, PHASE_END },
-    { PHASE_BEGIN, PHASE_TRANS, PHASE_EVASIONS, PHASE_END },
+    { PHASE_BEGIN, PHASE_EVASIONS, PHASE_END },
     { PHASE_BEGIN, PHASE_TRANS, PHASE_QSEARCH, PHASE_END },
     { PHASE_BEGIN, PHASE_TRANS, PHASE_QSEARCH_CH, PHASE_END },
 };
@@ -71,7 +71,7 @@ void init_move_selector(move_selector_t* sel,
 bool has_single_reply(move_selector_t* sel)
 {
     // FIXME
-    return false;
+    return *sel->phase == PHASE_EVASIONS && sel->moves_end == 1;
     //return sel->single_reply;
 }
 
