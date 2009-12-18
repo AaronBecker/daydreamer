@@ -22,6 +22,7 @@ static void generate_moves(move_selector_t* sel);
 static void score_moves(move_selector_t* sel);
 static void sort_root_moves(move_selector_t* sel);
 static int score_tactical_move(position_t* pos, move_t move);
+static move_t get_best_move(move_selector_t* sel, int* score);
 
 /*
  * Initialize the move selector data structure with the information needed to
@@ -139,18 +140,32 @@ move_t select_move(move_selector_t* sel)
             sel->moves_so_far++;
             return move;
         case PHASE_ROOT:
+            move = sel->moves[sel->current_move_index++];
+            sel->moves_so_far++;
+            return move;
+        case PHASE_EVASIONS:
+            if (sel->current_move_index >= sel->ordered_moves) {
+                move = sel->moves[sel->current_move_index++];
+                sel->moves_so_far++;
+                return move;
+            } else {
+                assert(sel->current_move_index <= sel->moves_end);
+                move = get_best_move(sel, NULL);
+                if (!move) break;
+                check_pseudo_move_legality(sel->pos, move);
+                sel->moves_so_far++;
+                return move;
+            }
+            
         case PHASE_PV:
         case PHASE_NON_PV:
         case PHASE_QSEARCH:
         case PHASE_QSEARCH_CH:
-        case PHASE_EVASIONS:
             while (sel->current_move_index >= sel->ordered_moves) {
                 move = sel->moves[sel->current_move_index++];
                 if (move == NO_MOVE) break;
-                if (sel->generator != ESCAPE_GEN &&
-                        sel->generator != ROOT_GEN &&
-                        (move == sel->hash_move[0] ||
-                        !is_pseudo_move_legal(sel->pos, move))) {
+                if (move == sel->hash_move[0] ||
+                        !is_pseudo_move_legal(sel->pos, move)) {
                     continue;
                 }
                 sel->moves_so_far++;
@@ -160,36 +175,16 @@ move_t select_move(move_selector_t* sel)
 
             while (true) {
                 assert(sel->current_move_index <= sel->moves_end);
-                int offset = sel->current_move_index;
-                move = NO_MOVE;
-                int score = INT_MIN;
-                int index = -1;
-                for (int i=offset; sel->moves[i] != NO_MOVE; ++i) {
-                    if (sel->scores[i] > score) {
-                        score = sel->scores[i];
-                        index = i;
-                    }
-                }
-                if (index != -1) {
-                    move = sel->moves[index];
-                    score = sel->scores[index];
-                    sel->moves[index] = sel->moves[offset];
-                    sel->scores[index] = sel->scores[offset];
-                    sel->moves[offset] = move;
-                    sel->scores[offset] = score;
-                    sel->current_move_index++;
-                }
-                if (move == NO_MOVE) break;
+                int best_score;
+                move = get_best_move(sel, &best_score);
+                if (!move) break;
                 if ((sel->generator == Q_CHECK_GEN ||
                      sel->generator == Q_GEN) &&
                     (!get_move_promote(move) ||
                      get_move_promote(move) != QUEEN) &&
-                    sel->scores[sel->current_move_index-1] <
-                    MAX_HISTORY) continue;
-                if (sel->generator != ESCAPE_GEN &&
-                        sel->generator != ROOT_GEN &&
-                        (move == sel->hash_move[0] ||
-                        !is_pseudo_move_legal(sel->pos, move))) continue;
+                    best_score < MAX_HISTORY) continue;
+                if (move == sel->hash_move[0] ||
+                        !is_pseudo_move_legal(sel->pos, move)) continue;
                 check_pseudo_move_legality(sel->pos, move);
                 sel->moves_so_far++;
                 return move;
@@ -201,6 +196,31 @@ move_t select_move(move_selector_t* sel)
     assert(*sel->phase != PHASE_END);
     generate_moves(sel);
     return select_move(sel);
+}
+
+static move_t get_best_move(move_selector_t* sel, int* score)
+{
+    int offset = sel->current_move_index;
+    move_t move = NO_MOVE;
+    int best_score = INT_MIN;
+    int index = -1;
+    for (int i=offset; sel->moves[i] != NO_MOVE; ++i) {
+        if (sel->scores[i] > best_score) {
+            best_score = sel->scores[i];
+            index = i;
+        }
+    }
+    if (index != -1) {
+        move = sel->moves[index];
+        best_score = sel->scores[index];
+        sel->moves[index] = sel->moves[offset];
+        sel->scores[index] = sel->scores[offset];
+        sel->moves[offset] = move;
+        sel->scores[offset] = best_score;
+        sel->current_move_index++;
+    }
+    if (score) *score = best_score;
+    return move;
 }
 
 /*
