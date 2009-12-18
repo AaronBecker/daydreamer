@@ -42,7 +42,8 @@ void init_move_selector(move_selector_t* sel,
         sel->generator = gen_type;
     }
     sel->phase = phase_table[sel->generator];
-    sel->hash_move = hash_move;
+    sel->hash_move[0] = hash_move;
+    sel->hash_move[1] = NO_MOVE;
     sel->depth = depth;
     sel->moves_so_far = 0;
     sel->ordered_moves = ordered_move_count[gen_type];
@@ -80,10 +81,16 @@ static void generate_moves(move_selector_t* sel)
     sel->phase++;
     sel->moves_end = 0;
     sel->current_move_index = 0;
+    sel->moves = sel->base_moves;
+    sel->scores = sel->base_scores;
     switch (*sel->phase) {
-        case PHASE_BEGIN: assert(false);
-        case PHASE_END: return;
-        case PHASE_TRANS: assert(false);
+        case PHASE_BEGIN:
+            assert(false);
+        case PHASE_END:
+            return;
+        case PHASE_TRANS:
+            sel->moves = sel->hash_move;
+            break;
         case PHASE_EVASIONS:
             sel->moves_end = generate_evasions(sel->pos, sel->moves);
             score_moves(sel);
@@ -119,50 +126,76 @@ static void generate_moves(move_selector_t* sel)
  */
 move_t select_move(move_selector_t* sel)
 {
+    if (*sel->phase == PHASE_END) return NO_MOVE;
+
     move_t move;
-    while (sel->current_move_index >= sel->ordered_moves) {
-        move = sel->moves[sel->current_move_index++];
-        if (move == NO_MOVE) return move;
-        if (sel->generator != ESCAPE_GEN && sel->generator != ROOT_GEN &&
-                !is_pseudo_move_legal(sel->pos, move)) {
-            continue;
-        }
-        sel->moves_so_far++;
-        return move;
+    switch (*sel->phase) {
+        case PHASE_TRANS:
+            move = sel->moves[sel->current_move_index++];
+            if (!move || !is_move_legal(sel->pos, move)) break;
+            sel->moves_so_far++;
+            return move;
+        case PHASE_ROOT:
+        case PHASE_PV:
+        case PHASE_NON_PV:
+        case PHASE_QSEARCH:
+        case PHASE_QSEARCH_CH:
+        case PHASE_EVASIONS:
+            while (sel->current_move_index >= sel->ordered_moves) {
+                move = sel->moves[sel->current_move_index++];
+                if (move == NO_MOVE || move == sel->hash_move[0]) break;
+                if (sel->generator != ESCAPE_GEN &&
+                        sel->generator != ROOT_GEN &&
+                        !is_pseudo_move_legal(sel->pos, move)) {
+                    continue;
+                }
+                sel->moves_so_far++;
+                return move;
+            }
+            if (sel->current_move_index >= sel->ordered_moves) break;
+
+            while (true) {
+                assert(sel->current_move_index <= sel->moves_end);
+                int offset = sel->current_move_index;
+                move = NO_MOVE;
+                int score = INT_MIN;
+                int index = -1;
+                for (int i=offset; sel->moves[i] != NO_MOVE; ++i) {
+                    if (sel->scores[i] > score) {
+                        score = sel->scores[i];
+                        index = i;
+                    }
+                }
+                if (index != -1) {
+                    move = sel->moves[index];
+                    score = sel->scores[index];
+                    sel->moves[index] = sel->moves[offset];
+                    sel->scores[index] = sel->scores[offset];
+                    sel->moves[offset] = move;
+                    sel->scores[offset] = score;
+                    sel->current_move_index++;
+                }
+                if (move == NO_MOVE || move == sel->hash_move[0]) break;
+                if ((sel->generator == Q_CHECK_GEN ||
+                     sel->generator == Q_GEN) &&
+                    (!get_move_promote(move) ||
+                     get_move_promote(move) != QUEEN) &&
+                    sel->scores[sel->current_move_index-1] <
+                    MAX_HISTORY) continue;
+                if (sel->generator != ESCAPE_GEN &&
+                        sel->generator != ROOT_GEN &&
+                        !is_pseudo_move_legal(sel->pos, move)) continue;
+                check_pseudo_move_legality(sel->pos, move);
+                sel->moves_so_far++;
+                return move;
+            }
+            break;
+        default: assert(false);
     }
 
-    while (true) {
-        assert(sel->current_move_index <= sel->moves_end);
-        int offset = sel->current_move_index;
-        move = NO_MOVE;
-        int score = INT_MIN;
-        int index = -1;
-        for (int i=offset; sel->moves[i] != NO_MOVE; ++i) {
-            if (sel->scores[i] > score) {
-                score = sel->scores[i];
-                index = i;
-            }
-        }
-        if (index != -1) {
-            move = sel->moves[index];
-            score = sel->scores[index];
-            sel->moves[index] = sel->moves[offset];
-            sel->scores[index] = sel->scores[offset];
-            sel->moves[offset] = move;
-            sel->scores[offset] = score;
-            sel->current_move_index++;
-        }
-        if (move == NO_MOVE) return move;
-        if ((sel->generator == Q_CHECK_GEN || sel->generator == Q_GEN) &&
-            (!get_move_promote(move) || get_move_promote(move) != QUEEN) &&
-            sel->scores[sel->current_move_index-1] < MAX_HISTORY) continue;
-        if (sel->generator != ESCAPE_GEN && sel->generator != ROOT_GEN &&
-                !is_pseudo_move_legal(sel->pos, move)) continue;
-        check_pseudo_move_legality(sel->pos, move);
-        sel->moves_so_far++;
-        break;
-    }
-    return move;
+    assert(*sel->phase != PHASE_END);
+    generate_moves(sel);
+    return select_move(sel);
 }
 
 /*
@@ -183,7 +216,7 @@ static void score_moves(move_selector_t* sel)
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
         int score = 0;
-        if (move == sel->hash_move) {
+        if (move == sel->hash_move[0]) {
             score = hash_score;
         } else if (move == sel->mate_killer) {
             score = hash_score-1;
@@ -241,7 +274,7 @@ static void sort_root_moves(move_selector_t* sel)
         } else {
             scores[i] = root_data.root_moves[i].nodes;
         }
-        if (sel->moves[i] == sel->hash_move) scores[i] = UINT64_MAX;
+        if (sel->moves[i] == sel->hash_move[0]) scores[i] = UINT64_MAX;
     }
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;

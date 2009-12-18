@@ -24,12 +24,14 @@ typedef enum {
 
 typedef struct {
     selection_phase_t* phase;
-    move_t moves[256];
-    int scores[256];
+    move_t* moves;
+    int* scores;
+    move_t base_moves[256];
+    int base_scores[256];
     int moves_end;
     int current_move_index;
     generation_t generator;
-    move_t hash_move;
+    move_t hash_move[2];
     move_t mate_killer;
     move_t killers[5];
     int moves_so_far;
@@ -43,3 +45,4 @@ typedef struct {
 } // extern "C"
 #endif
 #endif // SELECTION_H
+
