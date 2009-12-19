@@ -227,9 +227,10 @@ move_t select_move(move_selector_t* sel)
                 if (!move) break;
                 if (move == sel->hash_move[0] ||
                         !is_pseudo_move_legal(sel->pos, move)) continue;
-                int see = static_exchange_eval(sel->pos, move);
-                if (see < 0) {
-                    sel->bad_tactic_scores[sel->num_bad_tactics] = see;
+                //int see = static_exchange_eval(sel->pos, move);
+                //if (see < 0) {
+                if (best_score < 0) {
+                    sel->bad_tactic_scores[sel->num_bad_tactics] = best_score;//see;
                     sel->bad_tactics[sel->num_bad_tactics++] = move;
                     sel->bad_tactics[sel->num_bad_tactics] = NO_MOVE;
                     continue;
@@ -373,9 +374,13 @@ static void score_tactics(move_selector_t* sel)
         piece_type_t promote = get_move_promote(move);
         piece_type_t capture = piece_type(get_move_capture(move));
         int good_tactic_bonus = 0;
-        if (promote != NONE && promote != QUEEN) good_tactic_bonus = -1000;
-        else if (capture != NONE && piece <= capture) good_tactic_bonus =
-            material_value(capture) - material_value(piece);
+        if (is_move_enpassant(move)) good_tactic_bonus = 10000;
+        else if (promote!=NONE && promote!=QUEEN) good_tactic_bonus = -10000;
+        else if (promote != NONE) good_tactic_bonus = 10000;
+        else if (capture != NONE && material_value(capture) >=
+                material_value(piece)) good_tactic_bonus = 10000;
+        else good_tactic_bonus = static_exchange_eval(sel->pos, move) >= 0 ?
+            10000 : -10000;
         sel->scores[i] = 6*capture - piece + good_tactic_bonus;
     }
 }
