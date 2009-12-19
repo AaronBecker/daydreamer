@@ -11,7 +11,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.51"
-#define ENGINE_VERSION_NAME     " phase4_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " phase5_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -155,6 +155,7 @@ uint64_t perft(position_t* position, int depth, bool divide);
 char* set_position(position_t* pos, const char* fen);
 void copy_position(position_t* dst, const position_t* src);
 bool is_move_legal(position_t* pos, const move_t move);
+bool is_plausible_move_legal(position_t* pos, move_t move);
 bool is_pseudo_move_legal(position_t* pos, move_t move);
 bool is_check(const position_t* pos);
 bool is_repetition(const position_t* pos);

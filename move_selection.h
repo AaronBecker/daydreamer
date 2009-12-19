@@ -20,6 +20,10 @@ typedef enum {
     PHASE_NON_PV,
     PHASE_QSEARCH,
     PHASE_QSEARCH_CH,
+    PHASE_KILLERS,
+    PHASE_GOOD_TACTICS,
+    PHASE_BAD_TACTICS,
+    PHASE_QUIET,
 } selection_phase_t;
 
 typedef struct {
@@ -28,12 +32,15 @@ typedef struct {
     int* scores;
     move_t base_moves[256];
     int base_scores[256];
+    move_t bad_tactics[64];
+    int num_bad_tactics;
     int moves_end;
     int current_move_index;
     generation_t generator;
     move_t hash_move[2];
     move_t mate_killer;
     move_t killers[5];
+    int num_killers;
     int moves_so_far;
     int ordered_moves;
     int depth;

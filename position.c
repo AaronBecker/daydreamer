@@ -240,8 +240,7 @@ bool is_move_legal(position_t* pos, move_t move)
                     castle_ok = false;
                     break;
                 }
-                if (sq != my_c1 &&
-                        is_square_attacked((position_t*)pos, sq, side^1)) {
+                if (is_square_attacked((position_t*)pos, sq, side^1)) {
                     castle_ok = false;
                     break;
                 }
@@ -270,8 +269,7 @@ bool is_move_legal(position_t* pos, move_t move)
                     castle_ok = false;
                     break;
                 }
-                if (sq != my_g1 &&
-                        is_square_attacked((position_t*)pos, sq, side^1)) {
+                if (is_square_attacked((position_t*)pos, sq, side^1)) {
                     castle_ok = false;
                     break;
                 }
@@ -290,12 +288,106 @@ bool is_move_legal(position_t* pos, move_t move)
     return legal;
 }
 
+bool is_plausible_move_legal(position_t* pos, move_t move)
+{
+    assert(!is_check(pos));
+
+    piece_t piece = get_move_piece(move);
+    piece_t capture = get_move_capture(move);
+    square_t to = get_move_to(move);
+    square_t from = get_move_from(move);
+    color_t side = piece_color(piece);
+    // Make sure source and destination squares are legal.
+    if (pos->board[from] != piece) return false;
+    if (pos->board[to] != capture && !is_move_enpassant(move)) return false;
+
+    // Make sure nothing's in the way of sliding pieces.
+    if (piece_slide_type(piece) != NONE) {
+        direction_t delta = direction(from, to);
+        for (square_t sq = from + delta; sq != to; sq += delta) {
+            if (pos->board[sq] != EMPTY) return false;
+        }
+    }
+
+    square_t my_king_home = king_home + side*A8;
+    if (!options.chess960) {
+        if (is_move_castle_short(move) && !(has_oo_rights(pos, side) &&
+                pos->board[my_king_home+1] == EMPTY &&
+                pos->board[my_king_home+2] == EMPTY &&
+                !is_square_attacked((position_t*)pos,my_king_home+1,side^1))) {
+            return false;
+        }
+        if (is_move_castle_long(move) && !(has_ooo_rights(pos, side) &&
+                pos->board[my_king_home-1] == EMPTY &&
+                pos->board[my_king_home-2] == EMPTY &&
+                pos->board[my_king_home-3] == EMPTY &&
+                !is_square_attacked((position_t*)pos,my_king_home-1,side^1))) {
+            return false;
+        }
+    } else {
+        if (is_move_castle_short(move)) {
+            if (!has_oo_rights(pos, side)) return false;
+            square_t my_f1 = F1 + side*A8;
+            square_t my_g1 = G1 + side*A8;
+            square_t my_kr = king_rook_home + side*A8;
+            // Check that rook is unimpeded.
+            for (square_t sq = MIN(my_kr, my_f1);
+                    sq <= MAX(my_kr, my_f1); ++sq) {
+                if (sq != my_kr  && sq != my_king_home &&
+                        pos->board[sq] != EMPTY) {
+                    return false;
+                }
+            }
+            // Check that the king is unimpeded and unattacked
+            for (square_t sq = MIN(my_king_home, my_g1);
+                    sq <= my_g1; ++sq) {
+                if (sq != my_king_home && sq != my_kr &&
+                        pos->board[sq] != EMPTY) {
+                    return false;
+                }
+                if (sq != my_g1 &&
+                        is_square_attacked((position_t*)pos, sq, side^1)) {
+                    return false;
+                }
+            }
+        }
+        if (is_move_castle_long(move)) {
+            if (!has_ooo_rights(pos, side)) return false;
+            square_t my_d1 = D1 + side*A8;
+            square_t my_c1 = C1 + side*A8;
+            square_t my_qr = queen_rook_home + side*A8;
+            // Check that rook is unimpeded.
+            for (square_t sq = MIN(my_qr, my_d1);
+                    sq <= MAX(my_qr, my_d1); ++sq) {
+                if (sq != my_qr && sq != my_king_home &&
+                        pos->board[sq] != EMPTY) {
+                    return false;
+                }
+            }
+            // Check that the king is unimpeded and unattacked
+            for (square_t sq = MIN(my_king_home, my_c1);
+                    sq <= MAX(my_king_home, my_c1); ++sq) {
+                if (sq != my_king_home && sq != my_qr &&
+                        pos->board[sq] != EMPTY) {
+                    return false;
+                }
+                if (sq != my_c1 &&
+                        is_square_attacked((position_t*)pos, sq, side^1)) {
+                    return false;
+                }
+            }
+        }
+    }
+    return is_pseudo_move_legal(pos, move);
+}
+
 /*
  * Test a pseudo-legal move's legality. For this, we only have to check that
  * it doesn't leave the king in check.
  */
 bool is_pseudo_move_legal(position_t* pos, move_t move)
 {
+    if (!move) return false;
     piece_t piece = get_move_piece(move);
     square_t to = get_move_to(move);
     square_t from = get_move_from(move);

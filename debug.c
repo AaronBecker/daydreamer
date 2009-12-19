@@ -25,6 +25,8 @@ void _check_board_validity(const position_t* pos)
             assert(pos->pieces[side][pos->piece_index[sq]] == sq);
         }
     }
+    assert(my_piece_count[WK] == 1);
+    assert(my_piece_count[BK] == 1);
     for (int i=0; i<16; ++i) {
         assert(my_piece_count[i] == pos->piece_count[i]);
     }
