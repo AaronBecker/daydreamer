@@ -263,9 +263,9 @@ static void score_moves(move_selector_t* sel)
     move_t* moves = sel->moves;
     int64_t* scores = sel->scores;
 
-    const int grain = MAX_HISTORY;
-    const int hash_score = 1000 * grain;
-    const int killer_score = 700 * grain;
+    const int64_t grain = MAX_HISTORY;
+    const int64_t hash_score = 1000 * grain;
+    const int64_t killer_score = 700 * grain;
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
         int64_t score = 0ull;
