@@ -32,8 +32,9 @@ typedef struct {
     int64_t* scores;
     move_t base_moves[256];
     int64_t base_scores[256];
-    move_t bad_tactics[64];
-    int num_bad_tactics;
+    move_t pv_moves[256];
+    int64_t pv_nodes[256];
+    int pv_index;
     int moves_end;
     int current_move_index;
     generation_t generator;

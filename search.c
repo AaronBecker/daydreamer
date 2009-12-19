@@ -454,6 +454,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
                 elapsed_time(&search_data->timer));
         print_transposition_stats();
         print_pawn_stats();
+        print_pv_cache_stats();
         print_multipv(search_data);
     }
     char best_move[6], ponder_move[6];
@@ -673,6 +674,7 @@ static int search(position_t* pos,
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector)) {
         num_legal_moves = selector.moves_so_far;
+        int64_t nodes_before = root_data.nodes_searched;
 
         undo_info_t undo;
         do_move(pos, move, &undo);
@@ -700,6 +702,7 @@ static int search(position_t* pos,
                             &root_data.history, move, depth)) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
+                    if (full_window) add_pv_move(&selector, move, 0);
                     continue;
                 }
                 // Value pruning.
@@ -711,6 +714,7 @@ static int search(position_t* pos,
                     if (futility_score < beta) {
                         num_futile_moves++;
                         undo_move(pos, move, &undo);
+                        if (full_window) add_pv_move(&selector, move, 0);
                         continue;
                     }
                 }
@@ -745,6 +749,8 @@ static int search(position_t* pos,
         }
         searched_moves[num_searched_moves++] = move;
         undo_move(pos, move, &undo);
+        if (full_window) add_pv_move(&selector, move,
+                root_data.nodes_searched - nodes_before);
         if (score > alpha) {
             alpha = score;
             update_pv(search_node->pv, (search_node+1)->pv, ply, move);
@@ -770,13 +776,20 @@ static int search(position_t* pos,
                         SCORE_LOWERBOUND, mate_threat);
                 root_data.stats.move_selection[
                     MIN(num_legal_moves-1, HIST_BUCKETS)]++;
-                if (full_window) root_data.stats.pv_move_selection[
-                    MIN(num_legal_moves-1, HIST_BUCKETS)]++;
+                if (full_window) {
+                    root_data.stats.pv_move_selection[
+                        MIN(num_legal_moves-1, HIST_BUCKETS)]++;
+                    while ((move = select_move(&selector))) {
+                        add_pv_move(&selector, move, 0);
+                    }
+                    commit_pv_moves(&selector);
+                }
                 search_node->pv[ply] = NO_MOVE;
                 return beta;
             }
         }
     }
+    if (full_window) commit_pv_moves(&selector);
     if (!num_legal_moves) {
         // No legal moves, this is either stalemate or checkmate.
         search_node->pv[ply] = NO_MOVE;

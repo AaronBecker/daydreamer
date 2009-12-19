@@ -129,6 +129,11 @@ void init_move_selector(move_selector_t* sel,
         int ply);
 bool has_single_reply(move_selector_t* sel);
 move_t select_move(move_selector_t* sel);
+void init_pv_cache(const int max_bytes);
+void clear_pv_cache(void);
+void add_pv_move(move_selector_t* sel, move_t move, int64_t nodes);
+void commit_pv_moves(move_selector_t* sel);
+void print_pv_cache_stats(void);
 
 // output.c
 void print_coord_move(move_t move);
