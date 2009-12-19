@@ -457,7 +457,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         print_pv_cache_stats();
         print_multipv(search_data);
     }
-    char best_move[6], ponder_move[6];
+    char best_move[7], ponder_move[7];
     move_to_coord_str(search_data->pv[0], best_move);
     move_to_coord_str(search_data->pv[1], ponder_move);
     printf("bestmove %s", best_move);
@@ -496,7 +496,7 @@ static search_result_t root_search(search_data_t* search_data,
             continue;
         }
         if (should_output(search_data)) {
-            char coord_move[6];
+            char coord_move[7];
             move_to_coord_str(move, coord_move);
             printf("info currmove %s currmovenumber %d\n",
                     coord_move, search_data->current_move_index);
@@ -516,7 +516,7 @@ static search_result_t root_search(search_data_t* search_data,
                     1, -alpha-1, -alpha, search_data->current_depth+ext-1);
             if (score > alpha) {
                 if (options.verbose && should_output(search_data)) {
-                    char coord_move[6];
+                    char coord_move[7];
                     move_to_coord_str(move, coord_move);
                     printf("info string fail high, research %s\n", coord_move);
                 }
