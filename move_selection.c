@@ -26,6 +26,8 @@ static void score_moves(move_selector_t* sel);
 static void sort_root_moves(move_selector_t* sel);
 static int score_tactical_move(position_t* pos, move_t move);
 static move_t get_best_move(move_selector_t* sel, int* score);
+static void score_tactics(move_selector_t* sel);
+static void score_quiet(move_selector_t* sel);
 
 /*
  * Initialize the move selector data structure with the information needed to
@@ -61,16 +63,20 @@ void init_move_selector(move_selector_t* sel,
             sel->killers[1] = search_node->killers[1];
             if (sel->killers[1]) sel->num_killers++;
         }
-        /*
         if (ply >= 2) {
-            sel->killers[sel->num_killers] = (search_node-2)->killers[0];
-            if (sel->killers[sel->num_killers]) {
-                sel->num_killers++;
-                sel->killers[sel->num_killers] = (search_node-2)->killers[1];
-                if (sel->killers[sel->num_killers]) sel->num_killers++;
+            move_t* s2k = (search_node-2)->killers;
+            if (s2k[0] != sel->killers[0] && s2k[0] != sel->killers[1]) {
+                sel->killers[sel->num_killers] = s2k[0];
+                if (sel->killers[sel->num_killers]) {
+                    sel->num_killers++;
+                    if (s2k[1] != sel->killers[0] &&
+                            s2k[1] != sel->killers[1]) {
+                        sel->killers[sel->num_killers] = s2k[1];
+                    }
+                    if (sel->killers[sel->num_killers]) sel->num_killers++;
+                }
             }
         }
-        */
     }
     sel->killers[sel->num_killers] = NO_MOVE;
     generate_moves(sel);
@@ -120,10 +126,11 @@ static void generate_moves(move_selector_t* sel)
                     sel->pos, sel->moves);
             sel->bad_tactics[0] = NO_MOVE;
             sel->num_bad_tactics = 0;
-            score_moves(sel);
+            score_tactics(sel);
             break;
         case PHASE_BAD_TACTICS:
             sel->moves = sel->bad_tactics;
+            sel->scores = sel->bad_tactic_scores;
             sel->moves_end = sel->num_bad_tactics;
             break;
         case PHASE_KILLERS:
@@ -132,7 +139,7 @@ static void generate_moves(move_selector_t* sel)
             break;
         case PHASE_QUIET:
             sel->moves_end = generate_pseudo_quiet_moves(sel->pos, sel->moves);
-            score_moves(sel);
+            score_quiet(sel);
             break;
             /**/
         case PHASE_PV:
@@ -202,6 +209,7 @@ move_t select_move(move_selector_t* sel)
                 return move;
             }
         case PHASE_BAD_TACTICS:
+            // TODO: test sorting by bad move score.
             move = sel->moves[sel->current_move_index++];
             if (!move) break;
             assert(!(move == sel->hash_move[0] ||
@@ -219,16 +227,9 @@ move_t select_move(move_selector_t* sel)
                 if (!move) break;
                 if (move == sel->hash_move[0] ||
                         !is_pseudo_move_legal(sel->pos, move)) continue;
-                assert(!(move == sel->killers[0] ||
-                        move == sel->killers[1] ||
-                        move == sel->killers[2] ||
-                        move == sel->killers[3] ||
-                        move == sel->killers[4]));
-                // TODO: see test here instead of in scoring fn
-                // TODO: clean up killer conditions, use asserts to verify
-                // ie: can killers be promotes, can they be found in tactical
-                // moves phase?
-                if (best_score < 0) {
+                int see = static_exchange_eval(sel->pos, move);
+                if (see < 0) {
+                    sel->bad_tactic_scores[sel->num_bad_tactics] = see;
                     sel->bad_tactics[sel->num_bad_tactics++] = move;
                     sel->bad_tactics[sel->num_bad_tactics] = NO_MOVE;
                     continue;
@@ -361,6 +362,29 @@ static void score_moves(move_selector_t* sel)
             score = root_data.history.history[history_index(move)];
         }
         scores[i] = score;
+    }
+}
+
+static void score_tactics(move_selector_t* sel)
+{
+    for (int i=0; sel->moves[i]; ++i) {
+        move_t move = sel->moves[i];
+        piece_type_t piece = get_move_piece_type(move);
+        piece_type_t promote = get_move_promote(move);
+        piece_type_t capture = piece_type(get_move_capture(move));
+        int good_tactic_bonus = 0;
+        if (promote != NONE && promote != QUEEN) good_tactic_bonus = -1000;
+        else if (capture != NONE && piece <= capture) good_tactic_bonus =
+            material_value(capture) - material_value(piece);
+        sel->scores[i] = 6*capture - piece + good_tactic_bonus;
+    }
+}
+
+static void score_quiet(move_selector_t* sel)
+{
+    for (int i=0; sel->moves[i]; ++i) {
+        move_t move = sel->moves[i];
+        sel->scores[i] = root_data.history.history[history_index(move)];
     }
 }
 

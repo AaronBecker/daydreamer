@@ -33,6 +33,7 @@ typedef struct {
     move_t base_moves[256];
     int base_scores[256];
     move_t bad_tactics[64];
+    int bad_tactic_scores[64];
     int num_bad_tactics;
     int moves_end;
     int current_move_index;
