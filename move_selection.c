@@ -1,15 +1,12 @@
 
 #include "daydreamer.h"
-#include <string.h>
 
 extern search_data_t root_data;
 
 selection_phase_t phase_table[6][8] = {
     { PHASE_BEGIN, PHASE_ROOT, PHASE_END },
-    { PHASE_BEGIN, PHASE_TRANS, PHASE_GOOD_TACTICS,
-        PHASE_KILLERS, PHASE_QUIET, PHASE_BAD_TACTICS, PHASE_END },
-    { PHASE_BEGIN, PHASE_TRANS, PHASE_GOOD_TACTICS,
-        PHASE_KILLERS, PHASE_QUIET, PHASE_BAD_TACTICS, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_PV, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_NON_PV, PHASE_END },
     { PHASE_BEGIN, PHASE_EVASIONS, PHASE_END },
     { PHASE_BEGIN, PHASE_TRANS, PHASE_QSEARCH, PHASE_END },
     { PHASE_BEGIN, PHASE_TRANS, PHASE_QSEARCH_CH, PHASE_END },
@@ -26,8 +23,6 @@ static void score_moves(move_selector_t* sel);
 static void sort_root_moves(move_selector_t* sel);
 static int score_tactical_move(position_t* pos, move_t move);
 static move_t get_best_move(move_selector_t* sel, int* score);
-static void score_tactics(move_selector_t* sel);
-static void score_quiet(move_selector_t* sel);
 
 /*
  * Initialize the move selector data structure with the information needed to
@@ -53,32 +48,20 @@ void init_move_selector(move_selector_t* sel,
     sel->depth = depth;
     sel->moves_so_far = 0;
     sel->ordered_moves = ordered_move_count[gen_type];
-    sel->num_killers = 0;
-    memset(sel->killers, 0, 5*sizeof(move_t));
     if (search_node) {
         sel->mate_killer = search_node->mate_killer;
         sel->killers[0] = search_node->killers[0];
-        if (sel->killers[0]) {
-            sel->num_killers++;
-            sel->killers[1] = search_node->killers[1];
-            if (sel->killers[1]) sel->num_killers++;
-        }
+        sel->killers[1] = search_node->killers[1];
         if (ply >= 2) {
-            move_t* s2k = (search_node-2)->killers;
-            if (s2k[0] != sel->killers[0] && s2k[0] != sel->killers[1]) {
-                sel->killers[sel->num_killers] = s2k[0];
-                if (sel->killers[sel->num_killers]) {
-                    sel->num_killers++;
-                    if (s2k[1] != sel->killers[0] &&
-                            s2k[1] != sel->killers[1]) {
-                        sel->killers[sel->num_killers] = s2k[1];
-                    }
-                    if (sel->killers[sel->num_killers]) sel->num_killers++;
-                }
-            }
+            sel->killers[2] = (search_node-2)->killers[0];
+            sel->killers[3] = (search_node-2)->killers[1];
+        } else {
+            sel->killers[2] = sel->killers[3] = NO_MOVE;
         }
+        sel->killers[4] = NO_MOVE;
+    } else {
+        sel->killers[0] = NO_MOVE;
     }
-    sel->killers[sel->num_killers] = NO_MOVE;
     generate_moves(sel);
 }
 
@@ -88,7 +71,9 @@ void init_move_selector(move_selector_t* sel,
  */
 bool has_single_reply(move_selector_t* sel)
 {
+    // FIXME
     return *sel->phase == PHASE_EVASIONS && sel->moves_end == 1;
+    //return sel->single_reply;
 }
 
 /*
@@ -101,10 +86,6 @@ static void generate_moves(move_selector_t* sel)
     sel->current_move_index = 0;
     sel->moves = sel->base_moves;
     sel->scores = sel->base_scores;
-    assert(*sel->phase == PHASE_EVASIONS ||
-            *sel->phase == PHASE_ROOT ||
-            *sel->phase == PHASE_END ||
-            !is_check(sel->pos));
     switch (*sel->phase) {
         case PHASE_BEGIN:
             assert(false);
@@ -121,34 +102,11 @@ static void generate_moves(move_selector_t* sel)
         case PHASE_ROOT:
             sort_root_moves(sel);
             break;
-        case PHASE_GOOD_TACTICS:
-            sel->moves_end = generate_pseudo_tactical_moves(
-                    sel->pos, sel->moves);
-            sel->bad_tactics[0] = NO_MOVE;
-            sel->num_bad_tactics = 0;
-            score_tactics(sel);
-            break;
-        case PHASE_BAD_TACTICS:
-            sel->moves = sel->bad_tactics;
-            sel->scores = sel->bad_tactic_scores;
-            sel->moves_end = sel->num_bad_tactics;
-            break;
-        case PHASE_KILLERS:
-            sel->moves = sel->killers;
-            sel->moves_end = sel->num_killers;
-            break;
-        case PHASE_QUIET:
-            sel->moves_end = generate_pseudo_quiet_moves(sel->pos, sel->moves);
-            score_quiet(sel);
-            break;
-            /**/
         case PHASE_PV:
         case PHASE_NON_PV:
-            assert(false);
             sel->moves_end = generate_pseudo_moves(sel->pos, sel->moves);
             score_moves(sel);
             break;
-            /**/
         case PHASE_QSEARCH_CH:
             sel->moves_end = generate_quiescence_moves(
                     sel->pos, sel->moves, true);
@@ -159,6 +117,7 @@ static void generate_moves(move_selector_t* sel)
                     sel->pos, sel->moves, false);
             score_moves(sel);
             break;
+        default: assert(false);
     }
     sel->single_reply = sel->generator == ESCAPE_GEN && sel->moves_end == 1;
     assert(sel->moves[sel->moves_end] == NO_MOVE);
@@ -179,20 +138,10 @@ move_t select_move(move_selector_t* sel)
         case PHASE_TRANS:
             move = sel->hash_move[sel->current_move_index++];
             if (!move || !is_plausible_move_legal(sel->pos, move)) break;
-            check_pseudo_move_legality(sel->pos, move);
             sel->moves_so_far++;
-            return move;
-        case PHASE_KILLERS:
-            move = sel->killers[sel->current_move_index++];
-            if (!move || move == sel->hash_move[0] ||
-                    !is_plausible_move_legal(sel->pos, move)) break;
-            sel->moves_so_far++;
-            check_pseudo_move_legality(sel->pos, move);
             return move;
         case PHASE_ROOT:
             move = sel->moves[sel->current_move_index++];
-            if (!move) break;
-            check_pseudo_move_legality(sel->pos, move);
             sel->moves_so_far++;
             return move;
         case PHASE_EVASIONS:
@@ -208,60 +157,9 @@ move_t select_move(move_selector_t* sel)
                 sel->moves_so_far++;
                 return move;
             }
-        case PHASE_BAD_TACTICS:
-            // TODO: test sorting by bad move score.
-            move = sel->moves[sel->current_move_index++];
-            if (!move) break;
-            assert(!(move == sel->hash_move[0] ||
-                        move == sel->killers[0] ||
-                        move == sel->killers[1] ||
-                        move == sel->killers[2] ||
-                        move == sel->killers[3] ||
-                        move == sel->killers[4]));
-            sel->moves_so_far++;
-            return move;
-        case PHASE_GOOD_TACTICS:
-            while (true) {
-                int best_score;
-                move = get_best_move(sel, &best_score);
-                if (!move) break;
-                if (move == sel->hash_move[0] ||
-                        !is_pseudo_move_legal(sel->pos, move)) continue;
-                //int see = static_exchange_eval(sel->pos, move);
-                //if (see < 0) {
-                if (best_score < 0) {
-                    sel->bad_tactic_scores[sel->num_bad_tactics] = best_score;//see;
-                    sel->bad_tactics[sel->num_bad_tactics++] = move;
-                    sel->bad_tactics[sel->num_bad_tactics] = NO_MOVE;
-                    continue;
-                }
-                check_pseudo_move_legality(sel->pos, move);
-                sel->moves_so_far++;
-                return move;
-            }
-            break;
-        case PHASE_QUIET:
-            while (true) {
-                int best_score;
-                move = get_best_move(sel, &best_score);
-                if (!move) break;
-                if (move == sel->hash_move[0] ||
-                        move == sel->killers[0] ||
-                        move == sel->killers[1] ||
-                        move == sel->killers[2] ||
-                        move == sel->killers[3] ||
-                        move == sel->killers[4]) continue;
-                if (!is_pseudo_move_legal(sel->pos, move)) continue;
-                check_pseudo_move_legality(sel->pos, move);
-                sel->moves_so_far++;
-                return move;
-            }
-            break;
-        /**/
+            
         case PHASE_PV:
         case PHASE_NON_PV:
-            assert(false);
-        /**/
         case PHASE_QSEARCH:
         case PHASE_QSEARCH_CH:
             while (sel->current_move_index >= sel->ordered_moves) {
@@ -308,7 +206,6 @@ static move_t get_best_move(move_selector_t* sel, int* score)
     int best_score = INT_MIN;
     int index = -1;
     for (int i=offset; sel->moves[i] != NO_MOVE; ++i) {
-        assert(i < sel->moves_end);
         if (sel->scores[i] > best_score) {
             best_score = sel->scores[i];
             index = i;
@@ -363,33 +260,6 @@ static void score_moves(move_selector_t* sel)
             score = root_data.history.history[history_index(move)];
         }
         scores[i] = score;
-    }
-}
-
-static void score_tactics(move_selector_t* sel)
-{
-    for (int i=0; sel->moves[i]; ++i) {
-        move_t move = sel->moves[i];
-        piece_type_t piece = get_move_piece_type(move);
-        piece_type_t promote = get_move_promote(move);
-        piece_type_t capture = piece_type(get_move_capture(move));
-        int good_tactic_bonus = 0;
-        if (is_move_enpassant(move)) good_tactic_bonus = 10000;
-        else if (promote!=NONE && promote!=QUEEN) good_tactic_bonus = -10000;
-        else if (promote != NONE) good_tactic_bonus = 10000;
-        else if (capture != NONE && material_value(capture) >=
-                material_value(piece)) good_tactic_bonus = 10000;
-        else good_tactic_bonus = static_exchange_eval(sel->pos, move) >= 0 ?
-            10000 : -10000;
-        sel->scores[i] = 6*capture - piece + good_tactic_bonus;
-    }
-}
-
-static void score_quiet(move_selector_t* sel)
-{
-    for (int i=0; sel->moves[i]; ++i) {
-        move_t move = sel->moves[i];
-        sel->scores[i] = root_data.history.history[history_index(move)];
     }
 }
 
