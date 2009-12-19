@@ -29,11 +29,10 @@ typedef enum {
 typedef struct {
     selection_phase_t* phase;
     move_t* moves;
-    int* scores;
+    int64_t* scores;
     move_t base_moves[256];
-    int base_scores[256];
+    int64_t base_scores[256];
     move_t bad_tactics[64];
-    int bad_tactic_scores[64];
     int num_bad_tactics;
     int moves_end;
     int current_move_index;

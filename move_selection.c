@@ -21,8 +21,8 @@ static const int ordered_move_count[6] = { 0, 256, 16, 16, 4, 4 };
 static void generate_moves(move_selector_t* sel);
 static void score_moves(move_selector_t* sel);
 static void sort_root_moves(move_selector_t* sel);
-static int score_tactical_move(position_t* pos, move_t move);
-static move_t get_best_move(move_selector_t* sel, int* score);
+static int64_t score_tactical_move(position_t* pos, move_t move);
+static move_t get_best_move(move_selector_t* sel, int64_t* score);
 
 /*
  * Initialize the move selector data structure with the information needed to
@@ -176,7 +176,7 @@ move_t select_move(move_selector_t* sel)
 
             while (true) {
                 assert(sel->current_move_index <= sel->moves_end);
-                int best_score;
+                int64_t best_score;
                 move = get_best_move(sel, &best_score);
                 if (!move) break;
                 if ((sel->generator == Q_CHECK_GEN ||
@@ -199,11 +199,11 @@ move_t select_move(move_selector_t* sel)
     return select_move(sel);
 }
 
-static move_t get_best_move(move_selector_t* sel, int* score)
+static move_t get_best_move(move_selector_t* sel, int64_t* score)
 {
     int offset = sel->current_move_index;
     move_t move = NO_MOVE;
-    int best_score = INT_MIN;
+    int64_t best_score = INT64_MIN;
     int index = -1;
     for (int i=offset; sel->moves[i] != NO_MOVE; ++i) {
         if (sel->scores[i] > best_score) {
@@ -234,14 +234,14 @@ static move_t get_best_move(move_selector_t* sel, int* score)
 static void score_moves(move_selector_t* sel)
 {
     move_t* moves = sel->moves;
-    int* scores = sel->scores;
+    int64_t* scores = sel->scores;
 
     const int grain = MAX_HISTORY;
     const int hash_score = 1000 * grain;
     const int killer_score = 700 * grain;
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
-        int score = 0;
+        int64_t score = 0;
         if (move == sel->hash_move[0]) {
             score = hash_score;
         } else if (move == sel->mate_killer) {
@@ -266,7 +266,7 @@ static void score_moves(move_selector_t* sel)
 /*
  * Determine a score for a capturing or promoting move.
  */
-static int score_tactical_move(position_t* pos, move_t move)
+static int64_t score_tactical_move(position_t* pos, move_t move)
 {
     const int grain = MAX_HISTORY;
     const int good_tactic_score = 800 * grain;
@@ -290,31 +290,30 @@ static int score_tactical_move(position_t* pos, move_t move)
 static void sort_root_moves(move_selector_t* sel)
 {
     int i;
-    uint64_t scores[256];
     for (i=0; root_data.root_moves[i].move != NO_MOVE; ++i) {
         sel->moves[i] = root_data.root_moves[i].move;
         if (sel->depth <= 2) {
-            scores[i] = root_data.root_moves[i].qsearch_score;
+            sel->scores[i] = root_data.root_moves[i].qsearch_score;
         } else if (options.multi_pv > 1) {
-            scores[i] = root_data.root_moves[i].score;
+            sel->scores[i] = root_data.root_moves[i].score;
         } else {
-            scores[i] = root_data.root_moves[i].nodes;
+            sel->scores[i] = root_data.root_moves[i].nodes;
         }
-        if (sel->moves[i] == sel->hash_move[0]) scores[i] = UINT64_MAX;
+        if (sel->moves[i] == sel->hash_move[0]) sel->scores[i] = INT64_MAX;
     }
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;
 
     for (i=0; sel->moves[i] != NO_MOVE; ++i) {
         move_t move = sel->moves[i];
-        uint64_t score = scores[i];
+        int64_t score = sel->scores[i];
         int j = i-1;
-        while (j >= 0 && scores[j] < score) {
-            scores[j+1] = scores[j];
+        while (j >= 0 && sel->scores[j] < score) {
+            sel->scores[j+1] = sel->scores[j];
             sel->moves[j+1] = sel->moves[j];
             --j;
         }
-        scores[j+1] = score;
+        sel->scores[j+1] = score;
         sel->moves[j+1] = move;
     }
 }
