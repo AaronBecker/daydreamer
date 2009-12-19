@@ -58,6 +58,7 @@ void init_move_selector(move_selector_t* sel,
     sel->hash_move[1] = NO_MOVE;
     sel->depth = depth;
     sel->moves_so_far = 0;
+    sel->pv_index = 0;
     sel->ordered_moves = ordered_move_count[gen_type];
     if (search_node) {
         sel->mate_killer = search_node->mate_killer;
@@ -97,7 +98,6 @@ static void generate_moves(move_selector_t* sel)
     sel->current_move_index = 0;
     sel->moves = sel->base_moves;
     sel->scores = sel->base_scores;
-    sel->pv_index = 0;
     move_cache_t* pv_cache;
     switch (*sel->phase) {
         case PHASE_BEGIN:
@@ -403,11 +403,13 @@ void add_pv_move(move_selector_t* sel, move_t move, int64_t nodes)
     assert(is_pseudo_move_legal(sel->pos, move));
     sel->pv_moves[sel->pv_index] = move;
     sel->pv_nodes[sel->pv_index++] = nodes;
+    assert(sel->pv_index == sel->moves_so_far);
 }
 
 void commit_pv_moves(move_selector_t* sel)
 {
     if (sel->generator == ESCAPE_GEN) return;
+    assert(sel->pv_index == sel->moves_so_far);
     move_cache_t* pv_cache = get_pv_move_list(sel->pos);
     pv_cache->key = sel->pos->hash;
     int i;
