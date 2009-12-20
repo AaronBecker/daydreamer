@@ -89,6 +89,14 @@ bool has_single_reply(move_selector_t* sel)
     //return sel->single_reply;
 }
 
+bool should_try_lmr(move_selector_t* sel, move_t move)
+{
+    return sel->quiet_move_so_far > 2 &&
+        !get_move_capture(move) &&
+        get_move_promote(move) != QUEEN &&
+        !is_move_castle(move);
+}
+
 /*
  * Fill the list of candidate moves and score each move for later selection.
  */
@@ -170,12 +178,14 @@ move_t select_move(move_selector_t* sel)
             move = sel->moves[sel->current_move_index++];
             if (!move) break;
             sel->moves_so_far++;
+            if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_move_so_far++;
             return move;
         case PHASE_EVASIONS:
             if (sel->current_move_index >= sel->ordered_moves) {
                 move = sel->moves[sel->current_move_index++];
                 if (!move) break;
                 sel->moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_move_so_far++;
                 return move;
             } else {
                 assert(sel->current_move_index <= sel->moves_end);
@@ -183,6 +193,7 @@ move_t select_move(move_selector_t* sel)
                 if (!move) break;
                 check_pseudo_move_legality(sel->pos, move);
                 sel->moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_move_so_far++;
                 return move;
             }
             
@@ -198,6 +209,7 @@ move_t select_move(move_selector_t* sel)
                     continue;
                 }
                 sel->moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_move_so_far++;
                 return move;
             }
             if (sel->current_move_index >= sel->ordered_moves) break;
@@ -216,6 +228,7 @@ move_t select_move(move_selector_t* sel)
                         !is_pseudo_move_legal(sel->pos, move)) continue;
                 check_pseudo_move_legality(sel->pos, move);
                 sel->moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_move_so_far++;
                 return move;
             }
             break;
