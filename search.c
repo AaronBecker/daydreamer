@@ -506,23 +506,39 @@ static search_result_t root_search(search_data_t* search_data,
         do_move(pos, move, &undo);
         int ext = extend(pos, move, false);
         int score;
+        int depth = search_data->current_depth;
+        int num_moves = search_data->current_move_index;
+
         if (search_data->current_move_index < options.multi_pv) {
             // Use full window search.
             alpha = mated_in(-1);
             score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-1);
         } else {
-            score = -search(pos, search_data->search_stack,
-                    1, -alpha-1, -alpha, search_data->current_depth+ext-1);
-            if (score > alpha) {
-                if (options.verbose && should_output(search_data)) {
-                    char coord_move[7];
-                    move_to_coord_str(move, coord_move);
-                    printf("info string fail high, research %s\n", coord_move);
-                }
-                search_data->resolving_fail_high = true;
+            const bool do_lmr = lmr_enabled &&
+                num_moves > 10 &&
+                !ext &&
+                depth > LMR_DEPTH_LIMIT &&
+                !is_check(pos) &&
+                should_try_lmr(&selector, move);
+            if (do_lmr) {
                 score = -search(pos, search_data->search_stack,
-                        1, -beta, -alpha, search_data->current_depth+ext-1);
+                        1, -alpha-1, -alpha, depth-LMR_REDUCTION-1);
+            } else {
+                score = -search(pos, search_data->search_stack,
+                    1, -alpha-1, -alpha, search_data->current_depth+ext-1);
+            }
+            if (score > alpha) {
+                if (score > alpha) {
+                    if (options.verbose && should_output(search_data)) {
+                        char coord_move[7];
+                        move_to_coord_str(move, coord_move);
+                        printf("info string fail high, research %s\n", coord_move);
+                    }
+                    search_data->resolving_fail_high = true;
+                    score = -search(pos, search_data->search_stack,
+                            1, -beta, -alpha, search_data->current_depth+ext-1);
+                }
             }
         }
         if (score <= alpha) score = mated_in(-1);
