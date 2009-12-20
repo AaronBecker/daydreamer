@@ -89,6 +89,10 @@ bool has_single_reply(move_selector_t* sel)
     //return sel->single_reply;
 }
 
+/*
+ * Is it ok to try reducing the search depth of the given move, under the
+ * assumption that this is the last move that |sel| has selected?
+ */
 bool should_try_lmr(move_selector_t* sel, move_t move)
 {
     return sel->quiet_moves_so_far > 2 &&
@@ -185,7 +189,7 @@ move_t select_move(move_selector_t* sel)
                 move = sel->moves[sel->current_move_index++];
                 if (!move) break;
                 sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) sel->quiet_moves_so_far++;
                 return move;
             } else {
                 assert(sel->current_move_index <= sel->moves_end);
@@ -193,7 +197,7 @@ move_t select_move(move_selector_t* sel)
                 if (!move) break;
                 check_pseudo_move_legality(sel->pos, move);
                 sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) sel->quiet_moves_so_far++;
                 return move;
             }
             
@@ -209,7 +213,7 @@ move_t select_move(move_selector_t* sel)
                     continue;
                 }
                 sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) sel->quiet_moves_so_far++;
                 return move;
             }
             if (sel->current_move_index >= sel->ordered_moves) break;
@@ -228,7 +232,7 @@ move_t select_move(move_selector_t* sel)
                         !is_pseudo_move_legal(sel->pos, move)) continue;
                 check_pseudo_move_legality(sel->pos, move);
                 sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) sel->quiet_moves_so_far++;
                 return move;
             }
             break;
@@ -240,6 +244,9 @@ move_t select_move(move_selector_t* sel)
     return select_move(sel);
 }
 
+/*
+ * Pick the move with the highest remaining score out of |sel->moves|.
+ */
 static move_t get_best_move(move_selector_t* sel, int64_t* score)
 {
     int offset = sel->current_move_index;
@@ -379,6 +386,9 @@ struct {
 static move_cache_t* pv_cache = NULL;
 static int num_buckets;
 
+/*
+ * Create a cache that holds node counts searched under a give pv node.
+ */
 void init_pv_cache(const int max_bytes)
 {
     assert(max_bytes >= 1024);
@@ -394,11 +404,17 @@ void init_pv_cache(const int max_bytes)
     clear_pv_cache();
 }
 
+/*
+ * Clear out the pv cache.
+ */
 void clear_pv_cache(void)
 {
     memset(pv_cache, 0, num_buckets*sizeof(move_cache_t));
 }
 
+/*
+ * Get the cache entry associated with the given pv position.
+ */
 static move_cache_t* get_pv_move_list(const position_t* pos)
 {
     move_cache_t* m = &pv_cache[pos->hash % num_buckets];
@@ -411,6 +427,9 @@ static move_cache_t* get_pv_move_list(const position_t* pos)
     return m;
 }
 
+/*
+ * Add a move to the current pv position, to be written into the cache.
+ */
 void add_pv_move(move_selector_t* sel, move_t move, int64_t nodes)
 {
     if (sel->generator == ESCAPE_GEN) return;
@@ -420,6 +439,9 @@ void add_pv_move(move_selector_t* sel, move_t move, int64_t nodes)
     assert(sel->pv_index == sel->moves_so_far);
 }
 
+/*
+ * Write all information about the current position into the pv cache.
+ */
 void commit_pv_moves(move_selector_t* sel)
 {
     if (sel->generator == ESCAPE_GEN) return;
@@ -435,6 +457,9 @@ void commit_pv_moves(move_selector_t* sel)
     pv_cache->moves[i] = NO_MOVE;
 }
 
+/*
+ * Dump stats about the pv cache to stdout.
+ */
 void print_pv_cache_stats(void)
 {
     printf("info string pv cache entries %d", num_buckets);
