@@ -163,8 +163,8 @@ static bool should_deepen(search_data_t* data)
     if (should_stop_searching(data)) return false;
     if (data->infinite || data->engine_status == ENGINE_PONDERING) return true;
 
-    // If we're more than halfway through our time, we won't make it through
-    // the first move of the next iteration anyway.
+    // If we're much more than halfway through our time, we won't make it
+    // through the first move of the next iteration anyway.
     if (data->time_target &&
         data->time_target-elapsed_time(&data->timer) <
         data->time_target * 60 / 100) return false;
@@ -179,6 +179,19 @@ static bool should_deepen(search_data_t* data)
     // We can stop early if our best move is obvious.
     if (!data->depth_limit && !data->node_limit && obvious_move_enabled &&
             data->current_depth >= 6 && data->obvious_move) return false;
+
+    // Allocate some extra time if the root score drops.
+    if (data->current_depth < 5) return true;
+    int it_score = data->scores_by_iteration[data->current_depth];
+    int last_it_score = data->scores_by_iteration[data->current_depth-1];
+    if (it_score >= last_it_score) return true;
+    else if (it_score >= last_it_score - 25) {
+        data->time_target = MIN(data->time_limit, data->time_target * 2);
+    } else if (it_score >= last_it_score - 50) {
+        data->time_target = MIN(data->time_limit, data->time_target * 4);
+    } else {
+        data->time_target = MIN(data->time_limit, data->time_target * 8);
+    }
     return true;
 }
 
