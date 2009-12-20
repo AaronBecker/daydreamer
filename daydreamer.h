@@ -11,7 +11,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.51"
-#define ENGINE_VERSION_NAME     " phase10_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " sel_lmr_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -128,6 +128,7 @@ void init_move_selector(move_selector_t* sel,
         int depth,
         int ply);
 bool has_single_reply(move_selector_t* sel);
+bool should_try_lmr(move_selector_t* sel, move_t move);
 move_t select_move(move_selector_t* sel);
 void init_pv_cache(const int max_bytes);
 void clear_pv_cache(void);

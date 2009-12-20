@@ -58,6 +58,7 @@ void init_move_selector(move_selector_t* sel,
     sel->hash_move[1] = NO_MOVE;
     sel->depth = depth;
     sel->moves_so_far = 0;
+    sel->quiet_moves_so_far = 0;
     sel->pv_index = 0;
     sel->ordered_moves = ordered_move_count[gen_type];
     if (search_node) {

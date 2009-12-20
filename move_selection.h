@@ -43,6 +43,7 @@ typedef struct {
     move_t killers[5];
     int num_killers;
     int moves_so_far;
+    int quiet_moves_so_far;
     int ordered_moves;
     int depth;
     position_t* pos;
