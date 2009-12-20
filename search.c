@@ -729,6 +729,7 @@ static int search(position_t* pos,
                 !ext &&
                 !mate_threat &&
                 depth > LMR_DEPTH_LIMIT &&
+                !is_check(pos) &&
                 should_try_lmr(&selector, move);
             if (do_lmr) {
                 score = -search(pos, search_node+1, ply+1,
