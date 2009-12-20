@@ -12,7 +12,7 @@ extern const char glyphs[];
  */
 void print_coord_move(move_t move)
 {
-    static char move_str[6];
+    static char move_str[7];
     move_to_coord_str(move, move_str);
     printf("%s ", move_str);
 }

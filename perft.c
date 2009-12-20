@@ -101,7 +101,7 @@ static uint64_t divide(position_t* pos, int depth)
     move_list[num_moves] = NO_MOVE;
 
     uint64_t child_nodes, total_nodes=0;
-    char coord_move[6];
+    char coord_move[7];
     while (*current_move) {
         undo_info_t undo;
         do_move(pos, *current_move, &undo);
