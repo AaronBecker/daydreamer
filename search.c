@@ -412,6 +412,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
     find_obvious_move(search_data);
 
     int id_score = root_data.best_score = mated_in(-1);
+    int consecutive_fail_highs = 0;
+    int consecutive_fail_lows = 0;
     if (!search_data->depth_limit) search_data->depth_limit = MAX_SEARCH_DEPTH;
     for (search_data->current_depth=2;
             search_data->current_depth <= search_data->depth_limit;
@@ -426,19 +428,27 @@ void deepening_search(search_data_t* search_data, bool ponder)
         int alpha = mated_in(-1);
         int beta = mate_in(-1);
         if (depth > 5 && options.multi_pv == 1) {
-            int window = 40;
-            alpha = search_data->scores_by_iteration[depth-1] - window;
-            beta = search_data->scores_by_iteration[depth-1] + window;
+            alpha = consecutive_fail_lows > 1 ? mated_in(-1) :
+                search_data->scores_by_iteration[depth-1] - 40;
+            beta = consecutive_fail_highs > 1 ? mate_in(-1) :
+                search_data->scores_by_iteration[depth-1] + 40;
+            if (options.verbose) {
+                printf("info string root window is %d - %d\n", alpha, beta);
+            }
         }
 
         search_result_t result = root_search(search_data, alpha, beta);
         if (result == SEARCH_ABORTED) break;
 
         // Replace any displaced pv entries in the hash table.
+        score_type_t score_type = SCORE_EXACT;
+        if (result == SEARCH_FAIL_LOW) score_type = SCORE_UPPERBOUND;
+        else if (result == SEARCH_FAIL_HIGH) score_type = SCORE_LOWERBOUND;
         put_transposition_line(&search_data->root_pos,
                 search_data->pv,
                 depth,
-                search_data->best_score);
+                search_data->best_score,
+                score_type);
 
         // Check the obvious move, if any.
         if (search_data->pv[0] != search_data->obvious_move) {
@@ -448,6 +458,16 @@ void deepening_search(search_data_t* search_data, bool ponder)
         // Record scores.
         id_score = search_data->best_score;
         search_data->scores_by_iteration[depth] = id_score;
+        if (id_score <= alpha) {
+            consecutive_fail_lows++;
+            consecutive_fail_highs = 0;
+        } else if (id_score >= beta) {
+            consecutive_fail_lows = 0;
+            consecutive_fail_highs++;
+        } else {
+            consecutive_fail_lows = 0;
+            consecutive_fail_highs = 0;
+        }
 
         if (!should_deepen(search_data)) {
             ++search_data->current_depth;
@@ -546,7 +566,8 @@ static search_result_t root_search(search_data_t* search_data,
                     if (options.verbose && should_output(search_data)) {
                         char coord_move[7];
                         move_to_coord_str(move, coord_move);
-                        printf("info string fail high, research %s\n", coord_move);
+                        printf("info string fail high, research %s\n",
+                                coord_move);
                     }
                     search_data->resolving_fail_high = true;
                     score = -search(pos, search_data->search_stack,

@@ -12,14 +12,14 @@ static int age_score_table[8];
 static transposition_entry_t* transposition_table = NULL;
 
 static struct {
-    int misses;
-    int hits;
-    int occupied;
-    int alpha;
-    int beta;
-    int exact;
-    int evictions;
-    int collisions;
+    uint64_t misses;
+    uint64_t hits;
+    uint64_t occupied;
+    uint64_t alpha;
+    uint64_t beta;
+    uint64_t exact;
+    uint64_t evictions;
+    uint64_t collisions;
 } hash_stats;
 
 #define entry_replace_score(entry) \
@@ -165,13 +165,14 @@ void put_transposition(position_t* pos,
 void put_transposition_line(position_t* pos,
         move_t* moves,
         int depth,
-        int score)
+        int score,
+        score_type_t score_type)
 {
     if (!*moves) return;
-    put_transposition(pos, *moves, depth, score, SCORE_EXACT, false);
+    put_transposition(pos, *moves, depth, score, score_type, false);
     undo_info_t undo;
     do_move(pos, *moves, &undo);
-    put_transposition_line(pos, moves+1, depth-1, score);
+    put_transposition_line(pos, moves+1, depth-1, score, score_type);
     undo_move(pos, *moves, &undo);
 }
 
@@ -181,17 +182,17 @@ void put_transposition_line(position_t* pos,
 void print_transposition_stats(void)
 {
     int num_entries = num_buckets * bucket_size;
-    printf("info string hash entries %d", num_entries);
-    printf(" filled %d (%.2f%%)", hash_stats.occupied,
+    printf("info string hash entries %"PRIu64"", num_entries);
+    printf(" filled %"PRIu64" (%.2f%%)", hash_stats.occupied,
             (float)hash_stats.occupied / (float)num_entries * 100.);
-    printf(" evictions %d", hash_stats.evictions);
-    printf(" hits %d (%.2f%%)", hash_stats.hits,
+    printf(" evictions %"PRIu64, hash_stats.evictions);
+    printf(" hits %"PRIu64" (%.2f%%)", hash_stats.hits,
             (float)hash_stats.hits / (hash_stats.hits+hash_stats.misses)*100.);
-    printf(" misses %d (%.2f%%)", hash_stats.misses,
+    printf(" misses %"PRIu64" (%.2f%%)", hash_stats.misses,
             (float)hash_stats.misses/(hash_stats.hits+hash_stats.misses)*100.);
-    printf(" alpha %d", hash_stats.alpha);
-    printf(" beta %d", hash_stats.beta);
-    printf(" exact %d\n", hash_stats.exact);
+    printf(" alpha %"PRIu64"", hash_stats.alpha);
+    printf(" beta %"PRIu64"", hash_stats.beta);
+    printf(" exact %"PRIu64"\n", hash_stats.exact);
 }
 
 /*

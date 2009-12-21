@@ -195,7 +195,8 @@ void put_transposition(position_t* pos,
 void put_transposition_line(position_t* pos,
         move_t* moves,
         int depth,
-        int score);
+        int score,
+        score_type_t score_type);
 void print_transposition_stats(void);
 
 // uci.c
