@@ -275,6 +275,16 @@ bool can_win(const position_t* pos, color_t side)
 }
 
 /*
+ * Does |move| capture the other side's last piece?
+ */
+bool captures_last_piece(const position_t* pos, move_t move)
+{
+    piece_t cap = get_move_capture(move);
+    return cap && piece_type(cap) != PAWN &&
+        pos->num_pieces[pos->side_to_move^1] == 1;
+}
+
+/*
  * Is the given position definitely a draw. This considers only draws by
  * rule, not positions that are known to be drawable with best play.
  */

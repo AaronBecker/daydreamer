@@ -11,7 +11,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.51"
-#define ENGINE_VERSION_NAME     " sel_lmr2_root2_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " last_cap_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -79,6 +79,7 @@ bool insufficient_material(const position_t* pos);
 bool can_win(const position_t* pos, color_t side);
 bool is_draw(const position_t* pos);
 int game_phase(const position_t* pos);
+bool captures_last_piece(const position_t* pos, move_t move);
 
 // format.c
 int square_to_coord_str(square_t sq, char* str);
