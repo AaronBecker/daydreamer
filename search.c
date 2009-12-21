@@ -147,7 +147,6 @@ static bool should_stop_searching(search_data_t* data)
 static int extend(position_t* pos, move_t move, bool single_reply)
 {
     if (is_check(pos) || single_reply) return 1;
-    if (captures_last_piece(pos, move)) return 1;
     square_t sq = get_move_to(move);
     if (piece_type(pos->board[sq]) == PAWN &&
             (square_rank(sq) == RANK_7 || square_rank(sq) == RANK_2)) return 1;
@@ -924,11 +923,12 @@ static int quiesce(position_t* pos,
             search_node, hash_move, depth, ply);
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector), ++num_qmoves) {
+        // TODO: prevent futility for passed pawn moves and checks
+        // TODO: no futility on early moves?
         if (allow_futility &&
                 get_move_promote(move) != QUEEN &&
                 eval + material_value(get_move_capture(move)) +
-                qfutility_margin < alpha &&
-                !captures_last_piece(pos, move)) continue;
+                qfutility_margin < alpha) continue;
         undo_info_t undo;
         do_move(pos, move, &undo);
         score = -quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-1);
