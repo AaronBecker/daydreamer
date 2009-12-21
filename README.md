@@ -29,19 +29,20 @@ Here's the full list of changes:
 * MultiPV support
 * Ponder support
 * Scorpio bitbase support
-* Improved pruning and depth reduction heuristics
+* Improved futility pruning
+* Razoring
 * Aspiration in root search
 * Weak square identification
 * Open and half-open file identification
 * Pawn storm bonuses
 * Improved fidelity to uci specifications
-* Improved time management, with better behavior at very fast time controls
-  and time controls with no increment.
+* Improved time management, and improved behavior at very fast time controls
 * Improved search behavior in positions with short mates or obvious moves
 * Fixed a bug that caused losses on time in some sudden death situations
 * Fixed a bug that prevented a hash size over 2GB
 * Fixed a bug that caused crashes in very long games (over 250 moves)
 * Fixed a bug that generated incorrect en passant moves while in check
+
 
 Using Daydreamer
 ----------------
