@@ -20,6 +20,7 @@ Evaluation
     add some basic endgame knowledge (opp bishops, etc)
     material imbalance tables
     bounded eval with early exit
+    improved king safety and passed pawn evaluation
 
 Testing
     try different move ordering counts. 16 didn't help. maybe 12.
