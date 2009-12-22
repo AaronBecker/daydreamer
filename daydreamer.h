@@ -62,7 +62,7 @@ void print_bitboard(bitboard_t bb);
 // daydreamer.c
 void init_daydreamer(void);
 
-// epbb.c
+// egbb.c
 bool load_egbb(char* egbb_dir, int cache_size_bytes);
 void unload_egbb(void);
 bool probe_egbb(position_t* pos, int* value, int ply);
@@ -80,6 +80,18 @@ bool can_win(const position_t* pos, color_t side);
 bool is_draw(const position_t* pos);
 int game_phase(const position_t* pos);
 
+// eval_patterns.c
+score_t pattern_score(const position_t*pos);
+
+// eval_pawns.c
+void init_pawn_table(const int max_bytes);
+void clear_pawn_table(void);
+score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data);
+void print_pawn_stats(void);
+
+// eval_pieces.c
+score_t pieces_score(const position_t* pos, pawn_data_t* pd);
+
 // format.c
 int square_to_coord_str(square_t sq, char* str);
 square_t coord_str_to_square(const char* coord_square);
@@ -95,9 +107,6 @@ void init_hash(void);
 int get_hashfull(void);
 hashkey_t hash_position(const position_t* pos);
 hashkey_t hash_pawns(const position_t* pos);
-
-// mobility.c
-score_t mobility_score(const position_t* pos, pawn_data_t* pd);
 
 // move.c
 void place_piece(position_t* position, piece_t piece, square_t square);
@@ -143,15 +152,6 @@ int print_coord_move_list(const move_t* move);
 void print_search_stats(const search_data_t* search_data);
 void print_board(const position_t* pos, bool uci_prefix);
 void print_multipv(search_data_t* data);
-
-// pattern.c
-score_t pattern_score(const position_t*pos);
-
-// pawn.c
-void init_pawn_table(const int max_bytes);
-void clear_pawn_table(void);
-score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data);
-void print_pawn_stats(void);
 
 // perft.c
 void perft_testsuite(char* filename);

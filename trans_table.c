@@ -182,7 +182,7 @@ void put_transposition_line(position_t* pos,
 void print_transposition_stats(void)
 {
     int num_entries = num_buckets * bucket_size;
-    printf("info string hash entries %"PRIu64"", num_entries);
+    printf("info string hash entries %d", num_entries);
     printf(" filled %"PRIu64" (%.2f%%)", hash_stats.occupied,
             (float)hash_stats.occupied / (float)num_entries * 100.);
     printf(" evictions %"PRIu64, hash_stats.evictions);

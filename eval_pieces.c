@@ -88,7 +88,7 @@ static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
  * Compute the number of squares each non-pawn, non-king piece could move to,
  * and assign a bonus or penalty accordingly.
  */
-score_t mobility_score(const position_t* pos, pawn_data_t* pd)
+score_t pieces_score(const position_t* pos, pawn_data_t* pd)
 {
     score_t score;
     int mid_score[2] = {0, 0};
