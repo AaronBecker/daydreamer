@@ -1,6 +1,7 @@
 
 Search
     Better statistics gathering/reporting
+    Make sure popular GUIs don't misinterpret UCI output
     recognize singular replies
     prefetching for trans table entries
     sign-only SEE
@@ -8,6 +9,7 @@ Search
 
 shrink trans table entry size
 evaluation hashing
+OwnBook support for polyglot books
 Track pinned pieces in SEE, test for improvement
 
 Interface

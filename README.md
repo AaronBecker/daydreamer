@@ -17,13 +17,7 @@ them all stable before trying to tackle parallel searching. Therefore, the
 number of new features is quite long. The most notable are ponder, multipv,
 and Chess960 support.
 
-The biggest change from 1.5 to 1.6 is my testing methodology. I'm now testing
-all my changes using a statistically significant number of very fast games
-against a constant set of opponents. This requires a lot of patience, but it's
-really had a positive impact on my results. Several important parameters from
-1.5 have been improved as a result of this testing.
-
-Here's the full list of changes:
+Here's the list of changes:
 
 * Chess960 support
 * MultiPV support
@@ -36,13 +30,16 @@ Here's the full list of changes:
 * Open and half-open file identification
 * Pawn storm bonuses
 * Improved fidelity to uci specifications
+* Revamped move ordering
 * Improved time management, and improved behavior at very fast time controls
 * Improved search behavior in positions with short mates or obvious moves
 * Fixed a bug that caused losses on time in some sudden death situations
 * Fixed a bug that prevented a hash size over 2GB
 * Fixed a bug that caused crashes in very long games (over 250 moves)
-* Fixed a bug that generated incorrect en passant moves while in check
+* Fixed a bug that allowed incorrect en passant moves while in check
 
+Thanks to Olivier Deville and Dann Corbit for their help identifying the time
+control and hash size bugs, and to everyone who tested version 1.5.
 
 Using Daydreamer
 ----------------
