@@ -10,8 +10,8 @@ extern "C" {
 #include <stdlib.h>
 
 #define ENGINE_NAME             "Daydreamer"
-#define ENGINE_VERSION_NUMBER   "1.51"
-#define ENGINE_VERSION_NAME     " asp2_" GIT_VERSION
+#define ENGINE_VERSION_NUMBER   "1.6"
+#define ENGINE_VERSION_NAME     " rc1_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
