@@ -7,29 +7,34 @@ ARCHFLAGS = -m64
 CLANGHOME = $(HOME)/local/clang
 SCANVIEW = $(CLANGHOME)/scan-build
 ANALYZER = $(CLANGHOME)/libexec/ccc-analyzer
-CC = /usr/bin/gcc $(GCCFLAGS)
-#CC = /opt/local/bin/gcc $(GCCFLAGS)
+CC = /opt/local/bin/gcc $(GCCFLAGS)
+#CC = /usr/bin/gcc $(GCCFLAGS)
 #CC = $(CLANGHOME)/bin/clang $(CLANGFLAGS)
 #CC = i386-mingw32-gcc $(GCCFLAGS)
 CTAGS = ctags
 
 COMMONFLAGS = -Wall -Wextra -Wno-unused-function $(ARCHFLAGS)
-LDFLAGS = $(ARCHFLAGS)
+LDFLAGS = $(ARCHFLAGS) -ldl
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0
 ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
 DEFAULTFLAGS = $(COMMONFLAGS) -g -O2 -DOMIT_CHECKS
 OPTFLAGS = $(COMMONFLAGS) -O3 -msse -DOMIT_CHECKS -DNDEBUG
+PGO1FLAGS = $(OPTFLAGS) -fprofile-generate
+PGO2FLAGS = $(OPTFLAGS) -fprofile-use
 CFLAGS = $(DEFAULTFLAGS)
+
 DBGCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEBUGFLAGS)\\\"\"
 OPTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(OPTFLAGS)\\\"\"
+PGOCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(PGO2FLAGS)\\\"\"
 DFTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEFAULTFLAGS)\\\"\"
+
 GITFLAGS = -DGIT_VERSION=\"\\\"`git rev-parse --short HEAD`\\\"\"
 
 SRCFILES := $(wildcard *.c)
 HEADERS  := $(wildcard *.h)
 OBJFILES := $(addprefix obj/, $(patsubst %.c,%.o,$(wildcard *.c)))
 
-.PHONY: all clean tags debug opt
+.PHONY: all clean tags debug opt pgo-start pgo-finish pgo-clean
 .DEFAULT_GOAL := default
 
 analyze:
@@ -45,6 +50,13 @@ default:
 opt:
 	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS) $(GITFLAGS) $(OPTCOMPILESTR)"
 
+pgo-start:
+	$(MAKE) daydreamer CFLAGS="$(PGO1FLAGS) $(GITFLAGS) $(OPTCOMPILESTR)" \
+	    LDFLAGS="$(LDFLAGS) -fprofile-generate"
+
+pgo-finish: pgo-clean
+	$(MAKE) daydreamer CFLAGS="$(PGO2FLAGS) $(GITFLAGS) $(PGOCOMPILESTR)"
+
 all: default
 
 daydreamer: obj $(OBJFILES)
@@ -58,6 +70,9 @@ obj/%.o: %.c
 
 obj:
 	mkdir obj
+
+pgo-clean:
+	rm obj/*.o daydreamer
 
 clean:
 	rm -rf obj daydreamer tags
