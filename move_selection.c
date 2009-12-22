@@ -84,9 +84,7 @@ void init_move_selector(move_selector_t* sel,
  */
 bool has_single_reply(move_selector_t* sel)
 {
-    // FIXME
     return *sel->phase == PHASE_EVASIONS && sel->moves_end == 1;
-    //return sel->single_reply;
 }
 
 bool should_try_lmr(move_selector_t* sel, move_t move)
@@ -193,7 +191,9 @@ move_t select_move(move_selector_t* sel)
                 if (!move) break;
                 check_pseudo_move_legality(sel->pos, move);
                 sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) {
+                    sel->quiet_moves_so_far++;
+                }
                 return move;
             }
             
@@ -209,7 +209,9 @@ move_t select_move(move_selector_t* sel)
                     continue;
                 }
                 sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) {
+                    sel->quiet_moves_so_far++;
+                }
                 return move;
             }
             if (sel->current_move_index >= sel->ordered_moves) break;
@@ -228,7 +230,9 @@ move_t select_move(move_selector_t* sel)
                         !is_pseudo_move_legal(sel->pos, move)) continue;
                 check_pseudo_move_legality(sel->pos, move);
                 sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) {
+                    sel->quiet_moves_so_far++;
+                }
                 return move;
             }
             break;
@@ -379,6 +383,12 @@ struct {
 static move_cache_t* pv_cache = NULL;
 static int num_buckets;
 
+/*
+ * The pv cache stores counts of nodes searched under each move for a given
+ * position encountered during the pv. When the cache hits during move
+ * selection, moves are ordered by nodes searched rather than other heuristics.
+ * This function allocates memory and initializes the pv cache.
+ */
 void init_pv_cache(const int max_bytes)
 {
     assert(max_bytes >= 1024);
@@ -394,11 +404,17 @@ void init_pv_cache(const int max_bytes)
     clear_pv_cache();
 }
 
+/*
+ * Clear all entries in the pv cache.
+ */
 void clear_pv_cache(void)
 {
     memset(pv_cache, 0, num_buckets*sizeof(move_cache_t));
 }
 
+/*
+ * Retrieve the pv cache entry associated with |pos|.
+ */
 static move_cache_t* get_pv_move_list(const position_t* pos)
 {
     move_cache_t* m = &pv_cache[pos->hash % num_buckets];
@@ -411,6 +427,9 @@ static move_cache_t* get_pv_move_list(const position_t* pos)
     return m;
 }
 
+/*
+ * Add a count of nodes searched under a pv node to |sel|.
+ */
 void add_pv_move(move_selector_t* sel, move_t move, int64_t nodes)
 {
     if (sel->generator == ESCAPE_GEN) return;
@@ -420,6 +439,9 @@ void add_pv_move(move_selector_t* sel, move_t move, int64_t nodes)
     assert(sel->pv_index == sel->moves_so_far);
 }
 
+/*
+ * Write all information stored about pv node counts in |sel| to the cache.
+ */
 void commit_pv_moves(move_selector_t* sel)
 {
     if (sel->generator == ESCAPE_GEN) return;
@@ -435,6 +457,9 @@ void commit_pv_moves(move_selector_t* sel)
     pv_cache->moves[i] = NO_MOVE;
 }
 
+/*
+ * Dump some information about pv cache activity to stdout.
+ */
 void print_pv_cache_stats(void)
 {
     printf("info string pv cache entries %d", num_buckets);

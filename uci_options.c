@@ -173,9 +173,42 @@ static void handle_hash(void* opt, char* value)
     strncpy(option->value, value, 128);
     sscanf(value, "%d", &mbytes);
     if (mbytes < option->min || mbytes > option->max) {
+        warn("Option value out of range, using default\n");
         sscanf(option->default_value, "%d", &mbytes);
     }
-    init_transposition_table(mbytes * (1<<20));
+    init_transposition_table(mbytes * (1ull<<20));
+}
+
+/*
+ * Initialize the pawn cache.
+ */
+static void handle_pawn_cache(void* opt, char* value)
+{
+    uci_option_t* option = opt;
+    int mbytes = 0;
+    strncpy(option->value, value, 128);
+    sscanf(value, "%d", &mbytes);
+    if (mbytes < option->min || mbytes > option->max) {
+        warn("Option value out of range, using default\n");
+        sscanf(option->default_value, "%d", &mbytes);
+    }
+    init_pawn_table(mbytes * (1ull<<20));
+}
+
+/*
+ * Initialize the pv cache.
+ */
+static void handle_pv_cache(void* opt, char* value)
+{
+    uci_option_t* option = opt;
+    int mbytes = 0;
+    strncpy(option->value, value, 128);
+    sscanf(value, "%d", &mbytes);
+    if (mbytes < option->min || mbytes > option->max) {
+        warn("Option value out of range, using default\n");
+        sscanf(option->default_value, "%d", &mbytes);
+    }
+    init_pv_cache(mbytes * (1ull<<20));
 }
 
 /*
@@ -220,7 +253,7 @@ static void handle_egbb_path(void* opt, char* value)
  */
 void init_uci_options()
 {
-    add_uci_option("Hash", OPTION_SPIN, "32",
+    add_uci_option("Hash", OPTION_SPIN, "64",
             1, 4096, NULL, NULL, &handle_hash);
     add_uci_option("Clear Hash", OPTION_BUTTON, "",
             0, 0, NULL, NULL, &handle_clear_hash);
@@ -234,6 +267,10 @@ void init_uci_options()
             0, 0, NULL, &options.use_egbb, &handle_egbb_use);
     add_uci_option("Endgame bitbase path", OPTION_STRING, ".",
             0, 0, NULL, NULL, &handle_egbb_path);
+    add_uci_option("Pawn cache size", OPTION_SPIN, "1",
+            1, 64, NULL, NULL, &handle_pawn_cache);
+    add_uci_option("PV cache size", OPTION_SPIN, "32",
+            1, 128, NULL, NULL, &handle_pv_cache);
     add_uci_option("Output Delay", OPTION_SPIN, "2000",
             0, 1000000, NULL, &options.output_delay, &default_handler);
     add_uci_option("Verbose output", OPTION_CHECK, "true",
