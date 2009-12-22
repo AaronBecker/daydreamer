@@ -9,6 +9,9 @@ I named it Daydreamer after a bug in an early version caused it to occasionally
 follow up very strong play with bizarre blunders, as though it had lost its
 focus on the game and its mind was wandering aimlessly.
 
+Windows and Mac binaries are available on the
+[downloads page](http://github.com/AaronBecker/daydreamer/downloads).
+
 Changes from 1.5 to 1.6
 -----------------------
 
