@@ -1,9 +1,9 @@
 
 Search
-    Store move ordering for PV nodes
     Better statistics gathering/reporting
     recognize singular replies
     prefetching for trans table entries
+    sign-only SEE
     TBB?
 
 shrink trans table entry size
@@ -20,6 +20,4 @@ Evaluation
     bounded eval with early exit
 
 Testing
-    re-test top-level eval weights
-    extensions, check for dubious ones
     try different move ordering counts. 16 didn't help. maybe 12.
