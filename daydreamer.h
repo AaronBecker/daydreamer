@@ -169,6 +169,7 @@ bool is_repetition(const position_t* pos);
 // search.c
 void init_search_data(search_data_t* data);
 void init_root_move(root_move_t* root_move, move_t move);
+bool should_stop_searching(search_data_t* data);
 void store_root_node_count(move_t move, uint64_t nodes);
 void deepening_search(search_data_t* search_data, bool ponder);
 

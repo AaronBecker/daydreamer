@@ -80,7 +80,11 @@ static void uci_handle_command(char* command)
     } else if (!strncasecmp(command, "stop", 4)) {
         root_data.engine_status = ENGINE_ABORTED;
     } else if (strncasecmp(command, "ponderhit", 9) == 0) {
-        root_data.engine_status = ENGINE_THINKING;
+        if (should_stop_searching(&root_data)) {
+            root_data.engine_status = ENGINE_ABORTED;
+        } else if (root_data.engine_status == ENGINE_PONDERING) {
+            root_data.engine_status = ENGINE_THINKING;
+        }
     } else {
         uci_handle_ext(command);
     }
@@ -303,7 +307,11 @@ void uci_check_for_command()
         else if (!strncasecmp(input, "stop", 4)) {
             root_data.engine_status = ENGINE_ABORTED;
         } else if (strncasecmp(input, "ponderhit", 9) == 0) {
-            root_data.engine_status = ENGINE_THINKING;
+            if (should_stop_searching(&root_data)) {
+                root_data.engine_status = ENGINE_ABORTED;
+            } else if (root_data.engine_status == ENGINE_PONDERING) {
+                root_data.engine_status = ENGINE_THINKING;
+            }
         } else if (strncasecmp(input, "isready", 7) == 0) {
             printf("readyok\n");
         }

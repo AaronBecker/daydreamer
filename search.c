@@ -25,7 +25,6 @@ static const int qfutility_margin = 80;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
 static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300 };
 
-static bool should_stop_searching(search_data_t* data);
 static search_result_t root_search(search_data_t* search_data,
         int alpha,
         int beta);
@@ -109,7 +108,7 @@ static void open_qnode(search_data_t* data, int ply)
  * Should we terminate the search? This considers time and node limits, as
  * well as user input. This function is checked periodically during search.
  */
-static bool should_stop_searching(search_data_t* data)
+bool should_stop_searching(search_data_t* data)
 {
     if (data->engine_status == ENGINE_ABORTED) return true;
     if (data->engine_status == ENGINE_PONDERING || data->infinite) return false;
