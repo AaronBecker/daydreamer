@@ -54,23 +54,26 @@ static void print_pv(search_data_t* data, int ordinal, int index)
     const int time = elapsed_time(&data->timer) + 1;
     const uint64_t nodes = data->nodes_searched;
 
-    char sanpv[1024];
-    line_to_san_str(&data->root_pos, (move_t*)pv, sanpv);
-    printf("info string sanpv %s\n", sanpv);
+    if (options.verbose) {
+        char sanpv[1024];
+        line_to_san_str(&data->root_pos, (move_t*)pv, sanpv);
+        printf("info string sanpv %s\n", sanpv);
+    }
     if (is_mate_score(score) || is_mated_score(score)) {
         printf("info multipv %d depth %d seldepth %d score mate %d time %d "
-                "nodes %"PRIu64" qnodes %"PRIu64" pvnodes %"PRIu64
-                " nps %"PRIu64" hashfull %d tbhits %d pv ",
-                ordinal, depth, seldepth,
+                "nodes %"PRIu64, ordinal, depth, seldepth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),
-                time, nodes, data->qnodes_searched, data->pvnodes_searched,
+                time, nodes);
+        if (options.verbose) printf(" qnodes %"PRIu64" pvnodes %"PRIu64,
+                data->qnodes_searched, data->pvnodes_searched);
+        printf(" nps %"PRIu64" hashfull %d tbhits %d pv ",
                 nodes/(time+1)*1000, get_hashfull(), data->stats.egbb_hits);
     } else {
         printf("info multipv %d depth %d seldepth %d score cp %d time %d "
-                "nodes %"PRIu64" qnodes %"PRIu64" pvnodes %"PRIu64
-                " nps %"PRIu64" hashfull %d tbhits %d pv ",
-                ordinal, depth, seldepth, score, time,
-                nodes, data->qnodes_searched, data->pvnodes_searched,
+                "nodes %"PRIu64, ordinal, depth, seldepth, score, time, nodes);
+        if (options.verbose) printf("qnodes %"PRIu64" pvnodes %"PRIu64,
+                data->qnodes_searched, data->pvnodes_searched);
+        printf(" nps %"PRIu64" hashfull %d tbhits %d pv ",
                 nodes/(time+1)*1000, get_hashfull(), data->stats.egbb_hits);
     }
     int moves = print_coord_move_list(pv);

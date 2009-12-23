@@ -273,7 +273,7 @@ void init_uci_options()
             1, 128, NULL, NULL, &handle_pv_cache);
     add_uci_option("Output Delay", OPTION_SPIN, "2000",
             0, 1000000, NULL, &options.output_delay, &default_handler);
-    add_uci_option("Verbose output", OPTION_CHECK, "true",
+    add_uci_option("Verbose output", OPTION_CHECK, "false",
             0, 0, NULL, &options.verbose, &default_handler);
 }
 

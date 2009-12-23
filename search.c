@@ -85,10 +85,10 @@ static void open_node(search_data_t* data, int ply)
         } else if (so_far - last_info > 1000) {
             last_info = so_far;
             uint64_t nps = data->nodes_searched/so_far*1000;
-            printf("info time %d nodes %"PRIu64" qnodes %"PRIu64" "
-                    "pvnodes %"PRIu64" nps %"PRIu64" hashfull %d\n",
-                    so_far, data->nodes_searched, data->qnodes_searched,
-                    data->pvnodes_searched, nps, get_hashfull());
+            printf("info time %d nodes %"PRIu64, so_far, data->nodes_searched);
+            if (options.verbose) printf(" qnodes %"PRIu64" pvnodes %"PRIu64,
+                    data->qnodes_searched, data->pvnodes_searched);
+            printf(" nps %"PRIu64" hashfull %d\n", nps, get_hashfull());
         }
     }
     data->search_stack[ply].killers[0] = NO_MOVE;
@@ -433,7 +433,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
             beta = consecutive_fail_highs > 1 ? mate_in(-1) :
                 search_data->scores_by_iteration[depth-1] + 40;
             if (options.verbose) {
-                printf("info string root window is %d - %d\n", alpha, beta);
+                printf("info string root window is (%d, %d)\n", alpha, beta);
             }
         }
 
