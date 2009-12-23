@@ -265,8 +265,8 @@ void init_uci_options()
             1, 4096, NULL, NULL, &handle_hash);
     add_uci_option("Clear Hash", OPTION_BUTTON, "",
             0, 0, NULL, NULL, &handle_clear_hash);
-    add_uci_option("Ponder", OPTION_CHECK, "false",
-            0, 0, NULL, &options.ponder, &default_handler);
+    //add_uci_option("Ponder", OPTION_CHECK, "false",
+    //        0, 0, NULL, &options.ponder, &default_handler);
     add_uci_option("MultiPV", OPTION_SPIN, "1",
             1, 256, NULL, &options.multi_pv, &default_handler);
     add_uci_option("UCI_Chess960", OPTION_CHECK, "false",
