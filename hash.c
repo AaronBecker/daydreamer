@@ -8,8 +8,15 @@ const hashkey_t enpassant_random[64];
 
 static hashkey_t random_hashkey(void)
 {
+    // Sadly we only get 16 usable bits on Windows, so lots of stitching
+    // is needed. This isn't performance-sensitive or cryptographical
+    // though, so this should be fine.
     hashkey_t hash = random();
-    hash <<= 32;
+    hash <<= 16;
+    hash |= random();
+    hash <<= 16;
+    hash |= random();
+    hash <<= 16;
     hash |= random();
     return hash;
 }

@@ -287,33 +287,23 @@ static void score_moves(move_selector_t* sel)
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
         int64_t score = 0ull;
-        assert (score > -hash_score && score <= hash_score);
         if (move == sel->hash_move[0]) {
             score = hash_score;
-        assert (score > -hash_score && score <= hash_score);
         } else if (move == sel->mate_killer) {
             score = hash_score-1;
-        assert (score > -hash_score && score <= hash_score);
         } else if (get_move_capture(move) || get_move_promote(move)) {
             score = score_tactical_move(sel->pos, move);
-        assert (score > -hash_score && score <= hash_score);
         } else if (move == sel->killers[0]) {
             score = killer_score;
-        assert (score > -hash_score && score <= hash_score);
         } else if (move == sel->killers[1]) {
             score = killer_score-1;
-        assert (score > -hash_score && score <= hash_score);
         } else if (move == sel->killers[2]) {
             score = killer_score-2;
-        assert (score > -hash_score && score <= hash_score);
         } else if (move == sel->killers[3]) {
             score = killer_score-3;
-        assert (score > -hash_score && score <= hash_score);
         } else {
             score = root_data.history.history[history_index(move)];
-        assert (score > -hash_score && score <= hash_score);
         }
-        assert (score > -hash_score && score <= hash_score);
         scores[i] = score;
     }
 }
@@ -434,6 +424,7 @@ void add_pv_move(move_selector_t* sel, move_t move, int64_t nodes)
 {
     if (sel->generator == ESCAPE_GEN) return;
     assert(is_pseudo_move_legal(sel->pos, move));
+    assert(is_move_legal(sel->pos, move));
     sel->pv_moves[sel->pv_index] = move;
     sel->pv_nodes[sel->pv_index++] = nodes;
     assert(sel->pv_index == sel->moves_so_far);
@@ -450,9 +441,10 @@ void commit_pv_moves(move_selector_t* sel)
     pv_cache->key = sel->pos->hash;
     int i;
     for (i=0; i < sel->pv_index; ++i) {
+        assert(sel->pv_moves[i]);
+        assert(is_move_legal(sel->pos, sel->pv_moves[i]));
         pv_cache->moves[i] = sel->pv_moves[i];
         pv_cache->nodes[i] = sel->pv_nodes[i];
-        assert(is_move_legal(sel->pos, sel->pv_moves[i]));
     }
     pv_cache->moves[i] = NO_MOVE;
 }

@@ -128,6 +128,9 @@ void set_uci_option(char* command)
     if (command) {
         command += 6;
         while(isspace(*command)) ++command;
+    } else if (option->type != OPTION_BUTTON) {
+        printf("info string Invalid option string\n");
+        return;
     }
     option->handler(option, command);
 }
@@ -226,6 +229,7 @@ static void handle_clear_hash(void* opt, char* value)
 static void handle_egbb_use(void* opt, char* value)
 {
     uci_option_t* option = opt;
+    if (!option->value) return;
     strncpy(option->value, value, 128);
     bool val = !strcasecmp(value, "true");
     if (val) {
@@ -242,6 +246,10 @@ static void handle_egbb_path(void* opt, char* value)
 {
     uci_option_t* option = opt;
     strncpy(option->value, value, 128);
+    int len = strlen(option->value);
+    if (strrchr(option->value, DIR_SEP[0]) - option->value + 1 != len) {
+        strcat(option->value, DIR_SEP);
+    }
     if (options.use_egbb) {
         load_egbb(value, 0);
     }

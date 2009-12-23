@@ -10,23 +10,30 @@ extern "C" {
  * in daydreamer.h.
  */
 #ifdef __APPLE__
+#define DIR_SEP     "/"
 #endif
 
 #ifdef __linux__
 // This is needed to give access to some of the string handling functions
 // that we use.
 #define _GNU_SOURCE
+#define DIR_SEP     "/"
 #endif
 
 #ifdef _WIN32
 // Rename windows functions to the posix equivalent where possible,
 // provide an implementation where there is no equivalent.
 #include <windows.h>
+// Windows doesn't have proper posix random().
+// I think regular rand() should be ok.
+#define random          rand
+#define srandom         srand
 #define strcasecmp      _stricmp
 #define strncasecmp     _strnicmp
 int _strnicmp(const char *string1, const char *string2, size_t count);
 char* strcasestr(register char *s, register char *find);
 char* strsep(char **stringp, const char *delim);
+#define DIR_SEP     "\"
 #endif
 
 #ifdef _MSC_VER
