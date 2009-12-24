@@ -34,7 +34,6 @@ extern "C" {
 #define load_function   GetProcAddress
 #define unload_library  FreeLibrary
 #define lib_handle_t    HMODULE
-#define CDECL           __cdecl
 #endif
 
 #define EGBB_WIN_SCORE  5000
