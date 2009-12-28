@@ -209,7 +209,7 @@ static bool should_probe_egbb(position_t* pos,
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 4) return false;
     if (is_mate_score(alpha) || is_mated_score(beta)) return false;
-    return (m50 == 0 || (ply < 2*(depth + ply)/3));
+    return (m50 == 0 || (ply > 2*(depth + ply)/3));
 }
 
 /*
