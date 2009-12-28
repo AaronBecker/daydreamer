@@ -34,6 +34,7 @@ typedef struct {
     bool use_egbb;
     bool verbose;
     bool chess960;
+    bool arena_castle;
     bool ponder;
 } options_t;
 
