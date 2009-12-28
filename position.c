@@ -120,17 +120,34 @@ char* set_position(position_t* pos, const char* fen)
     pos->is_check = find_checks(pos);
 
     // Read castling rights.
+    king_home = pos->pieces[WHITE][0];
     while (*fen && !isspace(*fen)) {
+        square_t sq;
         switch (*fen) {
-            case 'q': add_ooo_rights(pos, BLACK); break;
-            case 'Q': add_ooo_rights(pos, WHITE); break;
-            case 'k': add_oo_rights(pos, BLACK); break;
-            case 'K': add_oo_rights(pos, WHITE); break;
+            case 'q': add_ooo_rights(pos, BLACK);
+                      for (sq=A8; pos->board[sq]!=BR && sq<=H8; ++sq) {}
+                      if (pos->board[sq] == BR) queen_rook_home = sq % 8;
+                      else warn("inconsistent castling rights");
+                      break;
+            case 'Q': add_ooo_rights(pos, WHITE);
+                      for (sq=A1; pos->board[sq]!=WR && sq<=H1; ++sq) {}
+                      if (pos->board[sq] == WR) queen_rook_home = sq;
+                      else warn("inconsistent castling rights");
+                      break;
+            case 'k': add_oo_rights(pos, BLACK);
+                      for (sq=H8; pos->board[sq]!=BR && sq>=A8; --sq) {}
+                      if (pos->board[sq] == BR) king_rook_home = sq % 8;
+                      else warn("inconsistent castling rights");
+                      break;
+            case 'K': add_oo_rights(pos, WHITE);
+                      for (sq=H1; pos->board[sq]!=WR && sq>=A1; --sq) {}
+                      if (pos->board[sq] == WR) king_rook_home = sq;
+                      else warn("inconsistent castling rights");
+                      break;
             case '-': break;
             default:
                 // Chess960 castling flags.
                 if (*fen >= 'A' && *fen <= 'H') {
-                    king_home = pos->pieces[WHITE][0];
                     if (*fen - 'A' < square_file(king_home)) {
                         add_ooo_rights(pos, WHITE);
                         queen_rook_home = *fen - 'A';
@@ -139,7 +156,6 @@ char* set_position(position_t* pos, const char* fen)
                         king_rook_home = *fen - 'A';
                     }
                 } else if (*fen >= 'a' && *fen <= 'h') {
-                    king_home = pos->pieces[BLACK][0] - A8;
                     if (*fen - 'a' < square_file(king_home)) {
                         add_ooo_rights(pos, BLACK);
                         queen_rook_home = *fen - 'a';
