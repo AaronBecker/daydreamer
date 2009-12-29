@@ -86,14 +86,14 @@ move_t coord_str_to_move(position_t* pos, const char* coord_move)
     square_t to, from;
     piece_type_t promote_type = NONE;
     if (options.arena_castle) {
-        if (!strncmp(coord_move, "O-O", 3)) {
-            san_castle = true;
-            from = king_home + A8*pos->side_to_move;
-            to = king_rook_home + A8*pos->side_to_move;
-        } else if (!strncmp(coord_move, "O-O-O", 5)) {
+        if (!strncmp(coord_move, "O-O-O", 5)) {
             san_castle = true;
             from = king_home + A8*pos->side_to_move;
             to = queen_rook_home + A8*pos->side_to_move;
+        } else if (!strncmp(coord_move, "O-O", 3)) {
+            san_castle = true;
+            from = king_home + A8*pos->side_to_move;
+            to = king_rook_home + A8*pos->side_to_move;
         }
     }
     if (!san_castle) {
@@ -169,7 +169,7 @@ int move_to_san_str(position_t* pos, move_t move, char* san)
         strcpy(san, "(none)");
         return 6;
     } else if (move == NULL_MOVE) {
-        strcpy(san, "(null)");
+        strcpy(san, "0000");
         return 6;
     }else if (is_move_castle_short(move)) {
         strcpy(san, "O-O");
