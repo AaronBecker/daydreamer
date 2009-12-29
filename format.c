@@ -53,16 +53,18 @@ void move_to_coord_str(move_t move, char* str)
     if (options.chess960) {
         if (is_move_castle_long(move)) {
             if (options.arena_castle) {
-                snprintf(str, 6, "O-O-O");
-                return;
-            }
-            to = queen_rook_home + get_move_piece_color(move)*A8;
+                if (queen_rook_home != A1 || king_home != E1) {
+                    strcpy(str, "O-O-O");
+                    return;
+                }
+            } else to = queen_rook_home + get_move_piece_color(move)*A8;
         } else if (is_move_castle_short(move)) {
             if (options.arena_castle) {
-                snprintf(str, 4, "O-O");
-                return;
-            }
-            to = king_rook_home + get_move_piece_color(move)*A8;
+                if (king_rook_home != H1 || king_home != E1) {
+                    strcpy(str, "O-O");
+                    return;
+                }
+            } else to = king_rook_home + get_move_piece_color(move)*A8;
         }
     }
     str += snprintf(str, 5, "%c%c%c%c",
