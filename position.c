@@ -67,6 +67,7 @@ void copy_position(position_t* dst, const position_t* src)
  */
 char* set_position(position_t* pos, const char* fen)
 {
+    const char* orig_fen = fen;
     init_position(pos);
     king_home = E1;
     king_rook_home = H1;
@@ -104,6 +105,7 @@ char* set_position(position_t* pos, const char* fen)
                       pos->is_check = find_checks(pos);
                       return (char*)fen;
             default: warn("Illegal character in FEN string");
+                     warn(orig_fen);
                      return (char*)fen;
         }
     }

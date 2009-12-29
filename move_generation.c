@@ -139,7 +139,7 @@ int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves)
                 pos->board[my_king_home+1] == EMPTY &&
                 pos->board[my_king_home+2] == EMPTY &&
                 !is_square_attacked((position_t*)pos,my_king_home+1,side^1)) {
-            assert(pos->board[A8*pos->side_to_move+E1] ==
+            assert(pos->board[my_king_home] ==
                     create_piece(pos->side_to_move, KING));
             moves = add_move(pos,
                     create_move_castle(my_king_home, my_king_home+2,
@@ -151,7 +151,7 @@ int generate_pseudo_quiet_moves(const position_t* pos, move_t* moves)
                 pos->board[my_king_home-2] == EMPTY &&
                 pos->board[my_king_home-3] == EMPTY &&
                 !is_square_attacked((position_t*)pos,my_king_home-1,side^1)) {
-            assert(pos->board[A8*pos->side_to_move+E1] ==
+            assert(pos->board[my_king_home] ==
                     create_piece(pos->side_to_move, KING));
             moves = add_move(pos,
                     create_move_castle(my_king_home, my_king_home-2,
