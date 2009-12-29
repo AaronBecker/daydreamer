@@ -86,11 +86,11 @@ move_t coord_str_to_move(position_t* pos, const char* coord_move)
     square_t to, from;
     piece_type_t promote_type = NONE;
     if (options.arena_castle) {
-        if (!strcmp(coord_move, "O-O")) {
+        if (!strncmp(coord_move, "O-O", 3)) {
             san_castle = true;
             from = king_home + A8*pos->side_to_move;
             to = king_rook_home + A8*pos->side_to_move;
-        } else if (!strcmp(coord_move, "O-O-O")) {
+        } else if (!strncmp(coord_move, "O-O-O", 5)) {
             san_castle = true;
             from = king_home + A8*pos->side_to_move;
             to = queen_rook_home + A8*pos->side_to_move;
