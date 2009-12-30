@@ -52,9 +52,19 @@ void move_to_coord_str(move_t move, char* str)
     square_t to = get_move_to(move);
     if (options.chess960) {
         if (is_move_castle_long(move)) {
-            to = queen_rook_home + get_move_piece_color(move)*A8;
+            if (options.arena_castle) {
+                if (queen_rook_home != A1 || king_home != E1) {
+                    strcpy(str, "O-O-O");
+                    return;
+                }
+            } else to = queen_rook_home + get_move_piece_color(move)*A8;
         } else if (is_move_castle_short(move)) {
-            to = king_rook_home + get_move_piece_color(move)*A8;
+            if (options.arena_castle) {
+                if (king_rook_home != H1 || king_home != E1) {
+                    strcpy(str, "O-O");
+                    return;
+                }
+            } else to = king_rook_home + get_move_piece_color(move)*A8;
         }
     }
     str += snprintf(str, 5, "%c%c%c%c",
@@ -72,25 +82,38 @@ void move_to_coord_str(move_t move, char* str)
  */
 move_t coord_str_to_move(position_t* pos, const char* coord_move)
 {
-    square_t from = coord_str_to_square(coord_move);
-    square_t to = coord_str_to_square(coord_move + 2);
-    if (from == INVALID_SQUARE || to == INVALID_SQUARE) return NO_MOVE;
+    bool san_castle = false;
+    square_t to, from;
     piece_type_t promote_type = NONE;
-    switch (*(coord_move+4)) {
-        case 'n': case 'N': promote_type = KNIGHT; break;
-        case 'b': case 'B': promote_type = BISHOP; break;
-        case 'r': case 'R': promote_type = ROOK; break;
-        case 'q': case 'Q': promote_type = QUEEN; break;
+    if (options.arena_castle) {
+        if (!strncmp(coord_move, "O-O-O", 5)) {
+            san_castle = true;
+            from = king_home + A8*pos->side_to_move;
+            to = queen_rook_home + A8*pos->side_to_move;
+        } else if (!strncmp(coord_move, "O-O", 3)) {
+            san_castle = true;
+            from = king_home + A8*pos->side_to_move;
+            to = king_rook_home + A8*pos->side_to_move;
+        }
     }
+    if (!san_castle) {
+        from = coord_str_to_square(coord_move);
+        to = coord_str_to_square(coord_move + 2);
+        if (from == INVALID_SQUARE || to == INVALID_SQUARE) return NO_MOVE;
+        switch (*(coord_move+4)) {
+            case 'n': case 'N': promote_type = KNIGHT; break;
+            case 'b': case 'B': promote_type = BISHOP; break;
+            case 'r': case 'R': promote_type = ROOK; break;
+            case 'q': case 'Q': promote_type = QUEEN; break;
+        }
+    }
+
     move_t possible_moves[256];
     int num_moves = generate_legal_moves(pos, possible_moves);
     move_t move;
     for (int i=0; i<num_moves; ++i) {
         move = possible_moves[i];
-        if (from == get_move_from(move) &&
-                to == get_move_to(move) &&
-                get_move_promote(move) == promote_type) return move;
-        else if (options.chess960) {
+        if (options.chess960 && is_move_castle(move)) {
             if (is_move_castle_long(move) &&
                     from == get_move_from(move) &&
                     to == (square_t)(queen_rook_home + A8*pos->side_to_move)) {
@@ -100,7 +123,11 @@ move_t coord_str_to_move(position_t* pos, const char* coord_move)
                     to == (square_t)(king_rook_home + A8*pos->side_to_move)) {
                 return move;
             }
+            continue;
         }
+        if (from == get_move_from(move) &&
+                to == get_move_to(move) &&
+                get_move_promote(move) == promote_type) return move;
     }
     return NO_MOVE;
 }
@@ -143,7 +170,7 @@ int move_to_san_str(position_t* pos, move_t move, char* san)
         strcpy(san, "(none)");
         return 6;
     } else if (move == NULL_MOVE) {
-        strcpy(san, "(null)");
+        strcpy(san, "0000");
         return 6;
     }else if (is_move_castle_short(move)) {
         strcpy(san, "O-O");

@@ -271,6 +271,8 @@ void init_uci_options()
             1, 256, NULL, &options.multi_pv, &default_handler);
     add_uci_option("UCI_Chess960", OPTION_CHECK, "false",
             0, 0, NULL, &options.chess960, &default_handler);
+    add_uci_option("Arena-style 960 castling", OPTION_CHECK, "false",
+            0, 0, NULL, &options.arena_castle, &default_handler);
     add_uci_option("Use endgame bitbases", OPTION_CHECK, "false",
             0, 0, NULL, &options.use_egbb, &handle_egbb_use);
     add_uci_option("Endgame bitbase path", OPTION_STRING, ".",

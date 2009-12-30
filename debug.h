@@ -7,37 +7,55 @@ extern "C" {
 
 #include <assert.h>
 #include <stdio.h>
-#if 0  // non-aborting, trace-logging assert
-#include <execinfo.h>
-#undef assert
-#define assert(e)   do { \
-    if (e) break; \
-    FILE* log; \
-    log = fopen("daydreamer.log", "a"); \
-    fprintf(log, "%s:%u: failed assertion `%s'\n", __FILE__, __LINE__, #e); \
-    printf("%s:%u: failed assertion `%s'\n", __FILE__, __LINE__, #e); \
-    void* callstack[128]; \
-    int frames = backtrace(callstack, 128); \
-    char** strs = backtrace_symbols(callstack, frames); \
-    for (int i = 0; i < frames; ++i) { \
-        fprintf(log, "%s\n", strs[i]); \
-    } \
-    free(strs); \
-    fclose(log); \
-} while (0)
+// Non-aborting, trace-logging assert. Sadly, walking the stack is a pain on
+// Windows, so no trace there, just file and line.
+#if 1 && !defined(NDEBUG)
+#ifdef _WIN32
+#   undef assert
+#   define assert(e)   do { \
+        if (e) break; \
+        FILE* log; \
+        log = fopen("daydreamer.log", "a"); \
+        fprintf(log, "\n%s %s\n", __DATE__, __TIME__); \
+        fprintf(log,"%s:%u: failed assertion `%s'\n",__FILE__,__LINE__,#e); \
+        printf("%s:%u: failed assertion `%s'\n", __FILE__, __LINE__, #e); \
+        fclose(log); \
+    } while (0)
+#else
+#   include <execinfo.h>
+#   undef assert
+#   define assert(e)   do { \
+        if (e) break; \
+        FILE* log; \
+        log = fopen("daydreamer.log", "a"); \
+        fprintf(log, "\n%s %s\n", __DATE__, __TIME__); \
+        fprintf(log,"%s:%u: failed assertion `%s'\n",__FILE__,__LINE__,#e); \
+        printf("%s:%u: failed assertion `%s'\n", __FILE__, __LINE__, #e); \
+        void* callstack[128]; \
+        int frames = backtrace(callstack, 128); \
+        char** strs = backtrace_symbols(callstack, frames); \
+        for (int i = 0; i < frames; ++i) { \
+            fprintf(log, "%s\n", strs[i]); \
+        } \
+        free(strs); \
+        fclose(log); \
+    } while (0)
+#endif
 #endif
 
 #define warn(msg)   do { \
     FILE* log; \
     log = fopen("daydreamer.log", "a"); \
     printf("%s:%u: %s\n", __FILE__, __LINE__, msg); \
+    fprintf(log, "\n%s %s\n", __DATE__, __TIME__); \
     fprintf(log, "%s:%u: %s\n", __FILE__, __LINE__, msg); \
     fclose(log); \
 } while (0)
 
-#define log(msg)    do { \
+#define log_message(msg)    do { \
     FILE* log; \
     log = fopen("daydreamer.log", "a"); \
+    fprintf(log, "\n%s %s\n", __DATE__, __TIME__); \
     fprintf(log, "%s\n", msg); \
     fclose(log); \
 } while (0)    
@@ -48,7 +66,7 @@ void _check_pseudo_move_legality(position_t* pos, move_t move);
 void _check_position_hash(const position_t* pos);
 void _check_line(position_t* pos, move_t* line);
 
-#ifdef OMIT_CHECKS
+#ifndef EXPENSIVE_CHECKS
 #define check_board_validity(x)                 ((void)0)
 #define check_move_validity(x,y)                ((void)0,(void)0)
 #define check_pseudo_move_legality(x,y)         ((void)0)

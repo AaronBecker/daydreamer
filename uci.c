@@ -254,6 +254,7 @@ static void uci_go(char* command)
     if (!ponder && options.verbose) {
         print_board(&root_data.root_pos, true);
     }
+    root_data.time_bonus = 0;
     deepening_search(&root_data, ponder);
 }
 

@@ -67,6 +67,7 @@ void copy_position(position_t* dst, const position_t* src)
  */
 char* set_position(position_t* pos, const char* fen)
 {
+    const char* orig_fen = fen;
     init_position(pos);
     king_home = E1;
     king_rook_home = H1;
@@ -104,6 +105,7 @@ char* set_position(position_t* pos, const char* fen)
                       pos->is_check = find_checks(pos);
                       return (char*)fen;
             default: warn("Illegal character in FEN string");
+                     warn(orig_fen);
                      return (char*)fen;
         }
     }
@@ -121,17 +123,42 @@ char* set_position(position_t* pos, const char* fen)
 
     // Read castling rights.
     while (*fen && !isspace(*fen)) {
+        square_t sq;
         switch (*fen) {
-            case 'q': add_ooo_rights(pos, BLACK); break;
-            case 'Q': add_ooo_rights(pos, WHITE); break;
-            case 'k': add_oo_rights(pos, BLACK); break;
-            case 'K': add_oo_rights(pos, WHITE); break;
+            case 'q': add_ooo_rights(pos, BLACK);
+                      for (sq=A8; pos->board[sq]!=BR && sq<=H8; ++sq) {}
+                      if (pos->board[sq] == BR) {
+                          queen_rook_home = square_file(sq);
+                          king_home = square_file(pos->pieces[BLACK][0]);
+                      } else warn("inconsistent castling rights");
+                      break;
+            case 'Q': add_ooo_rights(pos, WHITE);
+                      for (sq=A1; pos->board[sq]!=WR && sq<=H1; ++sq) {}
+                      if (pos->board[sq] == WR) {
+                          queen_rook_home = sq;
+                          king_home = pos->pieces[WHITE][0];
+                      } else warn("inconsistent castling rights");
+                      break;
+            case 'k': add_oo_rights(pos, BLACK);
+                      for (sq=H8; pos->board[sq]!=BR && sq>=A8; --sq) {}
+                      if (pos->board[sq] == BR) {
+                          king_rook_home = square_file(sq);
+                          king_home = square_file(pos->pieces[BLACK][0]);
+                      } else warn("inconsistent castling rights");
+                      break;
+            case 'K': add_oo_rights(pos, WHITE);
+                      for (sq=H1; pos->board[sq]!=WR && sq>=A1; --sq) {}
+                      if (pos->board[sq] == WR) {
+                          king_rook_home = sq;
+                          king_home = pos->pieces[WHITE][0];
+                      } else warn("inconsistent castling rights");
+                      break;
             case '-': break;
             default:
                 // Chess960 castling flags.
                 if (*fen >= 'A' && *fen <= 'H') {
                     king_home = pos->pieces[WHITE][0];
-                    if (*fen - 'A' < square_file(king_home)) {
+                    if (*fen - 'A' < king_home) {
                         add_ooo_rights(pos, WHITE);
                         queen_rook_home = *fen - 'A';
                     } else {
@@ -139,8 +166,8 @@ char* set_position(position_t* pos, const char* fen)
                         king_rook_home = *fen - 'A';
                     }
                 } else if (*fen >= 'a' && *fen <= 'h') {
-                    king_home = pos->pieces[BLACK][0] - A8;
-                    if (*fen - 'a' < square_file(king_home)) {
+                    king_home = square_file(pos->pieces[BLACK][0]);
+                    if (*fen - 'a' < king_home) {
                         add_ooo_rights(pos, BLACK);
                         queen_rook_home = *fen - 'a';
                     } else {
@@ -207,6 +234,7 @@ bool is_move_legal(position_t* pos, move_t move)
     const square_t to = get_move_to(move);
     const piece_t piece = get_move_piece(move);
     const piece_t capture = get_move_capture(move);
+    if (piece_type(capture) == KING) return false;
     if (!valid_board_index(from) || !valid_board_index(to)) return false;
     if (piece < WP || piece > BK || (piece > WK && piece < BP)) return false;
     if (pos->board[from] != piece) return false;
@@ -394,6 +422,26 @@ bool is_pseudo_move_legal(position_t* pos, move_t move)
     color_t side = piece_color(piece);
     // Note: any pseudo-legal castle is legal if the king isn't attacked
     // afterwards, by design.
+    // Also note: This is more complicated for Chess960,
+    // since the rook may be shielding the king from check.
+    if (options.chess960 && is_move_castle(move)) {
+        piece_t my_r = create_piece(pos->side_to_move, ROOK);
+        if (is_move_castle_long(move)) {
+            square_t my_qr = queen_rook_home + A8*pos->side_to_move;
+            assert(pos->board[my_qr] == my_r);
+            pos->board[my_qr] = EMPTY;
+            bool castle_ok = !is_square_attacked(pos, to, side^1);
+            pos->board[my_qr] = my_r;
+            return castle_ok;
+        }
+        assert(is_move_castle_short(move));
+        square_t my_kr = king_rook_home + A8*pos->side_to_move;
+        assert(pos->board[my_kr] == my_r);
+        pos->board[my_kr] = EMPTY;
+        bool castle_ok = !is_square_attacked(pos, to, side^1);
+        pos->board[my_kr] = my_r;
+        return castle_ok;
+    }
     if (piece_is_type(piece, KING)) return !is_square_attacked(pos, to, side^1);
 
     // Avoid moving pinned pieces.

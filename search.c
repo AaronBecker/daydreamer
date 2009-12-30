@@ -1,5 +1,6 @@
 #include "daydreamer.h"
 #include <string.h>
+#include <math.h>
 
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
@@ -118,13 +119,14 @@ bool should_stop_searching(search_data_t* data)
     if (data->time_limit && so_far >= data->time_limit) return true;
 
     // If we've passed our soft limit and just started a new iteration, stop.
-    if (data->time_target && so_far >= data->time_target &&
+    int real_target = data->time_target + data->time_bonus;
+    if (data->time_target && so_far >= real_target &&
             data->current_move_index == 1) return true;
 
     // If we've passed our soft limit but we're in the middle of resolving a
     // fail high, try to resolve it before hitting the hard limit.
     if (data->time_target && !data->resolving_fail_high &&
-            so_far > 5*data->time_target) return true;
+            so_far > 4 * real_target) return true;
 
     // Respect node limits, if you're into that kind of thing.
     if (data->node_limit &&
@@ -161,12 +163,18 @@ static bool should_deepen(search_data_t* data)
 {
     if (should_stop_searching(data)) return false;
     if (data->infinite || data->engine_status == ENGINE_PONDERING) return true;
+    int so_far = elapsed_time(&data->timer);
+    int real_target = data->time_target + data->time_bonus;
+    
+    // Allocate more search time when the root position is unclear.
+    if (data->current_depth < 6) data->time_bonus = 0;
+    else data->time_bonus = MAX(data->time_bonus,
+            data->time_target * data->root_indecisiveness / 2);
 
     // If we're much more than halfway through our time, we won't make it
     // through the first move of the next iteration anyway.
     if (data->time_target &&
-        data->time_target-elapsed_time(&data->timer) <
-        data->time_target * 60 / 100) return false;
+            real_target - so_far < real_target * 60 / 100) return false;
 
     // Go ahead and quit if we have a mate.
     int* scores = data->scores_by_iteration;
@@ -179,17 +187,17 @@ static bool should_deepen(search_data_t* data)
     if (!data->depth_limit && !data->node_limit && obvious_move_enabled &&
             data->current_depth >= 6 && data->obvious_move) return false;
 
-    // Allocate some extra time if the root score drops.
-    if (data->current_depth < 5) return true;
+    // Allocate some extra time if the root score drops late.
+    if (so_far < real_target / 3 || data->current_depth < 5) return true;
     int it_score = data->scores_by_iteration[data->current_depth];
     int last_it_score = data->scores_by_iteration[data->current_depth-1];
     if (it_score >= last_it_score) return true;
     else if (it_score >= last_it_score - 25) {
-        data->time_target = MIN(data->time_limit, data->time_target * 2);
+        data->time_bonus = MAX(data->time_bonus, data->time_target);
     } else if (it_score >= last_it_score - 50) {
-        data->time_target = MIN(data->time_limit, data->time_target * 4);
+        data->time_bonus = MAX(data->time_bonus, data->time_target * 3);
     } else {
-        data->time_target = MIN(data->time_limit, data->time_target * 8);
+        data->time_bonus = MAX(data->time_bonus, data->time_target * 7);
     }
     return true;
 }
@@ -435,6 +443,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
                 printf("info string root window is (%d, %d)\n", alpha, beta);
             }
         }
+        search_data->root_indecisiveness = 0;
 
         search_result_t result = root_search(search_data, alpha, beta);
         if (result == SEARCH_ABORTED) break;
@@ -460,9 +469,11 @@ void deepening_search(search_data_t* search_data, bool ponder)
         if (id_score <= alpha) {
             consecutive_fail_lows++;
             consecutive_fail_highs = 0;
+            search_data->root_indecisiveness += 3;
         } else if (id_score >= beta) {
             consecutive_fail_lows = 0;
             consecutive_fail_highs++;
+            search_data->root_indecisiveness += 3;
         } else {
             consecutive_fail_lows = 0;
             consecutive_fail_highs = 0;
@@ -574,7 +585,11 @@ static search_result_t root_search(search_data_t* search_data,
                 }
             }
         }
-        if (score <= alpha) score = mated_in(-1);
+        if (score <= alpha) {
+            score = mated_in(-1);
+        } else if (search_data->current_move_index >= options.multi_pv) {
+            search_data->root_indecisiveness++;
+        }
         store_root_data(search_data, move, score, nodes_before);
         undo_move(pos, move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return SEARCH_ABORTED;
@@ -669,9 +684,12 @@ static int search(position_t* pos,
         // Nullmove search.
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        int null_depth = MAX(depth - NULL_R, 0);
+        double delta = MAX(lazy_score - beta, 1.0); 
+        double ddepth = (double)depth; 
+        int null_r = (int)(0.25 * ddepth + 2.5 + log(delta)/5.0); 
+        //if (lazy_score - beta > PAWN_VAL) null_r++; 
         int null_score = -search(pos, search_node+1, ply+1,
-                -beta, -beta+1, null_depth);
+                -beta, -beta+1, depth - null_r);
         undo_nullmove(pos, &undo);
         if (is_mated_score(null_score)) mate_threat = true;
         if (null_score >= beta) {
