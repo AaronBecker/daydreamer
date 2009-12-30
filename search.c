@@ -684,10 +684,9 @@ static int search(position_t* pos,
         // Nullmove search.
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        double delta = MAX(lazy_score - beta, 1.0);
-        double r = 0.18 * depth + 3.1 + log(delta)/5.0;
-        int null_r = r > (double)depth ? depth : (int)r;
-        //int null_r = (depth >= 5 ? 4 : 3); 
+        double delta = MAX(lazy_score - beta, 1.0); 
+        double ddepth = (double)depth; 
+        int null_r = (int)(0.25 * ddepth + 2.5 + log(delta)/5.0); 
         if (lazy_score - beta > PAWN_VAL) null_r++; 
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
