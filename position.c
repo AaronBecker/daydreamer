@@ -225,6 +225,7 @@ bool is_move_legal(position_t* pos, move_t move)
     const square_t to = get_move_to(move);
     const piece_t piece = get_move_piece(move);
     const piece_t capture = get_move_capture(move);
+    if (piece_type(capture) == KING) return false;
     if (!valid_board_index(from) || !valid_board_index(to)) return false;
     if (piece < WP || piece > BK || (piece > WK && piece < BP)) return false;
     if (pos->board[from] != piece) return false;
@@ -412,6 +413,26 @@ bool is_pseudo_move_legal(position_t* pos, move_t move)
     color_t side = piece_color(piece);
     // Note: any pseudo-legal castle is legal if the king isn't attacked
     // afterwards, by design.
+    // Also note: This is more complicated for Chess960,
+    // since the rook may be shielding the king from check.
+    if (options.chess960 && is_move_castle(move)) {
+        piece_t my_r = create_piece(pos->side_to_move, ROOK);
+        if (is_move_castle_long(move)) {
+            square_t my_qr = queen_rook_home + A8*pos->side_to_move;
+            assert(pos->board[my_qr] == my_r);
+            pos->board[my_qr] = EMPTY;
+            bool castle_ok = !is_square_attacked(pos, to, side^1);
+            pos->board[my_qr] = my_r;
+            return castle_ok;
+        }
+        assert(is_move_castle_short(move));
+        square_t my_kr = king_rook_home + A8*pos->side_to_move;
+        assert(pos->board[my_kr] == my_r);
+        pos->board[my_kr] = EMPTY;
+        bool castle_ok = !is_square_attacked(pos, to, side^1);
+        pos->board[my_kr] = my_r;
+        return castle_ok;
+    }
     if (piece_is_type(piece, KING)) return !is_square_attacked(pos, to, side^1);
 
     // Avoid moving pinned pieces.

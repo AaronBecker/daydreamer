@@ -113,10 +113,7 @@ move_t coord_str_to_move(position_t* pos, const char* coord_move)
     move_t move;
     for (int i=0; i<num_moves; ++i) {
         move = possible_moves[i];
-        if (from == get_move_from(move) &&
-                to == get_move_to(move) &&
-                get_move_promote(move) == promote_type) return move;
-        else if (options.chess960) {
+        if (options.chess960 && is_move_castle(move)) {
             if (is_move_castle_long(move) &&
                     from == get_move_from(move) &&
                     to == (square_t)(queen_rook_home + A8*pos->side_to_move)) {
@@ -126,7 +123,11 @@ move_t coord_str_to_move(position_t* pos, const char* coord_move)
                     to == (square_t)(king_rook_home + A8*pos->side_to_move)) {
                 return move;
             }
+            continue;
         }
+        if (from == get_move_from(move) &&
+                to == get_move_to(move) &&
+                get_move_promote(move) == promote_type) return move;
     }
     return NO_MOVE;
 }

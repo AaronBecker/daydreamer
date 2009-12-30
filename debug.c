@@ -74,7 +74,9 @@ void _check_pseudo_move_legality(position_t* pos, move_t move)
 {
     (void)pos;
     (void)move;
-    assert(is_move_legal(pos, move) == is_pseudo_move_legal(pos, move));
+    bool legal = is_move_legal(pos, move);
+    bool pseudo_legal = is_pseudo_move_legal(pos, move);
+    assert(legal == pseudo_legal);
 }
 
 /*
