@@ -6,6 +6,8 @@ Search
     prefetching for trans table entries
     sign-only SEE
     TBB?
+    Try multiple moves in TT, instead of PV cache
+    Test effects of reducing PV-specific decisions
 
 shrink trans table entry size
 evaluation hashing
