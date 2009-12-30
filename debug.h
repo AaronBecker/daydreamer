@@ -52,7 +52,7 @@ extern "C" {
     fclose(log); \
 } while (0)
 
-#define log(msg)    do { \
+#define log_message(msg)    do { \
     FILE* log; \
     log = fopen("daydreamer.log", "a"); \
     fprintf(log, "\n%s %s\n", __DATE__, __TIME__); \
