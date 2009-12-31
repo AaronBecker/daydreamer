@@ -665,25 +665,178 @@ static void generate_piece_captures(const position_t* pos,
 {
     move_t* moves = *moves_head;
     square_t to;
-    if (piece_slide_type(piece) == NONE) {
-        // not a sliding piece, just iterate over dest. squares
-        for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
-            to = from + *delta;
+    switch (piece_type(piece)) {
+        case KING:
+            to = from - 17;
             if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
                 moves = add_move(pos, create_move(from, to, piece,
                             pos->board[to]), moves);
             }
-        }
-    } else {
-        // a sliding piece, keep going until we hit something
-        for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
-            to = from + *delta;
-            while (pos->board[to] == EMPTY) to += *delta;
+            to = from - 16;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from - 15;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from - 1;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from + 1;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from + 15;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from + 16;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from + 17;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            break;
+        case KNIGHT:
+            to = from - 33;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from - 31;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from - 18;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from - 14;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from + 14;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from + 18;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from + 31;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            to = from + 33;
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            break;
+        case BISHOP:
+            for (to=from-17; pos->board[to]==EMPTY; to-=17) {}
             if (can_capture(piece, pos->board[to])) {
                 moves = add_move(pos, create_move(from, to, piece,
                             pos->board[to]), moves);
             }
-        }
+            for (to=from-15; pos->board[to]==EMPTY; to-=15) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from+15; pos->board[to]==EMPTY; to+=15) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from+17; pos->board[to]==EMPTY; to+=17) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            break;
+        case ROOK:
+            for (to=from-16; pos->board[to]==EMPTY; to-=16) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from-1; pos->board[to]==EMPTY; to-=1) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from+1; pos->board[to]==EMPTY; to+=1) {}
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from+16; pos->board[to]==EMPTY; to+=16) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            break;
+        case QUEEN:
+            for (to=from-17; pos->board[to]==EMPTY; to-=17) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from-16; pos->board[to]==EMPTY; to-=16) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from-15; pos->board[to]==EMPTY; to-=15) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from-1; pos->board[to]==EMPTY; to-=1) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from+1; pos->board[to]==EMPTY; to+=1) {}
+            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from+15; pos->board[to]==EMPTY; to+=15) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from+16; pos->board[to]==EMPTY; to+=16) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            for (to=from+17; pos->board[to]==EMPTY; to+=17) {}
+            if (can_capture(piece, pos->board[to])) {
+                moves = add_move(pos, create_move(from, to, piece,
+                            pos->board[to]), moves);
+            }
+            break;
+        default: assert(false);
     }
     *moves_head = moves;
 }

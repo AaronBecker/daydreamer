@@ -102,10 +102,10 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
         const int* mobile = color_table[side];
         square_t from, to;
         piece_t piece;
-        for (int i=1; (from = pos->pieces[side][i]) != INVALID_SQUARE; ++i) {
+        for (int i=1; pos->pieces[side][i] != INVALID_SQUARE; ++i) {
+            from = pos->pieces[side][i];
             piece = pos->board[from];
             piece_type_t type = piece_type(piece);
-            if (type == PAWN || type == KING) continue;
             int ps = 0;
             switch (type) {
                 case KNIGHT:

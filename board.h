@@ -29,7 +29,7 @@ typedef enum {
 #define piece_is_color(piece, color)    (piece_color((piece)) == (color))
 #define create_piece(color, type)       (((color) << 3) | (type))
 #define piece_colors_match(p1, p2)      (((p1) >> 3) == ((p2) >> 3))
-#define piece_colors_differ(p1, p2)     (((p1) >> 3) == ((p2) >> 3))
+#define piece_colors_differ(p1, p2)     (((p1) >> 3) != ((p2) >> 3))
 #define can_capture(p1, p2)             ((((p1) >> 3)^1) == ((p2) >> 3))
 
 typedef enum {

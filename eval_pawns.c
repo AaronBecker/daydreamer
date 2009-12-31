@@ -156,7 +156,7 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             if (!(outpost_mask[color][ind] & their_pawns)) {
                 set_bit(pd->outposts_bb[color], ind);
             }
-            if (pos->board[sq] != create_piece(color, PAWN)) continue;
+            if (pos->board[sq] != pawn) continue;
 
             // Pawn analysis.
             file_t file = square_file(sq);
