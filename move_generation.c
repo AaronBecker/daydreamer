@@ -599,28 +599,40 @@ static void generate_pawn_captures(const position_t* pos,
         move_t** moves_head)
 {
     color_t side = pos->side_to_move;
+    int cap_left = side == WHITE ? 15 : -15;
+    int cap_right = side == WHITE ? 17 : -17;
     square_t to;
     rank_t r_rank = relative_rank[side][square_rank(from)];
     move_t* moves = *moves_head;
     if (r_rank < RANK_7) {
-        for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
-            // non-promote captures
-            to = from + *delta;
-            if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
-                moves = add_move(pos, create_move(from, to, piece,
-                        pos->board[to]), moves);
-            }
-            else if (to == pos->ep_square && pos->board[to] == EMPTY) {
-                moves = add_move(pos, create_move_enpassant(from, to, piece,
-                        pos->board[to + pawn_push[side^1]]), moves);
-            }
+        // non-promote captures
+        to = from + cap_left;
+        if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+            moves = add_move(pos, create_move(from, to, piece,
+                    pos->board[to]), moves);
+        } else if (to == pos->ep_square && pos->board[to] == EMPTY) {
+            moves = add_move(pos, create_move_enpassant(from, to, piece,
+                    pos->board[to + pawn_push[side^1]]), moves);
+        }
+        to = from + cap_right;
+        if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+            moves = add_move(pos, create_move(from, to, piece,
+                    pos->board[to]), moves);
+        } else if (to == pos->ep_square && pos->board[to] == EMPTY) {
+            moves = add_move(pos, create_move_enpassant(from, to, piece,
+                    pos->board[to + pawn_push[side^1]]), moves);
         }
     } else {
-        for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
-            // capture/promotes
-            to = from + *delta;
-            if (pos->board[to] == EMPTY ||
-                    !can_capture(piece, pos->board[to])) continue;
+        // capture/promotes
+        to = from + cap_left;
+        if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
+            for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
+                moves = add_move(pos, create_move_promote(from, to, piece,
+                        pos->board[to], promoted), moves);
+            }
+        }
+        to = from + cap_right;
+        if (pos->board[to] != EMPTY && can_capture(piece, pos->board[to])) {
             for (piece_t promoted=QUEEN; promoted > PAWN; --promoted) {
                 moves = add_move(pos, create_move_promote(from, to, piece,
                         pos->board[to], promoted), moves);
