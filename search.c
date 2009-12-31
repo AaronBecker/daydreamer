@@ -686,7 +686,8 @@ static int search(position_t* pos,
         do_nullmove(pos, &undo);
         double delta = MAX(lazy_score - beta, 1.0); 
         double ddepth = (double)depth; 
-        int null_r = (int)(0.25 * ddepth + 2.5 + log(delta)/5.0); 
+        //int null_r = (int)(0.25 * ddepth + 2.5 + log(delta)/5.0); 
+        int null_r = (int)(2.5+sqrt((double)depth)/1.22+sqrt(log(((double)depth)*delta)));
         //if (lazy_score - beta > PAWN_VAL) null_r++; 
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
