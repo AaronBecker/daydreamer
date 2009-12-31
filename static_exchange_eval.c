@@ -82,9 +82,9 @@ int static_exchange_eval(const position_t* pos, move_t move)
         if (att_data->possible_attackers & Q_FLAG) {
             square_t sq;
             for (sq=attacker_sq - att_data->relative_direction;
-                    valid_board_index(sq) && pos->board[sq] != EMPTY;
+                    pos->board[sq] == EMPTY;
                     sq -= att_data->relative_direction) {}
-            if (valid_board_index(sq) && pos->board[sq] != EMPTY) {
+            if (pos->board[sq] != OUT_OF_BOUNDS) {
                 const piece_t xray_piece = pos->board[sq];
                 if (att_data->possible_attackers & 
                         get_piece_flag(xray_piece)) {
