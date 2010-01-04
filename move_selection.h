@@ -24,6 +24,7 @@ typedef enum {
     PHASE_GOOD_TACTICS,
     PHASE_BAD_TACTICS,
     PHASE_QUIET,
+    PHASE_DEFERRED,
 } selection_phase_t;
 
 typedef struct {
@@ -31,6 +32,8 @@ typedef struct {
     move_t* moves;
     int64_t* scores;
     move_t base_moves[256];
+    move_t deferred_moves[256];
+    int num_deferred_moves;
     int64_t base_scores[256];
     move_t pv_moves[256];
     int64_t pv_nodes[256];

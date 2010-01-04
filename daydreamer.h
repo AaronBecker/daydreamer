@@ -139,6 +139,7 @@ void init_move_selector(move_selector_t* sel,
 bool has_single_reply(move_selector_t* sel);
 bool should_try_lmr(move_selector_t* sel, move_t move);
 move_t select_move(move_selector_t* sel);
+void defer_move(move_selector_t* sel, move_t move);
 void init_pv_cache(const int max_bytes);
 void clear_pv_cache(void);
 void add_pv_move(move_selector_t* sel, move_t move, int64_t nodes);

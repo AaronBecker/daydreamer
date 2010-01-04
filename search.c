@@ -746,6 +746,11 @@ static int search(position_t* pos,
         undo_info_t undo;
         do_move(pos, move, &undo);
         int ext = extend(pos, move, single_reply);
+        if (ext && *selector.phase != PHASE_DEFERRED) {
+            defer_move(&selector, move);
+            undo_move(pos, move, &undo);
+            continue;
+        }
         if (num_legal_moves == 1) {
             // First move, use full window search.
             score = -search(pos, search_node+1, ply+1,
