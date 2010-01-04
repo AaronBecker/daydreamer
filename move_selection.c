@@ -6,11 +6,11 @@ extern search_data_t root_data;
 
 selection_phase_t phase_table[6][8] = {
     { PHASE_BEGIN, PHASE_ROOT, PHASE_END },
-    { PHASE_BEGIN, PHASE_TRANS, PHASE_PV, PHASE_END },
-    { PHASE_BEGIN, PHASE_TRANS, PHASE_NON_PV, PHASE_END },
-    { PHASE_BEGIN, PHASE_EVASIONS, PHASE_END },
-    { PHASE_BEGIN, PHASE_TRANS, PHASE_QSEARCH, PHASE_END },
-    { PHASE_BEGIN, PHASE_TRANS, PHASE_QSEARCH_CH, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_PV, PHASE_DEFERRED, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_NON_PV, PHASE_DEFERRED, PHASE_END },
+    { PHASE_BEGIN, PHASE_EVASIONS, PHASE_DEFERRED, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_QSEARCH, PHASE_DEFERRED, PHASE_END },
+    { PHASE_BEGIN, PHASE_TRANS, PHASE_QSEARCH_CH, PHASE_DEFERRED, PHASE_END },
 };
 
 typedef struct {
@@ -75,6 +75,8 @@ void init_move_selector(move_selector_t* sel,
     } else {
         sel->killers[0] = NO_MOVE;
     }
+    sel->deferred_moves[0] = NO_MOVE;
+    sel->num_deferred_moves = 0;
     generate_moves(sel);
 }
 
@@ -149,6 +151,10 @@ static void generate_moves(move_selector_t* sel)
                     sel->pos, sel->moves, false);
             score_moves(sel);
             break;
+        case PHASE_DEFERRED:
+            sel->moves = sel->deferred_moves;
+            sel->moves_end = sel->num_deferred_moves;
+            break;
         default: assert(false);
     }
     sel->single_reply = sel->generator == ESCAPE_GEN && sel->moves_end == 1;
@@ -176,14 +182,18 @@ move_t select_move(move_selector_t* sel)
             move = sel->moves[sel->current_move_index++];
             if (!move) break;
             sel->moves_so_far++;
-            if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_moves_so_far++;
+            if (!get_move_capture(move) && get_move_promote(move) != QUEEN) {
+                sel->quiet_moves_so_far++;
+            }
             return move;
         case PHASE_EVASIONS:
             if (sel->current_move_index >= sel->ordered_moves) {
                 move = sel->moves[sel->current_move_index++];
                 if (!move) break;
                 sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move) != QUEEN) sel->quiet_moves_so_far++;
+                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) {
+                    sel->quiet_moves_so_far++;
+                }
                 return move;
             } else {
                 assert(sel->current_move_index <= sel->moves_end);
@@ -236,12 +246,30 @@ move_t select_move(move_selector_t* sel)
                 return move;
             }
             break;
+        case PHASE_DEFERRED:
+            assert(sel->current_move_index <= sel->moves_end);
+            move = sel->moves[sel->current_move_index++];
+            if (!move) break;
+            sel->moves_so_far++;
+            if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) {
+                sel->quiet_moves_so_far++;
+            }
+            return move;
+
         default: assert(false);
     }
 
     assert(*sel->phase != PHASE_END);
     generate_moves(sel);
     return select_move(sel);
+}
+
+void defer_move(move_selector_t* sel, move_t move)
+{
+    assert(*sel->phase != PHASE_DEFERRED);
+    sel->deferred_moves[sel->num_deferred_moves++] = move;
+    sel->deferred_moves[sel->num_deferred_moves] = NO_MOVE;
+    sel->moves_so_far--;
 }
 
 static move_t get_best_move(move_selector_t* sel, int64_t* score)
