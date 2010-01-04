@@ -762,7 +762,7 @@ static int search(position_t* pos,
                 !get_move_promote(move) &&
                 num_legal_moves >= depth + 2;
             if (prune_futile) {
-                if (num_legal_moves >= 5 + (1 << (3 * depth / 4))) {
+                if (num_legal_moves >= 3 + depth*depth) {
                     if (full_window) add_pv_move(&selector, move, 0);
                     undo_move(pos, move, &undo);
                     continue;
