@@ -54,6 +54,8 @@ static const int rook_on_7[2] = { 20, 40 };
 static const int rook_open_file_bonus[2] = { 20, 10 };
 static const int rook_half_open_file_bonus[2] = { 10, 10 };
 
+static const int pawn_attack[2] = { 6, 12 };
+
 /*
  * Score a weak square that's occupied by a minor piece. The basic bonus
  * is given by a score table, and additional points are awarded for being
@@ -111,7 +113,17 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
             int ps = 0;
             switch (type) {
                 case PAWN:
-                    ps = (pos->board[from+pawn_push[side]] == EMPTY);
+                    ps = (pos->board[from + pawn_push[side]] == EMPTY);
+                    piece_t p = pos->board[from + pawn_push[side] - 1];
+                    if (piece_color(p) == (side^1) && piece_type(p) > PAWN) {
+                        mid_score[side] += pawn_attack[0];
+                        end_score[side] += pawn_attack[1];
+                    }
+                    p = pos->board[from + pawn_push[side] + 1];
+                    if (piece_color(p) == (side^1) && piece_type(p) > PAWN) {
+                        mid_score[side] += pawn_attack[0];
+                        end_score[side] += pawn_attack[1];
+                    }
                     break;
                 case KNIGHT:
                     ps += mobile[pos->board[from-33]];
