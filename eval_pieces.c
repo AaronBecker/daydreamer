@@ -3,7 +3,8 @@
 
 static const int mobility_score_table[2][8][32] = {
     { // midgame
-        {0}, {0},
+        {0},
+        {0, 4},
         {-8, -4, 0, 4, 8, 12, 16, 18, 20},
         {-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 40, 40, 40, 40},
         {-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20},
@@ -12,7 +13,8 @@ static const int mobility_score_table[2][8][32] = {
         {0}, {0}
     },
     { // endgame
-        {0}, {0},
+        {0},
+        {0, 12},
         {-8, -4, 0, 4, 8, 12, 16, 18, 20},
         {-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 40, 40, 40, 40},
         {-10, -6, -2, 2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50},
@@ -108,6 +110,9 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
             piece_type_t type = piece_type(piece);
             int ps = 0;
             switch (type) {
+                case PAWN:
+                    ps = (pos->board[from+pawn_push[side]] == EMPTY);
+                    break;
                 case KNIGHT:
                     ps += mobile[pos->board[from-33]];
                     ps += mobile[pos->board[from-31]];
