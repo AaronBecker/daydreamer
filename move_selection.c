@@ -3,7 +3,7 @@
 #include <string.h>
 
 extern search_data_t root_data;
-static const bool enable_defer = false;
+static const bool enable_defer = true;
 
 selection_phase_t phase_table[6][8] = {
     { PHASE_BEGIN, PHASE_ROOT, PHASE_END },
