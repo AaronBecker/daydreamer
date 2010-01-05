@@ -684,7 +684,7 @@ static int search(position_t* pos,
         // Nullmove search.
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        int null_r = (int)(2.5 + 0.25*depth);
+        int null_r = 2 + (depth + 2)/4;
         if (lazy_score - beta > PAWN_VAL) null_r++;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
@@ -766,11 +766,6 @@ static int search(position_t* pos,
                 !get_move_promote(move) &&
                 num_legal_moves >= depth + 2;
             if (prune_futile) {
-                if (num_legal_moves >= 3 + depth*depth) {
-                    if (full_window) add_pv_move(&selector, move, 0);
-                    undo_move(pos, move, &undo);
-                    continue;
-                }
                 // History pruning.
                 if (history_prune_enabled && is_history_prune_allowed(
                             &root_data.history, move, depth)) {

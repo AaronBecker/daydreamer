@@ -3,6 +3,7 @@
 #include <string.h>
 
 extern search_data_t root_data;
+static const bool enable_defer = false;
 
 selection_phase_t phase_table[6][8] = {
     { PHASE_BEGIN, PHASE_ROOT, PHASE_END },
@@ -266,6 +267,7 @@ move_t select_move(move_selector_t* sel)
 
 bool defer_move(move_selector_t* sel, move_t move)
 {
+    if (!enable_defer) return false;
     assert(move == sel->moves[sel->current_move_index]);
     if (*sel->phase == PHASE_DEFERRED ||
             *sel->phase == PHASE_TRANS ||

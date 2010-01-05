@@ -140,9 +140,9 @@ int simple_eval(const position_t* pos)
                 pos->piece_square_eval[side^1].endgame)) / 1024;
     int material_adjust = 0;
 #ifndef UFO_EVAL
-    // bishop pair: +50
-    material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
-    material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
+    // bishop pair: +30
+    material_adjust += pos->piece_count[WB] > 1 ? 30 : 0;
+    material_adjust -= pos->piece_count[BB] > 1 ? 30 : 0;
     material_adjust += pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5);
     material_adjust -= pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5);
     material_adjust -= pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5);
