@@ -264,12 +264,16 @@ move_t select_move(move_selector_t* sel)
     return select_move(sel);
 }
 
-void defer_move(move_selector_t* sel, move_t move)
+bool defer_move(move_selector_t* sel, move_t move)
 {
-    assert(*sel->phase != PHASE_DEFERRED);
+    assert(move == sel->moves[sel->current_move_index]);
+    if (*sel->phase == PHASE_DEFERRED ||
+            *sel->phase == PHASE_TRANS ||
+            sel->scores[sel->current_move_index] > MAX_HISTORY) return false;
     sel->deferred_moves[sel->num_deferred_moves++] = move;
     sel->deferred_moves[sel->num_deferred_moves] = NO_MOVE;
     sel->moves_so_far--;
+    return true;
 }
 
 static move_t get_best_move(move_selector_t* sel, int64_t* score)

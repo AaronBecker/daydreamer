@@ -11,7 +11,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.61"
-#define ENGINE_VERSION_NAME     " fut_count_quad_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " defer2_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -139,7 +139,7 @@ void init_move_selector(move_selector_t* sel,
 bool has_single_reply(move_selector_t* sel);
 bool should_try_lmr(move_selector_t* sel, move_t move);
 move_t select_move(move_selector_t* sel);
-void defer_move(move_selector_t* sel, move_t move);
+bool defer_move(move_selector_t* sel, move_t move);
 void init_pv_cache(const int max_bytes);
 void clear_pv_cache(void);
 void add_pv_move(move_selector_t* sel, move_t move, int64_t nodes);
