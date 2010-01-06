@@ -192,7 +192,12 @@ char* set_position(position_t* pos, const char* fen)
 
     // Read en-passant square
     if (*fen != '-') {
-        pos->ep_square = coord_str_to_square(fen++);
+        square_t ep_sq = coord_str_to_square(fen++);
+        piece_t pawn = create_piece(pos->side_to_move, PAWN);
+        if (pos->board[ep_sq - pawn_push[pos->side_to_move] - 1] == pawn ||
+                pos->board[ep_sq - pawn_push[pos->side_to_move] + 1] == pawn) {
+            pos->ep_square = ep_sq;
+        }
         if (*fen) ++fen;
     }
     while (*fen && isspace(*(++fen))) {}
