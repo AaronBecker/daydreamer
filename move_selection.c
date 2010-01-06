@@ -93,9 +93,7 @@ bool has_single_reply(move_selector_t* sel)
 bool should_try_prune(move_selector_t* sel, move_t move)
 {
     return !get_move_capture(move) &&
-        !get_move_promote(move) &&
-        move != sel->killers[0] &&
-        move != sel->killers[1];
+        !get_move_promote(move);
 }
 
 bool should_try_lmr(move_selector_t* sel, move_t move)
