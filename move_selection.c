@@ -98,7 +98,8 @@ bool should_try_prune(move_selector_t* sel, move_t move)
 
 bool should_try_lmr(move_selector_t* sel, move_t move)
 {
-    return sel->quiet_moves_so_far > 2 &&
+    return //sel->quiet_moves_so_far > 2 &&
+        move != sel->killers[0] && move != sel->killers[1] &&
         !get_move_capture(move) &&
         get_move_promote(move) != QUEEN &&
         !is_move_castle(move);
