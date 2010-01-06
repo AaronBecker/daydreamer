@@ -937,7 +937,8 @@ static int quiesce(position_t* pos,
         pos->num_pieces[pos->side_to_move] > 2;
     int num_qmoves = 0;
     move_selector_t selector;
-    generation_t gen_type = depth >= -1 ? Q_CHECK_GEN : Q_GEN;
+    generation_t gen_type = depth >= 0 && eval + 300 >= alpha ?
+        Q_CHECK_GEN : Q_GEN;
     init_move_selector(&selector, pos, gen_type,
             search_node, hash_move, depth, ply);
     for (move_t move = select_move(&selector); move != NO_MOVE;
