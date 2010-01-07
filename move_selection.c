@@ -3,7 +3,8 @@
 #include <string.h>
 
 extern search_data_t root_data;
-static const bool enable_defer = false;
+static const bool defer_enabled = false;
+static bool pv_cache_enabled = true;
 
 selection_phase_t phase_table[6][8] = {
     { PHASE_BEGIN, PHASE_ROOT, PHASE_END },
@@ -32,9 +33,6 @@ static void sort_root_moves(move_selector_t* sel);
 static int64_t score_tactical_move(position_t* pos, move_t move);
 static move_t get_best_move(move_selector_t* sel, int64_t* score);
 static move_cache_t* get_pv_move_list(const position_t* pos);
-
-static bool pv_cache_enabled = true;
-
 
 /*
  * Initialize the move selector data structure with the information needed to
@@ -92,9 +90,10 @@ bool has_single_reply(move_selector_t* sel)
 
 bool should_try_prune(move_selector_t* sel, move_t move)
 {
-    return sel->quiet_moves_so_far > 2 &&
+    return sel->quiet_moves_so_far > 0 &&
         !get_move_capture(move) &&
-        !get_move_promote(move);
+        !get_move_promote(move) &&
+        !is_move_castle(move);
 }
 
 bool should_try_lmr(move_selector_t* sel, move_t move)
@@ -274,7 +273,7 @@ move_t select_move(move_selector_t* sel)
 
 bool defer_move(move_selector_t* sel, move_t move)
 {
-    if (!enable_defer) return false;
+    if (!defer_enabled) return false;
     assert(move == sel->moves[sel->current_move_index]);
     if (*sel->phase == PHASE_DEFERRED ||
             *sel->phase == PHASE_TRANS ||
