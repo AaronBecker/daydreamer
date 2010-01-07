@@ -758,12 +758,13 @@ static int search(position_t* pos,
             // efficient ways of identifying important moves without actually
             // making them.
             bool prune_futile = futility_enabled &&
-                !full_window &&
+                //!full_window &&
                 !ext &&
                 !mate_threat &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !is_check(pos) &&
-                num_legal_moves >= depth + 2 &&
+                ((!full_window && num_legal_moves >= depth + 2) ||
+                 (full_window && num_legal_moves >= depth + 9)) &&
                 should_try_prune(&selector, move);
             if (prune_futile) {
                 // History pruning.
@@ -791,8 +792,8 @@ static int search(position_t* pos,
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
             const bool move_is_late = full_window ?
-                num_legal_moves > 5 + depth/2 ://LMR_PV_EARLY_MOVES :
-                num_legal_moves > 1 + depth/2; //LMR_EARLY_MOVES;
+                num_legal_moves > LMR_PV_EARLY_MOVES :
+                num_legal_moves > LMR_EARLY_MOVES;
             const bool do_lmr = lmr_enabled &&
                 move_is_late &&
                 !ext &&
