@@ -92,14 +92,14 @@ bool has_single_reply(move_selector_t* sel)
 
 bool should_try_prune(move_selector_t* sel, move_t move)
 {
-    return !get_move_capture(move) &&
+    return sel->quiet_moves_so_far > 2 &&
+        !get_move_capture(move) &&
         !get_move_promote(move);
 }
 
 bool should_try_lmr(move_selector_t* sel, move_t move)
 {
-    return //sel->quiet_moves_so_far > 2 &&
-        move != sel->killers[0] && move != sel->killers[1] &&
+    return sel->quiet_moves_so_far > 2 &&
         !get_move_capture(move) &&
         get_move_promote(move) != QUEEN &&
         !is_move_castle(move);
