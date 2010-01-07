@@ -758,22 +758,24 @@ static int search(position_t* pos,
             // efficient ways of identifying important moves without actually
             // making them.
             bool prune_futile = futility_enabled &&
-                //!full_window &&
                 !ext &&
                 !mate_threat &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !is_check(pos) &&
-                ((!full_window && num_legal_moves >= depth + 2) ||
-                 (full_window && num_legal_moves >= depth + 9)) &&
+                num_legal_moves >= depth + 2 &&
                 should_try_prune(&selector, move);
+            bool prune_condition = false;
             if (prune_futile) {
                 // History pruning.
                 if (history_prune_enabled && is_history_prune_allowed(
                             &root_data.history, move, depth)) {
                     num_futile_moves++;
-                    undo_move(pos, move, &undo);
-                    if (full_window) add_pv_move(&selector, move, 0);
-                    continue;
+                    prune_condition = true;
+                    if (!full_window) {
+                        undo_move(pos, move, &undo);
+                        if (full_window) add_pv_move(&selector, move, 0);
+                        continue;
+                    }
                 }
                 // Value pruning.
                 if (value_prune_enabled && lazy_score < beta) {
@@ -783,9 +785,12 @@ static int search(position_t* pos,
                     }
                     if (futility_score < beta) {
                         num_futile_moves++;
-                        undo_move(pos, move, &undo);
-                        if (full_window) add_pv_move(&selector, move, 0);
-                        continue;
+                        prune_condition = true;
+                        if (!full_window) {
+                            undo_move(pos, move, &undo);
+                            if (full_window) add_pv_move(&selector, move, 0);
+                            continue;
+                        }
                     }
                 }
             }
@@ -803,7 +808,7 @@ static int search(position_t* pos,
                 should_try_lmr(&selector, move);
             if (do_lmr) {
                 score = -search(pos, search_node+1, ply+1,
-                        -alpha-1, -alpha, depth-LMR_REDUCTION-1);
+                        -alpha-1, -alpha, depth-LMR_REDUCTION-prune_condition-1);
             } else {
                 score = alpha+1;
             }
