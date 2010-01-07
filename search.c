@@ -762,7 +762,6 @@ static int search(position_t* pos,
             // efficient ways of identifying important moves without actually
             // making them.
             bool prune_futile = futility_enabled &&
-                move_is_late &&
                 !ext &&
                 !mate_threat &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
