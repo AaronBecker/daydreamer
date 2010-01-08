@@ -290,11 +290,9 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
             }
 
             // Adjust endgame bonus based on king proximity
-            /*
             eg_passer_bonus[side] += king_dist_bonus[rank] *
                 (distance(target, pos->pieces[side^1][0]) -
                  distance(target, pos->pieces[side][0]));
-            */
 
             // Is the passer connected to another friendly pawn?
             /*
