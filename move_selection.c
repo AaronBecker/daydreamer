@@ -97,6 +97,7 @@ bool should_try_prune(move_selector_t* sel, move_t move)
 
 bool should_try_lmr(move_selector_t* sel, move_t move)
 {
+    assert(false);
     return sel->quiet_moves_so_far > 2 &&
         !get_move_capture(move) &&
         get_move_promote(move) != QUEEN &&
