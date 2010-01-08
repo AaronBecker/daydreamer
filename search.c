@@ -753,10 +753,6 @@ static int search(position_t* pos,
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1);
         } else {
-            const bool move_is_late = full_window ?
-                num_legal_moves > LMR_PV_EARLY_MOVES :
-                num_legal_moves > LMR_EARLY_MOVES;
-
             // Futility pruning. Note: it would be nice to do extensions and
             // futility before calling do_move, but this would require more
             // efficient ways of identifying important moves without actually
@@ -792,6 +788,9 @@ static int search(position_t* pos,
                     }
                 }
             }
+            const bool move_is_late = full_window ?
+                num_legal_moves > LMR_PV_EARLY_MOVES :
+                num_legal_moves > LMR_EARLY_MOVES;
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
             const bool do_lmr = lmr_enabled &&
