@@ -563,11 +563,7 @@ static search_result_t root_search(search_data_t* search_data,
                 !ext &&
                 depth > LMR_DEPTH_LIMIT &&
                 !is_check(pos) &&
-                selector.quiet_moves_so_far > 4 &&
-                !get_move_capture(move) &&
-                get_move_promote(move) != QUEEN &&
-                !is_move_castle(move);
-                //should_try_lmr(&selector, move);
+                should_try_lmr(&selector, move);
             if (do_lmr) {
                 score = -search(pos, search_data->search_stack,
                         1, -alpha-1, -alpha, depth-LMR_REDUCTION-1);
@@ -743,7 +739,6 @@ static int search(position_t* pos,
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector)) {
         num_legal_moves = selector.moves_so_far;
-        int num_quiet_moves = selector.quiet_moves_so_far;
         int64_t nodes_before = root_data.nodes_searched;
 
         undo_info_t undo;
@@ -758,6 +753,10 @@ static int search(position_t* pos,
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1);
         } else {
+            const bool move_is_late = full_window ?
+                num_legal_moves > LMR_PV_EARLY_MOVES :
+                num_legal_moves > LMR_EARLY_MOVES;
+
             // Futility pruning. Note: it would be nice to do extensions and
             // futility before calling do_move, but this would require more
             // efficient ways of identifying important moves without actually
@@ -793,9 +792,6 @@ static int search(position_t* pos,
                     }
                 }
             }
-            const bool move_is_late = full_window ?
-                num_legal_moves > LMR_PV_EARLY_MOVES && num_quiet_moves > 4 :
-                num_legal_moves > LMR_EARLY_MOVES && num_quiet_moves > 1;
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
             const bool do_lmr = lmr_enabled &&
@@ -804,9 +800,7 @@ static int search(position_t* pos,
                 !mate_threat &&
                 depth > LMR_DEPTH_LIMIT &&
                 !is_check(pos) &&
-                !get_move_capture(move) &&
-                get_move_promote(move) != QUEEN &&
-                !is_move_castle(move);
+                should_try_lmr(&selector, move);
             if (do_lmr) {
                 score = -search(pos, search_node+1, ply+1,
                         -alpha-1, -alpha, depth-LMR_REDUCTION-1);
