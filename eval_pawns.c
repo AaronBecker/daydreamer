@@ -304,7 +304,6 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
             }
 
             // Find rooks behind the passer.
-            /*
             square_t sq;
             for (sq = passer - push; sq == EMPTY; sq -= push) {}
             if (pos->board[sq] == create_piece(side, ROOK)) {
@@ -314,7 +313,6 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 passer_bonus[side] -= passer_rook[rank];
                 eg_passer_bonus[side] -= passer_rook[1];
             }
-            */
 
             // How easily can the pawn be advanced?
             piece_t target_piece = pos->board[target];
