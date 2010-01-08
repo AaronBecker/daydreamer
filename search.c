@@ -756,30 +756,27 @@ static int search(position_t* pos,
             const bool move_is_late = full_window ?
                 num_legal_moves > LMR_PV_EARLY_MOVES :
                 num_legal_moves > LMR_EARLY_MOVES;
+
             // Futility pruning. Note: it would be nice to do extensions and
             // futility before calling do_move, but this would require more
             // efficient ways of identifying important moves without actually
             // making them.
             bool prune_futile = futility_enabled &&
-                (!full_window || !move_is_late) &&
+                !full_window &&
                 !ext &&
                 !mate_threat &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !is_check(pos) &&
                 num_legal_moves >= depth + 2 &&
                 should_try_prune(&selector, move);
-            bool prune_condition = false;
             if (prune_futile) {
                 // History pruning.
                 if (history_prune_enabled && is_history_prune_allowed(
                             &root_data.history, move, depth)) {
                     num_futile_moves++;
-                    prune_condition = true;
-                    if (!full_window) {
-                        undo_move(pos, move, &undo);
-                        if (full_window) add_pv_move(&selector, move, 0);
-                        continue;
-                    }
+                    undo_move(pos, move, &undo);
+                    if (full_window) add_pv_move(&selector, move, 0);
+                    continue;
                 }
                 // Value pruning.
                 if (value_prune_enabled && lazy_score < beta) {
@@ -789,19 +786,16 @@ static int search(position_t* pos,
                     }
                     if (futility_score < beta) {
                         num_futile_moves++;
-                        prune_condition = true;
-                        if (!full_window) {
-                            undo_move(pos, move, &undo);
-                            if (full_window) add_pv_move(&selector, move, 0);
-                            continue;
-                        }
+                        undo_move(pos, move, &undo);
+                        if (full_window) add_pv_move(&selector, move, 0);
+                        continue;
                     }
                 }
             }
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
             const bool do_lmr = lmr_enabled &&
-                (move_is_late || prune_condition) &&
+                move_is_late &&
                 !ext &&
                 !mate_threat &&
                 depth > LMR_DEPTH_LIMIT &&
