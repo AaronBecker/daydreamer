@@ -275,6 +275,7 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
         piece_t our_pawn = create_piece(side, PAWN);
         for (int i=0; i<pd->num_passed[side]; ++i) {
             square_t passer = pd->passed[side][i];
+            square_t target = passer + push;
             rank_t rank = relative_rank[side][square_rank(passer)];
             if (pos->num_pieces[side^1] == 1) {
                 // Other side is down to king+pawns. Is this passer stoppable?
@@ -288,13 +289,15 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 }
             }
 
-            square_t target = passer + push;
             // Adjust endgame bonus based on king proximity
+            /*
             eg_passer_bonus[side] += king_dist_bonus[rank] *
                 (distance(target, pos->pieces[side^1][0]) -
                  distance(target, pos->pieces[side][0]));
+            */
 
             // Is the passer connected to another friendly pawn?
+            /*
             if (pos->board[passer-1] == our_pawn ||
                     pos->board[passer+1] == our_pawn ||
                     pos->board[passer-push-1] == our_pawn ||
@@ -302,8 +305,10 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 passer_bonus[side] += connected_passer[0][rank];
                 eg_passer_bonus[side] += connected_passer[1][rank];
             }
+            */
 
             // Find rooks behind the passer.
+            /*
             square_t sq;
             for (sq = passer - push; sq == EMPTY; sq -= push) {}
             if (pos->board[sq] == create_piece(side, ROOK)) {
@@ -313,16 +318,19 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 passer_bonus[side] -= passer_rook[rank];
                 eg_passer_bonus[side] -= passer_rook[1];
             }
+            */
 
             // How easily can the pawn be advanced?
             piece_t target_piece = pos->board[target];
             if (target_piece != EMPTY) {
+                /*
                 // Evaluate blockages in front of the passer.
                 if (piece_color(target_piece) == side) {
                     passer_bonus[side] -= passer_blockade[rank] / 2;
                 } else {
                     passer_bonus[side] -= passer_blockade[rank];
                 }
+                */
             } else {
                 // Can the pawn advance without being captured?
                 move_t push = rank == RANK_7 ?
