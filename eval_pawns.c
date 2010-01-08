@@ -14,13 +14,11 @@ static const int doubled_penalty[2][8] = {
 };
 static const int passed_bonus[2][8] = {
     { 0,  5, 10, 20, 60, 120, 200, 0},
-    { 0, 10, 20, 25, 50,  90, 125, 0},
-    //TODO: try eg vals slightly higher than mg vals
+    { 0, 10, 20, 25, 75, 135, 225, 0},
 };
 static const int candidate_bonus[2][8] = {
     { 0,  5,  5, 10, 20, 30, 0, 0},
-    { 0,  5, 10, 20, 45, 70, 0, 0},
-    //TODO: try toning the eg values down a little
+    { 0,  5, 10, 15, 30, 45, 0, 0},
 };
 static const int backward_penalty[2][8] = {
     { 5, 10, 10, 15, 15, 10, 10,  5},
