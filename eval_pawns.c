@@ -51,6 +51,9 @@ static const int queen_storm[0x80] = {
    14, 16, 14,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
+static const int king_dist_bonus[8] = {
+    0, 0, 0, 5, 15, 25, 50, 0
+};
 
 static pawn_data_t* pawn_table = NULL;
 static int num_buckets;
@@ -255,6 +258,7 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
     pawn_data_t* pd = analyze_pawns(pos);
     if (pawn_data) *pawn_data = pd;
     int passer_bonus[2] = {0, 0};
+    int eg_passer_bonus[2] = {0, 0};
     int storm_score[2] = {0, 0};
     file_t king_file[2] = { square_file(pos->pieces[WHITE][0]),
                             square_file(pos->pieces[BLACK][0]) };
@@ -273,8 +277,12 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                     passer_bonus[side] += unstoppable_passer_bonus[rank];
                 }
             } else {
-                // Can the pawn advance without being captured?
                 square_t target = passer + pawn_push[side];
+                // Adjust endgame bonus based on king proximity
+                eg_passer_bonus[side] += king_dist_bonus[rank] *
+                    (distance(target, pos->pieces[side^1][0]) -
+                     distance(target, pos->pieces[side][0]));
+                // Can the pawn advance without being captured?
                 if (pos->board[target] != EMPTY) continue;
                 move_t push = rank == RANK_7 ?
                     create_move_promote(passer, target,
@@ -297,8 +305,10 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
     score.midgame = pd->score[side].midgame + passer_bonus[side] -
         (pd->score[side^1].midgame + passer_bonus[side^1]) +
         storm_score[side] - storm_score[side^1];
-    score.endgame = pd->score[side].endgame + passer_bonus[side] -
-        (pd->score[side^1].endgame + passer_bonus[side^1]);
+    score.endgame = pd->score[side].endgame +
+        passer_bonus[side] + eg_passer_bonus[side] -
+        (pd->score[side^1].endgame +
+         passer_bonus[side^1] + eg_passer_bonus[side^1]);
     return score;
 }
 
