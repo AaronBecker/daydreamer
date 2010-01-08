@@ -5,7 +5,6 @@
  * Count all attackers and defenders of a square to determine whether or not
  * a capture is advantageous. Captures with a positive static eval are
  * favorable. Note: this implementation does not account for pinned pieces.
- * TODO: make this work for non-captures.
  */
 int static_exchange_eval(const position_t* pos, move_t move)
 {
@@ -18,8 +17,9 @@ int static_exchange_eval(const position_t* pos, move_t move)
     int initial_attacker[2] = { 0, 0 };
     int index;
 
-    // Find all the non-sliding pieces that could be attacking.
-    // Pawns:
+    // Find all the pieces that could be attacking.
+    // Pawns are handled separately, because there are potentially a lot of
+    // them and only a few squares they could attack from.
     if (pos->board[attacked_sq + NW] == BP && attacked_sq + NW != attacker_sq) {
         index = num_attackers[BLACK]++;
         attacker_sqs[BLACK][index] = attacked_sq + NW;
@@ -37,32 +37,36 @@ int static_exchange_eval(const position_t* pos, move_t move)
         attacker_sqs[WHITE][index] = attacked_sq + SE;
     }
     
-    for (int side=WHITE; side<=BLACK; ++side) {
-        square_t from;
-        for (const square_t* pfrom = &pos->pieces[side][0];
-                (from = *pfrom) != INVALID_SQUARE;
-                ++pfrom) {
-            piece_t p = pos->board[from];
-            if (from == attacker_sq || 
-                    !possible_attack(from, attacked_sq, p)) continue;
-            square_t att_sq = from;
-            direction_t att_dir = direction(from, attacked_sq);
-            if (piece_slide_type(p) == NO_SLIDE) {
-                index = num_attackers[side]++;
-                attacker_sqs[side][index] = from;
-                continue;
-            }
-            while (true) {
-                att_sq += att_dir;
-                if (att_sq == attacked_sq) {
-                    index = num_attackers[side]++;
-                    attacker_sqs[side][index] = from;
+    for (color_t side=WHITE; side<=BLACK; ++side) {
+        square_t from, att_sq;
+        piece_t piece;
+        square_t att_dir;
+        for (int i=0; pos->pieces[side][i] != INVALID_SQUARE; ++i) {
+            from = pos->pieces[side][i];
+            piece = pos->board[from];
+            if (from == attacker_sq) continue;
+            if (!possible_attack(from, attacked_sq, piece)) continue;
+            piece_type_t type = piece_type(piece);
+            switch (type) {
+                case KING:
+                case KNIGHT:
+                    attacker_sqs[side][num_attackers[side]++] = from;
                     break;
-                }
-                if (pos->board[att_sq]) break;
+                case BISHOP:
+                case ROOK:
+                case QUEEN:
+                    att_dir = (square_t)direction(from, attacked_sq);
+                    for (att_sq = from + att_dir; att_sq != attacked_sq &&
+                            pos->board[att_sq] == EMPTY; att_sq += att_dir) {}
+                    if (att_sq == attacked_sq) {
+                        attacker_sqs[side][num_attackers[side]++] = from;
+                    }
+                    break;
+                default: assert(false);
             }
         }
     }
+
     // At this point, all unblocked attackers other than |attacker| have been
     // added to |attackers|. Now play out all possible captures in order of
     // increasing piece value (but starting with |attacker|) while alternating
