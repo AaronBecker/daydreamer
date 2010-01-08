@@ -15,10 +15,12 @@ static const int doubled_penalty[2][8] = {
 static const int passed_bonus[2][8] = {
     { 0,  5, 10, 20, 60, 120, 200, 0},
     { 0, 10, 20, 25, 50,  90, 125, 0},
+    //TODO: try eg vals slightly higher than mg vals
 };
 static const int candidate_bonus[2][8] = {
     { 0,  5,  5, 10, 20, 30, 0, 0},
     { 0,  5, 10, 20, 45, 70, 0, 0},
+    //TODO: try toning the eg values down a little
 };
 static const int backward_penalty[2][8] = {
     { 5, 10, 10, 15, 15, 10, 10,  5},
@@ -53,6 +55,14 @@ static const int queen_storm[0x80] = {
 };
 static const int king_dist_bonus[8] = {
     0, 0, 5, 10, 15, 20, 25, 0
+};
+static const int passer_blockade[8] = {
+    0, 0, 10, 25, 50, 75, 100, 0
+};
+static const int passer_rook[2] = { 15, 30 };
+static const int connected_passer[2][8] = {
+    { 0, 0, 1, 2,  5, 15, 20, 0},
+    { 0, 0, 2, 5, 15, 40, 60, 0}
 };
 
 static pawn_data_t* pawn_table = NULL;
@@ -263,6 +273,8 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
     file_t king_file[2] = { square_file(pos->pieces[WHITE][0]),
                             square_file(pos->pieces[BLACK][0]) };
     for (color_t side=WHITE; side<=BLACK; ++side) {
+        const square_t push = pawn_push[side];
+        piece_t our_pawn = create_piece(side, PAWN);
         for (int i=0; i<pd->num_passed[side]; ++i) {
             square_t passer = pd->passed[side][i];
             rank_t rank = relative_rank[side][square_rank(passer)];
@@ -276,23 +288,56 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 if (distance(pos->pieces[side^1][0], prom_sq) > prom_dist) {
                     passer_bonus[side] += unstoppable_passer_bonus[rank];
                 }
+            }
+
+            square_t target = passer + push;
+            // Adjust endgame bonus based on king proximity
+            eg_passer_bonus[side] += king_dist_bonus[rank] *
+                (distance(target, pos->pieces[side^1][0]) -
+                 distance(target, pos->pieces[side][0]));
+
+            // Is the passer connected to another friendly pawn?
+            if (pos->board[passer-1] == our_pawn ||
+                    pos->board[passer+1] == our_pawn ||
+                    pos->board[passer-push-1] == our_pawn ||
+                    pos->board[passer-push+1] == our_pawn) {
+                passer_bonus[side] += connected_passer[0][rank];
+                eg_passer_bonus[side] += connected_passer[1][rank];
+            }
+
+            // Find rooks behind the passer.
+            square_t sq;
+            for (sq = passer - push; sq == EMPTY; sq -= push) {}
+            if (pos->board[sq] == create_piece(side, ROOK)) {
+                passer_bonus[side] += passer_rook[0];
+                eg_passer_bonus[side] += passer_rook[1];
+            } else if (pos->board[sq] == create_piece(side^1, ROOK)) {
+                passer_bonus[side] -= passer_rook[rank];
+                eg_passer_bonus[side] -= passer_rook[1];
+            }
+
+            // How easily can the pawn be advanced?
+            piece_t target_piece = pos->board[target];
+            if (target_piece != EMPTY) {
+                // Evaluate blockages in front of the passer.
+                if (piece_color(target_piece) == side) {
+                    passer_bonus[side] -= passer_blockade[rank] / 2;
+                } else {
+                    passer_bonus[side] -= passer_blockade[rank];
+                }
             } else {
-                square_t target = passer + pawn_push[side];
-                // Adjust endgame bonus based on king proximity
-                eg_passer_bonus[side] += king_dist_bonus[rank] *
-                    (distance(target, pos->pieces[side^1][0]) -
-                     distance(target, pos->pieces[side][0]));
                 // Can the pawn advance without being captured?
-                if (pos->board[target] != EMPTY) continue;
                 move_t push = rank == RANK_7 ?
                     create_move_promote(passer, target,
                             create_piece(side, PAWN), EMPTY, QUEEN) :
                     create_move(passer, target,
                             create_piece(side, PAWN), EMPTY);
-                if (static_exchange_eval(pos, push) < 0) continue;
-                passer_bonus[side] += advanceable_passer_bonus[rank];
+                if (static_exchange_eval(pos, push) >= 0) {
+                    passer_bonus[side] += advanceable_passer_bonus[rank];
+                }
             }
         }
+        // Apply pawn storm bonuses
         if (king_file[side] < FILE_E && king_file[side^1] > FILE_E) {
             storm_score[side] = pd->kingside_storm[side];
         } else if (king_file[side] > FILE_E && king_file[side^1] < FILE_E) {
