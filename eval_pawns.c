@@ -52,7 +52,7 @@ static const int queen_storm[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
 static const int king_dist_bonus[8] = {
-    0, 0, 0, 5, 15, 25, 50, 0
+    0, 0, 5, 10, 15, 20, 25, 0
 };
 
 static pawn_data_t* pawn_table = NULL;
