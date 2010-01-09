@@ -18,7 +18,8 @@ static const int passed_bonus[2][8] = {
 };
 static const int candidate_bonus[2][8] = {
     { 0,  5,  5, 10, 20, 30, 0, 0},
-    { 0,  5, 10, 15, 30, 45, 0, 0},
+//    { 0,  5, 10, 15, 30, 45, 0, 0},
+    { 0,  5, 10, 20, 45, 70, 0, 0}
 };
 static const int backward_penalty[2][8] = {
     { 5, 10, 10, 15, 15, 10, 10,  5},
