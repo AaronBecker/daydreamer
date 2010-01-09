@@ -295,6 +295,7 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                  distance(target, pos->pieces[side][0]));
 
             // Is the passer connected to another friendly pawn?
+            /*
             if (pos->board[passer-1] == our_pawn ||
                     pos->board[passer+1] == our_pawn ||
                     pos->board[passer-push-1] == our_pawn ||
@@ -302,6 +303,7 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 passer_bonus[side] += connected_passer[0][rank];
                 eg_passer_bonus[side] += connected_passer[1][rank];
             }
+            */
 
             // Find rooks behind the passer.
             square_t sq;
