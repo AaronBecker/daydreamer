@@ -59,11 +59,8 @@ static const int passer_blockade[8] = {
 };
 static const int passer_rook[2] = { 15, 30 };
 static const int connected_passer[2][8] = {
-    { 0, 1, 2,  5, 10, 20, 45, 0},
-    { 0, 2, 5, 15, 30, 50, 75, 0}
-//    { 0, 0, 1, 2,  5, 15, 20, 0},
-//    { 0, 0, 2, 5, 15, 40, 60, 0}
-    //TODO: tinker with this
+    { 0, 0, 1, 2,  5, 15, 20, 0},
+    { 0, 0, 2, 5, 15, 40, 60, 0}
 };
 
 static pawn_data_t* pawn_table = NULL;
