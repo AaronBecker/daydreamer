@@ -53,6 +53,7 @@ static const int bishop_outpost[0x80] = {
 static const int rook_on_7[2] = { 20, 40 };
 static const int rook_open_file_bonus[2] = { 20, 10 };
 static const int rook_half_open_file_bonus[2] = { 10, 10 };
+static const int redundant_rook = 15;
 
 /*
  * Score a weak square that's occupied by a minor piece. The basic bonus
@@ -95,6 +96,7 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
     score_t score;
     int mid_score[2] = {0, 0};
     int end_score[2] = {0, 0};
+    int piece_count[2][6] = { {0,0,0,0,0,0}, {0,0,0,0,0,0} };
     rank_t king_rank[2] = { relative_rank[WHITE]
                                 [square_rank(pos->pieces[WHITE][0])],
                             relative_rank[BLACK]
@@ -108,6 +110,7 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
             from = pos->pieces[side][i];
             piece = pos->board[from];
             piece_type_t type = piece_type(piece);
+            piece_count[side][type]++;
             int ps = 0;
             switch (type) {
                 case PAWN:
@@ -196,6 +199,15 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
             end_score[side] += mobility_score_table[1][type][ps];
         }
     }
+    for (side=WHITE; side<=BLACK; ++side) {
+        if (piece_count[side][ROOK] > 0) {
+            int adjust = (piece_count[side][ROOK] - 1) * redundant_rook +
+                piece_count[side][QUEEN] * redundant_rook / 2;
+            mid_score[side] -= adjust;
+            end_score[side] -= adjust;
+        }
+    }
+
     side = pos->side_to_move;
     score.midgame = mid_score[side] - mid_score[side^1];
     score.endgame = end_score[side] - end_score[side^1];
