@@ -55,7 +55,7 @@ static const int king_dist_bonus[8] = {
     0, 0, 5, 10, 15, 20, 25, 0
 };
 static const int passer_blockade[8] = {
-    0, 0, 10, 25, 50, 75, 100, 0
+    0, 0, 5, 10, 25, 35, 45, 0
 };
 static const int passer_rook[2] = { 15, 30 };
 static const int connected_passer[2][8] = {
