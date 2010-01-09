@@ -14,13 +14,11 @@ static const int doubled_penalty[2][8] = {
 };
 static const int passed_bonus[2][8] = {
     { 0,  5, 10, 20, 60, 120, 200, 0},
-    { 0, 10, 20, 25, 50,  90, 125, 0}
-//    { 0, 10, 20, 25, 75, 135, 225, 0},
+    { 0, 10, 20, 25, 75, 135, 225, 0},
 };
 static const int candidate_bonus[2][8] = {
-    { 0,  5,  5, 10, 20, 30, 0, 0},
-    { 0,  5, 10, 15, 30, 45, 0, 0},
-//    { 0,  5, 10, 20, 45, 70, 0, 0}
+    { 0,  5, 10, 15, 30, 50, 0, 0},
+    { 0,  5, 10, 20, 45, 70, 0, 0}
 };
 static const int backward_penalty[2][8] = {
     { 5, 10, 10, 15, 15, 10, 10,  5},
@@ -63,6 +61,7 @@ static const int passer_rook[2] = { 15, 30 };
 static const int connected_passer[2][8] = {
     { 0, 0, 1, 2,  5, 15, 20, 0},
     { 0, 0, 2, 5, 15, 40, 60, 0}
+    //TODO: tinker with this
 };
 
 static pawn_data_t* pawn_table = NULL;
@@ -297,7 +296,6 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                  distance(target, pos->pieces[side][0]));
 
             // Is the passer connected to another friendly pawn?
-            /*
             if (pos->board[passer-1] == our_pawn ||
                     pos->board[passer+1] == our_pawn ||
                     pos->board[passer-push-1] == our_pawn ||
@@ -305,7 +303,6 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 passer_bonus[side] += connected_passer[0][rank];
                 eg_passer_bonus[side] += connected_passer[1][rank];
             }
-            */
 
             // Find rooks behind the passer.
             square_t sq;
