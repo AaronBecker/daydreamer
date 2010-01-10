@@ -910,7 +910,7 @@ static int quiesce(position_t* pos,
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
     if (trans_entry && is_trans_cutoff_allowed(
-                trans_entry, MAX(-1, depth), &alpha, &beta)) {
+                trans_entry, depth, &alpha, &beta)) {
         search_node->pv[ply] = hash_move;
         search_node->pv[ply+1] = NO_MOVE;
         root_data.stats.transposition_cutoffs[root_data.current_depth]++;
@@ -964,7 +964,7 @@ static int quiesce(position_t* pos,
             update_pv(search_node->pv, (search_node+1)->pv, ply, move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
-                put_transposition(pos, move, gen_type == Q_GEN ? -1 : 0, beta,
+                put_transposition(pos, move, depth ? -1 : 0, beta,
                         SCORE_EXACT, false);
                 return beta;
             }
@@ -974,11 +974,11 @@ static int quiesce(position_t* pos,
         return mated_in(ply);
     }
     if (alpha == orig_alpha) {
-        put_transposition(pos, NO_MOVE, gen_type == Q_GEN ? -1 : 0, alpha,
+        put_transposition(pos, NO_MOVE, depth ? -1 : 0, alpha,
                 SCORE_UPPERBOUND, false);
     } else {
         put_transposition(pos, search_node->pv[ply],
-                gen_type == Q_GEN ? -1 : 0, alpha, SCORE_EXACT, false);
+                depth ? -1 : 0, alpha, SCORE_EXACT, false);
     }
     return alpha;
 }
