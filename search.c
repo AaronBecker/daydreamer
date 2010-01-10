@@ -337,8 +337,6 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
         int* alpha,
         int* beta)
 {
-    //if ((entry->score >= *beta && is_mate_score(entry->score)) ||
-    //    (entry->score < *alpha && is_mated_score(entry->score))) return true;
     if (depth > entry->depth) return false;
     if (entry->flags & SCORE_LOWERBOUND && entry->score > *alpha) {
         *alpha = entry->score;
@@ -658,7 +656,6 @@ static int search(position_t* pos,
         search_node->pv[ply] = hash_move;
         search_node->pv[ply+1] = NO_MOVE;
         root_data.stats.transposition_cutoffs[root_data.current_depth]++;
-        //return trans_entry->score;
         return MAX(alpha, trans_entry->score);
     }
 
@@ -876,7 +873,6 @@ static int search(position_t* pos,
         put_transposition(pos, NO_MOVE, depth, alpha,
                 SCORE_UPPERBOUND, mate_threat);
     } else {
-        assert(full_window);
         put_transposition(pos, search_node->pv[ply], depth, alpha,
                 SCORE_EXACT, mate_threat);
     }
@@ -909,12 +905,11 @@ static int quiesce(position_t* pos,
     int orig_alpha = alpha;
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
-    if (trans_entry && is_trans_cutoff_allowed(
-                trans_entry, depth, &alpha, &beta)) {
+    if (trans_entry && 
+            is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
         search_node->pv[ply] = hash_move;
         search_node->pv[ply+1] = NO_MOVE;
         root_data.stats.transposition_cutoffs[root_data.current_depth]++;
-        //return trans_entry->score;
         return MAX(alpha, trans_entry->score);
     }
 
@@ -964,8 +959,8 @@ static int quiesce(position_t* pos,
             update_pv(search_node->pv, (search_node+1)->pv, ply, move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
-                put_transposition(pos, move, depth ? -1 : 0, beta,
-                        SCORE_EXACT, false);
+                put_transposition(pos, move, depth, beta,
+                        SCORE_LOWERBOUND, false);
                 return beta;
             }
         }
@@ -974,11 +969,11 @@ static int quiesce(position_t* pos,
         return mated_in(ply);
     }
     if (alpha == orig_alpha) {
-        put_transposition(pos, NO_MOVE, depth ? -1 : 0, alpha,
+        put_transposition(pos, NO_MOVE, depth, alpha,
                 SCORE_UPPERBOUND, false);
     } else {
-        put_transposition(pos, search_node->pv[ply],
-                depth ? -1 : 0, alpha, SCORE_EXACT, false);
+        put_transposition(pos, search_node->pv[ply], depth, alpha,
+                SCORE_EXACT, false);
     }
     return alpha;
 }
