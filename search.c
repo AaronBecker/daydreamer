@@ -337,8 +337,8 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
         int* alpha,
         int* beta)
 {
-    if ((entry->score >= *beta && is_mate_score(entry->score)) ||
-        (entry->score < *alpha && is_mated_score(entry->score))) return true;
+    //if ((entry->score >= *beta && is_mate_score(entry->score)) ||
+    //    (entry->score < *alpha && is_mated_score(entry->score))) return true;
     if (depth > entry->depth) return false;
     if (entry->flags & SCORE_LOWERBOUND && entry->score > *alpha) {
         *alpha = entry->score;
@@ -658,7 +658,8 @@ static int search(position_t* pos,
         search_node->pv[ply] = hash_move;
         search_node->pv[ply+1] = NO_MOVE;
         root_data.stats.transposition_cutoffs[root_data.current_depth]++;
-        return trans_entry->score;
+        //return trans_entry->score;
+        return MAX(alpha, trans_entry->score);
     }
 
     // Check endgame bitbases if appropriate
@@ -913,7 +914,8 @@ static int quiesce(position_t* pos,
         search_node->pv[ply] = hash_move;
         search_node->pv[ply+1] = NO_MOVE;
         root_data.stats.transposition_cutoffs[root_data.current_depth]++;
-        return trans_entry->score;
+        //return trans_entry->score;
+        return MAX(alpha, trans_entry->score);
     }
 
     // Check endgame bitbases if appropriate
@@ -963,7 +965,7 @@ static int quiesce(position_t* pos,
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
                 put_transposition(pos, move, gen_type == Q_GEN ? -1 : 0, beta,
-                        SCORE_LOWERBOUND, false);
+                        SCORE_EXACT, false);
                 return beta;
             }
         }
