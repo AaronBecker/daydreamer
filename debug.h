@@ -9,7 +9,7 @@ extern "C" {
 #include <stdio.h>
 // Non-aborting, trace-logging assert. Sadly, walking the stack is a pain on
 // Windows, so no trace there, just file and line.
-#if 1 && !defined(NDEBUG)
+#if 0 && !defined(NDEBUG)
 #ifdef _WIN32
 #   undef assert
 #   define assert(e)   do { \

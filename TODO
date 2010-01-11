@@ -8,11 +8,12 @@ Search
     TBB?
     Try multiple moves in TT, instead of PV cache
     Test effects of reducing PV-specific decisions
+    Re-write the guts of the move selector, because they're awful now.
+    Try alternate king safety implementations
 
 shrink trans table entry size
 evaluation hashing
 OwnBook support for polyglot books
-Track pinned pieces in SEE, test for improvement
 
 Interface
     ECO classification
@@ -26,3 +27,18 @@ Evaluation
 
 Testing
     try different move ordering counts. 16 didn't help. maybe 12.
+
+Bugs
+    In mate positions (eg 5k2/8/8/8/8/2Q5/8/3K4 w - -), after long searches the
+    shortest mate found will gradually increase in length (ie, a "mate 9" score
+    is later replaced with "mate 11")
+
+    Performance on 1nbq1r1k/3rbp1p/p1p1pp1Q/1p6/P1pPN3/5NP1/1P2PPBP/R4RK1 w - -
+    (bm f3g5, mate in 4) is really bad
+
+    Performance on 4r1k1/p1qr1p2/2pb1Bp1/1p5p/3P1n1R/1B3P2/PP3PK1/2Q4R w - -
+    (bm c1f4, mate in 6) is really bad
+
+    Re-do verbose output in light of Arena parse bugs
+
+    Optimized and non-optimized builds don't search the same number of nodes
