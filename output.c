@@ -71,7 +71,7 @@ static void print_pv(search_data_t* data, int ordinal, int index)
     } else {
         printf("info multipv %d depth %d seldepth %d score cp %d time %d "
                 "nodes %"PRIu64, ordinal, depth, seldepth, score, time, nodes);
-        if (options.verbose) printf("qnodes %"PRIu64" pvnodes %"PRIu64,
+        if (options.verbose) printf(" qnodes %"PRIu64" pvnodes %"PRIu64,
                 data->qnodes_searched, data->pvnodes_searched);
         printf(" nps %"PRIu64" hashfull %d tbhits %d pv ",
                 nodes/(time+1)*1000, get_hashfull(), data->stats.egbb_hits);

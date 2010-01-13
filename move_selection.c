@@ -287,7 +287,7 @@ static move_t get_best_move(move_selector_t* sel, int64_t* score)
 {
     int offset = sel->current_move_index;
     move_t move = NO_MOVE;
-    int64_t best_score = INT_MIN;
+    int64_t best_score = INT64_MIN;
     int index = -1;
     for (int i=offset; sel->moves[i] != NO_MOVE; ++i) {
         if (sel->scores[i] > best_score) {
@@ -296,8 +296,8 @@ static move_t get_best_move(move_selector_t* sel, int64_t* score)
         }
     }
     if (index != -1) {
+        assert(best_score == sel->scores[index]);
         move = sel->moves[index];
-        best_score = sel->scores[index];
         sel->moves[index] = sel->moves[offset];
         sel->scores[index] = sel->scores[offset];
         sel->moves[offset] = move;
