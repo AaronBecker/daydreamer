@@ -137,7 +137,7 @@ static void generate_moves(move_selector_t* sel)
                 for (i=0; pv_cache->moves[i]; ++i) {
                     sel->moves[i] = pv_cache->moves[i];
                     sel->scores[i] = pv_cache->nodes[i];
-                    assert(is_move_legal(sel->pos, sel->moves[i]));
+                    assert2(is_move_legal(sel->pos, sel->moves[i]));
                 }
                 sel->moves[i] = NO_MOVE;
                 sel->moves_end = i;
@@ -287,7 +287,7 @@ static move_t get_best_move(move_selector_t* sel, int64_t* score)
 {
     int offset = sel->current_move_index;
     move_t move = NO_MOVE;
-    int64_t best_score = INT_MIN;
+    int64_t best_score = INT64_MIN;
     int index = -1;
     for (int i=offset; sel->moves[i] != NO_MOVE; ++i) {
         if (sel->scores[i] > best_score) {
@@ -296,8 +296,8 @@ static move_t get_best_move(move_selector_t* sel, int64_t* score)
         }
     }
     if (index != -1) {
+        assert(best_score == sel->scores[index]);
         move = sel->moves[index];
-        best_score = sel->scores[index];
         sel->moves[index] = sel->moves[offset];
         sel->scores[index] = sel->scores[offset];
         sel->moves[offset] = move;
@@ -462,8 +462,8 @@ static move_cache_t* get_pv_move_list(const position_t* pos)
 void add_pv_move(move_selector_t* sel, move_t move, int64_t nodes)
 {
     if (sel->generator == ESCAPE_GEN) return;
-    assert(is_pseudo_move_legal(sel->pos, move));
-    assert(is_move_legal(sel->pos, move));
+    assert2(is_pseudo_move_legal(sel->pos, move));
+    assert2(is_move_legal(sel->pos, move));
     sel->pv_moves[sel->pv_index] = move;
     sel->pv_nodes[sel->pv_index++] = nodes;
     assert(sel->pv_index == sel->moves_so_far);
@@ -481,7 +481,7 @@ void commit_pv_moves(move_selector_t* sel)
     int i;
     for (i=0; i < sel->pv_index; ++i) {
         assert(sel->pv_moves[i]);
-        assert(is_move_legal(sel->pos, sel->pv_moves[i]));
+        assert2(is_move_legal(sel->pos, sel->pv_moves[i]));
         pv_cache->moves[i] = sel->pv_moves[i];
         pv_cache->nodes[i] = sel->pv_nodes[i];
     }

@@ -299,7 +299,7 @@ int line_to_san_str(position_t* pos, move_t* line, char* san)
         *san = '\0';
         return 0;
     }
-    assert(is_move_legal(pos, *line));
+    assert2(is_move_legal(pos, *line));
 
     int len = move_to_san_str(pos, *line, san);
     *(san+len) = ' ';
