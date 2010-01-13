@@ -43,6 +43,12 @@ extern "C" {
 #endif
 #endif
 
+#ifdef ASSERT2
+#   define assert2(x)   assert(x)
+#else
+#   define assert2(x)   ((void)0)
+#endif
+
 #define warn(msg)   do { \
     FILE* log; \
     log = fopen("daydreamer.log", "a"); \
