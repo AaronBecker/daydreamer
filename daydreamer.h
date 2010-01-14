@@ -61,7 +61,7 @@ void print_bitboard(bitboard_t bb);
 
 // book.c
 void init_book(char* filename);
-move_t book_get_move(position_t* pos);
+move_t get_book_move(position_t* pos);
 void test_book(char* filename, position_t* pos);
 
 // daydreamer.c

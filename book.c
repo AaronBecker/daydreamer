@@ -21,13 +21,12 @@ typedef struct {
 } book_entry_t;
 
 static move_t book_move_to_move(position_t* pos, uint16_t book_move);
-static void book_read_entry(int index, book_entry_t* entry);
-static int book_find_key(uint64_t target_key);
-static void book_read_entry(int index, book_entry_t* entry);
+static void read_book_entry(int index, book_entry_t* entry);
+static int find_book_key(uint64_t target_key);
 static uint64_t book_hash(position_t* pos);
 
 static bool big_endian = true;
-static FILE* book;
+static FILE* book = NULL;
 static int num_entries;
 
 void init_book(char* filename)
@@ -35,8 +34,8 @@ void init_book(char* filename)
     assert(sizeof(book_entry_t) == 16);
     uint32_t byte_order = 0x0A0B0C0D;
     big_endian = byte_order == htonl(byte_order);
+    if (book) fclose(book);
     if (!(book = fopen(filename, "r"))) {
-        warn("could not open book");
         num_entries = 0;
         return;
     }
@@ -44,10 +43,10 @@ void init_book(char* filename)
     num_entries = ftell(book) / 16;
 }
 
-move_t book_get_move(position_t* pos)
+move_t get_book_move(position_t* pos)
 {
     uint64_t key = book_hash(pos);
-    int offset = book_find_key(key);
+    int offset = find_book_key(key);
     if (offset == -1) return NO_MOVE;
 
     uint16_t moves[255];
@@ -57,7 +56,7 @@ move_t book_get_move(position_t* pos)
     book_entry_t entry;
     while (true) {
         assert(offset+index < num_entries);
-        book_read_entry(offset+index, &entry);
+        read_book_entry(offset+index, &entry);
         if (entry.key != key) break;
         moves[index] = entry.move;
         weights[index++] = total_weight + entry.weight;
@@ -70,23 +69,23 @@ move_t book_get_move(position_t* pos)
     return book_move_to_move(pos, moves[i]);
 }
 
-int book_find_key(uint64_t target_key)
+int find_book_key(uint64_t target_key)
 {
     int high = num_entries, low = -1, mid = 0;
     book_entry_t entry;
 
     while (low < high) {
         mid = (high + low) / 2;
-        book_read_entry(mid, &entry);
+        read_book_entry(mid, &entry);
         if (target_key <= entry.key) high = mid;
         else low = mid + 1;
     }
-    book_read_entry(low, &entry);
+    read_book_entry(low, &entry);
     assert(high == low);
     return entry.key == target_key ? low : -1;
 }
 
-void book_read_entry(int index, book_entry_t* entry)
+void read_book_entry(int index, book_entry_t* entry)
 {
     fseek(book, index * 16, SEEK_SET);
     fread(entry, 16, 1, book);
@@ -425,7 +424,7 @@ void test_book(char* filename, position_t* pos)
     init_book(filename);
     uint64_t key = book_hash(pos);
     printf("Book hash key: %"PRIu64"\n", key);
-    int offset = book_find_key(key);
+    int offset = find_book_key(key);
     if (offset == -1) return;
 
     uint16_t moves[255];
@@ -436,7 +435,7 @@ void test_book(char* filename, position_t* pos)
     printf("\n\nBook moves\n");
     while (true) {
         assert(offset+index < num_entries);
-        book_read_entry(offset+index, &entry);
+        read_book_entry(offset+index, &entry);
         if (entry.key != key) break;
         moves[index] = entry.move;
         weights[index++] = total_weight + entry.weight;
