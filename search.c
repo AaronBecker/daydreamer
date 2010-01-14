@@ -9,7 +9,7 @@ static const bool razoring_enabled = true;
 static const bool futility_enabled = true;
 static const bool history_prune_enabled = true;
 static const bool value_prune_enabled = true;
-static const bool qfutility_enabled = false;
+static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
 
 static const bool enable_pv_iid = true;
