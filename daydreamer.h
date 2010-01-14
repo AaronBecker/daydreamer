@@ -59,6 +59,11 @@ void benchmark(int depth, int time_limit);
 void init_bitboards(void);
 void print_bitboard(bitboard_t bb);
 
+// book.c
+void init_book(char* filename);
+move_t book_get_move(position_t* pos);
+void test_book(char* filename, position_t* pos);
+
 // daydreamer.c
 void init_daydreamer(void);
 

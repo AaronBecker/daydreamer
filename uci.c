@@ -126,6 +126,10 @@ static void uci_handle_ext(char* command)
         sscanf(command+3, " %s %d", filename, &time_per_move);
         time_per_move *= 1000;
         epd_testsuite(filename, time_per_move);
+    } else if (!strncasecmp(command, "book", 4)) {
+        char filename[256] = "tests/performance.bin";
+        sscanf(command+4, " %s", filename);
+        test_book(filename, pos);
     } else if (!strncasecmp(command, "print", 5)) {
         print_board(pos, false);
         move_t moves[255];
