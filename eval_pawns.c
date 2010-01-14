@@ -55,7 +55,7 @@ static const int king_dist_bonus[8] = {
     0, 0, 5, 10, 15, 20, 25, 0
 };
 static const int passer_blockade[8] = {
-    0, 0, 5, 10, 25, 35, 45, 0
+    0, 0, 10, 25, 50, 75, 100, 0
 };
 static const int passer_rook[2] = { 15, 30 };
 static const int connected_passer[2][8] = {
@@ -317,12 +317,14 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
             // How easily can the pawn be advanced?
             piece_t target_piece = pos->board[target];
             if (target_piece != EMPTY) {
+                /*
                 // Evaluate blockages in front of the passer.
                 if (piece_color(target_piece) == side) {
                     passer_bonus[side] -= passer_blockade[rank] / 2;
                 } else {
                     passer_bonus[side] -= passer_blockade[rank];
                 }
+                */
             } else {
                 // Can the pawn advance without being captured?
                 move_t push = rank == RANK_7 ?
