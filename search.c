@@ -23,7 +23,7 @@ static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
 static const int qfutility_margin = 60;
-static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
+static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 75, 150, 200 };
 static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300 };
 
 static search_result_t root_search(search_data_t* search_data,
