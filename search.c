@@ -22,7 +22,7 @@ static const int iid_non_pv_depth_cutoff = 8;
 static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
-static const int qfutility_margin = 80;
+static const int qfutility_margin = 60;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 150, 200 };
 static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300 };
 
