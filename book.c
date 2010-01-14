@@ -29,6 +29,9 @@ static bool big_endian = true;
 static FILE* book = NULL;
 static int num_entries;
 
+/*
+ * Load the given book file, in Polyglot format.
+ */
 void init_book(char* filename)
 {
     assert(sizeof(book_entry_t) == 16);
@@ -43,6 +46,11 @@ void init_book(char* filename)
     num_entries = ftell(book) / 16;
 }
 
+/*
+ * Pick a move out of the current book. If |pos| is not in the book, return
+ * NO_MOVE. If more than one alternative exists, choose randomly among all
+ * weighted possibilities.
+ */
 move_t get_book_move(position_t* pos)
 {
     uint64_t key = book_hash(pos);
@@ -69,6 +77,11 @@ move_t get_book_move(position_t* pos)
     return book_move_to_move(pos, moves[i]);
 }
 
+/*
+ * Locate the book entry with the given key. Returns -1 if the key does not
+ * exist. Note that the lowest entry with the given key should be returned,
+ * to facilitate pulling out all move possibilites in the book.
+ */
 int find_book_key(uint64_t target_key)
 {
     int high = num_entries, low = -1, mid = 0;
@@ -85,6 +98,11 @@ int find_book_key(uint64_t target_key)
     return entry.key == target_key ? low : -1;
 }
 
+/*
+ * Read the |index|'th entry out of the current book into |entry|. Note that
+ * the files are always big-endian, so we need to byte swap on little-endian
+ * platforms.
+ */
 void read_book_entry(int index, book_entry_t* entry)
 {
     fseek(book, index * 16, SEEK_SET);
@@ -95,6 +113,9 @@ void read_book_entry(int index, book_entry_t* entry)
     entry->learn = ntohl(entry->learn);
 }
 
+/*
+ * Convert a polyglot-format move to Daydreamer's internal format.
+ */
 move_t book_move_to_move(position_t* pos, uint16_t book_move)
 {
     square_t to = create_square(book_move & 0x7, (book_move>>3) & 0x07);
@@ -399,6 +420,9 @@ const int book_piece_index[16] = {
     0, 0, 2, 4, 6, 8, 10
 };
 
+/*
+ * Compute the polyglot book hash of the given position.
+ */
 uint64_t book_hash(position_t* pos)
 {
     uint64_t hash = 0;
@@ -419,6 +443,10 @@ uint64_t book_hash(position_t* pos)
     return hash;
 }
 
+/*
+ * Print some diagnostic information about book entries in |filename| from
+ * the given position. Called from the uci extension command "book"
+ */
 void test_book(char* filename, position_t* pos)
 {
     init_book(filename);
