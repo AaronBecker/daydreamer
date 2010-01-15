@@ -915,6 +915,7 @@ static int quiesce(position_t* pos,
 
     // Check endgame bitbases if appropriate
     int score;
+    /*
     if (should_probe_egbb(pos, depth, ply,
                 pos->fifty_move_counter, alpha, beta)) {
         if (probe_egbb(pos, &score, ply)) {
@@ -922,6 +923,7 @@ static int quiesce(position_t* pos,
             return score;
         }
     }
+    */
 
     int eval = full_eval(pos);
     score = eval;

@@ -13,11 +13,11 @@ extern "C" {
     #define QUEEN_VAL     900
     #define KING_VAL      20000
 #else
-    #define PAWN_VAL      90
+    #define PAWN_VAL      100
     #define KNIGHT_VAL    325
     #define BISHOP_VAL    325
     #define ROOK_VAL      500
-    #define QUEEN_VAL     1000
+    #define QUEEN_VAL     975
     #define KING_VAL      20000
 #endif
 
