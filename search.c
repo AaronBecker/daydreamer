@@ -915,7 +915,6 @@ static int quiesce(position_t* pos,
 
     // Check endgame bitbases if appropriate
     int score;
-    /*
     if (should_probe_egbb(pos, depth, ply,
                 pos->fifty_move_counter, alpha, beta)) {
         if (probe_egbb(pos, &score, ply)) {
@@ -923,7 +922,6 @@ static int quiesce(position_t* pos,
             return score;
         }
     }
-    */
 
     int eval = full_eval(pos);
     score = eval;
@@ -961,6 +959,12 @@ static int quiesce(position_t* pos,
             update_pv(search_node->pv, (search_node+1)->pv, ply, move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
+                if (!get_move_capture(move) &&
+                        !get_move_promote(move) &&
+                        move != search_node->killers[0]) {
+                    search_node->killers[1] = search_node->killers[0];
+                    search_node->killers[0] = move;
+                }
                 put_transposition(pos, move, depth, beta,
                         SCORE_LOWERBOUND, false);
                 return beta;
