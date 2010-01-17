@@ -52,7 +52,7 @@ static const int bishop_outpost[0x80] = {
 
 static const int rook_on_7[2] = { 20, 40 };
 static const int rook_open_file_bonus[2] = { 20, 10 };
-static const int rook_half_open_file_bonus[2] = { 5, 5 };
+static const int rook_half_open_file_bonus[2] = { 15, 15 };
 
 /*
  * Score a weak square that's occupied by a minor piece. The basic bonus
