@@ -52,7 +52,7 @@ static const int bishop_outpost[0x80] = {
 
 static const int rook_on_7[2] = { 20, 40 };
 static const int rook_open_file_bonus[2] = { 20, 10 };
-static const int rook_half_open_file_bonus[2] = { 15, 15 };
+static const int rook_half_open_file_bonus[2] = { 10, 10 };
 
 /*
  * Score a weak square that's occupied by a minor piece. The basic bonus
@@ -192,8 +192,8 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                     break;
                 default: break;
             }
-            mid_score[side] += mobility_score_table[0][type][ps];
-            end_score[side] += mobility_score_table[1][type][ps];
+            mid_score[side] += MAX(0, mobility_score_table[0][type][ps]);
+            end_score[side] += MAX(0, mobility_score_table[1][type][ps]);
         }
     }
     side = pos->side_to_move;
