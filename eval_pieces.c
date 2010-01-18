@@ -192,8 +192,8 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                     break;
                 default: break;
             }
-            mid_score[side] += MAX(0, mobility_score_table[0][type][ps]);
-            end_score[side] += MAX(0, mobility_score_table[1][type][ps]);
+            mid_score[side] += mobility_score_table[0][type][ps];
+            end_score[side] += mobility_score_table[1][type][ps];
         }
     }
     side = pos->side_to_move;
