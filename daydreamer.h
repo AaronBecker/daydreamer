@@ -11,7 +11,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.61"
-#define ENGINE_VERSION_NAME     " max_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " kopen_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -51,6 +51,10 @@ direction_t pin_direction(const position_t* pos,
 bool is_square_attacked(const position_t* pos, square_t square, color_t side);
 bool piece_attacks_near(const position_t* pos, square_t from, square_t target);
 uint8_t find_checks(position_t* pos);
+
+// bal.c
+int balance_score(position_t* pos, int* multiplier);
+void initialization_materials_valuations();
 
 // benchmark.c
 void benchmark(int depth, int time_limit);
