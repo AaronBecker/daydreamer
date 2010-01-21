@@ -149,8 +149,6 @@ static void uci_handle_ext(char* command)
     } else if (!strncasecmp(command, "help", 4) ||
             !strncasecmp(command, "?", 1)) {
         uci_print_help();
-    } else if (!strncasecmp(command, "bal", 3)) {
-        report_balance(pos);
     }
 }
 

@@ -16,7 +16,6 @@ void init_daydreamer(void)
     generate_attack_data();
     init_eval();
     init_uci_options();
-initialization_materials_valuations();
     set_position(&root_data.root_pos, FEN_STARTPOS);
 }
 
