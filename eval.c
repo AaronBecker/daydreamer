@@ -7,7 +7,7 @@
 #include "pst.inc"
 #endif
 
-static const int pawn_scale = 896;
+static const int pawn_scale = 768;
 // values tested: 640, (768), 896, 1024, 1536
 static const int pattern_scale = 1024;
 // values tested: 768, (1024), 1280
@@ -160,10 +160,32 @@ int simple_eval(const position_t* pos)
 int full_eval(const position_t* pos)
 {
     int score = simple_eval(pos);
+    color_t side = pos->side_to_move;
+
+    //IPP
+    //int multiplier;
+    //int score = balance_score(pos, &multiplier);
+    //int dummy = balance_score(pos, &multiplier);
+    //if (abs(score) > 200) {
+    //    printf("%d, %d\n", score, material_score);
+    //    print_board(pos, false);
+    //}
+    //int material_score = pos->material_eval[side]-pos->material_eval[side^1];
+    //score += material_score;
+    //
+
 #ifndef UFO_EVAL
     score_t phase_score, component_score;
-    phase_score.endgame = phase_score.midgame = 0;
+    phase_score.midgame = phase_score.endgame = 0;
     pawn_data_t* pd;
+
+    // IPP
+    //phase_score.midgame = pos->piece_square_eval[side].midgame -
+    //    pos->piece_square_eval[side^1].midgame;
+    //phase_score.endgame = pos->piece_square_eval[side].endgame -
+    //    pos->piece_square_eval[side^1].endgame;
+    //
+    
     component_score = pawn_score(pos, &pd);
     add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
@@ -179,9 +201,14 @@ int full_eval(const position_t* pos)
     phase_score.endgame += 8;
     int phase = game_phase(pos);
     score += blend_score(&phase_score, phase);
+
+    //IPP
+    //score *= multiplier / 128;
+    //
+
 #endif
-    if (!can_win(pos, pos->side_to_move)) score = MIN(score, DRAW_VALUE);
-    if (!can_win(pos, pos->side_to_move^1)) score = MAX(score, DRAW_VALUE);
+    if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
+    if (!can_win(pos, side^1)) score = MAX(score, DRAW_VALUE);
     return score;
 }
 

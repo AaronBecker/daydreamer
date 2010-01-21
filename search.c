@@ -503,6 +503,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
     char best_move[7], ponder_move[7];
     move_to_coord_str(search_data->pv[0], best_move);
     move_to_coord_str(search_data->pv[1], ponder_move);
+    assert(search_data->pv[0] != NO_MOVE);
     printf("bestmove %s", best_move);
     if (search_data->pv[1]) printf(" ponder %s", ponder_move);
     printf("\n");
