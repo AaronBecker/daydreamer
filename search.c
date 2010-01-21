@@ -406,6 +406,24 @@ void deepening_search(search_data_t* search_data, bool ponder)
     increment_transposition_age();
     init_timer(&search_data->timer);
     start_timer(&search_data->timer);
+
+    // Get a move out of the opening book if we can.
+    if (options.use_book && !search_data->infinite &&
+            !search_data->depth_limit && !search_data->node_limit &&
+            search_data->engine_status != ENGINE_PONDERING) {
+        move_t book_move = get_book_move(&search_data->root_pos);
+        if (book_move) {
+            if (options.verbose) {
+                printf("info string Found book move.\n");
+            }
+            char move_str[7];
+            move_to_coord_str(book_move, move_str);
+            printf("bestmove %s\n", move_str);
+            search_data->engine_status = ENGINE_IDLE;
+            return;
+        }
+    }
+
     // If |search_data| already has a list of root moves, we search only
     // those moves. Otherwise, search everything. This allows support for the
     // uci searchmoves command.

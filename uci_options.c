@@ -256,6 +256,16 @@ static void handle_egbb_path(void* opt, char* value)
 }
 
 /*
+ * Sets the path to the opening book, in Polyglot format.
+ */
+static void handle_book_file(void* opt, char* value)
+{
+    uci_option_t* option = opt;
+    strncpy(option->value, value, 128);
+    init_book(option->value);
+}
+
+/*
  * Create all uci options and set them to their default values. Also set
  * default values for any options that aren't exposed to the uci interface.
  */
@@ -269,6 +279,10 @@ void init_uci_options()
             0, 0, NULL, &options.ponder, &default_handler);
     add_uci_option("MultiPV", OPTION_SPIN, "1",
             1, 256, NULL, &options.multi_pv, &default_handler);
+    add_uci_option("OwnBook", OPTION_CHECK, "false",
+            0, 0, NULL, &options.use_book, &default_handler);
+    add_uci_option("Book file", OPTION_STRING, "book.bin",
+            0, 0, NULL, NULL, &handle_book_file);
     add_uci_option("UCI_Chess960", OPTION_CHECK, "false",
             0, 0, NULL, &options.chess960, &default_handler);
     add_uci_option("Arena-style 960 castling", OPTION_CHECK, "false",

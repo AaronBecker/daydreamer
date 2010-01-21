@@ -39,6 +39,9 @@ static void uci_print_help(void)
 "   epd <filename> <time>\n"
 "             \tRead the given epd file, and search each position for <time>\n"
 "             \tseconds.\n"
+"   book <filename>\n"
+"             \tPrint book information for the current position. If no book\n"
+"             \tfile is specified, use book.bin"
 "   help      \tPrint this help message."
 "\n\n");
 }
@@ -126,6 +129,10 @@ static void uci_handle_ext(char* command)
         sscanf(command+3, " %s %d", filename, &time_per_move);
         time_per_move *= 1000;
         epd_testsuite(filename, time_per_move);
+    } else if (!strncasecmp(command, "book", 4)) {
+        char filename[256] = "book.bin";
+        sscanf(command+4, " %s", filename);
+        test_book(filename, pos);
     } else if (!strncasecmp(command, "print", 5)) {
         print_board(pos, false);
         move_t moves[255];

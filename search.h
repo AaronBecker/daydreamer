@@ -31,6 +31,7 @@ typedef int score_type_t;
 typedef struct {
     int multi_pv;
     int output_delay;
+    bool use_book;
     bool use_egbb;
     bool verbose;
     bool chess960;
