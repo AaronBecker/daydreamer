@@ -187,7 +187,7 @@ static bool should_deepen(search_data_t* data)
     if (!data->depth_limit && !data->node_limit && obvious_move_enabled &&
             data->current_depth >= 6 && data->obvious_move) return false;
 
-    // Allocate some extra time if the root score drops late.
+    // Allocate some extra time when the root score drops.
     if (so_far < real_target / 3 || data->current_depth < 5) return true;
     int it_score = data->scores_by_iteration[data->current_depth];
     int last_it_score = data->scores_by_iteration[data->current_depth-1];
@@ -452,11 +452,10 @@ void deepening_search(search_data_t* search_data, bool ponder)
         // Calculate aspiration search window.
         int alpha = mated_in(-1);
         int beta = mate_in(-1);
+        int last_score = search_data->scores_by_iteration[depth-1];
         if (depth > 5 && options.multi_pv == 1) {
-            alpha = consecutive_fail_lows > 1 ? mated_in(-1) :
-                search_data->scores_by_iteration[depth-1] - 40;
-            beta = consecutive_fail_highs > 1 ? mate_in(-1) :
-                search_data->scores_by_iteration[depth-1] + 40;
+            alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 40;
+            beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 40;
             if (options.verbose) {
                 printf("info string root window is (%d, %d)\n", alpha, beta);
             }
@@ -538,7 +537,6 @@ static search_result_t root_search(search_data_t* search_data,
         int beta)
 {
     int orig_alpha = alpha;
-    //int alpha = mated_in(-1), beta = mate_in(-1);
     search_data->best_score = alpha;
     position_t* pos = &search_data->root_pos;
     transposition_entry_t* trans_entry = get_transposition(pos);
@@ -966,6 +964,7 @@ static int quiesce(position_t* pos,
         // TODO: prevent futility for passed pawn moves and checks
         // TODO: no futility on early moves?
         if (allow_futility &&
+                move != hash_move &&
                 get_move_promote(move) != QUEEN &&
                 eval + material_value(get_move_capture(move)) +
                 qfutility_margin < alpha) continue;
