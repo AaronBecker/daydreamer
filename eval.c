@@ -45,6 +45,15 @@ void init_eval(void)
                 endgame_piece_square_values[piece+BP-1][flip_square(square)];
         }
     }
+    for (piece_t piece=WP; piece<=BK; ++piece) {
+        if (piece > WK && piece < BP) continue;
+        for (square_t square=A1; square<=H8; ++square) {
+            if (!valid_board_index(square)) continue;
+            piece_square_values[piece][square] += material_value(piece);
+            endgame_piece_square_values[piece][square] +=
+                eg_material_value(piece);
+        }
+    }
 }
 
 /*
@@ -131,7 +140,7 @@ static score_t evaluate_king_attackers(const position_t* pos)
 int simple_eval(const position_t* pos)
 {
     color_t side = pos->side_to_move;
-    int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
+    //int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
     int phase = game_phase(pos);
     int piece_square_eval =
             ((phase)*(pos->piece_square_eval[side].midgame -
@@ -150,7 +159,7 @@ int simple_eval(const position_t* pos)
 
     if (side == BLACK) material_adjust *= -1;
 #endif
-    return material_eval + piece_square_eval + material_adjust;
+    return /*material_eval +*/ piece_square_eval + material_adjust;
 }
 
 /*
