@@ -143,24 +143,59 @@ int simple_eval(const position_t* pos)
     //int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
     int phase = game_phase(pos);
     score_t phase_score;
+    // Material + PST
     phase_score.midgame = pos->piece_square_eval[side].midgame -
         pos->piece_square_eval[side^1].midgame;
     phase_score.endgame = pos->piece_square_eval[side].endgame -
         pos->piece_square_eval[side^1].endgame;
+
+    // Tempo
+    phase_score.midgame += 9;
+    phase_score.endgame += 2;
+
     int piece_square_eval = blend_score(&phase_score, phase);
     int material_adjust = 0;
 #ifndef UFO_EVAL
-    // bishop pair: +50
-    material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
-    material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
-    material_adjust += pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5);
-    material_adjust -= pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5);
-    material_adjust -= pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5);
-    material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
+    score_t adjust_score;
+    adjust_score.midgame = adjust_score.endgame = 0;
+    // Pair bonuses
+    if (pos->piece_count[WB] > 1) {
+        adjust_score.midgame += 30;
+        adjust_score.endgame += 45;
+    }
+    if (pos->piece_count[BB] > 1) {
+        adjust_score.midgame -= 30;
+        adjust_score.endgame -= 45;
+    }
+    if (pos->piece_count[WR] > 1) {
+        adjust_score.midgame -= 12;
+        adjust_score.endgame -= 17;
+    }
+    if (pos->piece_count[BR] > 1) {
+        adjust_score.midgame += 12;
+        adjust_score.endgame += 17;
+    }
+    if (pos->piece_count[WQ] > 1) {
+        adjust_score.midgame -= 8;
+        adjust_score.endgame -= 12;
+    }
+    if (pos->piece_count[BQ] > 1) {
+        adjust_score.midgame += 8;
+        adjust_score.endgame += 12;
+    }
+    material_adjust = blend_score(&adjust_score, phase);
+
+    // Pawn bonuses
+    material_adjust += pos->piece_count[WN] * 3 * (pos->piece_count[WP] - 4);
+    material_adjust -= pos->piece_count[BN] * 3 * (pos->piece_count[BP] - 4);
+    material_adjust += pos->piece_count[WB] * 2 * (pos->piece_count[WP] - 4);
+    material_adjust -= pos->piece_count[BB] * 2 * (pos->piece_count[BP] - 4);
+    material_adjust += pos->piece_count[WR] * (-3) * (pos->piece_count[WP] - 4);
+    material_adjust -= pos->piece_count[BR] * (-3) * (pos->piece_count[BP] - 4);
 
     if (side == BLACK) material_adjust *= -1;
 #endif
-    return /*material_eval +*/ piece_square_eval + material_adjust;
+    return piece_square_eval + material_adjust;
 }
 
 /*
@@ -188,8 +223,6 @@ int full_eval(const position_t* pos)
     component_score = evaluate_king_attackers(pos);
     add_scaled_score(&phase_score, &component_score, king_attack_scale);
 
-    phase_score.midgame += 5;
-    phase_score.endgame += 8;
     int phase = game_phase(pos);
     score += blend_score(&phase_score, phase);
 
