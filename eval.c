@@ -142,11 +142,12 @@ int simple_eval(const position_t* pos)
     color_t side = pos->side_to_move;
     //int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
     int phase = game_phase(pos);
-    int piece_square_eval =
-            ((phase)*(pos->piece_square_eval[side].midgame -
-                pos->piece_square_eval[side^1].midgame) +
-            (1024-phase)*(pos->piece_square_eval[side].endgame -
-                pos->piece_square_eval[side^1].endgame)) / 1024;
+    score_t phase_score;
+    phase_score.midgame = pos->piece_square_eval[side].midgame -
+        pos->piece_square_eval[side^1].midgame;
+    phase_score.endgame = pos->piece_square_eval[side].endgame -
+        pos->piece_square_eval[side^1].endgame;
+    int piece_square_eval = blend_score(&phase_score, phase);
     int material_adjust = 0;
 #ifndef UFO_EVAL
     // bishop pair: +50
