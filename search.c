@@ -784,7 +784,7 @@ static int search(position_t* pos,
                 !mate_threat &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !is_check(pos) &&
-                num_legal_moves >= depth + 3 &&
+                num_legal_moves >= depth + 2 &&
                 should_try_prune(&selector, move);
             if (prune_futile) {
                 // History pruning.
@@ -964,7 +964,6 @@ static int quiesce(position_t* pos,
         // TODO: prevent futility for passed pawn moves and checks
         // TODO: no futility on early moves?
         if (allow_futility &&
-                move != hash_move &&
                 get_move_promote(move) != QUEEN &&
                 eval + material_value(get_move_capture(move)) +
                 qfutility_margin < alpha) continue;
