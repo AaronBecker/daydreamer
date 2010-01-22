@@ -784,7 +784,7 @@ static int search(position_t* pos,
                 !mate_threat &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !is_check(pos) &&
-                num_legal_moves >= depth + 1 &&
+                num_legal_moves >= depth + 3 &&
                 should_try_prune(&selector, move);
             if (prune_futile) {
                 // History pruning.
