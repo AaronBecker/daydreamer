@@ -964,7 +964,7 @@ static int quiesce(position_t* pos,
         // TODO: prevent futility for passed pawn moves and checks
         // TODO: no futility on early moves?
         if (allow_futility &&
-                move != hash_move &&
+//                move != hash_move &&
                 get_move_promote(move) != QUEEN &&
                 eval + material_value(get_move_capture(move)) +
                 qfutility_margin < alpha) continue;
