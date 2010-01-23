@@ -148,54 +148,7 @@ int simple_eval(const position_t* pos)
         pos->piece_square_eval[side^1].midgame;
     phase_score.endgame = pos->piece_square_eval[side].endgame -
         pos->piece_square_eval[side^1].endgame;
-
-    // Tempo
-    phase_score.midgame += 9;
-    phase_score.endgame += 2;
-
-    int piece_square_eval = blend_score(&phase_score, phase);
-    int material_adjust = 0;
-#ifndef UFO_EVAL
-    score_t adjust_score;
-    adjust_score.midgame = adjust_score.endgame = 0;
-    // Pair bonuses
-    if (pos->piece_count[WB] > 1) {
-        adjust_score.midgame += 30;
-        adjust_score.endgame += 45;
-    }
-    if (pos->piece_count[BB] > 1) {
-        adjust_score.midgame -= 30;
-        adjust_score.endgame -= 45;
-    }
-    if (pos->piece_count[WR] > 1) {
-        adjust_score.midgame -= 12;
-        adjust_score.endgame -= 17;
-    }
-    if (pos->piece_count[BR] > 1) {
-        adjust_score.midgame += 12;
-        adjust_score.endgame += 17;
-    }
-    if (pos->piece_count[WQ] > 1) {
-        adjust_score.midgame -= 8;
-        adjust_score.endgame -= 12;
-    }
-    if (pos->piece_count[BQ] > 1) {
-        adjust_score.midgame += 8;
-        adjust_score.endgame += 12;
-    }
-    material_adjust = blend_score(&adjust_score, phase);
-
-    // Pawn bonuses
-    material_adjust += pos->piece_count[WN] * 3 * (pos->piece_count[WP] - 4);
-    material_adjust -= pos->piece_count[BN] * 3 * (pos->piece_count[BP] - 4);
-    material_adjust += pos->piece_count[WB] * 2 * (pos->piece_count[WP] - 4);
-    material_adjust -= pos->piece_count[BB] * 2 * (pos->piece_count[BP] - 4);
-    material_adjust += pos->piece_count[WR] * (-3) * (pos->piece_count[WP] - 4);
-    material_adjust -= pos->piece_count[BR] * (-3) * (pos->piece_count[BP] - 4);
-
-    if (side == BLACK) material_adjust *= -1;
-#endif
-    return piece_square_eval + material_adjust;
+    return blend_score(&phase_score, phase);
 }
 
 /*
@@ -212,6 +165,47 @@ int full_eval(const position_t* pos)
     phase_score.midgame = phase_score.endgame = 0;
     pawn_data_t* pd;
 
+    component_score.midgame = component_score.endgame = 0;
+    // Pair bonuses
+    if (pos->piece_count[WB] > 1) {
+        component_score.midgame += 30;
+        component_score.endgame += 45;
+    }
+    if (pos->piece_count[BB] > 1) {
+        component_score.midgame -= 30;
+        component_score.endgame -= 45;
+    }
+    if (pos->piece_count[WR] > 1) {
+        component_score.midgame -= 12;
+        component_score.endgame -= 17;
+    }
+    if (pos->piece_count[BR] > 1) {
+        component_score.midgame += 12;
+        component_score.endgame += 17;
+    }
+    if (pos->piece_count[WQ] > 1) {
+        component_score.midgame -= 8;
+        component_score.endgame -= 12;
+    }
+    if (pos->piece_count[BQ] > 1) {
+        component_score.midgame += 8;
+        component_score.endgame += 12;
+    }
+    // Pawn bonuses
+    int material_adjust = 0;
+    material_adjust += pos->piece_count[WN] * 3 * (pos->piece_count[WP] - 4);
+    material_adjust -= pos->piece_count[BN] * 3 * (pos->piece_count[BP] - 4);
+    material_adjust += pos->piece_count[WB] * 2 * (pos->piece_count[WP] - 4);
+    material_adjust -= pos->piece_count[BB] * 2 * (pos->piece_count[BP] - 4);
+    material_adjust += pos->piece_count[WR] * (-3) * (pos->piece_count[WP] - 4);
+    material_adjust -= pos->piece_count[BR] * (-3) * (pos->piece_count[BP] - 4);
+    component_score.midgame += material_adjust;
+    component_score.endgame += material_adjust;
+    if (side == BLACK) {
+        component_score.midgame *= -1;
+        component_score.endgame *= -1;
+    }
+    add_scaled_score(&phase_score, &component_score, 1024);
     component_score = pawn_score(pos, &pd);
     add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
@@ -222,6 +216,10 @@ int full_eval(const position_t* pos)
     add_scaled_score(&phase_score, &component_score, shield_scale);
     component_score = evaluate_king_attackers(pos);
     add_scaled_score(&phase_score, &component_score, king_attack_scale);
+
+    // Tempo
+    phase_score.midgame += 9;
+    phase_score.endgame += 2;
 
     int phase = game_phase(pos);
     score += blend_score(&phase_score, phase);
