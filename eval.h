@@ -13,18 +13,26 @@ extern "C" {
     #define QUEEN_VAL     900
     #define KING_VAL      20000
 #else
-    #define PAWN_VAL      100
-    #define KNIGHT_VAL    325
-    #define BISHOP_VAL    325
-    #define ROOK_VAL      500
-    #define QUEEN_VAL     975
-    #define KING_VAL      20000
+    #define PAWN_VAL         85
+    #define KNIGHT_VAL       340
+    #define BISHOP_VAL       340
+    #define ROOK_VAL         490
+    #define QUEEN_VAL        1010
+    #define KING_VAL         20000
+    #define EG_PAWN_VAL      115
+    #define EG_KNIGHT_VAL    390
+    #define EG_BISHOP_VAL    390
+    #define EG_ROOK_VAL      640
+    #define EG_QUEEN_VAL     1210
+    #define EG_KING_VAL      20000
 #endif
 
 extern int piece_square_values[BK+1][0x80];
 extern int endgame_piece_square_values[BK+1][0x80];
 extern const int material_values[];
+extern const int eg_material_values[];
 #define material_value(piece)               material_values[piece]
+#define eg_material_value(piece)            eg_material_values[piece]
 #define piece_square_value(piece, square)   piece_square_values[piece][square]
 #define endgame_piece_square_value(piece, square) \
     endgame_piece_square_values[piece][square]
@@ -33,6 +41,12 @@ typedef struct {
     int midgame;
     int endgame;
 } score_t;
+
+#include "pawn.h"
+
+typedef struct {
+    pawn_data_t* pd;
+} eval_data_t;
 
 #ifdef __cplusplus
 } // extern "C"

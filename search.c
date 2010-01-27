@@ -187,7 +187,7 @@ static bool should_deepen(search_data_t* data)
     if (!data->depth_limit && !data->node_limit && obvious_move_enabled &&
             data->current_depth >= 6 && data->obvious_move) return false;
 
-    // Allocate some extra time if the root score drops late.
+    // Allocate some extra time when the root score drops.
     if (so_far < real_target / 3 || data->current_depth < 5) return true;
     int it_score = data->scores_by_iteration[data->current_depth];
     int last_it_score = data->scores_by_iteration[data->current_depth-1];
@@ -452,11 +452,10 @@ void deepening_search(search_data_t* search_data, bool ponder)
         // Calculate aspiration search window.
         int alpha = mated_in(-1);
         int beta = mate_in(-1);
+        int last_score = search_data->scores_by_iteration[depth-1];
         if (depth > 5 && options.multi_pv == 1) {
-            alpha = consecutive_fail_lows > 1 ? mated_in(-1) :
-                search_data->scores_by_iteration[depth-1] - 40;
-            beta = consecutive_fail_highs > 1 ? mate_in(-1) :
-                search_data->scores_by_iteration[depth-1] + 40;
+            alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 40;
+            beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 40;
             if (options.verbose) {
                 printf("info string root window is (%d, %d)\n", alpha, beta);
             }
@@ -521,6 +520,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
     char best_move[7], ponder_move[7];
     move_to_coord_str(search_data->pv[0], best_move);
     move_to_coord_str(search_data->pv[1], ponder_move);
+    assert(search_data->pv[0] != NO_MOVE);
     printf("bestmove %s", best_move);
     if (search_data->pv[1]) printf(" ponder %s", ponder_move);
     printf("\n");
@@ -537,7 +537,6 @@ static search_result_t root_search(search_data_t* search_data,
         int beta)
 {
     int orig_alpha = alpha;
-    //int alpha = mated_in(-1), beta = mate_in(-1);
     search_data->best_score = alpha;
     position_t* pos = &search_data->root_pos;
     transposition_entry_t* trans_entry = get_transposition(pos);
@@ -576,15 +575,15 @@ static search_result_t root_search(search_data_t* search_data,
             score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-1);
         } else {
-            const bool do_lmr = lmr_enabled &&
+            const bool try_lmr = lmr_enabled &&
                 num_moves > 10 &&
                 !ext &&
                 depth > LMR_DEPTH_LIMIT &&
-                !is_check(pos) &&
-                should_try_lmr(&selector, move);
-            if (do_lmr) {
+                !is_check(pos);
+            int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
+            if (lmr_red) {
                 score = -search(pos, search_data->search_stack,
-                        1, -alpha-1, -alpha, depth-LMR_REDUCTION-1);
+                        1, -alpha-1, -alpha, depth-lmr_red-1);
             } else {
                 score = -search(pos, search_data->search_stack,
                     1, -alpha-1, -alpha, search_data->current_depth+ext-1);
@@ -752,7 +751,6 @@ static int search(position_t* pos,
             search_node, hash_move, depth, ply);
     // TODO: test extensions. Also try fractional extensions.
     bool single_reply = has_single_reply(&selector);
-    int futility_score = mated_in(-1);
     int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector)) {
@@ -771,15 +769,11 @@ static int search(position_t* pos,
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1);
         } else {
-            const bool move_is_late = full_window ?
-                num_legal_moves > LMR_PV_EARLY_MOVES :
-                num_legal_moves > LMR_EARLY_MOVES;
-
             // Futility pruning. Note: it would be nice to do extensions and
             // futility before calling do_move, but this would require more
             // efficient ways of identifying important moves without actually
             // making them.
-            bool prune_futile = futility_enabled &&
+            const bool prune_futile = futility_enabled &&
                 !full_window &&
                 !ext &&
                 !mate_threat &&
@@ -797,31 +791,31 @@ static int search(position_t* pos,
                     continue;
                 }
                 // Value pruning.
-                if (value_prune_enabled && lazy_score < beta) {
-                    if (futility_score == mated_in(-1)) {
-                        futility_score = full_eval(pos) +
-                            futility_margin[depth-1];
-                    }
-                    if (futility_score < beta) {
-                        num_futile_moves++;
-                        undo_move(pos, move, &undo);
-                        if (full_window) add_pv_move(&selector, move, 0);
-                        continue;
-                    }
+                int futility_score = lazy_score +
+                    material_value(get_move_capture(move)) +
+                    futility_margin[depth-1] - 2*num_legal_moves;
+                if (value_prune_enabled && futility_score < beta) {
+                    num_futile_moves++;
+                    undo_move(pos, move, &undo);
+                    if (full_window) add_pv_move(&selector, move, 0);
+                    continue;
                 }
             }
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
-            const bool do_lmr = lmr_enabled &&
+            const bool move_is_late = full_window ?
+                num_legal_moves > LMR_PV_EARLY_MOVES :
+                num_legal_moves > LMR_EARLY_MOVES;
+            const bool try_lmr = lmr_enabled &&
                 move_is_late &&
                 !ext &&
                 !mate_threat &&
                 depth > LMR_DEPTH_LIMIT &&
-                !is_check(pos) &&
-                should_try_lmr(&selector, move);
-            if (do_lmr) {
+                !is_check(pos);
+            int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
+            if (lmr_red) {
                 score = -search(pos, search_node+1, ply+1,
-                        -alpha-1, -alpha, depth-LMR_REDUCTION-1);
+                        -alpha-1, -alpha, depth-lmr_red-1);
             } else {
                 score = alpha+1;
             }
@@ -941,7 +935,8 @@ static int quiesce(position_t* pos,
         }
     }
 
-    int eval = full_eval(pos);
+    eval_data_t ed;
+    int eval = full_eval(pos, &ed);
     score = eval;
     if (ply >= MAX_SEARCH_DEPTH-1) return score;
     open_qnode(&root_data, ply);

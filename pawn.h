@@ -18,9 +18,11 @@ typedef struct {
 } pawn_data_t;
 
 #define square_is_outpost(pd, sq, side) \
-    (sq_bit_is_set(pd->outposts_bb[side], sq))
+    (sq_bit_is_set((pd)->outposts_bb[side], (sq)))
 #define file_is_half_open(pd, file, side) \
     (((pd)->pawns_bb[side] & file_mask[file]) == EMPTY_BB)
+#define pawn_is_passed(pd, sq, side) \
+    (sq_bit_is_set((pd)->passed_bb[side], (sq)))
 
 #ifdef __cplusplus
 }

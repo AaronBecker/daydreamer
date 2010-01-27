@@ -11,7 +11,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.61"
-#define ENGINE_VERSION_NAME     " qs5_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " ed4_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -78,7 +78,7 @@ void epd_testsuite(char* filename, int time_per_problem);
 // eval.c
 void init_eval(void);
 int simple_eval(const position_t* pos);
-int full_eval(const position_t* pos);
+int full_eval(const position_t* pos, eval_data_t* ed);
 void report_eval(const position_t* pos);
 bool insufficient_material(const position_t* pos);
 bool can_win(const position_t* pos, color_t side);
@@ -143,7 +143,7 @@ void init_move_selector(move_selector_t* sel,
         int ply);
 bool has_single_reply(move_selector_t* sel);
 bool should_try_prune(move_selector_t* sel, move_t move);
-bool should_try_lmr(move_selector_t* sel, move_t move);
+int lmr_reduction(move_selector_t* sel, move_t move);
 move_t select_move(move_selector_t* sel);
 bool defer_move(move_selector_t* sel, move_t move);
 void init_pv_cache(const int max_bytes);

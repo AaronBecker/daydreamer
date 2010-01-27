@@ -23,6 +23,13 @@ const int material_values[] = {
     0, PAWN_VAL, KNIGHT_VAL, BISHOP_VAL, ROOK_VAL, QUEEN_VAL, KING_VAL, 0,
     0, PAWN_VAL, KNIGHT_VAL, BISHOP_VAL, ROOK_VAL, QUEEN_VAL, KING_VAL, 0, 0
 };
+const int eg_material_values[] = {
+    0, EG_PAWN_VAL, EG_KNIGHT_VAL, EG_BISHOP_VAL,
+    EG_ROOK_VAL, EG_QUEEN_VAL, EG_KING_VAL, 0,
+    0, EG_PAWN_VAL, EG_KNIGHT_VAL, EG_BISHOP_VAL,
+    EG_ROOK_VAL, EG_QUEEN_VAL, EG_KING_VAL, 0, 0
+};
+
 
 const char glyphs[] = ".PNBRQK  pnbrqk";
 
