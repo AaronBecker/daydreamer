@@ -791,9 +791,9 @@ static int search(position_t* pos,
                     continue;
                 }
                 // Value pruning.
-                int futility_score = simple_eval(pos) +
+                int futility_score = lazy_score +
+                    material_value(get_move_capture(move)) +
                     futility_margin[depth-1] - 2*num_legal_moves;
-                //lazy_score + material_value(get_move_capture(move)) +
                 if (value_prune_enabled && futility_score < beta) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
