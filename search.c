@@ -575,15 +575,15 @@ static search_result_t root_search(search_data_t* search_data,
             score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-1);
         } else {
-            const bool do_lmr = lmr_enabled &&
+            const bool try_lmr = lmr_enabled &&
                 num_moves > 10 &&
                 !ext &&
                 depth > LMR_DEPTH_LIMIT &&
-                !is_check(pos) &&
-                should_try_lmr(&selector, move);
-            if (do_lmr) {
+                !is_check(pos);
+            int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
+            if (lmr_red) {
                 score = -search(pos, search_data->search_stack,
-                        1, -alpha-1, -alpha, depth-LMR_REDUCTION-1);
+                        1, -alpha-1, -alpha, depth-lmr_red-1);
             } else {
                 score = -search(pos, search_data->search_stack,
                     1, -alpha-1, -alpha, search_data->current_depth+ext-1);
@@ -811,16 +811,16 @@ static int search(position_t* pos,
             }
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
-            const bool do_lmr = lmr_enabled &&
+            const bool try_lmr = lmr_enabled &&
                 move_is_late &&
                 !ext &&
                 !mate_threat &&
                 depth > LMR_DEPTH_LIMIT &&
-                !is_check(pos) &&
-                should_try_lmr(&selector, move);
-            if (do_lmr) {
+                !is_check(pos);
+            int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
+            if (lmr_red) {
                 score = -search(pos, search_node+1, ply+1,
-                        -alpha-1, -alpha, depth-LMR_REDUCTION-1);
+                        -alpha-1, -alpha, depth-lmr_red-1);
             } else {
                 score = alpha+1;
             }
