@@ -9,11 +9,10 @@ Search
     Try multiple moves in TT, instead of PV cache
     Test effects of reducing PV-specific decisions
     Re-write the guts of the move selector, because they're awful now.
-    Try alternate king safety implementations
+    Make pawn eval and king safety scores available inside search
 
 shrink trans table entry size
 evaluation hashing
-OwnBook support for polyglot books
 
 Interface
     ECO classification
@@ -41,4 +40,3 @@ Bugs
 
     Re-do verbose output in light of Arena parse bugs
 
-    Optimized and non-optimized builds don't search the same number of nodes
