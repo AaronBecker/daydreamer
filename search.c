@@ -751,8 +751,8 @@ static int search(position_t* pos,
             search_node, hash_move, depth, ply);
     // TODO: test extensions. Also try fractional extensions.
     bool single_reply = has_single_reply(&selector);
-    int futility_score = mated_in(-1);
     int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
+    int eval_score = lazy_score;
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector)) {
         num_legal_moves = selector.moves_so_far;
@@ -770,6 +770,7 @@ static int search(position_t* pos,
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1);
         } else {
+            if (num_legal_moves == 2) eval_score = full_eval(pos);
             const bool move_is_late = full_window ?
                 num_legal_moves > LMR_PV_EARLY_MOVES :
                 num_legal_moves > LMR_EARLY_MOVES;
@@ -796,11 +797,8 @@ static int search(position_t* pos,
                     continue;
                 }
                 // Value pruning.
-                if (value_prune_enabled && lazy_score < beta) {
-                    if (futility_score == mated_in(-1)) {
-                        futility_score = full_eval(pos) +
-                            futility_margin[depth-1];
-                    }
+                if (value_prune_enabled && eval_score < beta) {
+                    int futility_score = eval_score + futility_margin[depth-1];
                     if (futility_score < beta) {
                         num_futile_moves++;
                         undo_move(pos, move, &undo);
