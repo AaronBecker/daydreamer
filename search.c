@@ -772,7 +772,7 @@ static int search(position_t* pos,
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1);
         } else {
-            bool passer_push = get_move_piece_type(move) == PAWN &&
+            bool passer_move = get_move_piece_type(move) == PAWN &&
                 pawn_is_passed(ed.pd, get_move_from(move), pos->side_to_move);
             // Futility pruning. Note: it would be nice to do extensions and
             // futility before calling do_move, but this would require more
@@ -785,7 +785,7 @@ static int search(position_t* pos,
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !is_check(pos) &&
                 num_legal_moves >= depth + 2 &&
-                !passer_push &&
+                !passer_move &&
                 should_try_prune(&selector, move);
             if (prune_futile) {
                 // History pruning.
@@ -817,7 +817,7 @@ static int search(position_t* pos,
                 !mate_threat &&
                 depth > LMR_DEPTH_LIMIT &&
                 !is_check(pos) &&
-                !passer_push;
+                !passer_move;
             int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
             if (lmr_red) {
                 score = -search(pos, search_node+1, ply+1,
