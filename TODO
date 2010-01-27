@@ -1,7 +1,6 @@
 
 Search
     Better statistics gathering/reporting
-    Make sure popular GUIs don't misinterpret UCI output
     recognize singular replies
     prefetching for trans table entries
     sign-only SEE
@@ -9,11 +8,12 @@ Search
     Try multiple moves in TT, instead of PV cache
     Test effects of reducing PV-specific decisions
     Re-write the guts of the move selector, because they're awful now.
-    Try alternate king safety implementations
+    less distinction (or no distinction) between search and qsearch
+    smooth lmr reduction curve (with fractional plies)
+    try full eval after nullmove fails instead of just for futility
 
 shrink trans table entry size
 evaluation hashing
-OwnBook support for polyglot books
 
 Interface
     ECO classification
@@ -24,6 +24,7 @@ Evaluation
     material imbalance tables
     bounded eval with early exit
     improved king safety and passed pawn evaluation
+    Try alternate king safety implementations
 
 Testing
     try different move ordering counts. 16 didn't help. maybe 12.
