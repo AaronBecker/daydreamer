@@ -11,7 +11,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.61"
-#define ENGINE_VERSION_NAME     " ffix5_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " ed1_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -78,7 +78,7 @@ void epd_testsuite(char* filename, int time_per_problem);
 // eval.c
 void init_eval(void);
 int simple_eval(const position_t* pos);
-int full_eval(const position_t* pos);
+int full_eval(const position_t* pos, eval_data_t* ed);
 void report_eval(const position_t* pos);
 bool insufficient_material(const position_t* pos);
 bool can_win(const position_t* pos, color_t side);

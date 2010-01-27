@@ -102,8 +102,7 @@ int lmr_reduction(move_selector_t* sel, move_t move)
         !get_move_capture(move) &&
         get_move_promote(move) != QUEEN &&
         !is_move_castle(move);
-    return do_lmr ? (sel->scores[sel->current_move_index-1]<0 ? 1 : 1) : 0;
-    //return do_lmr ? (sel->scores[sel->current_move_index-1]<0 ? 2 : 1) : 0;
+    return do_lmr ? (sel->scores[sel->current_move_index-1]<0 ? 2 : 1) : 0;
 }
 
 /*

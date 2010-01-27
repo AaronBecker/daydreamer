@@ -42,6 +42,12 @@ typedef struct {
     int endgame;
 } score_t;
 
+#include "pawn.h"
+
+typedef struct {
+    pawn_data_t* pd;
+} eval_data_t;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

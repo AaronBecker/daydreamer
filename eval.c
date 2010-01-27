@@ -155,7 +155,7 @@ int simple_eval(const position_t* pos)
  * Do full, more expensive evaluation of the position. Not implemented yet,
  * so just return the simple evaluation.
  */
-int full_eval(const position_t* pos)
+int full_eval(const position_t* pos, eval_data_t* ed)
 {
     int score = simple_eval(pos);
     color_t side = pos->side_to_move;
@@ -163,7 +163,6 @@ int full_eval(const position_t* pos)
 #ifndef UFO_EVAL
     score_t phase_score, component_score;
     phase_score.midgame = phase_score.endgame = 0;
-    pawn_data_t* pd;
 
     component_score.midgame = component_score.endgame = 0;
     // Pair bonuses
@@ -206,11 +205,11 @@ int full_eval(const position_t* pos)
         component_score.endgame *= -1;
     }
     add_scaled_score(&phase_score, &component_score, 1024);
-    component_score = pawn_score(pos, &pd);
+    component_score = pawn_score(pos, &ed->pd);
     add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
     add_scaled_score(&phase_score, &component_score, pattern_scale);
-    component_score = pieces_score(pos, pd);
+    component_score = pieces_score(pos, ed->pd);
     add_scaled_score(&phase_score, &component_score, pieces_scale);
     component_score = evaluate_king_shield(pos);
     add_scaled_score(&phase_score, &component_score, shield_scale);
