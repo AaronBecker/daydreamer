@@ -795,7 +795,7 @@ static int search(position_t* pos,
                 // Value pruning.
                 if (value_prune_enabled &&
                         eval_score + material_value(get_move_capture(move)) +
-                        futility_margin[depth-1] < beta) {
+                        futility_margin[depth-1] < beta + 2*num_legal_moves) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
                     if (full_window) add_pv_move(&selector, move, 0);
