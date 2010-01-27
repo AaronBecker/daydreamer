@@ -752,12 +752,9 @@ static int search(position_t* pos,
     // TODO: test extensions. Also try fractional extensions.
     bool single_reply = has_single_reply(&selector);
     int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
-    //int eval_score = lazy_score;
-    //eval_data_t ed;
     for (move_t move = select_move(&selector); move != NO_MOVE;
             move = select_move(&selector)) {
         num_legal_moves = selector.moves_so_far;
-        //if (num_legal_moves == 2) eval_score = full_eval(pos, &ed);
         int64_t nodes_before = root_data.nodes_searched;
 
         undo_info_t undo;
@@ -772,9 +769,6 @@ static int search(position_t* pos,
             score = -search(pos, search_node+1, ply+1,
                     -beta, -alpha, depth+ext-1);
         } else {
-            //bool passer_move = get_move_piece_type(move) == PAWN &&
-            //    pawn_is_passed(ed.pd, get_move_from(move), pos->side_to_move);
-
             // Futility pruning. Note: it would be nice to do extensions and
             // futility before calling do_move, but this would require more
             // efficient ways of identifying important moves without actually
@@ -786,7 +780,6 @@ static int search(position_t* pos,
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !is_check(pos) &&
                 num_legal_moves >= depth + 2 &&
-//                !passer_move &&
                 should_try_prune(&selector, move);
             if (prune_futile) {
                 // History pruning.
@@ -798,9 +791,10 @@ static int search(position_t* pos,
                     continue;
                 }
                 // Value pruning.
-                if (value_prune_enabled &&
-                        lazy_score + material_value(get_move_capture(move)) +
-                        futility_margin[depth-1] < beta + 2*num_legal_moves) {
+                int futility_score = simple_eval(pos) +
+                    futility_margin[depth-1] - 2*num_legal_moves;
+                //lazy_score + material_value(get_move_capture(move)) +
+                if (value_prune_enabled && futility_score < beta) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
                     if (full_window) add_pv_move(&selector, move, 0);
@@ -818,7 +812,6 @@ static int search(position_t* pos,
                 !mate_threat &&
                 depth > LMR_DEPTH_LIMIT &&
                 !is_check(pos);
-                //!passer_move
             int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
             if (lmr_red) {
                 score = -search(pos, search_node+1, ply+1,
