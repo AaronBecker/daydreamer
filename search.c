@@ -941,8 +941,9 @@ static int quiesce(position_t* pos,
 
     eval_data_t ed;
     if (ply >= MAX_SEARCH_DEPTH-1) return full_eval(pos, &ed);
+    int eval = alpha;
     if (!is_check(pos)) {
-        int eval = full_eval(pos, &ed);
+        eval = full_eval(pos, &ed);
         if (alpha < eval) alpha = eval;
         if (alpha >= beta) {
             // TODO: test using this transposition entry
