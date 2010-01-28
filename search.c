@@ -651,18 +651,14 @@ static int search(position_t* pos,
 {
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if (alpha > mate_in(ply)) return alpha; // Can't beat this...
-    if (depth <= 0) {
-        return quiesce(pos, search_node, ply, alpha, beta, depth);
-    }
-    if (is_draw(pos)) return DRAW_VALUE;
-    bool full_window = (beta-alpha > 1);
+    if (depth <= 0) return quiesce(pos, search_node, ply, alpha, beta, depth);
 
-    // Put some bounds on how good/bad this node could turn out to be.
     int orig_alpha = alpha;
     alpha = MAX(alpha, mated_in(ply));
     beta = MIN(beta, mate_in(ply));
     if (alpha >= beta) return alpha;
+    if (is_draw(pos)) return DRAW_VALUE;
+    bool full_window = (beta-alpha > 1);
 
     // Get move from transposition table if possible.
     transposition_entry_t* trans_entry = get_transposition(pos);
@@ -724,6 +720,7 @@ static int search(position_t* pos,
             !is_mate_score(beta) &&
             lazy_score + razor_margin[depth-1] < beta) {
         // Razoring.
+        // TODO: try stockfish-esque two-level razoring
         root_data.stats.razor_attempts[depth-1]++;
         int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
         if (depth == 1 || qscore < beta) {
@@ -773,13 +770,16 @@ static int search(position_t* pos,
             // futility before calling do_move, but this would require more
             // efficient ways of identifying important moves without actually
             // making them.
+            // TODO: try pruning when
+            // full_window && num_legal_moves >= depth + LMR_PV_EARLY_MOVES
             const bool prune_futile = futility_enabled &&
-                !full_window &&
+                //!full_window &&
                 !ext &&
                 !mate_threat &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !is_check(pos) &&
-                num_legal_moves >= depth + 2 &&
+                num_legal_moves >= depth + //2 &&
+                    (full_window ? LMR_PV_EARLY_MOVES : LMR_EARLY_MOVES) &&
                 should_try_prune(&selector, move);
             if (prune_futile) {
                 // History pruning.
@@ -809,22 +809,16 @@ static int search(position_t* pos,
                 move_is_late &&
                 !ext &&
                 !mate_threat &&
-                depth > LMR_DEPTH_LIMIT &&
-                !is_check(pos);
-            int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
-            if (lmr_red) {
-                score = -search(pos, search_node+1, ply+1,
-                        -alpha-1, -alpha, depth-lmr_red-1);
-            } else {
-                score = alpha+1;
-            }
+                depth > LMR_DEPTH_LIMIT;
+            const int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
+            if (lmr_red) score = -search(pos, search_node+1, ply+1,
+                    -alpha-1, -alpha, depth-lmr_red-1);
+            else score = alpha+1;
             if (score > alpha) {
                 score = -search(pos, search_node+1, ply+1,
                         -alpha-1, -alpha, depth+ext-1);
-                if (score > alpha) {
-                    score = -search(pos, search_node+1, ply+1,
-                            -beta, -alpha, depth+ext-1);
-                }
+                if (score > alpha) score = -search(pos, search_node+1, ply+1,
+                        -beta, -alpha, depth+ext-1);
             }
         }
         searched_moves[num_searched_moves++] = move;
@@ -907,14 +901,13 @@ static int quiesce(position_t* pos,
             ply > root_data.current_root_move->max_depth) {
         root_data.current_root_move->max_depth = ply;
     }
-    open_qnode(&root_data, ply);
     search_node->pv[ply] = NO_MOVE;
+    open_qnode(&root_data, ply);
 
-    if (alpha < mated_in(ply)) alpha = mated_in(ply);
-    if (beta > mate_in(ply)) beta = mate_in(ply);
+    alpha = MAX(alpha, mated_in(ply));
+    beta = MIN(beta, mate_in(ply));
     if (alpha >= beta) return alpha;
     if (is_draw(pos)) return DRAW_VALUE;
-
     bool full_window = (beta-alpha > 1);
 
     // Get move from transposition table if possible.
