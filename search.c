@@ -5,7 +5,7 @@
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
-static const bool razoring_enabled = true;
+static const bool razoring_enabled = false;
 static const bool futility_enabled = true;
 static const bool history_prune_enabled = true;
 static const bool value_prune_enabled = true;
@@ -24,8 +24,7 @@ static const int obvious_move_margin = 200;
 
 static const int qfutility_margin = 80;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
-static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300, 300 };
-static const int razor_qmargin[RAZOR_DEPTH_LIMIT] = { 150, 300 };
+static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300 };
 
 static search_result_t root_search(search_data_t* search_data,
         int alpha,
@@ -722,9 +721,8 @@ static int search(position_t* pos,
         // Razoring.
         // TODO: try pumping up depth limit
         root_data.stats.razor_attempts[depth-1]++;
-        int qbeta = beta - razor_qmargin[depth-1];
-        int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
-        if (qscore < qbeta) {
+        int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
+        if (qscore < beta) {
             root_data.stats.razor_prunes[depth-1]++;
             return qscore;
         }
