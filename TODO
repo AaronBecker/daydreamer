@@ -8,12 +8,13 @@ Search
     Try multiple moves in TT, instead of PV cache
     Test effects of reducing PV-specific decisions
     Re-write the guts of the move selector, because they're awful now.
+    Make pawn eval and king safety scores available inside search
     less distinction (or no distinction) between search and qsearch
     smooth lmr reduction curve (with fractional plies)
     try full eval after nullmove fails instead of just for futility
 
 shrink trans table entry size
-evaluation hashing
+evaluation hashing, possibly material info hashing
 
 Interface
     ECO classification
@@ -21,6 +22,7 @@ Interface
 
 Evaluation
     add some basic endgame knowledge (opp bishops, etc)
+    general-purpose endgame recognizer and scaler
     material imbalance tables
     bounded eval with early exit
     improved king safety and passed pawn evaluation
@@ -40,6 +42,3 @@ Bugs
     Performance on 4r1k1/p1qr1p2/2pb1Bp1/1p5p/3P1n1R/1B3P2/PP3PK1/2Q4R w - -
     (bm c1f4, mate in 6) is really bad
 
-    Re-do verbose output in light of Arena parse bugs
-
-    Optimized and non-optimized builds don't search the same number of nodes
