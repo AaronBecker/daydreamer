@@ -24,7 +24,8 @@ static const int obvious_move_margin = 200;
 
 static const int qfutility_margin = 80;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
-static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300 };
+static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300, 300 };
+static const int razor_qmargin[RAZOR_DEPTH_LIMIT] = { 150, 300 };
 
 static search_result_t root_search(search_data_t* search_data,
         int alpha,
@@ -721,8 +722,9 @@ static int search(position_t* pos,
         // Razoring.
         // TODO: try pumping up depth limit
         root_data.stats.razor_attempts[depth-1]++;
-        int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
-        if (qscore < beta) {
+        int qbeta = beta - razor_qmargin[depth-1];
+        int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
+        if (qscore < qbeta) {
             root_data.stats.razor_prunes[depth-1]++;
             return qscore;
         }
@@ -772,13 +774,12 @@ static int search(position_t* pos,
             // TODO: try pruning when
             // full_window && num_legal_moves >= depth + LMR_PV_EARLY_MOVES
             const bool prune_futile = futility_enabled &&
-                //!full_window &&
+                !full_window &&
                 !ext &&
                 !mate_threat &&
                 depth <= FUTILITY_DEPTH_LIMIT &&
                 !is_check(pos) &&
-                num_legal_moves >= depth + //2 &&
-                    (full_window ? LMR_PV_EARLY_MOVES : LMR_EARLY_MOVES) &&
+                num_legal_moves >= depth + 2 &&
                 should_try_prune(&selector, move);
             if (prune_futile) {
                 // History pruning.
@@ -937,11 +938,7 @@ static int quiesce(position_t* pos,
     if (!is_check(pos)) {
         eval = full_eval(pos, &ed);
         if (alpha < eval) alpha = eval;
-        if (alpha >= beta) {
-            put_transposition(pos, NO_MOVE, depth, beta,
-                    SCORE_LOWERBOUND, false);
-            return beta;
-        }
+        if (alpha >= beta) return beta;
     }
 
     bool allow_futility = qfutility_enabled &&
