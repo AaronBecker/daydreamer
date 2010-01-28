@@ -903,14 +903,19 @@ static int quiesce(position_t* pos,
         int beta,
         int depth)
 {
+    if (root_data.engine_status == ENGINE_ABORTED) return 0;
     if (root_data.current_root_move &&
             ply > root_data.current_root_move->max_depth) {
         root_data.current_root_move->max_depth = ply;
     }
+    open_qnode(&root_data, ply);
     search_node->pv[ply] = NO_MOVE;
-    if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if (alpha > mate_in(ply-1)) return alpha; // can't beat this
+
+    if (alpha < mated_in(ply)) alpha = mated_in(ply);
+    if (beta > mate_in(ply)) beta = mate_in(ply);
+    if (alpha >= beta) return alpha;
     if (is_draw(pos)) return DRAW_VALUE;
+
     bool full_window = (beta-alpha > 1);
 
     // Get move from transposition table if possible.
@@ -936,13 +941,16 @@ static int quiesce(position_t* pos,
     }
 
     eval_data_t ed;
-    int eval = full_eval(pos, &ed);
-    score = eval;
-    if (ply >= MAX_SEARCH_DEPTH-1) return score;
-    open_qnode(&root_data, ply);
+    if (ply >= MAX_SEARCH_DEPTH-1) return full_eval(pos, &ed);
     if (!is_check(pos)) {
-        if (alpha < score) alpha = score;
-        if (alpha >= beta) return beta;
+        int eval = full_eval(pos, &ed);
+        if (alpha < eval) alpha = eval;
+        if (alpha >= beta) {
+            // TODO: test using this transposition entry
+            //put_transposition(pos, NO_MOVE, depth, beta,
+            //        SCORE_LOWERBOUND, false);
+            return beta;
+        }
     }
 
     bool allow_futility = qfutility_enabled &&
