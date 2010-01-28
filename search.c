@@ -5,7 +5,7 @@
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
-static const bool razoring_enabled = false;
+static const bool razoring_enabled = true;
 static const bool futility_enabled = true;
 static const bool history_prune_enabled = true;
 static const bool value_prune_enabled = true;
@@ -938,9 +938,8 @@ static int quiesce(position_t* pos,
         eval = full_eval(pos, &ed);
         if (alpha < eval) alpha = eval;
         if (alpha >= beta) {
-            // TODO: test using this transposition entry
-            //put_transposition(pos, NO_MOVE, depth, beta,
-            //        SCORE_LOWERBOUND, false);
+            put_transposition(pos, NO_MOVE, depth, beta,
+                    SCORE_LOWERBOUND, false);
             return beta;
         }
     }
