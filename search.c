@@ -6,7 +6,7 @@ static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
 static const bool razoring_enabled = true;
-static const bool two_level_razoring = false;
+static const bool two_level_razoring = true;
 static const bool futility_enabled = true;
 static const bool history_prune_enabled = true;
 static const bool value_prune_enabled = true;
@@ -726,7 +726,7 @@ static int search(position_t* pos,
         if (two_level_razoring) {
             int qbeta = beta - razor_qmargin[depth-1];
             int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
-            if (qscore < qbeta) {
+            if (depth == 1 || qscore < qbeta) {
                 root_data.stats.razor_prunes[depth-1]++;
                 return qscore;
             }
