@@ -25,6 +25,7 @@ static const int obvious_move_margin = 200;
 static const int qfutility_margin = 80;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] = { 100, 300, 500 };
 static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300 };
+static const int razor_qmargin[RAZOR_DEPTH_LIMIT] = { 150 };
 
 static search_result_t root_search(search_data_t* search_data,
         int alpha,
@@ -720,10 +721,11 @@ static int search(position_t* pos,
             !is_mate_score(beta) &&
             lazy_score + razor_margin[depth-1] < beta) {
         // Razoring.
-        // TODO: try stockfish-esque two-level razoring
+        // TODO: try pumping up depth limit
         root_data.stats.razor_attempts[depth-1]++;
-        int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
-        if (depth == 1 || qscore < beta) {
+        int qbeta = beta - razor_qmargin[depth-1];
+        int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
+        if (qscore < qbeta) {
             root_data.stats.razor_prunes[depth-1]++;
             return qscore;
         }
