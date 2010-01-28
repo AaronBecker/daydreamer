@@ -2,6 +2,11 @@
 #include <string.h>
 #include <math.h>
 
+// TODO: Testing
+// depth-3 razoring
+// lower depth 1 razor margin
+// disable razoring for pv
+
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
@@ -715,6 +720,7 @@ static int search(position_t* pos,
             if (null_score >= beta) return beta;
         }
     } else if (razoring_enabled &&
+            !full_window &&
             pos->prev_move != NULL_MOVE &&
             depth <= RAZOR_DEPTH_LIMIT &&
             hash_move == NO_MOVE &&
