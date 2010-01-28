@@ -118,7 +118,7 @@ extern search_data_t root_data;
 #define NULL_R          3
 #define NULLMOVE_VERIFICATION_REDUCTION    5
 #define NULL_EVAL_MARGIN            200
-#define RAZOR_DEPTH_LIMIT           1
+#define RAZOR_DEPTH_LIMIT           3
 #define FUTILITY_DEPTH_LIMIT        3
 #define LMR_PV_EARLY_MOVES          10
 #define LMR_EARLY_MOVES             3
