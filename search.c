@@ -28,7 +28,7 @@ static const int obvious_move_margin = 200;
 
 static const int qfutility_margin = 80;
 static const int futility_margin[FUTILITY_DEPTH_LIMIT] ={
-    100, 300, 500, 500, 500, 500
+    100, 150, 175, 200, 250, 250
 };
 static const int razor_margin[RAZOR_DEPTH_LIMIT] = { 300, 300, 350 };
 static const int razor_qmargin[RAZOR_DEPTH_LIMIT] = { 125, 300, 300 };
