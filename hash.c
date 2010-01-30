@@ -51,6 +51,9 @@ hashkey_t hash_position(const position_t* pos)
     return hash;
 }
 
+/*
+ * Calculate the pawn hash of a position from scratch. Only used for debugging.
+ */
 hashkey_t hash_pawns(const position_t* pos)
 {
     hashkey_t hash = 0;
@@ -58,6 +61,25 @@ hashkey_t hash_pawns(const position_t* pos)
         if (!valid_board_index(sq) || !pos->board[sq]) continue;
         if (!piece_is_type(pos->board[sq], PAWN)) continue;
         hash ^= piece_hash(pos->board[sq], sq);
+    }
+    return hash;
+}
+
+/*
+ * Calculate the material hash of a position from scratch. The material hash
+ * is computed by xor-ing together n 64-bit keys for each color/piece
+ * combination, where n is the number of those pieces on the board. The hash
+ * is updated incrementally, so this is only used for debugging.
+ */
+hashkey_t hash_material(const position_t* pos)
+{
+    hashkey_t hash = 0;
+    piece_t p = 0;
+    for (piece_type_t pt = PAWN; pt<=KING; ++pt) {
+        p = create_piece(WHITE, p);
+        for (int i=0; i<pos->piece_count[p]; ++i) hash ^= material_hash(p, i);
+        p = create_piece(BLACK, p);
+        for (int i=0; i<pos->piece_count[p]; ++i) hash ^= material_hash(p, i);
     }
     return hash;
 }

@@ -41,10 +41,11 @@ static void init_position(position_t* position)
     position->side_to_move = WHITE;
     position->castle_rights = CASTLE_NONE;
     position->prev_move = NO_MOVE;
+    position->check_square = EMPTY;
+    position->is_check = false;
     position->hash = 0;
     position->pawn_hash = 0;
-    position->is_check = false;
-    position->check_square = EMPTY;
+    position->material_hash = 0;
     memset(position->piece_count, 0, 16 * sizeof(int));
     memset(position->hash_history, 0, HASH_HISTORY_LENGTH * sizeof(hashkey_t));
 }

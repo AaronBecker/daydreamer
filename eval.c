@@ -157,52 +157,18 @@ int simple_eval(const position_t* pos)
  */
 int full_eval(const position_t* pos, eval_data_t* ed)
 {
-    int score = simple_eval(pos);
+#ifdef UFO_EVAL
+    return simple_eval(pos);
+#endif
     color_t side = pos->side_to_move;
+    ed->md = get_material_data(pos);
 
-#ifndef UFO_EVAL
     score_t phase_score, component_score;
-    phase_score.midgame = phase_score.endgame = 0;
-
+    phase_score = ed->md->score;
     component_score.midgame = component_score.endgame = 0;
-    // Pair bonuses
-    if (pos->piece_count[WB] > 1) {
-        component_score.midgame += 30;
-        component_score.endgame += 45;
-    }
-    if (pos->piece_count[BB] > 1) {
-        component_score.midgame -= 30;
-        component_score.endgame -= 45;
-    }
-    if (pos->piece_count[WR] > 1) {
-        component_score.midgame -= 12;
-        component_score.endgame -= 17;
-    }
-    if (pos->piece_count[BR] > 1) {
-        component_score.midgame += 12;
-        component_score.endgame += 17;
-    }
-    if (pos->piece_count[WQ] > 1) {
-        component_score.midgame -= 8;
-        component_score.endgame -= 12;
-    }
-    if (pos->piece_count[BQ] > 1) {
-        component_score.midgame += 8;
-        component_score.endgame += 12;
-    }
-    // Pawn bonuses
-    int material_adjust = 0;
-    material_adjust += pos->piece_count[WN] * 3 * (pos->piece_count[WP] - 4);
-    material_adjust -= pos->piece_count[BN] * 3 * (pos->piece_count[BP] - 4);
-    material_adjust += pos->piece_count[WB] * 2 * (pos->piece_count[WP] - 4);
-    material_adjust -= pos->piece_count[BB] * 2 * (pos->piece_count[BP] - 4);
-    material_adjust += pos->piece_count[WR] * (-3) * (pos->piece_count[WP] - 4);
-    material_adjust -= pos->piece_count[BR] * (-3) * (pos->piece_count[BP] - 4);
-    component_score.midgame += material_adjust;
-    component_score.endgame += material_adjust;
     if (side == BLACK) {
-        component_score.midgame *= -1;
-        component_score.endgame *= -1;
+        phase_score.midgame *= -1;
+        phase_score.endgame *= -1;
     }
     add_scaled_score(&phase_score, &component_score, 1024);
     component_score = pawn_score(pos, &ed->pd);
@@ -220,10 +186,13 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     phase_score.midgame += 9;
     phase_score.endgame += 2;
 
-    int phase = game_phase(pos);
-    score += blend_score(&phase_score, phase);
+    int score = blend_score(&phase_score, ed->md->phase);
+    if (score > 0) {
+        score = score * ed->md->scale[side] / 16;
+    } else if (score < 0) {
+        score = score * ed->md->scale[side^1] / 16;
+    }
 
-#endif
     if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, side^1)) score = MAX(score, DRAW_VALUE);
     return score;
