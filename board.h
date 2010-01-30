@@ -61,6 +61,8 @@ typedef int square_t;
 #define create_square(file, rank)   (((rank) << 4) | (file))
 #define valid_board_index(idx)      !((idx) & 0x88)
 #define flip_square(square)         ((square) ^ 0x70)
+#define mirror_rank(square)         ((square) ^ 0x70)
+#define mirror_file(square)         ((square) ^ 0x07)
 #define square_to_index(square)     ((square)+((square) & 0x07))>>1
 #define index_to_square(index)      ((index)+((index) & ~0x07))
 

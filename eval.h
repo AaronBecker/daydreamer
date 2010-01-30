@@ -43,9 +43,11 @@ typedef struct {
 } score_t;
 
 #include "pawn.h"
+#include "eval_material.h"
 
 typedef struct {
     pawn_data_t* pd;
+    material_data_t* md;
 } eval_data_t;
 
 #ifdef __cplusplus

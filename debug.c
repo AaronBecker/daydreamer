@@ -44,6 +44,7 @@ void _check_board_validity(const position_t* pos)
     }
     assert(hash_position(pos) == pos->hash);
     assert(hash_pawns(pos) == pos->pawn_hash);
+    assert(hash_material(pos) == pos->material_hash);
 }
 
 /*

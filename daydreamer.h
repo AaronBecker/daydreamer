@@ -37,6 +37,7 @@ extern "C" {
 #include "trans_table.h"
 #include "pawn.h"
 #include "move_selection.h"
+#include "eval_material.h"
 #include "debug.h"
 
 /*
@@ -85,6 +86,11 @@ bool can_win(const position_t* pos, color_t side);
 bool is_draw(const position_t* pos);
 int game_phase(const position_t* pos);
 
+// eval_material.c
+void init_material_table(const int max_bytes);
+void clear_material_table(void);
+material_data_t* get_material_data(const position_t* pos);
+
 // eval_patterns.c
 score_t pattern_score(const position_t*pos);
 
@@ -112,6 +118,7 @@ void init_hash(void);
 int get_hashfull(void);
 hashkey_t hash_position(const position_t* pos);
 hashkey_t hash_pawns(const position_t* pos);
+hashkey_t hash_material(const position_t* pos);
 
 // move.c
 void place_piece(position_t* position, piece_t piece, square_t square);
