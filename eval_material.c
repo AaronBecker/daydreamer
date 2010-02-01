@@ -64,10 +64,8 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
 {
     md->phase = game_phase(pos);
 
-    md->score.midgame = pos->piece_square_eval[WHITE].midgame -
-        pos->piece_square_eval[BLACK].midgame;
-    md->score.endgame = pos->piece_square_eval[WHITE].endgame -
-        pos->piece_square_eval[BLACK].endgame;
+    md->score.midgame = 0;
+    md->score.endgame = 0;
 
     int wp = pos->piece_count[WP];
     int bp = pos->piece_count[BP];
@@ -288,6 +286,4 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         }
     }
 }
-
-
 

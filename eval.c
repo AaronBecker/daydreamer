@@ -165,12 +165,15 @@ int full_eval(const position_t* pos, eval_data_t* ed)
 
     score_t phase_score, component_score;
     phase_score = ed->md->score;
-    component_score.midgame = component_score.endgame = 0;
     if (side == BLACK) {
         phase_score.midgame *= -1;
         phase_score.endgame *= -1;
     }
-    add_scaled_score(&phase_score, &component_score, 1024);
+    phase_score.midgame += pos->piece_square_eval[side].midgame -
+        pos->piece_square_eval[side^1].midgame;
+    phase_score.endgame += pos->piece_square_eval[side].endgame -
+        pos->piece_square_eval[side^1].endgame;
+
     component_score = pawn_score(pos, &ed->pd);
     add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
@@ -188,9 +191,9 @@ int full_eval(const position_t* pos, eval_data_t* ed)
 
     int score = blend_score(&phase_score, ed->md->phase);
     if (score > 0) {
-        score = score * ed->md->scale[side] / 16;
+        score = score * ed->md->scale[ed->md->strong_side] / 16;
     } else if (score < 0) {
-        score = score * ed->md->scale[side^1] / 16;
+        score = score * ed->md->scale[ed->md->strong_side^1] / 16;
     }
 
     if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
