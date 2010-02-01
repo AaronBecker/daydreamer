@@ -135,7 +135,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         } else if (bp) {
             md->eg_type = EG_KPK;
             md->strong_side = BLACK;
-        } else if (!wq  && !wr && !bq && !br) md->eg_type = EG_DRAW;
+        } else if (!wq && !wr && !bq && !br) md->eg_type = EG_DRAW;
     } else if (w_all == 1 && b_all == 1) {
         if (wq && bq) {
             md->eg_type = EG_KQKQ;
@@ -220,7 +220,9 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
 
     // Endgame scaling factors
     md->scale[WHITE] = md->scale[BLACK] = 16;
-    if (md->eg_type == EG_KQKQ || md->eg_type == EG_KRKR) {
+    if (md->eg_type == EG_DRAW ||
+            md->eg_type == EG_KQKQ ||
+            md->eg_type == EG_KRKR) {
         md->scale[BLACK] = md->scale[WHITE] = 0;
         return;
     }
@@ -245,7 +247,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
                 md->scale[WHITE] = 4;
             } else if (w_piece == 2 && wn == 2) {
                 md->scale[WHITE] = 4;
-            } else if (w_piece - b_piece <= 2 && w_major <= 2) {
+            } else if (w_piece - b_piece <= 0 && w_major <= 2) {
                 md->scale[WHITE] = 8;
             }
         } else if (br) {
@@ -253,7 +255,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
                 md->scale[WHITE] = 4;
             } else if (w_piece == 2 && wn == 2) {
                 md->scale[WHITE] = 4;
-            } else if (w_piece - b_piece <= -1 && w_major <= 2) {
+            } else if (w_piece - b_piece + 1 <= 0 && w_major <= 2) {
                 md->scale[WHITE] = 8;
             }
         }
@@ -279,7 +281,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
                 md->scale[BLACK] = 4;
             } else if (b_piece == 2 && bn == 2) {
                 md->scale[BLACK] = 4;
-            } else if (b_piece - w_piece <= -1 && b_major <= 2) {
+            } else if (b_piece - w_piece <= 0 && b_major <= 2) {
                 md->scale[BLACK] = 8;
             }
         } else if (wr) {
@@ -287,7 +289,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
                 md->scale[BLACK] = 4;
             } else if (b_piece == 2 && bn == 2) {
                 md->scale[BLACK] = 4;
-            } else if (b_piece - w_piece <= 3 && b_major <= 2) {
+            } else if (b_piece - w_piece + 1 <= 0 && b_major <= 2) {
                 md->scale[BLACK] = 8;
             }
         }
