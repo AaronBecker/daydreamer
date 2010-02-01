@@ -221,7 +221,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     // Endgame scaling factors
     md->scale[WHITE] = md->scale[BLACK] = 16;
     if (md->eg_type == EG_KQKQ || md->eg_type == EG_KRKR) {
-        md->scale[BLACK] = md-->scale[WHITE] = 0;
+        md->scale[BLACK] = md->scale[WHITE] = 0;
         return;
     }
 
