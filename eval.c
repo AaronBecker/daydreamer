@@ -162,6 +162,9 @@ int full_eval(const position_t* pos, eval_data_t* ed)
 #endif
     color_t side = pos->side_to_move;
     ed->md = get_material_data(pos);
+    if (ed->md->scale[WHITE] == 0 && ed->md->scale[BLACK] == 0) {
+        return DRAW_VALUE;
+    }
 
     score_t phase_score, component_score;
     phase_score = ed->md->score;
@@ -190,7 +193,7 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     phase_score.endgame += 2;
 
     int score = blend_score(&phase_score, ed->md->phase);
-    //score *= ed->md->scale[score > 0 ? side : side^1] / 16;
+    score = (score * ed->md->scale[score > 0 ? side : side^1]) / 16;
 
     if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, side^1)) score = MAX(score, DRAW_VALUE);

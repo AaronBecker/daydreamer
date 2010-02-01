@@ -79,10 +79,12 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     int bq = pos->piece_count[BQ];
     int w_major = 2*wq + wr;
     int w_minor = wn + wb;
-    int w_all = 2*w_major + w_minor + wp;
+    int w_piece = 2*w_major + w_minor;
+    int w_all = wq + wr + wb + wn + wp;
     int b_major = 2*bq + br;
     int b_minor = bn + bb;
-    int b_all = 2*b_major + b_minor + bp;
+    int b_piece = 2*b_major + b_minor;
+    int b_all = bq + br + bb + bn + bp;
 
     // Pair bonuses
     if (wb > 1) {
@@ -218,69 +220,74 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
 
     // Endgame scaling factors
     md->scale[WHITE] = md->scale[BLACK] = 16;
+    if (md->eg_type == EG_KQKQ || md->eg_type == EG_KRKR) {
+        md->scale[BLACK] = md-->scale[WHITE] = 0;
+        return;
+    }
+
     if (!wp) {
-        if (w_all == 1) {
+        if (w_piece == 1) {
             md->scale[WHITE] = 0;
-        } else if (w_all == 2 && wn == 2) {
-            if (b_all != 0 || bp == 0) {
+        } else if (w_piece == 2 && wn == 2) {
+            if (b_piece != 0 || bp == 0) {
                 md->scale[WHITE] = 0;
             } else {
                 md->scale[WHITE] = 1;
             }
-        } else if (w_all == 2 && wb == 2 && b_all == 1 && bn == 1) {
+        } else if (w_piece == 2 && wb == 2 && b_piece == 1 && bn == 1) {
             md->scale[WHITE] = 8;
-        } else if (w_all - b_all <= 1 && w_major <= 2) {
+        } else if (w_piece - b_piece <= 1 && w_major <= 2) {
             md->scale[WHITE] = 2;
         }
     } else if (wp == 1) {
         if (b_minor != 0) {
-            if (w_all == 1) {
+            if (w_piece == 1) {
                 md->scale[WHITE] = 4;
-            } else if (w_all == 2 && wn == 2) {
+            } else if (w_piece == 2 && wn == 2) {
                 md->scale[WHITE] = 4;
-            } else if (w_all - b_all <= 2 && w_major <= 2) {
+            } else if (w_piece - b_piece <= 2 && w_major <= 2) {
                 md->scale[WHITE] = 8;
             }
         } else if (br) {
-            if (w_all == 1) {
+            if (w_piece == 1) {
                 md->scale[WHITE] = 4;
-            } else if (w_all == 2 && wn == 2) {
+            } else if (w_piece == 2 && wn == 2) {
                 md->scale[WHITE] = 4;
-            } else if (w_all - b_all <= 3 && w_major <= 2) {
+            } else if (w_piece - b_piece <= -1 && w_major <= 2) {
                 md->scale[WHITE] = 8;
             }
         }
     }
 
     if (!bp) {
-        if (b_all == 1) {
+        if (b_piece == 1) {
             md->scale[BLACK] = 0;
-        } else if (b_all == 2 && bn == 2) {
-            if (w_all != 0 || wp == 0) {
+        } else if (b_piece == 2 && bn == 2) {
+            if (w_piece != 0 || wp == 0) {
                 md->scale[BLACK] = 0;
             } else {
                 md->scale[BLACK] = 1;
             }
-        } else if (b_all == 2 && bb == 2 && w_all == 1 && wn == 1) {
+        } else if (b_piece == 2 && bb == 2 && w_piece == 1 && wn == 1) {
             md->scale[BLACK] = 8;
-        } else if (b_all - w_all <= 1 && b_major <= 2) {
+        } else if (b_piece - w_piece <= 1 && b_major <= 2) {
             md->scale[BLACK] = 2;
         }
     } else if (bp == 1) {
         if (w_minor != 0) {
-            if (b_all == 1) {
+            if (b_piece == 1) {
                 md->scale[BLACK] = 4;
-            } else if (b_all == 2 && bn == 2) {
+            } else if (b_piece == 2 && bn == 2) {
                 md->scale[BLACK] = 4;
-            } else if (b_all - w_all <= 2 && b_major <= 2) {
+            } else if (b_piece - w_piece <= -1 && b_major <= 2) {
                 md->scale[BLACK] = 8;
             }
         } else if (wr) {
-            if (b_all == 1) {
+            if (b_piece == 1) {
                 md->scale[BLACK] = 4;
-            } else if (b_all == 2 && bn == 2) {
+            } else if (b_piece == 2 && bn == 2) {
                 md->scale[BLACK] = 4;
-            } else if (b_all - w_all <= 3 && b_major <= 2) {
+            } else if (b_piece - w_piece <= 3 && b_major <= 2) {
                 md->scale[BLACK] = 8;
             }
         }
