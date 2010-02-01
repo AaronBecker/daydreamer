@@ -12,7 +12,7 @@ options_t options;
 void init_daydreamer(void)
 {
     init_hash();
-    init_material_table(1024*1024);
+    init_material_table(4*1024*1024);
     init_bitboards();
     generate_attack_data();
     init_eval();
