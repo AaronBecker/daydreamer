@@ -17,6 +17,7 @@ void read_pgn(char* filename)
         printf("Couldn't open pgn file %s: %s\n", filename, strerror(errno));
         return;
     }
+    (void)ch;
     /*
     while (fgets(line, 4096, pgn_file)) {
         char *bm=NULL, *id=NULL, *token=NULL;

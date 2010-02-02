@@ -11,7 +11,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.61"
-#define ENGINE_VERSION_NAME     " mt5_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " mt7_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -85,6 +85,11 @@ bool insufficient_material(const position_t* pos);
 bool can_win(const position_t* pos, color_t side);
 bool is_draw(const position_t* pos);
 int game_phase(const position_t* pos);
+
+// eval_endgame.c
+void determine_endgame_scale(const position_t* pos,
+        eval_data_t* ed,
+        int endgame_scale[2]);
 
 // eval_material.c
 void init_material_table(const int max_bytes);

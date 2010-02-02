@@ -36,7 +36,6 @@ typedef enum {
     EG_LAST
 } endgame_type_t;
 
-//typedef int(*eg_fn)(position_t*);
 
 typedef struct {
     hashkey_t key;

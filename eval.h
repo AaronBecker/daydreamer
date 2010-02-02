@@ -26,6 +26,7 @@ extern "C" {
     #define EG_QUEEN_VAL     1210
     #define EG_KING_VAL      20000
 #endif
+#define WON_ENDGAME         (2*QUEEN_VAL)
 
 extern int piece_square_values[BK+1][0x80];
 extern int endgame_piece_square_values[BK+1][0x80];
@@ -43,12 +44,17 @@ typedef struct {
 } score_t;
 
 #include "pawn.h"
+#include "position.h"
 #include "eval_material.h"
 
 typedef struct {
     pawn_data_t* pd;
     material_data_t* md;
 } eval_data_t;
+
+typedef void(*eg_scale_fn)(const position_t*, eval_data_t*, int scale[2]);
+eg_scale_fn eg_score_fns[EG_LAST+1];
+#define endgame_scale_function(md)   (eg_scale_fns[(md)->eg_type])
 
 #ifdef __cplusplus
 } // extern "C"
