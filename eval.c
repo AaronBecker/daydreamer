@@ -15,7 +15,7 @@ static const int pieces_scale = 1024;
 // values tested: 768, (1024), 1280
 static const int shield_scale = 1576;
 // values tested: 1024, 1280, (1576), 2048
-static const int king_attack_scale = 1024;
+static const int king_attack_scale = 768;
 // values tested: 640, (768), 896, 1024, 1536
 
 const int shield_value[2][17] = {
@@ -96,13 +96,12 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
  */
 static score_t evaluate_king_shield(const position_t* pos)
 {
-    int score[2] = {0, 0};
+    int score[2];
     score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
     score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
     color_t side = pos->side_to_move;
     score_t phase_score;
-    phase_score.midgame = score[side]-score[side^1];
-    phase_score.endgame = 0;
+    phase_score.midgame = phase_score.endgame = score[side]-score[side^1];
     return phase_score;
 }
 
@@ -130,7 +129,7 @@ static score_t evaluate_king_attackers(const position_t* pos)
     color_t side = pos->side_to_move;
     score_t phase_score;
     phase_score.midgame = score[side]-score[side^1];
-    phase_score.endgame = 0;
+    phase_score.endgame = score[side]-score[side^1];
     return phase_score;
 }
 
@@ -171,7 +170,6 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
 
     phase_score = ed->md->score;
-    int phase = ed->md->phase;
     if (side == BLACK) {
         phase_score.midgame *= -1;
         phase_score.endgame *= -1;
@@ -186,18 +184,16 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     add_scaled_score(&phase_score, &component_score, pattern_scale);
     component_score = pieces_score(pos, ed->pd);
     add_scaled_score(&phase_score, &component_score, pieces_scale);
-    if (pos->piece_count[WQ] + pos->piece_count[BQ] > 0) {
-        component_score = evaluate_king_shield(pos);
-        add_scaled_score(&phase_score, &component_score, shield_scale);
-        component_score = evaluate_king_attackers(pos);
-        add_scaled_score(&phase_score, &component_score, king_attack_scale);
-    }
+    component_score = evaluate_king_shield(pos);
+    add_scaled_score(&phase_score, &component_score, shield_scale);
+    component_score = evaluate_king_attackers(pos);
+    add_scaled_score(&phase_score, &component_score, king_attack_scale);
 
     // Tempo
     phase_score.midgame += 9;
     phase_score.endgame += 2;
 
-    int score = blend_score(&phase_score, phase);
+    int score = blend_score(&phase_score, ed->md->phase);
     score = (score * endgame_scale[score > 0 ? side : side^1]) / 16;
 
     if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
