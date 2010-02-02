@@ -227,7 +227,6 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         return;
     }
 
-    /*
     if (!wp) {
         if (w_piece == 1) {
             md->scale[WHITE] = 0;
@@ -295,6 +294,5 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             }
         }
     }
-    */
 }
 
