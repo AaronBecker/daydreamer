@@ -1,6 +1,9 @@
 
 #include "daydreamer.h"
 
+static void scale_krkp(const position_t* pos, eval_data_t* ed, int scale[2]);
+static void scale_knpk(const position_t* pos, eval_data_t* ed, int scale[2]);
+static void scale_kbpk(const position_t* pos, eval_data_t* ed, int scale[2]);
 static void scale_kpk(const position_t* pos, eval_data_t* ed, int scale[2]);
 
 eg_scale_fn eg_scale_fns[] = {
@@ -13,7 +16,7 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KRKR,
     NULL,           //EG_KRKB,
     NULL,           //EG_KRKN,
-    NULL,           //EG_KRKP,
+    &scale_krkp,    //EG_KRKP,
     NULL,           //EG_KRPKR,
     NULL,           //EG_KRPPKRP,
     NULL,           //EG_KBBKN,
@@ -21,7 +24,8 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KBPKN,
     NULL,           //EG_KBKP,
     NULL,           //EG_KBPPKB,
-    NULL,           //EG_KNPK,
+    &scale_knpk,    //EG_KNPK,
+    &scale_kbpk,    //EG_KBPK,
     &scale_kpk,     //EG_KPK,
     NULL,           //EG_LAST
 };
@@ -34,6 +38,93 @@ void determine_endgame_scale(const position_t* pos,
     endgame_scale[BLACK] = ed->md->scale[BLACK];
     eg_scale_fn fn = eg_scale_fns[ed->md->eg_type];
     if (fn) fn(pos, ed, endgame_scale);
+}
+
+static void scale_krkp(const position_t* pos, eval_data_t* ed, int scale[2])
+{
+    color_t strong_side = ed->md->strong_side;
+    color_t weak_side = strong_side^1;
+    assert(pos->num_pieces[strong_side] == 2);
+    assert(pos->num_pawns[strong_side] == 0);
+    assert(pos->num_pieces[weak_side] == 1);
+    assert(pos->num_pawns[weak_side] == 1);
+
+    square_t bp = pos->pawns[weak_side][0];
+    square_t wr = pos->pieces[strong_side][1];
+    square_t wk = pos->pieces[strong_side][0];
+    square_t bk = pos->pieces[weak_side][0];
+    square_t prom_sq = square_file(bp);
+    int tempo = pos->side_to_move == strong_side ? 1 : 0;
+
+    if (strong_side == BLACK) {
+        wr = mirror_rank(wr);
+        wk = mirror_rank(wk);
+        bk = mirror_rank(bk);
+        bp = mirror_rank(bp);
+    }
+
+    if ((wk < bp && square_file(wk) == prom_sq) ||
+            (distance(wk, prom_sq) + 1 - tempo < distance(bk, prom_sq)) ||
+            (distance(bk, bp) - (tempo^1) >= 3 && distance(bk, wr) >= 3)) {
+        scale[strong_side] = 16;
+        scale[weak_side] = 0;
+        return;
+    }
+    int dist = MAX(1, distance(bk, prom_sq)) + distance(bp, prom_sq);
+    if (bk == bp + S) {
+        if (prom_sq == A1 || prom_sq == H1) return;
+        dist++;
+    }
+    if (square_file(wr)!=square_file(bp) && square_rank(wr)!=RANK_1) dist--;
+    if (!tempo) dist--;
+    if (distance(wk, prom_sq) > dist) {
+        scale[0] = scale[1] = 0;
+    }
+}
+
+static void scale_knpk(const position_t* pos, eval_data_t* ed, int scale[2])
+{
+    color_t strong_side = ed->md->strong_side;
+    assert(pos->num_pieces[strong_side] == 2);
+    assert(pos->num_pawns[strong_side] == 1);
+    assert(pos->num_pieces[strong_side^1] == 0);
+    assert(pos->num_pawns[strong_side^1] == 0);
+
+    square_t p = pos->pawns[strong_side][0];
+    square_t wk = pos->pieces[strong_side^1][0];
+    if (strong_side == BLACK) {
+        wk = mirror_rank(wk);
+        p = mirror_rank(p);
+    }
+    if (square_file(p) == FILE_H) {
+        wk = mirror_file(wk);
+        p = mirror_file(p);
+    }
+    if (p == A7 && distance(wk, A8) <= 1) {
+        scale[0] = scale[1] = 0;
+    }
+}
+
+static void scale_kbpk(const position_t* pos, eval_data_t* ed, int scale[2])
+{
+    color_t strong_side = ed->md->strong_side;
+    assert(pos->num_pieces[strong_side] == 2);
+    assert(pos->num_pawns[strong_side] == 1);
+    assert(pos->num_pieces[strong_side^1] == 1);
+    assert(pos->num_pawns[strong_side^1] == 0);
+
+    file_t pf = square_file(pos->pawns[strong_side][0]);
+    color_t bc = square_color(pos->pieces[strong_side][1]);
+    if (pf == FILE_H) {
+        pf = FILE_A;
+        bc ^= 1;
+    }
+
+    if (pf == FILE_A &&
+            distance(pos->pieces[strong_side^1][0], A8*(strong_side^1)) <= 1 &&
+            bc != strong_side) {
+        scale[0] = scale[1] = 0;
+    }
 }
 
 static void scale_kpk(const position_t* pos, eval_data_t* ed, int scale[2])

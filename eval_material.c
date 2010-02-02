@@ -177,6 +177,12 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         } else if (bn && bp) {
             md->eg_type = EG_KNPK;
             md->strong_side = BLACK;
+        } else if (wb && wp) {
+            md->eg_type = EG_KBPK;
+            md->strong_side = WHITE;
+        } else if (bb && bp) {
+            md->eg_type = EG_KBPK;
+            md->strong_side = BLACK;
         }
     } else if (w_all + b_all == 3) {
         if (wr == 1 && br == 1 && wp == 1) {

@@ -30,6 +30,7 @@ typedef enum {
     EG_KBPPKB,
 
     EG_KNPK,
+    EG_KBPK,
     
     EG_KPK,
 
