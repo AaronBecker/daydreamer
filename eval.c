@@ -13,9 +13,9 @@ static const int pattern_scale = 1024;
 // values tested: 768, (1024), 1280
 static const int pieces_scale = 1024;
 // values tested: 768, (1024), 1280
-static const int shield_scale = 1576;
+static const int shield_scale = 1704;
 // values tested: 1024, 1280, (1576), 2048
-static const int king_attack_scale = 768;
+static const int king_attack_scale = 896;
 // values tested: 640, (768), 896, 1024, 1536
 
 const int shield_value[2][17] = {
@@ -96,12 +96,17 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
  */
 static score_t evaluate_king_shield(const position_t* pos)
 {
-    int score[2];
-    score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
-    score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
+    int score[2] = {0, 0};
+    if (pos->piece_count[WQ] != 0) {
+        score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
+    }
+    if (pos->piece_count[BQ] != 0) {
+        score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
+    }
     color_t side = pos->side_to_move;
     score_t phase_score;
-    phase_score.midgame = phase_score.endgame = score[side]-score[side^1];
+    phase_score.midgame = score[side]-score[side^1];
+    phase_score.endgame = 0;
     return phase_score;
 }
 
@@ -114,6 +119,7 @@ static score_t evaluate_king_attackers(const position_t* pos)
 {
     int score[2] = {0, 0};
     for (color_t side = WHITE; side <= BLACK; ++side) {
+        if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
         int num_attackers = 0;
         for (int i=1; i<pos->num_pieces[side]; ++i) {
@@ -129,7 +135,7 @@ static score_t evaluate_king_attackers(const position_t* pos)
     color_t side = pos->side_to_move;
     score_t phase_score;
     phase_score.midgame = score[side]-score[side^1];
-    phase_score.endgame = score[side]-score[side^1];
+    phase_score.endgame = 0;
     return phase_score;
 }
 
@@ -140,7 +146,6 @@ static score_t evaluate_king_attackers(const position_t* pos)
 int simple_eval(const position_t* pos)
 {
     color_t side = pos->side_to_move;
-    //int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
     int phase = game_phase(pos);
     score_t phase_score;
     // Material + PST
