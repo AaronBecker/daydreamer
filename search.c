@@ -2,10 +2,6 @@
 #include <string.h>
 #include <math.h>
 
-// TODO: Testing
-// depth-3 razoring with pv razoring
-// lower depth 1 razor margin
-
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
@@ -718,14 +714,13 @@ static int search(position_t* pos,
             if (null_score >= beta) return beta;
         }
     } else if (razoring_enabled &&
-            !full_window &&
+            //!full_window &&
             pos->prev_move != NULL_MOVE &&
             depth <= RAZOR_DEPTH_LIMIT &&
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
             lazy_score + razor_margin[depth-1] < beta) {
         // Razoring.
-        // TODO: try pumping up depth limit
         root_data.stats.razor_attempts[depth-1]++;
         int qbeta = depth == 1 ? beta : beta - razor_qmargin[depth-1];
         int qalpha = depth == 1 ? alpha : qbeta-1;
