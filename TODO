@@ -27,6 +27,9 @@ Evaluation
     bounded eval with early exit
     improved king safety and passed pawn evaluation
     Try alternate king safety implementations
+    rewrite eval to always work from white's perspective
+    redo report_eval
+    more sophisticated pawn shelter scoring
 
 Testing
     try different move ordering counts. 16 didn't help. maybe 12.
