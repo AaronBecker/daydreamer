@@ -59,7 +59,7 @@ static void print_pv(search_data_t* data, int ordinal, int index)
         line_to_san_str(&data->root_pos, (move_t*)pv, sanpv);
         printf("info string sanpv %s\n", sanpv);
     }
-    if (is_mate_score(score) || is_mated_score(score)) {
+    if (is_mate_score(score)) {
         printf("info multipv %d depth %d seldepth %d score mate %d time %d "
                 "nodes %"PRIu64, ordinal, depth, seldepth,
                 (MATE_VALUE-abs(score)+1)/2 * (score < 0 ? -1 : 1),

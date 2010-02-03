@@ -125,8 +125,9 @@ extern search_data_t root_data;
 #define LMR_DEPTH_LIMIT             1
 #define LMR_REDUCTION               1
 
-#define is_mate_score(score)        (score+MAX_SEARCH_DEPTH+1>MATE_VALUE)
-#define is_mated_score(score)       (score-MAX_SEARCH_DEPTH-1<-MATE_VALUE)
+#define is_mate_score(score)    \
+    ((score+MAX_SEARCH_DEPTH+1>MATE_VALUE) || \
+     (score-MAX_SEARCH_DEPTH-1<-MATE_VALUE))
 #define mate_in(ply)                (MATE_VALUE-ply)
 #define mated_in(ply)               (-MATE_VALUE+ply)
 #define should_output(s)    \

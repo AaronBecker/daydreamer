@@ -217,7 +217,8 @@ static bool should_probe_egbb(position_t* pos,
     //TODO: evaluate 5 man bases
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 4) return false;
-    if (is_mate_score(alpha) || is_mated_score(beta)) return false;
+    if ((is_mate_score(alpha) && alpha > 0) ||
+            (is_mate_score(beta) && beta < 0)) return false;
     return (m50 == 0 || (ply > 2*(depth + ply)/3));
 }
 
@@ -338,7 +339,7 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
         int* alpha,
         int* beta)
 {
-    if (depth > entry->depth) return false;
+    if (depth > entry->depth && !is_mate_score(entry->score)) return false;
     if (entry->flags & SCORE_LOWERBOUND && entry->score > *alpha) {
         *alpha = entry->score;
     }
@@ -703,7 +704,7 @@ static int search(position_t* pos,
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
         undo_nullmove(pos, &undo);
-        if (is_mated_score(null_score)) mate_threat = true;
+        if (is_mate_score(null_score) && null_score < 0) mate_threat = true;
         if (null_score >= beta) {
             if (verification_enabled) {
                 int rdepth = depth - NULLMOVE_VERIFICATION_REDUCTION;
@@ -847,7 +848,9 @@ static int search(position_t* pos,
                         search_node->killers[0] = move;
                     }
                 }
-                if (is_mate_score(score)) search_node->mate_killer = move;
+                if (is_mate_score(score) && score > 0) {
+                    search_node->mate_killer = move;
+                }
                 put_transposition(pos, move, depth, beta,
                         SCORE_LOWERBOUND, mate_threat);
                 root_data.stats.move_selection[
