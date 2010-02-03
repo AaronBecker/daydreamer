@@ -13,10 +13,10 @@ static const int pattern_scale = 1024;
 // values tested: 768, (1024), 1280
 static const int pieces_scale = 1024;
 // values tested: 768, (1024), 1280
-static const int shield_scale = 1280;
-// values tested: 1024, 1280, 1576, (1704), 2048
-static const int king_attack_scale = 1024;
-// values tested: 640, 768, (896), 1024, 1536
+static const int shield_scale = 1704;
+// values tested: 1024, 1280, (1576), 2048
+static const int king_attack_scale = 896;
+// values tested: 640, (768), 896, 1024, 1536
 
 const int shield_value[2][17] = {
     { 0, 4, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -97,28 +97,11 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
 static score_t evaluate_king_shield(const position_t* pos)
 {
     int score[2] = {0, 0};
-    int s;
     if (pos->piece_count[WQ] != 0) {
         score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
-        if (has_oo_rights(pos, WHITE)) {
-            s = king_shield_score(pos, WHITE, G1);
-            score[WHITE] = MAX(s, score[WHITE]);
-        }
-        if (has_ooo_rights(pos, WHITE)) {
-            s = king_shield_score(pos, WHITE, C1);
-            score[WHITE] = MAX(s, score[WHITE]);
-        }
     }
     if (pos->piece_count[BQ] != 0) {
         score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
-        if (has_oo_rights(pos, BLACK)) {
-            s = king_shield_score(pos, BLACK, G8);
-            score[BLACK] = MAX(s, score[BLACK]);
-        }
-        if (has_ooo_rights(pos, BLACK)) {
-            s = king_shield_score(pos, BLACK, C1);
-            score[BLACK] = MAX(s, score[BLACK]);
-        }
     }
     color_t side = pos->side_to_move;
     score_t phase_score;
