@@ -23,6 +23,7 @@ static const int mobility_score_table[2][8][32] = {
         {0}, {0}
     },
 };
+static const int mobility_base[8] = { 0, 0, -5, -6, -7, -14 };
 static const int mobility_factor[2][8] = {
     {0,  4, 6, 5, 2, 2}, // midgame
     {0, 12, 5, 5, 5, 3}  // endgame
@@ -114,7 +115,7 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
             from = pos->pieces[side][i];
             piece = pos->board[from];
             piece_type_t type = piece_type(piece);
-            int ps = 0;
+            int ps = mobility_base[type];
             switch (type) {
                 case PAWN:
                     ps = (pos->board[from+push] == EMPTY);
