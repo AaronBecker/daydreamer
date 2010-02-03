@@ -721,10 +721,12 @@ static int search(position_t* pos,
             !is_mate_score(beta) &&
             lazy_score + razor_margin[depth-1] < beta) {
         // Razoring.
+        // TODO: patch up the weird d=1 behavior
         root_data.stats.razor_attempts[depth-1]++;
-        int qbeta = beta - razor_qmargin[depth-1];
-        int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
-        if (qscore < qbeta) {
+        int qbeta = depth == 1 ? beta : beta - razor_qmargin[depth-1];
+        int qalpha = depth == 1 ? alpha : qbeta-1;
+        int qscore = quiesce(pos, search_node, ply, qalpha, qbeta, 0);
+        if (depth == 1 || qscore < qbeta) {
             root_data.stats.razor_prunes[depth-1]++;
             return qscore;
         }

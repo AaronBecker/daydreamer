@@ -50,6 +50,7 @@ static const int bishop_outpost[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
 
+// TODO: these really need to be tuned
 static const int rook_on_7[2] = { 20, 40 };
 static const int rook_open_file_bonus[2] = { 20, 10 };
 static const int rook_half_open_file_bonus[2] = { 10, 10 };
@@ -103,7 +104,8 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
     for (side=WHITE; side<=BLACK; ++side) {
         const int* mobile = color_table[side];
         square_t from, to;
-        piece_t piece;
+        piece_t piece, dummy;
+        int push = pawn_push[side];
         for (int i=1; pos->pieces[side][i] != INVALID_SQUARE; ++i) {
             from = pos->pieces[side][i];
             piece = pos->board[from];
@@ -111,7 +113,19 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
             int ps = 0;
             switch (type) {
                 case PAWN:
-                    ps = (pos->board[from+pawn_push[side]] == EMPTY);
+                    ps = (pos->board[from+push] == EMPTY);
+                    dummy = pos->board[from+push-1];
+                    if (dummy > create_piece(side^1, PAWN) &&
+                            dummy <= create_piece(side^1, KING)) {
+                        mid_score[side] += 7;
+                        end_score[side] += 12;
+                    }
+                    dummy = pos->board[from+push+1];
+                    if (dummy > create_piece(side^1, PAWN) &&
+                            dummy <= create_piece(side^1, KING)) {
+                        mid_score[side] += 7;
+                        end_score[side] += 12;
+                    }
                     break;
                 case KNIGHT:
                     ps += mobile[pos->board[from-33]];
