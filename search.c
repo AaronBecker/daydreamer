@@ -714,7 +714,7 @@ static int search(position_t* pos,
             if (null_score >= beta) return beta;
         }
     } else if (razoring_enabled &&
-            //!full_window &&
+            !full_window &&
             pos->prev_move != NULL_MOVE &&
             depth <= RAZOR_DEPTH_LIMIT &&
             hash_move == NO_MOVE &&
@@ -722,10 +722,9 @@ static int search(position_t* pos,
             lazy_score + razor_margin[depth-1] < beta) {
         // Razoring.
         root_data.stats.razor_attempts[depth-1]++;
-        int qbeta = depth == 1 ? beta : beta - razor_qmargin[depth-1];
-        int qalpha = depth == 1 ? alpha : qbeta-1;
-        int qscore = quiesce(pos, search_node, ply, qalpha, qbeta, 0);
-        if (depth == 1 || qscore < qbeta) {
+        int qbeta = beta - razor_qmargin[depth-1];
+        int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
+        if (qscore < qbeta) {
             root_data.stats.razor_prunes[depth-1]++;
             return qscore;
         }
