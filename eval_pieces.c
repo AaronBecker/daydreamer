@@ -23,6 +23,10 @@ static const int mobility_score_table[2][8][32] = {
         {0}, {0}
     },
 };
+static const int mobility_factor[2][8] = {
+    {0,  4, 6, 5, 2, 2}, // midgame
+    {0, 12, 5, 5, 5, 3}  // endgame
+};
 
 static const int color_table[2][17] = {
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0}, // white
@@ -206,8 +210,10 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                     break;
                 default: break;
             }
-            mid_score[side] += mobility_score_table[0][type][ps];
-            end_score[side] += mobility_score_table[1][type][ps];
+            mid_score[side] += mobility_factor[0][type] * ps;
+            end_score[side] += mobility_factor[1][type] * ps;
+            //mid_score[side] += mobility_score_table[0][type][ps];
+            //end_score[side] += mobility_score_table[1][type][ps];
         }
     }
     side = pos->side_to_move;
