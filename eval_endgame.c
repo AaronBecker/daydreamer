@@ -19,7 +19,7 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KRKB,
     NULL,           //EG_KRKN,
     &scale_krkp,    //EG_KRKP,
-    NULL/*&scale_krpkr*/,   //EG_KRPKR,
+    &scale_krpkr,   //EG_KRPKR,
     NULL,           //EG_KRPPKRP,
     NULL,           //EG_KBBKN,
     NULL,           //EG_KBPKB,
@@ -115,10 +115,9 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
         if (br_file > wp_file) scale[0] = scale[1] = 0;
     } else if (square_file(bk) == wp_file && square_rank(bk) > wp_rank) {
         scale[0] = scale[1] = 0;
-    } else if (wr == prom_sq && wp_rank == RANK_7 &&
+    } else if (wr == prom_sq && wp_rank == RANK_7 && br_file == wp_file &&
             (bk == A7 || bk == B7 || bk == G7 || bk == H7) &&
-            br_file == wp_file &&
-            ((square_rank(br) <= 3 && distance(wk, wp) > 1) ||
+            ((square_rank(br) <= RANK_3 && distance(wk, wp) > 1) ||
              (distance(wk, wp) > 2))) {
         scale[0] = scale[1] = 0;
     }
