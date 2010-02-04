@@ -155,10 +155,8 @@ static void scale_kpkb(const position_t* pos, eval_data_t* ed, int scale[2])
             int dir = direction(bb, to);
             square_t sq;
             for (sq=bb+dir; sq != to && sq != bk; sq+=dir) {}
-            if (sq == to) {
-                scale[0] = scale[1] = 0;
-                return;
-            }
+            if (sq == to) scale[0] = scale[1] = 0;
+            return;
         }
     }
 }
