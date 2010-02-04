@@ -3,30 +3,25 @@
 
 static const int mobility_score_table[2][8][32] = {
     { // midgame
-        {0},
-        {0, 4},
-        {-8, -4, 0, 4, 8, 12, 16, 18, 20},
-        {-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 40, 40, 40, 40},
-        {-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20},
-        {-20, -19, -18, -17, -16, -15, -14, -13, -12, -11, -10, -9, -8, -7,
-            -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+        { 0 },
+        { 0, 4 },
+        { -4, -2,  0,  2,  4,  6,  8,  9, 10 },
+        { -8, -5, -2,  1,  4,  6,  8, 10, 12, 14, 16, 18, 20, 22, 24, 25 },
+        { -5, -4, -3, -2, -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10 },
+        { -4, -3, -2, -1, -1,  0,  0,  1,  1,  2,  2,  3,  3,  4,  4,  5,
+           5,  6,  6,  7,  7,  7,  7,  8,  8,  8,  8,  8,  8,  8,  8,  8 },
         {0}, {0}
     },
     { // endgame
         {0},
         {0, 12},
-        {-8, -4, 0, 4, 8, 12, 16, 18, 20},
-        {-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 40, 40, 40, 40},
-        {-10, -6, -2, 2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50},
-        {-20, -18, -16, -14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12,
-            14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42},
+        { -4, -2,  0,  2,  4,  6,  8,  9, 10 },
+        { -8, -5, -2,  1,  4,  6,  8, 10, 12, 14, 16, 18, 20, 22, 24, 25 },
+        { -8, -4,  0,  4,  8, 10, 12, 14, 16, 18, 20, 21, 22, 23, 24, 25 },
+        { -8, -6, -4, -2, -1,  0,  1,  2,  3,  4,  5,  6,  6,  7,  7,  8,
+           8,  9,  9,  9, 10, 10, 10, 11, 11, 11, 12, 12, 12, 12, 12, 12 },
         {0}, {0}
     },
-};
-static const int mobility_base[8] = { 0, 0, -5, -6, -7, -14 };
-static const int mobility_factor[2][8] = {
-    {0,  4, 6, 5, 2, 2}, // midgame
-    {0, 12, 5, 5, 5, 3}  // endgame
 };
 
 static const int color_table[2][17] = {
@@ -115,7 +110,7 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
             from = pos->pieces[side][i];
             piece = pos->board[from];
             piece_type_t type = piece_type(piece);
-            int ps = mobility_base[type];
+            int ps = 0;
             switch (type) {
                 case PAWN:
                     ps = (pos->board[from+push] == EMPTY);
@@ -211,10 +206,8 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                     break;
                 default: break;
             }
-            mid_score[side] += mobility_factor[0][type] * ps;
-            end_score[side] += mobility_factor[1][type] * ps;
-            //mid_score[side] += mobility_score_table[0][type][ps];
-            //end_score[side] += mobility_score_table[1][type][ps];
+            mid_score[side] += mobility_score_table[0][type][ps];
+            end_score[side] += mobility_score_table[1][type][ps];
         }
     }
     side = pos->side_to_move;
