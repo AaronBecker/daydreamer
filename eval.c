@@ -210,6 +210,10 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     material_adjust -= pos->piece_count[BR] * (-3) * (pos->piece_count[BP] - 4);
     component_score.midgame += material_adjust;
     component_score.endgame += material_adjust;
+    if (side == BLACK) {
+        component_score.midgame *= -1;
+        component_score.endgame *= -1;
+    }
     add_scaled_score(&phase_score, &component_score, 1024);
     component_score = pawn_score(pos, &ed->pd);
     add_scaled_score(&phase_score, &component_score, pawn_scale);
