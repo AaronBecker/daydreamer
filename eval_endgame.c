@@ -3,6 +3,7 @@
 
 static void scale_krkp(const position_t* pos, eval_data_t* ed, int scale[2]);
 static void scale_knpk(const position_t* pos, eval_data_t* ed, int scale[2]);
+static void scale_kpkb(const position_t* pos, eval_data_t* ed, int scale[2]);
 static void scale_kbpk(const position_t* pos, eval_data_t* ed, int scale[2]);
 static void scale_kpk(const position_t* pos, eval_data_t* ed, int scale[2]);
 
@@ -22,7 +23,7 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KBBKN,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
-    NULL,           //EG_KBKP,
+    &scale_kpkb,    //EG_KPKB,
     NULL,           //EG_KBPPKB,
     &scale_knpk,    //EG_KNPK,
     &scale_kbpk,    //EG_KBPK,
@@ -79,6 +80,47 @@ static void scale_krkp(const position_t* pos, eval_data_t* ed, int scale[2])
     if (!tempo) dist--;
     if (distance(wk, prom_sq) > dist) {
         scale[0] = scale[1] = 0;
+    }
+}
+
+static void scale_kpkb(const position_t* pos, eval_data_t* ed, int scale[2])
+{
+    color_t strong_side = ed->md->strong_side;
+    color_t weak_side = strong_side^1;
+    assert(pos->num_pieces[strong_side] == 2);
+    assert(pos->num_pawns[strong_side] == 0);
+    assert(pos->num_pieces[weak_side] == 1);
+    assert(pos->num_pawns[weak_side] == 1);
+
+    square_t wp = pos->pawns[strong_side][0];
+    square_t wk = pos->pieces[strong_side][0];
+    square_t bk = pos->pieces[weak_side][0];
+    square_t bb = pos->pieces[weak_side][1];
+    square_t prom_sq = square_file(wp) + A8;
+
+    if (strong_side == BLACK) {
+        wp = mirror_rank(wp);
+        wk = mirror_rank(wk);
+        bk = mirror_rank(bk);
+        bb = mirror_rank(bb);
+    }
+
+    for (square_t to = wp+N; to != prom_sq; to += N) {
+        if (to == bb) {
+            scale[0] = scale[1] = 0;
+            return;
+        }
+
+
+        if (possible_attack(to, bb, WB)) {
+            int dir = direction(to, bb);
+            square_t sq;
+            for (sq=bb+dir; sq != to && sq != bk; sq+=dir) {}
+            if (sq == to) {
+                scale[0] = scale[1] = 0;
+                return;
+            }
+        }
     }
 }
 

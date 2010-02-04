@@ -165,57 +165,25 @@ int full_eval(const position_t* pos, eval_data_t* ed)
 #ifdef UFO_EVAL
     return simple_eval(pos);
 #endif
-
     color_t side = pos->side_to_move;
     score_t phase_score, component_score;
+    component_score = pawn_score(pos, &ed->pd);
+    ed->md = get_material_data(pos);
 
-    phase_score.midgame = pos->piece_square_eval[side].midgame -
+    int endgame_scale[2];
+    determine_endgame_scale(pos, ed, endgame_scale);
+    if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
+
+    phase_score = ed->md->score;
+    if (side == BLACK) {
+        phase_score.midgame *= -1;
+        phase_score.endgame *= -1;
+    }
+    phase_score.midgame += pos->piece_square_eval[side].midgame -
         pos->piece_square_eval[side^1].midgame;
-    phase_score.endgame = pos->piece_square_eval[side].endgame -
+    phase_score.endgame += pos->piece_square_eval[side].endgame -
         pos->piece_square_eval[side^1].endgame;
 
-    component_score.midgame = component_score.endgame = 0;
-    // Pair bonuses
-    if (pos->piece_count[WB] > 1) {
-        component_score.midgame += 30;
-        component_score.endgame += 45;
-    }
-    if (pos->piece_count[BB] > 1) {
-        component_score.midgame -= 30;
-        component_score.endgame -= 45;
-    }
-    if (pos->piece_count[WR] > 1) {
-        component_score.midgame -= 12;
-        component_score.endgame -= 17;
-    }
-    if (pos->piece_count[BR] > 1) {
-        component_score.midgame += 12;
-        component_score.endgame += 17;
-    }
-    if (pos->piece_count[WQ] > 1) {
-        component_score.midgame -= 8;
-        component_score.endgame -= 12;
-    }
-    if (pos->piece_count[BQ] > 1) {
-        component_score.midgame += 8;
-        component_score.endgame += 12;
-    }
-    // Pawn bonuses
-    int material_adjust = 0;
-    material_adjust += pos->piece_count[WN] * 3 * (pos->piece_count[WP] - 4);
-    material_adjust -= pos->piece_count[BN] * 3 * (pos->piece_count[BP] - 4);
-    material_adjust += pos->piece_count[WB] * 2 * (pos->piece_count[WP] - 4);
-    material_adjust -= pos->piece_count[BB] * 2 * (pos->piece_count[BP] - 4);
-    material_adjust += pos->piece_count[WR] * (-3) * (pos->piece_count[WP] - 4);
-    material_adjust -= pos->piece_count[BR] * (-3) * (pos->piece_count[BP] - 4);
-    component_score.midgame += material_adjust;
-    component_score.endgame += material_adjust;
-    if (side == BLACK) {
-        component_score.midgame *= -1;
-        component_score.endgame *= -1;
-    }
-    add_scaled_score(&phase_score, &component_score, 1024);
-    component_score = pawn_score(pos, &ed->pd);
     add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
     add_scaled_score(&phase_score, &component_score, pattern_scale);
@@ -230,7 +198,8 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     phase_score.midgame += 9;
     phase_score.endgame += 2;
 
-    int score = blend_score(&phase_score, game_phase(pos));
+    int score = blend_score(&phase_score, ed->md->phase);
+    score = (score * endgame_scale[score > 0 ? side : side^1]) / 16;
 
     if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, side^1)) score = MAX(score, DRAW_VALUE);

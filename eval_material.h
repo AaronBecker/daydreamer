@@ -26,7 +26,7 @@ typedef enum {
     EG_KBBKN,
     EG_KBPKB,
     EG_KBPKN,
-    EG_KBKP,
+    EG_KPKB,
     EG_KBPPKB,
 
     EG_KNPK,

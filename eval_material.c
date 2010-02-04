@@ -166,10 +166,10 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             md->eg_type = EG_KRKP;
             md->strong_side = BLACK;
         } else if (wb && bp) {
-            md->eg_type = EG_KBKP;
+            md->eg_type = EG_KPKB;
             md->strong_side = BLACK;
         } else if (bb && wp) {
-            md->eg_type = EG_KBKP;
+            md->eg_type = EG_KPKB;
             md->strong_side = WHITE;
         } else if (wn && wp) {
             md->eg_type = EG_KNPK;
