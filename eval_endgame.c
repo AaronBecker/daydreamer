@@ -2,6 +2,7 @@
 #include "daydreamer.h"
 
 static void scale_krkp(const position_t* pos, eval_data_t* ed, int scale[2]);
+static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2]);
 static void scale_knpk(const position_t* pos, eval_data_t* ed, int scale[2]);
 static void scale_kpkb(const position_t* pos, eval_data_t* ed, int scale[2]);
 static void scale_kbpk(const position_t* pos, eval_data_t* ed, int scale[2]);
@@ -18,7 +19,7 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KRKB,
     NULL,           //EG_KRKN,
     &scale_krkp,    //EG_KRKP,
-    NULL,           //EG_KRPKR,
+    &scale_krpkr,   //EG_KRPKR,
     NULL,           //EG_KRPPKRP,
     NULL,           //EG_KBBKN,
     NULL,           //EG_KBPKB,
@@ -83,14 +84,54 @@ static void scale_krkp(const position_t* pos, eval_data_t* ed, int scale[2])
     }
 }
 
-static void scale_kpkb(const position_t* pos, eval_data_t* ed, int scale[2])
+static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
 {
     color_t strong_side = ed->md->strong_side;
     color_t weak_side = strong_side^1;
     assert(pos->num_pieces[strong_side] == 2);
-    assert(pos->num_pawns[strong_side] == 0);
-    assert(pos->num_pieces[weak_side] == 1);
-    assert(pos->num_pawns[weak_side] == 1);
+    assert(pos->num_pawns[strong_side] == 1);
+    assert(pos->num_pieces[weak_side] == 2);
+    assert(pos->num_pawns[weak_side] == 0);
+
+    square_t wp = pos->pawns[strong_side][0];
+    square_t wk = pos->pieces[strong_side][0];
+    square_t wr = pos->pieces[strong_side][1];
+    square_t bk = pos->pieces[weak_side][0];
+    square_t br = pos->pieces[weak_side][1];
+
+    if (strong_side == BLACK) {
+        wr = mirror_rank(wr);
+        wk = mirror_rank(wk);
+        wp = mirror_rank(wp);
+        bk = mirror_rank(bk);
+        br = mirror_rank(br);
+    }
+
+    square_t wp_file = square_file(wp);
+    square_t wp_rank = square_rank(wp);
+    square_t br_file = square_file(br);
+    square_t prom_sq = wp_file + A8;
+    if (bk == prom_sq) {
+        if (br_file > wp_file) scale[0] = scale[1] = 0;
+    } else if (square_file(bk) == wp_file && square_rank(bk) > wp_rank) {
+        scale[0] = scale[1] = 0;
+    } else if (wr == prom_sq && wp_rank == RANK_7 &&
+            (bk == A7 || bk == B7 || bk == G7 || bk == H7) &&
+            br_file == wp_file &&
+            ((square_rank(br) <= 3 && distance(wk, wp) > 1) ||
+             (distance(wk, wp) > 2))) {
+        scale[0] = scale[1] = 0;
+    }
+}
+
+static void scale_kpkb(const position_t* pos, eval_data_t* ed, int scale[2])
+{
+    color_t strong_side = ed->md->strong_side;
+    color_t weak_side = strong_side^1;
+    assert(pos->num_pieces[strong_side] == 1);
+    assert(pos->num_pawns[strong_side] == 1);
+    assert(pos->num_pieces[weak_side] == 2);
+    assert(pos->num_pawns[weak_side] == 0);
 
     square_t wp = pos->pawns[strong_side][0];
     square_t wk = pos->pieces[strong_side][0];
@@ -111,9 +152,8 @@ static void scale_kpkb(const position_t* pos, eval_data_t* ed, int scale[2])
             return;
         }
 
-
-        if (possible_attack(to, bb, WB)) {
-            int dir = direction(to, bb);
+        if (possible_attack(bb, to, WB)) {
+            int dir = direction(bb, to);
             square_t sq;
             for (sq=bb+dir; sq != to && sq != bk; sq+=dir) {}
             if (sq == to) {
