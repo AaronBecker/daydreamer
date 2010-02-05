@@ -945,6 +945,10 @@ static int quiesce(position_t* pos,
         if (alpha < eval) alpha = eval;
         if (alpha >= beta) return beta;
     }
+    if (trans_entry && eval > trans_entry->score &&
+            trans_entry->flags & SCORE_UPPERBOUND) eval = trans_entry->score;
+    if (trans_entry && eval < trans_entry->score &&
+            trans_entry->flags & SCORE_LOWERBOUND) eval = trans_entry->score;
 
     bool allow_futility = qfutility_enabled &&
         !full_window &&
