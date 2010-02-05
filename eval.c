@@ -171,7 +171,7 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     ed->md = get_material_data(pos);
 
     int score = 0;
-    if (endgame_score(pos, ed, &score)) return score;
+    //if (endgame_score(pos, ed, &score)) return score;
 
     int endgame_scale[2];
     determine_endgame_scale(pos, ed, endgame_scale);
