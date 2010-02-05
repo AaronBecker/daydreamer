@@ -38,8 +38,8 @@ eg_scale_fn eg_scale_fns[] = {
 
 eg_score_fn eg_score_fns[] = {
     NULL,           //EG_NONE,
-    &score_win,     //EG_WIN,
-    &score_draw,    //EG_DRAW,
+    NULL/*&score_win*/,     //EG_WIN,
+    NULL/*&score_draw*/,    //EG_DRAW,
     NULL,           //EG_KQKQ,
     NULL,           //EG_KQKP,
     NULL,           //EG_KRKR,
