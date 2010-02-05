@@ -148,7 +148,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         if (b_piece > 2) {
             md->eg_type = EG_WIN;
             md->strong_side = BLACK;
-        } if (b_piece == 2) {
+        } else if (b_piece == 2) {
             if (bn == 2) {
                 md->eg_type = EG_DRAW;
             } else if (bb && bn) {

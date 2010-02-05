@@ -298,10 +298,26 @@ static void scale_kpk(const position_t* pos, eval_data_t* ed, int scale[2])
 
     if (draw) scale[0] = scale[1] = 0;
 }
+
+static const int edge_score[8] = { 10, 8, 4, 1, 1, 4, 8, 10 };
  
 static int score_win(const position_t* pos, eval_data_t* ed)
 {
-    return WON_ENDGAME * (ed->md->strong_side == pos->side_to_move ? 1 : -1);
+    color_t strong_side = ed->md->strong_side;
+    color_t weak_side = strong_side^1;
+    assert(pos->num_pieces[weak_side] == 1);
+    assert(pos->num_pawns[weak_side] == 0);
+
+    square_t wk = pos->pieces[strong_side][0];
+    square_t bk = pos->pieces[weak_side][0];
+    int cornered = edge_score[square_rank(bk)] * edge_score[square_file(bk)];
+    int score = pos->material_eval[strong_side] - KING_VAL +
+        cornered - distance(wk, bk);
+    if (pos->num_pieces[create_piece(strong_side, QUEEN)] +
+            pos->num_pieces[create_piece(strong_side, ROOK)]) {
+        score += WON_ENDGAME;
+    }
+    return score * (strong_side == pos->side_to_move ? 1 : -1);
 }
 
 static int score_draw(const position_t* pos, eval_data_t* ed)
