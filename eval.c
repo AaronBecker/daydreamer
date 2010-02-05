@@ -171,10 +171,12 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     ed->md = get_material_data(pos);
 
     int score = 0;
-    if (endgame_score(pos, ed, &score)) return score;
+    //if (endgame_score(pos, ed, &score)) return score;
 
     int endgame_scale[2];
-    determine_endgame_scale(pos, ed, endgame_scale);
+    endgame_scale[WHITE] = ed->md->scale[WHITE];
+    endgame_scale[BLACK] = ed->md->scale[BLACK];
+    //determine_endgame_scale(pos, ed, endgame_scale);
     if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
 
     phase_score = ed->md->score;

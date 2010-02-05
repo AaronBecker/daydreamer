@@ -31,9 +31,6 @@ Evaluation
     redo report_eval
     more sophisticated pawn shelter scoring
 
-Testing
-    try different move ordering counts. 16 didn't help. maybe 12.
-
 Bugs
     In mate positions (eg 5k2/8/8/8/8/2Q5/8/3K4 w - -), after long searches the
     shortest mate found will gradually increase in length (ie, a "mate 9" score
