@@ -466,19 +466,10 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
     move_t* moves_head = moves;
     color_t side = pos->side_to_move, other_side = side^1;
     square_t king_sq = pos->pieces[other_side][0];
-    const int patk1 = side == WHITE ? NE : SE;
-    const int patk2 = side == WHITE ? NW : SW;
     for (int i = 0; i < pos->num_pawns[side]; ++i) {
         square_t from = pos->pawns[side][i];
         square_t to = INVALID_SQUARE;
         piece_t piece = pos->board[from];
-        to = from + pawn_push[side];
-        // no need to check captures and promotes
-        if (pos->board[to] != EMPTY) continue;
-        rank_t r_rank =
-            relative_rank[side][square_rank(from)];
-        if (r_rank == RANK_7) continue;
-
         // Figure out whether or not we can discover check by moving.
         direction_t discover_check_dir = 0;
         bool will_discover_check;
@@ -502,24 +493,31 @@ int generate_pseudo_checks(const position_t* pos, move_t* moves)
             }
         }
         // Generate checking moves.
-        will_discover_check = discover_check_dir &&
-            abs(discover_check_dir) != N &&
-            abs(discover_check_dir) != S;
-        if (will_discover_check ||
-                to + patk1 == king_sq ||
-                to + patk2 == king_sq) {
-            moves = add_move(pos,
-                    create_move(from, to, piece, EMPTY),
-                    moves);
+        will_discover_check = discover_check_dir && abs(discover_check_dir)!=N;
+        to = from + pawn_push[side];
+        if (pos->board[to] != EMPTY) continue;
+        rank_t r_rank =
+            relative_rank[side][square_rank(from)];
+        if (r_rank == RANK_7) continue; // non-promotes only
+        for (const direction_t* delta = piece_deltas[piece]; *delta; ++delta) {
+            if (will_discover_check || to + *delta == king_sq) {
+                moves = add_move(pos,
+                        create_move(from, to, piece, EMPTY),
+                        moves);
+                break;
+            }
         }
         to += pawn_push[side];
-        if (r_rank == RANK_2 && pos->board[to] == EMPTY &&
-                (will_discover_check ||
-                 to + patk1 == king_sq ||
-                 to + patk2 == king_sq)) {
-            moves = add_move(pos,
-                    create_move(from, to, piece, EMPTY),
-                    moves);
+        if (r_rank == RANK_2 && pos->board[to] == EMPTY) {
+            for (const direction_t* delta = piece_deltas[piece];
+                    *delta; ++delta) {
+                if (will_discover_check || to + *delta == king_sq) {
+                    moves = add_move(pos,
+                            create_move(from, to, piece, EMPTY),
+                            moves);
+                    break;
+                }
+            }
         }
     }
 
