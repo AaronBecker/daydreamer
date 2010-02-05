@@ -22,7 +22,7 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KRKB,
     NULL,           //EG_KRKN,
     &scale_krkp,    //EG_KRKP,
-    /*&scale_krpkr*/NULL,   //EG_KRPKR,
+    &scale_krpkr,   //EG_KRPKR,
     NULL,           //EG_KRPPKRP,
     NULL,           //EG_KBBKN,
     NULL,           //EG_KBNK,
@@ -131,33 +131,116 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
     assert(pos->num_pieces[weak_side] == 2);
     assert(pos->num_pawns[weak_side] == 0);
 
-    square_t wp = pos->pawns[strong_side][0];
     square_t wk = pos->pieces[strong_side][0];
-    square_t wr = pos->pieces[strong_side][1];
     square_t bk = pos->pieces[weak_side][0];
+    square_t wr = pos->pieces[strong_side][1];
     square_t br = pos->pieces[weak_side][1];
-
+    square_t wp = pos->pawns[strong_side][0];
+    bool tempo = strong_side == pos->side_to_move;
+ 
     if (strong_side == BLACK) {
-        wr = mirror_rank(wr);
         wk = mirror_rank(wk);
-        wp = mirror_rank(wp);
         bk = mirror_rank(bk);
+        wr = mirror_rank(wr);
         br = mirror_rank(br);
+        wp = mirror_rank(wp);
+    }
+    if (square_file(wp) >= FILE_E) {
+        wk = mirror_file(wk);
+        bk = mirror_file(bk);
+        wr = mirror_file(wr);
+        br = mirror_file(br);
+        wp = mirror_file(wp);
     }
 
-    square_t wp_file = square_file(wp);
-    square_t wp_rank = square_rank(wp);
-    square_t br_file = square_file(br);
-    square_t prom_sq = wp_file + A8;
-    if (bk == prom_sq) {
-        if (br_file > wp_file) scale[0] = scale[1] = 0;
-    } else if (square_file(bk) == wp_file && square_rank(bk) > wp_rank) {
+    int wk_rank = square_rank(wk);
+    int br_rank = square_rank(br);
+    int wr_rank = square_rank(wr);
+    int p_rank = square_rank(wp);
+    int p_file = square_file(wp);
+    int prom_sq = p_file + A8;
+
+    // Lots of tricky rook endgames. Credit goes to Silman's Complete Endgame
+    // Course (great book), checked against Stockfish's implementation.
+    // I'm horrible at rook endgames over the board, so yeah.
+
+    // The Philidor position is a draw.
+    if (p_rank < RANK_6 && distance(bk, prom_sq) <= 1 && wk_rank < RANK_6 &&
+            (((p_rank < RANK_4 && wr_rank != RANK_6)) ||
+            br_rank == RANK_6)) {
         scale[0] = scale[1] = 0;
-    } else if (wr == prom_sq && wp_rank == RANK_7 && br_file == wp_file &&
-            (bk == A7 || bk == B7 || bk == G7 || bk == H7) &&
-            ((square_rank(br) <= RANK_3 && distance(wk, wp) > 1) ||
-             (distance(wk, wp) > 2))) {
+        return;
+    }
+
+    // Philidor defense after white pushes the pawn. Black needs to check
+    // the white king from behind.
+    int br_file = square_file(br);
+    if (p_rank >= RANK_6 && distance(bk, prom_sq) <= 1 &&
+            wk_rank + tempo <= RANK_6 &&
+            (br_rank == RANK_1 || (abs(br_file - p_file) > 2))) {
         scale[0] = scale[1] = 0;
+        return;
+    }
+    if (p_rank >= RANK_6 && bk == prom_sq && br_rank == RANK_1 &&
+            (!tempo || distance(wk, wp) > 1)) {
+        scale[0] = scale[1] = 0;
+        return;
+    }
+
+    // Fiddly rook-pawn promotion blocked by friendly rook. G7 and H7 are
+    // the only places the black king is safe.
+    int wk_file = square_file(wk);
+    if (wp == A7 && wr == A8 && (bk == G7 || bk == H7) &&
+            (br_file == FILE_A && (br_rank < RANK_4 ||
+                                   wk_file > FILE_C ||
+                                   wk_rank < RANK_6))) {
+        scale[0] = scale[1] = 0;
+        return;
+    }
+
+    // Blockaded pawn with the white king far away is a draw.
+    if (p_rank < RANK_6 && bk == wp + N &&
+            distance(wk, wp) - tempo > 1 &&
+            distance(wk, br) - tempo > 1) {
+        scale[0] = scale[1] = 0;
+        return;
+    }
+
+    // Generic supported pawn on 7 usually wins if the king is close.
+    int wr_file = square_file(wr);
+    if (p_rank == RANK_7 && p_file != FILE_A &&
+            wr_file == p_file && wr != prom_sq &&
+            distance(wk, prom_sq) < distance(bk, prom_sq) - 2 + tempo &&
+            distance(wk, prom_sq) < distance(bk, wr + tempo)) {
+        scale[strong_side] = 16 - distance(wp, prom_sq);
+        scale[weak_side] = 1;
+        return;
+    }
+
+    // Generic less-advanced pawn, less favorable.
+    if (p_file != FILE_A && wr_file == p_file && wr < wp &&
+            distance(wk, prom_sq) < distance(bk, prom_sq) - 2 + tempo &&
+            distance(wk, wp + N) < distance(bk, wp + N) - 2 + tempo &&
+            (distance(bk, wr) + tempo > 2 ||
+             (distance(wk, prom_sq) < distance(bk, wr) + tempo &&
+              distance(wk, wp + N) < distance(bk, wr) + tempo))) {
+        scale[strong_side] = 16 - distance(wp, prom_sq);
+        scale[weak_side] = 0;
+        return;
+    }
+
+    // Blocked, unsupported pawn; usually a draw.
+    int bk_file = square_file(bk);
+    if (p_rank < RANK_5 && bk > wp) {
+        if (bk_file == p_file) {
+            scale[strong_side] = 2;
+            scale[weak_side] = 1;
+            return;
+        } else if (abs(bk_file - p_file) == 1 && distance(wk, bk) > 2) {
+            scale[strong_side] = 3;
+            scale[weak_side] = 1;
+            return;
+        }
     }
 }
 
