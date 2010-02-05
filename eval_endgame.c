@@ -8,10 +8,13 @@ static void scale_kpkb(const position_t* pos, eval_data_t* ed, int scale[2]);
 static void scale_kbpk(const position_t* pos, eval_data_t* ed, int scale[2]);
 static void scale_kpk(const position_t* pos, eval_data_t* ed, int scale[2]);
 
+static int score_win(const position_t* pos, eval_data_t* ed);
+static int score_draw(const position_t* pos, eval_data_t* ed);
+static int score_kbnk(const position_t* pos, eval_data_t* ed);
+
 eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_NONE,
     NULL,           //EG_WIN,
-    NULL,           //EG_LOSS,
     NULL,           //EG_DRAW,
     NULL,           //EG_KQKQ,
     NULL,           //EG_KQKP,
@@ -19,18 +22,53 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KRKB,
     NULL,           //EG_KRKN,
     &scale_krkp,    //EG_KRKP,
-    NULL/*&scale_krpkr*/,   //EG_KRPKR,
+    &scale_krpkr,   //EG_KRPKR,
     NULL,           //EG_KRPPKRP,
     NULL,           //EG_KBBKN,
+    NULL,           //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
-    /*&scale_kpkb*/NULL,    //EG_KPKB,
+    &scale_kpkb,    //EG_KPKB,
     NULL,           //EG_KBPPKB,
     &scale_knpk,    //EG_KNPK,
     &scale_kbpk,    //EG_KBPK,
     &scale_kpk,     //EG_KPK,
     NULL,           //EG_LAST
 };
+
+eg_score_fn eg_score_fns[] = {
+    NULL,           //EG_NONE,
+    &score_win,     //EG_WIN,
+    &score_draw,    //EG_DRAW,
+    NULL,           //EG_KQKQ,
+    NULL,           //EG_KQKP,
+    NULL,           //EG_KRKR,
+    NULL,           //EG_KRKB,
+    NULL,           //EG_KRKN,
+    NULL,           //EG_KRKP,
+    NULL,           //EG_KRPKR,
+    NULL,           //EG_KRPPKRP,
+    NULL,           //EG_KBBKN,
+    &score_kbnk,    //EG_KBNK,
+    NULL,           //EG_KBPKB,
+    NULL,           //EG_KBPKN,
+    NULL,           //EG_KPKB,
+    NULL,           //EG_KBPPKB,
+    NULL,           //EG_KNPK,
+    NULL,           //EG_KBPK,
+    NULL,           //EG_KPK,
+    NULL,           //EG_LAST
+};
+
+bool endgame_score(const position_t* pos, eval_data_t* ed, int* score)
+{
+    eg_score_fn fn = eg_score_fns[ed->md->eg_type];
+    if (fn) {
+        *score = fn(pos, ed);
+        return true;
+    }
+    return false;
+}
 
 void determine_endgame_scale(const position_t* pos,
         eval_data_t* ed,
@@ -259,5 +297,38 @@ static void scale_kpk(const position_t* pos, eval_data_t* ed, int scale[2])
     }
 
     if (draw) scale[0] = scale[1] = 0;
+}
+ 
+static int score_win(const position_t* pos, eval_data_t* ed)
+{
+    return WON_ENDGAME * (ed->md->strong_side == pos->side_to_move ? 1 : -1);
+}
+
+static int score_draw(const position_t* pos, eval_data_t* ed)
+{
+    (void)pos; (void)ed;
+    return DRAW_VALUE;
+}
+
+static int score_kbnk(const position_t* pos, eval_data_t* ed)
+{
+    color_t strong_side = ed->md->strong_side;
+    color_t weak_side = strong_side^1;
+    assert(pos->num_pieces[strong_side] == 3);
+    assert(pos->num_pawns[strong_side] == 0);
+    assert(pos->num_pieces[weak_side] == 1);
+    assert(pos->num_pawns[weak_side] == 0);
+
+    square_t wk = pos->pieces[strong_side][0];
+    square_t wb = pos->pieces[strong_side][1];
+    square_t bk = pos->pieces[weak_side][0];
+    assert(piece_type(pos->board[wb]) == BISHOP);
+    color_t bc = square_color(wb);
+    square_t t1 = bc == WHITE ? A8 : A1;
+    square_t t2 = bc == WHITE ? H1 : H8;
+    int corner_dist = MIN(distance(bk, t1), distance(bk, t2)) +
+        MIN(square_rank(bk), square_file(bk));
+    return (WON_ENDGAME - 10*corner_dist - distance(wk, bk)) *
+        (strong_side == pos->side_to_move ? 1 : -1);
 }
 

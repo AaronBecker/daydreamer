@@ -11,7 +11,7 @@ extern "C" {
 
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.61"
-#define ENGINE_VERSION_NAME     " x1_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " egs1_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -87,6 +87,7 @@ bool is_draw(const position_t* pos);
 int game_phase(const position_t* pos);
 
 // eval_endgame.c
+bool endgame_score(const position_t* pos, eval_data_t* ed, int* score);
 void determine_endgame_scale(const position_t* pos,
         eval_data_t* ed,
         int endgame_scale[2]);

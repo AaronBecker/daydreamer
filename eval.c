@@ -170,6 +170,9 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     component_score = pawn_score(pos, &ed->pd);
     ed->md = get_material_data(pos);
 
+    int score = 0;
+    if (endgame_score(pos, ed, &score)) return score;
+
     int endgame_scale[2];
     determine_endgame_scale(pos, ed, endgame_scale);
     if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
@@ -198,7 +201,7 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     phase_score.midgame += 9;
     phase_score.endgame += 2;
 
-    int score = blend_score(&phase_score, ed->md->phase);
+    score = blend_score(&phase_score, ed->md->phase);
     score = (score * endgame_scale[score > 0 ? side : side^1]) / 16;
 
     if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);

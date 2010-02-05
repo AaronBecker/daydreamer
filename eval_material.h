@@ -10,7 +10,6 @@ typedef uint32_t endgame_flags_t;
 typedef enum {
     EG_NONE,
     EG_WIN,
-    EG_LOSS,
     EG_DRAW,
 
     EG_KQKQ,
@@ -24,6 +23,7 @@ typedef enum {
     EG_KRPPKRP,
 
     EG_KBBKN,
+    EG_KBNK,
     EG_KBPKB,
     EG_KBPKN,
     EG_KPKB,

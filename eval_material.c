@@ -135,7 +135,45 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         } else if (bp) {
             md->eg_type = EG_KPK;
             md->strong_side = BLACK;
-        } else if (!wq && !wr && !bq && !br) md->eg_type = EG_DRAW;
+        } else if (wq || wr) {
+            md->eg_type = EG_WIN;
+            md->strong_side = WHITE;
+        } else if (bq || br) {
+            md->eg_type = EG_WIN;
+            md->strong_side = BLACK;
+        } else {
+            md->eg_type = EG_DRAW;
+        } 
+    } else if (w_all == 0) {
+        if (b_piece > 2) {
+            md->eg_type = EG_WIN;
+            md->strong_side = BLACK;
+        } if (b_piece == 2) {
+            if (bn == 2) {
+                md->eg_type = EG_DRAW;
+            } else if (bb && bn) {
+                md->eg_type = EG_KBNK;
+                md->strong_side = BLACK;
+            } else {
+                md->eg_type = EG_WIN;
+                md->strong_side = BLACK;
+            }
+        }
+    } else if (b_all == 0) {
+        if (w_piece > 2) {
+            md->eg_type = EG_WIN;
+            md->strong_side = WHITE;
+        } else if (w_piece == 2) {
+            if (wn == 2) {
+                md->eg_type = EG_DRAW;
+            } else if (wb && wn) {
+                md->eg_type = EG_KBNK;
+                md->strong_side = WHITE;
+            } else {
+                md->eg_type = EG_WIN;
+                md->strong_side = WHITE;
+            }
+        }
     } else if (w_all == 1 && b_all == 1) {
         if (wq && bq) {
             md->eg_type = EG_KQKQ;

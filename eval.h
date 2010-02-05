@@ -53,7 +53,7 @@ typedef struct {
 } eval_data_t;
 
 typedef void(*eg_scale_fn)(const position_t*, eval_data_t*, int scale[2]);
-eg_scale_fn eg_score_fns[EG_LAST+1];
+typedef int(*eg_score_fn)(const position_t*, eval_data_t*);
 #define endgame_scale_function(md)   (eg_scale_fns[(md)->eg_type])
 
 #ifdef __cplusplus
