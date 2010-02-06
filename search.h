@@ -5,7 +5,9 @@
 extern "C" {
 #endif
 
-#define MAX_SEARCH_DEPTH    127
+#define PLY                 1
+#define MAX_SEARCH_DEPTH    (127*PLY)
+#define depth_to_index(x)   (x)
 
 typedef enum {
     SEARCH_ABORTED, SEARCH_FAIL_HIGH, SEARCH_FAIL_LOW, SEARCH_EXACT
@@ -63,7 +65,7 @@ typedef struct {
 
 #define MAX_HISTORY         1000000
 #define MAX_HISTORY_INDEX   (16*64)
-#define depth_to_history(d) ((d)*(d))
+#define depth_to_history(d) ((d)*(d) / (PLY*PLY))
 #define history_index(m)   \
     ((get_move_piece_type(m)<<6)|(square_to_index(get_move_to(m))))
 
@@ -71,7 +73,7 @@ typedef struct {
     uint64_t nodes;
     move_t move;
     int score;
-    int max_depth;
+    int max_ply;
     int qsearch_score;
     move_t pv[MAX_SEARCH_DEPTH + 1];
 } root_move_t;
@@ -114,16 +116,6 @@ extern search_data_t root_data;
 #define POLL_INTERVAL   0x3fff
 #define MATE_VALUE      32000
 #define DRAW_VALUE      0
-// TODO: replace parameters with options.
-#define NULL_R          3
-#define NULLMOVE_VERIFICATION_REDUCTION    5
-#define NULL_EVAL_MARGIN            200
-#define RAZOR_DEPTH_LIMIT           3
-#define FUTILITY_DEPTH_LIMIT        4
-#define LMR_PV_EARLY_MOVES          10
-#define LMR_EARLY_MOVES             3
-#define LMR_DEPTH_LIMIT             1
-#define LMR_REDUCTION               1
 
 #define is_mate_score(score)    \
     ((score+MAX_SEARCH_DEPTH+1>MATE_VALUE) || \

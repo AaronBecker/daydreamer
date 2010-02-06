@@ -104,7 +104,8 @@ int lmr_reduction(move_selector_t* sel, move_t move)
         !is_move_castle(move) &&
         move != sel->killers[0] &&
         move != sel->killers[1];
-    return do_lmr ? (sel->scores[sel->current_move_index-1]<0 ? 2 : 1) : 0;
+    return do_lmr ?
+        (sel->scores[sel->current_move_index-1]<0 ? 2*PLY : PLY) : 0;
 }
 
 /*
@@ -380,7 +381,7 @@ static void sort_root_moves(move_selector_t* sel)
     int i;
     for (i=0; root_data.root_moves[i].move != NO_MOVE; ++i) {
         sel->moves[i] = root_data.root_moves[i].move;
-        if (sel->depth <= 2) {
+        if (sel->depth <= 2*PLY) {
             sel->scores[i] = root_data.root_moves[i].qsearch_score;
         } else if (options.multi_pv > 1) {
             sel->scores[i] = root_data.root_moves[i].score;

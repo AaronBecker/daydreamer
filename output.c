@@ -47,8 +47,8 @@ void print_coord_square(square_t square)
 static void print_pv(search_data_t* data, int ordinal, int index)
 {
     const move_t* pv = data->root_moves[index].pv;
-    const int depth = data->current_depth;
-    const int seldepth = data->root_moves[index].max_depth;
+    const int depth = depth_to_index(data->current_depth);
+    const int seldepth = data->root_moves[index].max_ply;
     const int score = data->root_moves[index].score;
     // note: use time+1 to avoid divide-by-zero
     const int time = elapsed_time(&data->timer) + 1;
@@ -133,11 +133,11 @@ void print_multipv(search_data_t* data)
 void print_search_stats(const search_data_t* search_data)
 {
     printf("info string transposition cutoffs ");
-    for (int i=0; i<=search_data->current_depth; ++i) {
+    for (int i=0; i<=depth_to_index(search_data->current_depth); ++i) {
         printf("%d ", search_data->stats.transposition_cutoffs[i]);
     }
     printf("\ninfo string nullmove cutoffs ");
-    for (int i=0; i<=search_data->current_depth; ++i) {
+    for (int i=0; i<=depth_to_index(search_data->current_depth); ++i) {
         printf("%d ", search_data->stats.nullmove_cutoffs[i]);
     }
     printf("\ninfo string razoring attempts/cutoffs by depth "
@@ -178,7 +178,7 @@ void print_search_stats(const search_data_t* search_data)
     }
 
     printf("\ninfo string scores by iteration ");
-    for (int i=0; i<=search_data->current_depth; ++i) {
+    for (int i=0; i<=depth_to_index(search_data->current_depth); ++i) {
         printf("%d ", search_data->scores_by_iteration[i]);
     }
     printf("\n");
@@ -188,7 +188,7 @@ void print_search_stats(const search_data_t* search_data)
     int high = search_data->stats.root_fail_highs;
     int low = search_data->stats.root_fail_lows;
     printf("info string root fail highs %d fail lows %d exact results %d\n",
-            high, low, search_data->current_depth-high-low);
+            high, low, depth_to_index(search_data->current_depth)-high-low);
 }
 
 /*
