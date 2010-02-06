@@ -157,8 +157,8 @@ bool should_stop_searching(search_data_t* data)
 static int extend(position_t* pos, move_t move, bool single_reply)
 {
     if (is_check(pos) || single_reply) return PLY;
-    square_t sq = get_move_to(move);
     // FIXME: test this, for god's sake
+    //square_t sq = get_move_to(move);
     //if (piece_type(pos->board[sq]) == PAWN &&
     //        (square_rank(sq) == RANK_7 ||
     //         square_rank(sq) == RANK_2)) return PLY;
@@ -306,11 +306,11 @@ static void record_success(history_t* h, move_t move, int depth)
  * Record quiet moves that cause failed to cause a fail-high on a fail-high
  * node in the history table.
  */
-static void record_failure(history_t* h, move_t move)
+static void record_failure(history_t* h, move_t move, int depth)
 {
-    // TODO: try this
-    //h->history[index] -= depth_to_history(depth);
-    h->failure[history_index(move)]++;
+    int index = history_index(move);
+    h->history[index] -= depth_to_history(depth);
+    h->failure[index]++;
 }
 
 /*
@@ -842,12 +842,12 @@ static int search(position_t* pos,
                 score = -search(pos, search_node+1, ply+1,
                         -alpha-1, -alpha, depth+ext-PLY);
                 // FIXME: try this instead
-                if (!full_window && score > alpha) {
-                    score = -search(pos, search_node+1, ply+1,
-                        -beta, -alpha, depth+ext-PLY);
-                }
-                //if (score > alpha) score = -search(pos, search_node+1, ply+1,
+                //if (!full_window && score > alpha) {
+                //    score = -search(pos, search_node+1, ply+1,
                 //        -beta, -alpha, depth+ext-PLY);
+                //}
+                if (score > alpha) score = -search(pos, search_node+1, ply+1,
+                        -beta, -alpha, depth+ext-PLY);
             }
         }
         searched_moves[num_searched_moves++] = move;
@@ -866,7 +866,7 @@ static int search(position_t* pos,
                         move_t m = searched_moves[i];
                         assert(m != move);
                         if (!get_move_capture(m) && !get_move_promote(m)) {
-                            record_failure(&root_data.history, m);
+                            record_failure(&root_data.history, m, depth);
                         }
                     }
                     if (move != search_node->killers[0]) {
