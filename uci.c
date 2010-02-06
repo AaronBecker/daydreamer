@@ -240,6 +240,7 @@ static void uci_go(char* command)
     }
     if ((info = strcasestr(command, "depth"))) {
         sscanf(info+5, " %d", &root_data.depth_limit);
+        root_data.depth_limit *= PLY;
     }
     if ((info = strcasestr(command, "nodes"))) {
         sscanf(info+5, " %"PRIu64, &root_data.node_limit);

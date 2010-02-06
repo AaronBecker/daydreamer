@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-#define PLY                 1
+#define PLY                 100
 #define MAX_SEARCH_DEPTH    (127*PLY)
-#define depth_to_index(x)   (x)
+#define depth_to_index(x)   ((x)/PLY)
 
 typedef enum {
     SEARCH_ABORTED, SEARCH_FAIL_HIGH, SEARCH_FAIL_LOW, SEARCH_EXACT
