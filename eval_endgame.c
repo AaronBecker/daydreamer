@@ -29,7 +29,7 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
-    /*&scale_kpkb*/NULL,    //EG_KPKB,
+    &scale_kpkb,    //EG_KPKB,
     NULL,           //EG_KBPPKB,
     &scale_knpk,    //EG_KNPK,
     &scale_kbpk,    //EG_KBPK,
@@ -39,8 +39,8 @@ eg_scale_fn eg_scale_fns[] = {
 
 eg_score_fn eg_score_fns[] = {
     NULL,           //EG_NONE,
-    NULL,//&score_win,     //EG_WIN,
-    NULL,//&score_draw,    //EG_DRAW,
+    &score_win,     //EG_WIN,
+    &score_draw,    //EG_DRAW,
     NULL,           //EG_KQKQ,
     NULL,           //EG_KQKP,
     NULL,           //EG_KRKR,
@@ -50,7 +50,7 @@ eg_score_fn eg_score_fns[] = {
     &score_krpkr,   //EG_KRPKR,
     NULL,           //EG_KRPPKRP,
     NULL,           //EG_KBBKN,
-    NULL,//&score_kbnk,    //EG_KBNK,
+    &score_kbnk,    //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
     NULL,           //EG_KPKB,

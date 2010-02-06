@@ -174,9 +174,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
                 md->strong_side = WHITE;
             }
         }
-    }
-    /*
-    else if (w_all == 1 && b_all == 1) {
+    } else if (w_all == 1 && b_all == 1) {
         if (wq && bq) {
             md->eg_type = EG_KQKQ;
         } else if (wq && bp) {
@@ -263,7 +261,6 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         md->eg_type = EG_KRPPKRP;
         md->strong_side = BLACK;
     }
-    */
 
     // Endgame scaling factors
     md->scale[WHITE] = md->scale[BLACK] = 16;
