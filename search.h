@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-#define PLY                 100
-#define MAX_SEARCH_DEPTH    (127*PLY)
+#define PLY                 10000
+#define MAX_SEARCH_PLY      127
 #define depth_to_index(x)   ((x)/PLY)
 
 typedef enum {
@@ -14,7 +14,7 @@ typedef enum {
 } search_result_t;
 
 typedef struct {
-    move_t pv[MAX_SEARCH_DEPTH+1];
+    move_t pv[MAX_SEARCH_PLY+1];
     move_t killers[2];
     move_t mate_killer;
 } search_node_t;
@@ -46,8 +46,8 @@ extern options_t options;
 #define HIST_BUCKETS    15
 
 typedef struct {
-    int transposition_cutoffs[MAX_SEARCH_DEPTH + 1];
-    int nullmove_cutoffs[MAX_SEARCH_DEPTH + 1];
+    int transposition_cutoffs[MAX_SEARCH_PLY + 1];
+    int nullmove_cutoffs[MAX_SEARCH_PLY + 1];
     int move_selection[HIST_BUCKETS + 1];
     int pv_move_selection[HIST_BUCKETS + 1];
     int razor_attempts[3];
@@ -75,7 +75,7 @@ typedef struct {
     int score;
     int max_ply;
     int qsearch_score;
-    move_t pv[MAX_SEARCH_DEPTH + 1];
+    move_t pv[MAX_SEARCH_PLY + 1];
 } root_move_t;
 
 typedef struct {
@@ -86,10 +86,10 @@ typedef struct {
     root_move_t root_moves[256];
     root_move_t* current_root_move;
     int best_score;
-    int scores_by_iteration[MAX_SEARCH_DEPTH + 1];
+    int scores_by_iteration[MAX_SEARCH_PLY + 1];
     int root_indecisiveness;
-    move_t pv[MAX_SEARCH_DEPTH + 1];
-    search_node_t search_stack[MAX_SEARCH_DEPTH + 1];
+    move_t pv[MAX_SEARCH_PLY + 1];
+    search_node_t search_stack[MAX_SEARCH_PLY + 1];
     history_t history;
     uint64_t nodes_searched;
     uint64_t qnodes_searched;
@@ -118,8 +118,8 @@ extern search_data_t root_data;
 #define DRAW_VALUE      0
 
 #define is_mate_score(score)    \
-    ((score+MAX_SEARCH_DEPTH+1>MATE_VALUE) || \
-     (score-MAX_SEARCH_DEPTH-1<-MATE_VALUE))
+    ((score+MAX_SEARCH_PLY+1>MATE_VALUE) || \
+     (score-MAX_SEARCH_PLY-1<-MATE_VALUE))
 #define mate_in(ply)                (MATE_VALUE-ply)
 #define mated_in(ply)               (-MATE_VALUE+ply)
 #define should_output(s)    \

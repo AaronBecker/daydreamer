@@ -154,7 +154,10 @@ bool should_stop_searching(search_data_t* data)
  * TODO: test the value of pawn push extensions. Maybe limit the situations
  * in which the pushes are extended to pv?
  */
-static int extend(position_t* pos, move_t move, bool single_reply)
+static int extend(position_t* pos,
+        move_t move,
+        bool single_reply,
+        bool full_window)
 {
     if (is_check(pos) || single_reply) return PLY;
     // FIXME: test this, for god's sake
@@ -319,7 +322,7 @@ static void record_failure(history_t* h, move_t move, int depth)
 static bool is_history_prune_allowed(history_t* h, move_t move, int depth)
 {
     int index = history_index(move);
-    return depth * h->success[index] < h->failure[index];
+    return depth_to_index(depth) * h->success[index] < h->failure[index];
 }
 
 /*
@@ -455,12 +458,13 @@ void deepening_search(search_data_t* search_data, bool ponder)
     int consecutive_fail_highs = 0;
     int consecutive_fail_lows = 0;
     if (!search_data->depth_limit) {
-        search_data->depth_limit = MAX_SEARCH_DEPTH;
+        search_data->depth_limit = MAX_SEARCH_PLY * PLY;
     }
     for (search_data->current_depth=2*PLY;
             search_data->current_depth <= search_data->depth_limit;
             search_data->current_depth += PLY) {
         int depth = search_data->current_depth;
+        int depth_index = depth_to_index(depth);
         if (should_output(search_data)) {
             if (options.verbose) print_transposition_stats();
             printf("info depth %d\n", depth_to_index(depth));
@@ -469,7 +473,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         // Calculate aspiration search window.
         int alpha = mated_in(-1);
         int beta = mate_in(-1);
-        int last_score = search_data->scores_by_iteration[depth-1];
+        int last_score = search_data->scores_by_iteration[depth_index];
         if (depth > 5*PLY && options.multi_pv == 1) {
             alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 40;
             beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 40;
@@ -499,7 +503,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
 
         // Record scores.
         id_score = search_data->best_score;
-        search_data->scores_by_iteration[depth] = id_score;
+        search_data->scores_by_iteration[depth_index] = id_score;
         if (id_score <= alpha) {
             consecutive_fail_lows++;
             consecutive_fail_highs = 0;
@@ -581,7 +585,7 @@ static search_result_t root_search(search_data_t* search_data,
         uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
         do_move(pos, move, &undo);
-        int ext = extend(pos, move, false);
+        int ext = extend(pos, move, false, true);
         int score;
         int depth = search_data->current_depth;
         int num_moves = search_data->current_move_index;
@@ -779,7 +783,7 @@ static int search(position_t* pos,
 
         undo_info_t undo;
         do_move(pos, move, &undo);
-        int ext = extend(pos, move, single_reply);
+        int ext = extend(pos, move, single_reply, full_window);
         if (ext && defer_move(&selector, move)) {
             undo_move(pos, move, &undo);
             continue;
@@ -965,7 +969,7 @@ static int quiesce(position_t* pos,
     }
 
     eval_data_t ed;
-    if (ply >= MAX_SEARCH_DEPTH/PLY-1) return full_eval(pos, &ed);
+    if (ply >= MAX_SEARCH_PLY-1) return full_eval(pos, &ed);
     int eval = alpha;
     if (!is_check(pos)) {
         eval = full_eval(pos, &ed);
