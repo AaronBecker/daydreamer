@@ -159,9 +159,9 @@ static int extend(position_t* pos, move_t move, bool single_reply)
     if (is_check(pos) || single_reply) return PLY;
     square_t sq = get_move_to(move);
     // FIXME: test this, for god's sake
-    if (piece_type(pos->board[sq]) == PAWN &&
-            (square_rank(sq) == RANK_7 ||
-             square_rank(sq) == RANK_2)) return PLY;
+    //if (piece_type(pos->board[sq]) == PAWN &&
+    //        (square_rank(sq) == RANK_7 ||
+    //         square_rank(sq) == RANK_2)) return PLY;
     return 0;
 }
 
@@ -842,12 +842,12 @@ static int search(position_t* pos,
                 score = -search(pos, search_node+1, ply+1,
                         -alpha-1, -alpha, depth+ext-PLY);
                 // FIXME: try this instead
-                //if (!full_window && score > alpha) {
-                //    score = -search(pos, search_node+1, ply+1,
-                //        -beta, -alpha, depth+ext-PLY);
-                //}
-                if (score > alpha) score = -search(pos, search_node+1, ply+1,
+                if (!full_window && score > alpha) {
+                    score = -search(pos, search_node+1, ply+1,
                         -beta, -alpha, depth+ext-PLY);
+                }
+                //if (score > alpha) score = -search(pos, search_node+1, ply+1,
+                //        -beta, -alpha, depth+ext-PLY);
             }
         }
         searched_moves[num_searched_moves++] = move;
@@ -972,10 +972,10 @@ static int quiesce(position_t* pos,
         if (alpha < eval) alpha = eval;
         if (alpha >= beta) return beta;
     }
-    if (trans_entry && eval > trans_entry->score &&
-            trans_entry->flags & SCORE_UPPERBOUND) eval = trans_entry->score;
-    if (trans_entry && eval < trans_entry->score &&
-            trans_entry->flags & SCORE_LOWERBOUND) eval = trans_entry->score;
+    //if (trans_entry && eval > trans_entry->score &&
+    //        trans_entry->flags & SCORE_UPPERBOUND) eval = trans_entry->score;
+    //if (trans_entry && eval < trans_entry->score &&
+    //        trans_entry->flags & SCORE_LOWERBOUND) eval = trans_entry->score;
 
     bool allow_futility = qfutility_enabled &&
         !full_window &&
