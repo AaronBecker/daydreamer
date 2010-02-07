@@ -473,7 +473,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         // Calculate aspiration search window.
         int alpha = mated_in(-1);
         int beta = mate_in(-1);
-        int last_score = search_data->scores_by_iteration[depth_index];
+        int last_score = search_data->scores_by_iteration[depth_index-1];
         if (depth > 5*PLY && options.multi_pv == 1) {
             alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 40;
             beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 40;
