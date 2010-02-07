@@ -9,6 +9,9 @@ extern "C" {
 #include <limits.h>
 #include <stdlib.h>
 
+#ifndef GIT_VERSION
+#define GIT_VERSION
+#endif
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.61"
 #define ENGINE_VERSION_NAME     " frac0_" GIT_VERSION

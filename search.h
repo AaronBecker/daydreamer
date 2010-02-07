@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define PLY                 10000
+#define PLY                 1
 #define MAX_SEARCH_PLY      127
 #define depth_to_index(x)   ((x)/PLY)
 

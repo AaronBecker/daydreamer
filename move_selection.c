@@ -72,7 +72,7 @@ void init_move_selector(move_selector_t* sel,
         }
         sel->killers[4] = NO_MOVE;
     } else {
-        sel->killers[0] = NO_MOVE;
+        sel->killers[0] = sel->killers[1] = NO_MOVE;
     }
     sel->deferred_moves[0] = NO_MOVE;
     sel->num_deferred_moves = 0;
@@ -381,14 +381,15 @@ static void sort_root_moves(move_selector_t* sel)
     int i;
     for (i=0; root_data.root_moves[i].move != NO_MOVE; ++i) {
         sel->moves[i] = root_data.root_moves[i].move;
-        if (sel->depth <= 2*PLY) {
+        if (sel->moves[i] == sel->hash_move[0]) {
+            sel->scores[i] = INT64_MAX;
+        } else if (sel->depth <= 2*PLY) {
             sel->scores[i] = root_data.root_moves[i].qsearch_score;
         } else if (options.multi_pv > 1) {
             sel->scores[i] = root_data.root_moves[i].score;
         } else {
             sel->scores[i] = (int64_t)root_data.root_moves[i].nodes;
         }
-        if (sel->moves[i] == sel->hash_move[0]) sel->scores[i] = INT64_MAX;
     }
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;

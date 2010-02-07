@@ -52,7 +52,7 @@ static void uci_print_help(void)
  */
 void uci_read_stream(FILE* stream)
 {
-    char command[4096];
+    char command[4096] = { 0 };
     while (fgets(command, 4096, stream)) uci_handle_command(command);
 }
 
