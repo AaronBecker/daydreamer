@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define PLY                 100
+#define PLY                 1
 #define MAX_SEARCH_PLY      127
 #define depth_to_index(x)   ((x)/PLY)
 
@@ -65,7 +65,7 @@ typedef struct {
 
 #define MAX_HISTORY         1000000
 #define MAX_HISTORY_INDEX   (16*64)
-#define depth_to_history(d) ((d)*(d) / (PLY*PLY))
+#define depth_to_history(d) (((d)/PLY)*((d)/PLY))
 #define history_index(m)   \
     ((get_move_piece_type(m)<<6)|(square_to_index(get_move_to(m))))
 
@@ -118,10 +118,10 @@ extern search_data_t root_data;
 #define DRAW_VALUE      0
 
 #define is_mate_score(score)    \
-    ((score+MAX_SEARCH_PLY+1>MATE_VALUE) || \
-     (score-MAX_SEARCH_PLY-1<-MATE_VALUE))
-#define mate_in(ply)                (MATE_VALUE-ply)
-#define mated_in(ply)               (-MATE_VALUE+ply)
+    (((score)+MAX_SEARCH_PLY+1>MATE_VALUE) || \
+     ((score)-MAX_SEARCH_PLY-1<-MATE_VALUE))
+#define mate_in(ply)                (MATE_VALUE-(ply))
+#define mated_in(ply)               (-MATE_VALUE+(ply))
 #define should_output(s)    \
     (elapsed_time(&((s)->timer)) > options.output_delay)
 

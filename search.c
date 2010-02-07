@@ -31,9 +31,11 @@ static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
 static const int qfutility_margin = 80;
-static const int futility_margin[futility_depth_limit] = { 100, 150, 175, 200 };
-static const int razor_margin[razor_depth_limit] = { 300, 300, 350 };
-static const int razor_qmargin[razor_depth_limit] = { 125, 300, 300 };
+static const int futility_margin[futility_depth_limit/PLY] = {
+    100, 150, 175, 200
+};
+static const int razor_margin[razor_depth_limit/PLY] = { 300, 300, 350 };
+static const int razor_qmargin[razor_depth_limit/PLY] = { 125, 300, 300 };
 
 static search_result_t root_search(search_data_t* search_data,
         int alpha,
@@ -719,9 +721,10 @@ static int search(position_t* pos,
             !is_mate_score(beta) &&
             is_nullmove_allowed(pos)) {
         // Nullmove search.
+        // TODO: investigate fractional depth reductions
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        int null_r = 2*PLY + (depth + 2*PLY)/4;
+        int null_r = 2*PLY + ((depth/PLY + 2)/4)*PLY;
         if (lazy_score - beta > PAWN_VAL) null_r += PLY;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
@@ -745,7 +748,7 @@ static int search(position_t* pos,
             !is_mate_score(beta) &&
             lazy_score + razor_margin[depth-1] < beta) {
         // Razoring.
-        // TODO: patch up the weird d=1 behavior
+        // TODO: patch up the weird d=1 behavior, figure out the window stuff.
         root_data.stats.razor_attempts[depth_index-1]++;
         int qbeta = depth <= PLY ? beta : beta - razor_qmargin[depth_index-1];
         int qalpha = depth <= PLY ? alpha : qbeta-1;
@@ -757,12 +760,13 @@ static int search(position_t* pos,
     }
 
     // Internal iterative deepening.
+    // TODO: investigate fractional ply here as well.
     if (iid_enabled &&
             hash_move == NO_MOVE &&
             is_iid_allowed(full_window, depth)) {
         const int iid_depth = full_window ?
                 depth - iid_pv_depth_reduction :
-                MIN(depth / 2, depth - iid_non_pv_depth_reduction);
+                MIN((depth/PLY/2)*PLY, depth - iid_non_pv_depth_reduction);
         assert(iid_depth > 0);
         search(pos, search_node, ply, alpha, beta, iid_depth);
         hash_move = search_node->pv[ply];
@@ -995,6 +999,7 @@ static int quiesce(position_t* pos,
             move = select_move(&selector), ++num_qmoves) {
         // TODO: prevent futility for passed pawn moves and checks
         // TODO: no futility on early moves?
+        // TODO: should we allow futility on open window nodes?
         if (allow_futility &&
                 get_move_promote(move) != QUEEN &&
                 eval + material_value(get_move_capture(move)) +
