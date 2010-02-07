@@ -106,7 +106,7 @@ int lmr_reduction(move_selector_t* sel, move_t move)
             sel->quiet_moves_so_far < 3 ||
             get_move_capture(move)) return PLY/2;
     if (score >= 0) return PLY;
-    return PLY + PLY/2;
+    return sel->moves_so_far > 12 ? 2*PLY : PLY + PLY/2;
 }
 
 /*
