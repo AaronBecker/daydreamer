@@ -161,7 +161,8 @@ static int extend(position_t* pos,
         bool single_reply,
         bool full_window)
 {
-    if (is_check(pos) || single_reply) return PLY;
+    if (single_reply) return PLY;
+    if (is_check(pos)) return full_window ? PLY : PLY/2;
     // FIXME: test this, for god's sake
     //square_t sq = get_move_to(move);
     //if (piece_type(pos->board[sq]) == PAWN &&
