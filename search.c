@@ -162,7 +162,7 @@ static float extend(position_t* pos,
         bool full_window)
 {
     if (single_reply) return PLY;
-    if (is_check(pos)) return full_window ? PLY : PLY/2.0;
+    if (is_check(pos)) return PLY;
     //square_t sq = get_move_to(move);
     //if (piece_type(pos->board[sq]) == PAWN &&
     //        (square_rank(sq) == RANK_7 ||

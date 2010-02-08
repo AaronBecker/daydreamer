@@ -101,12 +101,10 @@ float lmr_reduction(move_selector_t* sel, move_t move)
     int score = sel->scores[move_idx];
     assert(sel->moves[move_idx] == move);
     if (get_move_promote(move) == QUEEN ||
-        (get_move_capture(move) && score >= 0)) return 0;
-    if (is_move_castle(move) ||
-            sel->quiet_moves_so_far < 3 ||
-            get_move_capture(move)) return PLY/2;
-    if (score >= 0) return PLY;
-    return sel->moves_so_far > 12 ? 2*PLY : PLY + PLY/2;
+        get_move_capture(move) ||
+        is_move_castle(move) ||
+        sel->quiet_moves_so_far < 2) return 0;
+    return PLY + 0.1*sel->moves_so_far;
 }
 
 /*
