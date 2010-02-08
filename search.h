@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-#define PLY                 1
+#define PLY                 1.0
 #define MAX_SEARCH_PLY      127
-#define depth_to_index(x)   ((x)/PLY)
+#define depth_to_index(x)   ((int)(x))
 
 typedef enum {
     SEARCH_ABORTED, SEARCH_FAIL_HIGH, SEARCH_FAIL_LOW, SEARCH_EXACT
@@ -65,7 +65,7 @@ typedef struct {
 
 #define MAX_HISTORY         1000000
 #define MAX_HISTORY_INDEX   (16*64)
-#define depth_to_history(d) (((d)/PLY)*((d)/PLY))
+#define depth_to_history(d) ((int)((d)*(d)))
 #define history_index(m)   \
     ((get_move_piece_type(m)<<6)|(square_to_index(get_move_to(m))))
 
@@ -94,7 +94,7 @@ typedef struct {
     uint64_t nodes_searched;
     uint64_t qnodes_searched;
     uint64_t pvnodes_searched;
-    int current_depth;
+    float current_depth;
     int current_move_index;
     bool resolving_fail_high;
     move_t obvious_move;
@@ -103,7 +103,7 @@ typedef struct {
     // when should we stop?
     milli_timer_t timer;
     uint64_t node_limit;
-    int depth_limit;
+    float depth_limit;
     int time_limit;
     int time_target;
     int time_bonus;

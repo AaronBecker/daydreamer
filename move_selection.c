@@ -95,7 +95,7 @@ bool should_try_prune(move_selector_t* sel, move_t move)
         !is_move_castle(move);
 }
 
-int lmr_reduction(move_selector_t* sel, move_t move)
+float lmr_reduction(move_selector_t* sel, move_t move)
 {
     assert(sel->moves[sel->current_move_index-1] == move);
     bool do_lmr = sel->quiet_moves_so_far > 2 &&
