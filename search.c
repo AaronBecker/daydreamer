@@ -12,30 +12,30 @@ static const bool value_prune_enabled = true;
 static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
 
-#define razor_depth_limit       (3*PLY)
-#define futility_depth_limit    (4*PLY)
-static const int null_verification_reduction = 5*PLY;
+#define razor_depth_limit       3
+#define futility_depth_limit    4
+static const float null_verification_reduction = 5.0;
 static const int null_eval_margin = 200;
 static const int lmr_pv_early_moves = 10;
 static const int lmr_early_moves = 3;
-static const int lmr_depth_limit = 1*PLY;
+static const float lmr_depth_limit = 1.0;
 
 static const bool enable_pv_iid = true;
 static const bool enable_non_pv_iid = false;
-static const int iid_pv_depth_reduction = 2*PLY;
-static const int iid_non_pv_depth_reduction = 2*PLY;
-static const int iid_pv_depth_cutoff = 5*PLY;
-static const int iid_non_pv_depth_cutoff = 8*PLY;
+static const float iid_pv_depth_reduction = 2.0;
+static const float iid_non_pv_depth_reduction = 2.0;
+static const float iid_pv_depth_cutoff = 5.0;
+static const float iid_non_pv_depth_cutoff = 8.0;
 
 static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
 static const int qfutility_margin = 80;
-static const int futility_margin[futility_depth_limit/PLY] = {
+static const int futility_margin[futility_depth_limit] = {
     100, 150, 175, 200
 };
-static const int razor_margin[razor_depth_limit/PLY] = { 300, 300, 350 };
-static const int razor_qmargin[razor_depth_limit/PLY] = { 125, 300, 300 };
+static const int razor_margin[razor_depth_limit] = { 300, 300, 350 };
+static const int razor_qmargin[razor_depth_limit] = { 125, 300, 300 };
 
 static search_result_t root_search(search_data_t* search_data,
         int alpha,
@@ -45,13 +45,13 @@ static int search(position_t* pos,
         int ply,
         int alpha,
         int beta,
-        int depth);
+        float depth);
 static int quiesce(position_t* pos,
         search_node_t* search_node,
         int ply,
         int alpha,
         int beta,
-        int depth);
+        float depth);
 
 /*
  * Zero out all search variables prior to starting a search. Leaves the
@@ -137,7 +137,7 @@ bool should_stop_searching(search_data_t* data)
     // If we've passed our soft limit but we're in the middle of resolving a
     // fail high, try to resolve it before hitting the hard limit.
     if (data->time_target && !data->resolving_fail_high &&
-            so_far > 4 * real_target) return true;
+            so_far > 4*real_target) return true;
 
     // Respect node limits, if you're into that kind of thing.
     if (data->node_limit &&
@@ -156,12 +156,13 @@ bool should_stop_searching(search_data_t* data)
  * TODO: test the value of pawn push extensions. Maybe limit the situations
  * in which the pushes are extended to pv?
  */
-static int extend(position_t* pos,
+static float extend(position_t* pos,
         move_t move,
         bool single_reply,
         bool full_window)
 {
-    if (is_check(pos) || single_reply) return PLY;
+    if (single_reply) return PLY;
+    if (is_check(pos)) return full_window ? PLY : PLY/2.0;
     //square_t sq = get_move_to(move);
     //if (piece_type(pos->board[sq]) == PAWN &&
     //        (square_rank(sq) == RANK_7 ||
@@ -222,7 +223,7 @@ static bool should_deepen(search_data_t* data)
  * Should we look up the current position in an endgame database?
  */
 static bool should_probe_egbb(position_t* pos,
-        int depth,
+        float depth,
         int ply,
         int m50,
         int alpha,
@@ -339,7 +340,7 @@ static bool is_history_reduction_allowed(history_t* h, move_t move)
 /*
  * Can we do internal iterative deepening?
  */
-static bool is_iid_allowed(bool full_window, int depth)
+static bool is_iid_allowed(bool full_window, float depth)
 {
     if (full_window && (!enable_pv_iid ||
                 iid_pv_depth_cutoff >= depth)) return false;
@@ -376,7 +377,7 @@ void init_root_move(root_move_t* root_move, move_t move)
     undo_info_t undo;
     do_move(&root_data.root_pos, move, &undo);
     root_move->qsearch_score = -quiesce(&root_data.root_pos,
-            root_data.search_stack, 1, mated_in(-1), mate_in(-1), 0);
+            root_data.search_stack, 1, mated_in(-1), mate_in(-1), 0.0);
     undo_move(&root_data.root_pos, move, &undo);
     root_move->pv[0] = move;
 }
@@ -464,11 +465,11 @@ void deepening_search(search_data_t* search_data, bool ponder)
     for (search_data->current_depth=2*PLY;
             search_data->current_depth <= search_data->depth_limit;
             search_data->current_depth += PLY) {
-        int depth = search_data->current_depth;
+        float depth = search_data->current_depth;
         int depth_index = depth_to_index(depth);
         if (should_output(search_data)) {
             if (options.verbose) print_transposition_stats();
-            printf("info depth %d\n", depth_to_index(depth));
+            printf("info depth %d\n", depth_index);
         }
 
         // Calculate aspiration search window.
@@ -493,7 +494,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         else if (result == SEARCH_FAIL_HIGH) score_type = SCORE_LOWERBOUND;
         put_transposition_line(&search_data->root_pos,
                 search_data->pv,
-                depth,
+                (int)depth,
                 search_data->best_score,
                 score_type);
 
@@ -552,7 +553,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
 /*
  * Perform search at the root position. |search_data| contains all relevant
  * search information, which is set in |deepening_search|.
- * TODO: aspiration window?
  */
 static search_result_t root_search(search_data_t* search_data,
         int alpha,
@@ -566,7 +566,7 @@ static search_result_t root_search(search_data_t* search_data,
 
     move_selector_t selector;
     init_move_selector(&selector, pos, ROOT_GEN,
-            NULL, hash_move, search_data->current_depth, 0);
+            NULL, hash_move, (int)search_data->current_depth, 0);
     search_data->current_move_index = 0;
     search_data->resolving_fail_high = false;
     for (move_t move = select_move(&selector); move != NO_MOVE;
@@ -586,10 +586,10 @@ static search_result_t root_search(search_data_t* search_data,
         uint64_t nodes_before = search_data->nodes_searched;
         undo_info_t undo;
         do_move(pos, move, &undo);
-        int ext = extend(pos, move, false, true);
-        int score;
-        int depth = search_data->current_depth;
+        float ext = extend(pos, move, false, true);
+        float depth = search_data->current_depth;
         int num_moves = search_data->current_move_index;
+        int score;
 
         if (search_data->current_move_index < options.multi_pv) {
             // Use full window search.
@@ -599,7 +599,7 @@ static search_result_t root_search(search_data_t* search_data,
         } else {
             const bool try_lmr = lmr_enabled &&
                 num_moves > 10 &&
-                !ext &&
+                ext != 0 &&
                 depth > lmr_depth_limit &&
                 !is_check(pos);
             int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
@@ -670,7 +670,7 @@ static int search(position_t* pos,
         int ply,
         int alpha,
         int beta,
-        int depth)
+        float depth)
 {
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
@@ -698,7 +698,7 @@ static int search(position_t* pos,
 
     // Check endgame bitbases if appropriate
     int score;
-    if (should_probe_egbb(pos, depth, ply,
+    if (should_probe_egbb(pos, (int)depth, ply,
                 pos->fifty_move_counter, alpha, beta)) {
         if (probe_egbb(pos, &score, ply)) {
             ++root_data.stats.egbb_hits;
@@ -723,7 +723,7 @@ static int search(position_t* pos,
         // TODO: investigate fractional depth reductions
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        int null_r = 2*PLY + ((depth/PLY + 2)/4)*PLY;
+        float null_r = 2*PLY + ((depth/PLY + 2)/4)*PLY;
         if (lazy_score - beta > PAWN_VAL) null_r += PLY;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
@@ -731,7 +731,7 @@ static int search(position_t* pos,
         if (is_mate_score(null_score) && null_score < 0) mate_threat = true;
         if (null_score >= beta) {
             if (verification_enabled) {
-                int rdepth = depth - null_verification_reduction;
+                float rdepth = depth - null_verification_reduction;
                 if (rdepth > 0) null_score = search(pos,
                         search_node, ply, alpha, beta, rdepth);
             }
@@ -745,7 +745,7 @@ static int search(position_t* pos,
             depth <= razor_depth_limit &&
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
-            lazy_score + razor_margin[depth-1] < beta) {
+            lazy_score + razor_margin[depth_index-1] < beta) {
         // Razoring.
         // TODO: patch up the weird d=1 behavior, figure out the window stuff.
         root_data.stats.razor_attempts[depth_index-1]++;
@@ -775,7 +775,7 @@ static int search(position_t* pos,
     move_t searched_moves[256];
     move_selector_t selector;
     init_move_selector(&selector, pos, full_window ? PV_GEN : NONPV_GEN,
-            search_node, hash_move, depth, ply);
+            search_node, hash_move, (int)depth, ply);
     // TODO: test extensions. Also try fractional extensions.
     bool single_reply = has_single_reply(&selector);
     int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
@@ -786,7 +786,7 @@ static int search(position_t* pos,
 
         undo_info_t undo;
         do_move(pos, move, &undo);
-        int ext = extend(pos, move, single_reply, full_window);
+        float ext = extend(pos, move, single_reply, full_window);
         if (ext && defer_move(&selector, move)) {
             undo_move(pos, move, &undo);
             continue;
@@ -841,7 +841,7 @@ static int search(position_t* pos,
                 !ext &&
                 !mate_threat &&
                 depth > lmr_depth_limit;
-            const int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
+            const float lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
             if (lmr_red) score = -search(pos, search_node+1, ply+1,
                     -alpha-1, -alpha, depth-lmr_red-PLY);
             else score = alpha+1;
@@ -884,7 +884,7 @@ static int search(position_t* pos,
                 if (is_mate_score(score) && score > 0) {
                     search_node->mate_killer = move;
                 }
-                put_transposition(pos, move, depth, beta,
+                put_transposition(pos, move, (int)depth, beta,
                         SCORE_LOWERBOUND, mate_threat);
                 root_data.stats.move_selection[
                     MIN(num_legal_moves-1, HIST_BUCKETS)]++;
@@ -913,10 +913,10 @@ static int search(position_t* pos,
     if (full_window) root_data.stats.pv_move_selection[
         MIN(num_legal_moves-1, HIST_BUCKETS)]++;
     if (alpha == orig_alpha) {
-        put_transposition(pos, NO_MOVE, depth, alpha,
+        put_transposition(pos, NO_MOVE, (int)depth, alpha,
                 SCORE_UPPERBOUND, mate_threat);
     } else {
-        put_transposition(pos, search_node->pv[ply], depth, alpha,
+        put_transposition(pos, search_node->pv[ply], (int)depth, alpha,
                 SCORE_EXACT, mate_threat);
     }
     return alpha;
@@ -932,7 +932,7 @@ static int quiesce(position_t* pos,
         int ply,
         int alpha,
         int beta,
-        int depth)
+        float depth)
 {
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
     if (root_data.current_root_move &&
@@ -953,7 +953,7 @@ static int quiesce(position_t* pos,
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
     if (trans_entry && 
-            is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
+            is_trans_cutoff_allowed(trans_entry, (int)depth, &alpha, &beta)) {
         search_node->pv[ply] = hash_move;
         search_node->pv[ply+1] = NO_MOVE;
         root_data.stats.transposition_cutoffs[
@@ -1012,7 +1012,7 @@ static int quiesce(position_t* pos,
             update_pv(search_node->pv, (search_node+1)->pv, ply, move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
-                put_transposition(pos, move, depth, beta,
+                put_transposition(pos, move, (int)depth, beta,
                         SCORE_LOWERBOUND, false);
                 return beta;
             }
@@ -1022,10 +1022,10 @@ static int quiesce(position_t* pos,
         return mated_in(ply);
     }
     if (alpha == orig_alpha) {
-        put_transposition(pos, NO_MOVE, depth, alpha,
+        put_transposition(pos, NO_MOVE, (int)depth, alpha,
                 SCORE_UPPERBOUND, false);
     } else {
-        put_transposition(pos, search_node->pv[ply], depth, alpha,
+        put_transposition(pos, search_node->pv[ply], (int)depth, alpha,
                 SCORE_EXACT, false);
     }
     return alpha;

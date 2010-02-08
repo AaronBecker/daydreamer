@@ -95,7 +95,7 @@ bool should_try_prune(move_selector_t* sel, move_t move)
         !is_move_castle(move);
 }
 
-int lmr_reduction(move_selector_t* sel, move_t move)
+float lmr_reduction(move_selector_t* sel, move_t move)
 {
     int move_idx = sel->current_move_index-1;
     int score = sel->scores[move_idx];

@@ -45,7 +45,7 @@ void benchmark(int depth, int time_limit)
         deepening_search(&root_data, false);
         time = stop_timer(&bench_timer);
         printf("time: %d\ndepth: %d\nnodes: %"PRIu64"\n",
-                time, root_data.current_depth, root_data.nodes_searched);
+                time, (int)root_data.current_depth, root_data.nodes_searched);
         total_nodes += root_data.nodes_searched;
     }
     time = elapsed_time(&bench_timer);
