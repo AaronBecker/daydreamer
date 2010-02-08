@@ -58,14 +58,14 @@ typedef struct {
 } search_stats_t;
 
 typedef struct {
-    int history[16*64]; // move indexed by piece type and destination square
+    float history[16*64]; // move indexed by piece type and destination square
     int success[16*64];
     int failure[16*64];
 } history_t;
 
 #define MAX_HISTORY         1000000
 #define MAX_HISTORY_INDEX   (16*64)
-#define depth_to_history(d) ((int)((d)*(d)))
+#define depth_to_history(d) ((d)*(d))
 #define history_index(m)   \
     ((get_move_piece_type(m)<<6)|(square_to_index(get_move_to(m))))
 

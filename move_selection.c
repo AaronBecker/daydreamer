@@ -346,7 +346,7 @@ static void score_moves(move_selector_t* sel)
         } else if (move == sel->killers[3]) {
             score = killer_score-3;
         } else {
-            score = root_data.history.history[history_index(move)];
+            score = (int64_t)root_data.history.history[history_index(move)];
         }
         scores[i] = score;
     }
