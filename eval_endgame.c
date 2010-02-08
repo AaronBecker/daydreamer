@@ -63,11 +63,17 @@ eg_score_fn eg_score_fns[] = {
 
 bool endgame_score(const position_t* pos, eval_data_t* ed, int* score)
 {
+    if (ed->md->eg_type == EG_KPK) {
+        if (!probe_egbb(pos, score, 0)) assert(false);
+        return true;
+    }
+    /* FIXME
     eg_score_fn fn = eg_score_fns[ed->md->eg_type];
     if (fn) {
         *score = fn(pos, ed);
         return true;
     }
+    */
     return false;
 }
 
