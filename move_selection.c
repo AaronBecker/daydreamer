@@ -99,13 +99,13 @@ float lmr_reduction(move_selector_t* sel, move_t move)
 {
     int move_idx = sel->current_move_index-1;
     int score = sel->scores[move_idx];
-    float lateness = sel->moves_so_far * 0.05;
     assert(sel->moves[move_idx] == move);
     if (get_move_promote(move) == QUEEN ||
-        (get_move_capture(move) && score >= 0)) return lateness;
+        (get_move_capture(move) && score >= 0)) return 0;
     if (is_move_castle(move) ||
             sel->quiet_moves_so_far < 3 ||
-            get_move_capture(move)) return PLY/2 + lateness;
+            get_move_capture(move)) return PLY/2;
+    float lateness = sel->moves_so_far * 0.05;
     if (score >= 0) return PLY + lateness;
     return 3*PLY/2 + lateness;
 }
