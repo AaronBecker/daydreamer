@@ -823,8 +823,8 @@ static int search(position_t* pos,
                 if (value_prune_enabled &&
                         lazy_score +
                         material_value(get_move_capture(move)) +
-                        85 + 15*depth + 2*depth*depth <
-                        //futility_margin[depth_index-1] <
+                        50*log2f((MAX(1.0, depth*depth/2))) <
+                        //85 + 15*depth + 2*depth*depth <
                         beta + 2*num_legal_moves) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
