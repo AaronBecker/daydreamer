@@ -7,7 +7,7 @@ static const bool verification_enabled = true;
 static const bool iid_enabled = true;
 static const bool razoring_enabled = true;
 static const bool futility_enabled = true;
-static const bool history_prune_enabled = false;
+static const bool history_prune_enabled = true;
 static const bool value_prune_enabled = true;
 static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
@@ -806,7 +806,7 @@ static int search(position_t* pos,
                 !full_window &&
                 !ext &&
                 !mate_threat &&
-                depth <= 5.0 &&
+                depth <= 5.5 &&
                 !is_check(pos) &&
                 num_legal_moves >= depth_index + 2 &&
                 should_try_prune(&selector, move);
