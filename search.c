@@ -823,8 +823,7 @@ static int search(position_t* pos,
                 if (value_prune_enabled &&
                         lazy_score +
                         material_value(get_move_capture(move)) +
-                        50*log2f((MAX(1.0, 2*depth*depth))) <
-                        //85 + 15*depth + 2*depth*depth <
+                        85 + 15*depth + 2*depth*depth <
                         beta + 2*num_legal_moves) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
@@ -977,13 +976,15 @@ static int quiesce(position_t* pos,
     int eval = alpha;
     if (!is_check(pos)) {
         eval = full_eval(pos, &ed);
+        if ((trans_entry && eval > trans_entry->score &&
+                    trans_entry->flags & SCORE_UPPERBOUND) ||
+                (trans_entry && eval < trans_entry->score &&
+                 trans_entry->flags & SCORE_LOWERBOUND)) {
+            eval = trans_entry->score;
+        }
         if (alpha < eval) alpha = eval;
         if (alpha >= beta) return beta;
     }
-    //if (trans_entry && eval > trans_entry->score &&
-    //        trans_entry->flags & SCORE_UPPERBOUND) eval = trans_entry->score;
-    //if (trans_entry && eval < trans_entry->score &&
-    //        trans_entry->flags & SCORE_LOWERBOUND) eval = trans_entry->score;
 
     bool allow_futility = qfutility_enabled &&
         !full_window &&
