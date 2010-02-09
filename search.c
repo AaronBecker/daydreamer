@@ -30,7 +30,7 @@ static const float iid_non_pv_depth_cutoff = 8.0;
 static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
-static const int qfutility_margin = 80;
+static const int qfutility_margin = 90;
 static const int futility_margin[futility_depth_limit] = {
     100, 150, 175, 200
 };
@@ -806,7 +806,7 @@ static int search(position_t* pos,
                 !full_window &&
                 !ext &&
                 !mate_threat &&
-                depth <= 5.5 &&
+                depth <= 5.0 &&
                 !is_check(pos) &&
                 num_legal_moves >= depth_index + 2 &&
                 should_try_prune(&selector, move);
