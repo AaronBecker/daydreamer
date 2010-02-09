@@ -723,7 +723,7 @@ static int search(position_t* pos,
         // TODO: investigate fractional depth reductions
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        float null_r = 2*PLY + ((depth/PLY + 2)/4)*PLY;
+        float null_r = 2.0 + ((depth + 2.0)/4.0);
         if (lazy_score - beta > PAWN_VAL) null_r += PLY;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
@@ -823,7 +823,8 @@ static int search(position_t* pos,
                 if (value_prune_enabled &&
                         lazy_score +
                         material_value(get_move_capture(move)) +
-                        futility_margin[depth_index-1] <
+                        80 + 24*depth <
+                        //futility_margin[depth_index-1] <
                         beta + 2*num_legal_moves) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
