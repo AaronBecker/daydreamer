@@ -30,7 +30,7 @@ static const float iid_non_pv_depth_cutoff = 8.0;
 static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
-static const int qfutility_margin = 75;
+static const int qfutility_margin = 80;
 static const int futility_margin[futility_depth_limit] = {
     100, 150, 175, 200
 };
@@ -723,7 +723,7 @@ static int search(position_t* pos,
         // TODO: investigate fractional depth reductions
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        float null_r = 2.0 + ((depth + 2.0)/4.0);
+        float null_r = 2.0 + ((depth + 3.0)/4.0);
         if (lazy_score - beta > PAWN_VAL) null_r += PLY;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
