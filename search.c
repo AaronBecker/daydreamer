@@ -7,7 +7,7 @@ static const bool verification_enabled = true;
 static const bool iid_enabled = true;
 static const bool razoring_enabled = true;
 static const bool futility_enabled = true;
-static const bool history_prune_enabled = true;
+static const bool history_prune_enabled = false;
 static const bool value_prune_enabled = true;
 static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
@@ -30,7 +30,7 @@ static const float iid_non_pv_depth_cutoff = 8.0;
 static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
-static const int qfutility_margin = 65;
+static const int qfutility_margin = 80;
 static const int futility_margin[futility_depth_limit] = {
     100, 150, 175, 200
 };
