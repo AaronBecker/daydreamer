@@ -806,7 +806,7 @@ static int search(position_t* pos,
                 !full_window &&
                 !ext &&
                 !mate_threat &&
-                depth <= 6.0 &&
+                depth <= 5.0 &&
                 !is_check(pos) &&
                 num_legal_moves >= depth_index + 2 &&
                 should_try_prune(&selector, move);
@@ -823,7 +823,7 @@ static int search(position_t* pos,
                 if (value_prune_enabled &&
                         lazy_score +
                         material_value(get_move_capture(move)) +
-                        75 + 25*depth + 5*depth*depth <
+                        75 + 10*depth + 5*depth*depth <
                         //futility_margin[depth_index-1] <
                         beta + 2*num_legal_moves) {
                     num_futile_moves++;
