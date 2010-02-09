@@ -806,7 +806,7 @@ static int search(position_t* pos,
                 !full_window &&
                 !ext &&
                 !mate_threat &&
-                depth <= futility_depth_limit &&
+                depth <= 5.0 &&
                 !is_check(pos) &&
                 num_legal_moves >= depth_index + 2 &&
                 should_try_prune(&selector, move);
