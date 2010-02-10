@@ -742,7 +742,8 @@ static int search(position_t* pos,
             depth <= razor_depth_limit &&
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
-            lazy_score + 300 + depth*depth*depth*2 < beta) {
+            lazy_score + 200 + 100*log2f(MAX(1.0, depth)) < beta) {
+            //lazy_score + 300 + depth*depth*depth*2 < beta) {
             //lazy_score + razor_margin[depth_index-1] < beta) {
         // Razoring.
         // TODO: patch up the weird d=1 behavior, figure out the window stuff.
