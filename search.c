@@ -720,7 +720,7 @@ static int search(position_t* pos,
         undo_info_t undo;
         do_nullmove(pos, &undo);
         float null_r = 2.0 + ((depth + 2.0)/4.0) +
-            MAX(0, (lazy_score-beta)/100.0);
+            CLAMP(0, 1.5, (lazy_score-beta)/100.0);
         //if (lazy_score - beta > PAWN_VAL) null_r += PLY;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
@@ -749,7 +749,6 @@ static int search(position_t* pos,
     }
 
     // Internal iterative deepening.
-    // TODO: investigate fractional ply here as well.
     if (iid_enabled &&
             hash_move == NO_MOVE &&
             is_iid_allowed(full_window, depth)) {
@@ -766,7 +765,6 @@ static int search(position_t* pos,
     move_selector_t selector;
     init_move_selector(&selector, pos, full_window ? PV_GEN : NONPV_GEN,
             search_node, hash_move, (int)depth, ply);
-    // TODO: test extensions. Also try fractional extensions.
     bool single_reply = has_single_reply(&selector);
     int num_legal_moves = 0, num_futile_moves = 0, num_searched_moves = 0;
     for (move_t move = select_move(&selector); move != NO_MOVE;
@@ -802,6 +800,10 @@ static int search(position_t* pos,
                 should_try_prune(&selector, move);
             if (prune_futile) {
                 // History pruning.
+                // TODO: try more stringent depth requirements
+                // TODO: try pruning based on pure move ordering, or work
+                // move order into the history count
+                // TODO: experiment with pruning inside pv
                 if (history_prune_enabled && is_history_prune_allowed(
                             &root_data.history, move, depth)) {
                     num_futile_moves++;
@@ -838,11 +840,6 @@ static int search(position_t* pos,
             if (score > alpha) {
                 score = -search(pos, search_node+1, ply+1,
                         -alpha-1, -alpha, depth+ext-PLY);
-                // FIXME: try this instead
-                //if (!full_window && score > alpha) {
-                //    score = -search(pos, search_node+1, ply+1,
-                //        -beta, -alpha, depth+ext-PLY);
-                //}
                 if (score > alpha) score = -search(pos, search_node+1, ply+1,
                         -beta, -alpha, depth+ext-PLY);
             }
