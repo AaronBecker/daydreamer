@@ -134,3 +134,15 @@ int static_exchange_eval(const position_t* pos, move_t move)
     }
     return gain[0];
 }
+
+/*
+ * If we only care about whether or not a move is losing, sometimes we don't
+ * need a full static exchange eval and can bail out early.
+ */
+int static_exchange_sign(const position_t* pos, move_t move)
+{
+    piece_type_t attacker_type = piece_type(get_move_piece(move));
+    piece_type_t captured_type = piece_type(get_move_capture(move));
+    if (attacker_type == KING || attacker_type <= captured_type) return 1;
+    return static_exchange_eval(pos, move);
+}

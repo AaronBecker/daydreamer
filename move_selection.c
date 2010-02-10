@@ -366,7 +366,7 @@ static int64_t score_tactical_move(position_t* pos, move_t move)
     piece_type_t capture = piece_type(get_move_capture(move));
     if (promote != NONE && promote != QUEEN) good_tactic = false;
     else if (capture != NONE && piece <= capture) good_tactic = true;
-    else good_tactic = (static_exchange_eval(pos, move) >= 0);
+    else good_tactic = (static_exchange_sign(pos, move) >= 0);
     return 6*capture - piece + 5 +
         (good_tactic ? good_tactic_score : bad_tactic_score);
 }

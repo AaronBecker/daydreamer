@@ -373,10 +373,6 @@ int input_available(void)
     static int init=0, pipe=0;
     static HANDLE inh;
     DWORD dw;
-    /*
-     * If we're running under XBoard then we can't use _kbhit() as the input
-     * commands are sent to us directly over the internal pipe
-     */
 #if defined(FILE_CNT)
     if (stdin->_cnt > 0) return stdin->_cnt;
 #endif

@@ -332,7 +332,7 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                             create_piece(side, PAWN), EMPTY, QUEEN) :
                     create_move(passer, target,
                             create_piece(side, PAWN), EMPTY);
-                if (static_exchange_eval(pos, push) >= 0) {
+                if (static_exchange_sign(pos, push) >= 0) {
                     passer_bonus[side] += advanceable_passer_bonus[rank];
                 }
             }
