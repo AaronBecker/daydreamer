@@ -743,14 +743,14 @@ static int search(position_t* pos,
             depth <= razor_depth_limit &&
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
-            lazy_score + razor_margin[depth_index-1] < beta) {
-            //lazy_score + 300 + depth*depth*depth*2 < beta) {
+            //lazy_score + razor_margin[depth_index-1] < beta) {
+            lazy_score + 300 + depth*depth*depth*2 < beta) {
         // Razoring.
-        int qbeta = depth <= PLY ? beta : beta - razor_qmargin[depth_index-1];
-        int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
-        if (depth <= PLY || qscore < qbeta) return qscore;
-        //int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
-        //if (qscore < beta) return qscore;
+        //int qbeta = depth <= PLY ? beta : beta - razor_qmargin[depth_index-1];
+        //int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
+        //if (depth <= PLY || qscore < qbeta) return qscore;
+        int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
+        if (qscore < beta) return qscore;
     }
 
     // Internal iterative deepening.
