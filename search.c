@@ -729,7 +729,7 @@ static int search(position_t* pos,
         if (null_score >= beta) {
             if (verification_enabled) {
                 float rdepth = depth - null_verification_reduction;
-                if (rdepth > 0) null_score = search(pos,
+                if (rdepth > 1.0) null_score = search(pos,
                         search_node, ply, alpha, beta, rdepth);
             }
             root_data.stats.nullmove_cutoffs[
@@ -747,8 +747,9 @@ static int search(position_t* pos,
             //lazy_score + razor_margin[depth_index-1] < beta) {
         // Razoring.
         // TODO: patch up the weird d=1 behavior, figure out the window stuff.
-        int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
-        if (qscore < beta) return qscore;
+        int qbeta = beta - (depth > 1 ? 300 : 500);
+        int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
+        if (qscore < qbeta) return qscore;
         /*
         root_data.stats.razor_attempts[depth_index-1]++;
         int qbeta = depth <= PLY ? beta : beta - razor_qmargin[depth_index-1];
@@ -768,7 +769,7 @@ static int search(position_t* pos,
             is_iid_allowed(full_window, depth)) {
         const int iid_depth = full_window ?
                 depth - iid_pv_depth_reduction :
-                MIN((depth/PLY/2)*PLY, depth - iid_non_pv_depth_reduction);
+                MIN(depth/2, depth - iid_non_pv_depth_reduction);
         assert(iid_depth > 0);
         search(pos, search_node, ply, alpha, beta, iid_depth);
         hash_move = search_node->pv[ply];
@@ -979,10 +980,10 @@ static int quiesce(position_t* pos,
     int eval = alpha;
     if (!is_check(pos)) {
         eval = full_eval(pos, &ed);
-        if ((trans_entry && eval > trans_entry->score &&
+        if (trans_entry && ((eval > trans_entry->score &&
                     trans_entry->flags & SCORE_UPPERBOUND) ||
-                (trans_entry && eval < trans_entry->score &&
-                 trans_entry->flags & SCORE_LOWERBOUND)) {
+                (eval < trans_entry->score &&
+                 trans_entry->flags & SCORE_LOWERBOUND))) {
             eval = trans_entry->score;
         }
         if (alpha < eval) alpha = eval;
