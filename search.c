@@ -13,12 +13,12 @@ static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
 
 #define razor_depth_limit       3
-#define futility_depth_limit    4
 static const float null_verification_reduction = 5.0;
 static const int null_eval_margin = 200;
 static const int lmr_pv_early_moves = 10;
 static const int lmr_early_moves = 3;
 static const float lmr_depth_limit = 1.0;
+static const float futility_depth_limit = 5.0;
 
 static const bool enable_pv_iid = true;
 static const bool enable_non_pv_iid = false;
@@ -31,9 +31,6 @@ static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
 static const int qfutility_margin = 80;
-static const int futility_margin[futility_depth_limit] = {
-    100, 150, 175, 200
-};
 static const int razor_margin[razor_depth_limit] = { 300, 300, 350 };
 static const int razor_qmargin[razor_depth_limit] = { 125, 300, 300 };
 
@@ -748,6 +745,9 @@ static int search(position_t* pos,
             lazy_score + razor_margin[depth_index-1] < beta) {
         // Razoring.
         // TODO: patch up the weird d=1 behavior, figure out the window stuff.
+        int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
+        if (qscore < beta) return qscore;
+        /*
         root_data.stats.razor_attempts[depth_index-1]++;
         int qbeta = depth <= PLY ? beta : beta - razor_qmargin[depth_index-1];
         int qalpha = depth <= PLY ? alpha : qbeta-1;
@@ -756,6 +756,7 @@ static int search(position_t* pos,
             root_data.stats.razor_prunes[depth_index-1]++;
             return qscore;
         }
+        */
     }
 
     // Internal iterative deepening.
@@ -806,7 +807,7 @@ static int search(position_t* pos,
                 !full_window &&
                 !ext &&
                 !mate_threat &&
-                depth <= 5.0 &&
+                depth <= futility_depth_limit &&
                 !is_check(pos) &&
                 num_legal_moves >= depth_index + 2 &&
                 should_try_prune(&selector, move);
