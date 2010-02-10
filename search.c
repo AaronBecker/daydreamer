@@ -31,7 +31,7 @@ static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
 static const int qfutility_margin = 80;
-static const int razor_margin[razor_depth_limit] = { 300, 300, 300 };
+static const int razor_margin[razor_depth_limit] = { 300, 300, 350 };
 static const int razor_qmargin[razor_depth_limit] = { 125, 300, 300 };
 
 static search_result_t root_search(search_data_t* search_data,
@@ -742,7 +742,8 @@ static int search(position_t* pos,
             depth <= razor_depth_limit &&
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
-            lazy_score + razor_margin[depth_index-1] < beta) {
+            lazy_score + 300 + depth*depth*depth*2 < beta) {
+            //lazy_score + razor_margin[depth_index-1] < beta) {
         // Razoring.
         // TODO: patch up the weird d=1 behavior, figure out the window stuff.
         int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
