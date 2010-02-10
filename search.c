@@ -19,7 +19,7 @@ static const int lmr_pv_early_moves = 10;
 static const int lmr_early_moves = 3;
 static const float lmr_depth_limit = 1.0;
 // TODO: try 4.5, 5.0, 5.5
-static const float futility_depth_limit = 4.0;
+static const float futility_depth_limit = 5.0;
 
 static const bool enable_pv_iid = true;
 static const bool enable_non_pv_iid = false;
