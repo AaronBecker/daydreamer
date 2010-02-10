@@ -717,11 +717,10 @@ static int search(position_t* pos,
             !is_mate_score(beta) &&
             is_nullmove_allowed(pos)) {
         // Nullmove search.
-        // TODO: investigate fractional depth reductions
         undo_info_t undo;
         do_nullmove(pos, &undo);
-        float null_r = 2.0 + ((depth + 2.0)/4.0);
-        if (lazy_score - beta > PAWN_VAL) null_r += PLY;
+        float null_r = 2.0 + ((depth + 2.0)/4.0) + (lazy_score-beta)/100.0;
+        //if (lazy_score - beta > PAWN_VAL) null_r += PLY;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
         undo_nullmove(pos, &undo);
@@ -742,24 +741,10 @@ static int search(position_t* pos,
             depth <= razor_depth_limit &&
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
-            lazy_score + 200 + 100*log2f(MAX(1.0, depth)) < beta) {
-            //lazy_score + 300 + depth*depth*depth*2 < beta) {
-            //lazy_score + razor_margin[depth_index-1] < beta) {
+            lazy_score + 300 + depth*depth*depth*2 < beta) {
         // Razoring.
-        // TODO: patch up the weird d=1 behavior, figure out the window stuff.
-        int qbeta = beta - (depth > 1 ? 300 : 500);
-        int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
-        if (qscore < qbeta) return qscore;
-        /*
-        root_data.stats.razor_attempts[depth_index-1]++;
-        int qbeta = depth <= PLY ? beta : beta - razor_qmargin[depth_index-1];
-        int qalpha = depth <= PLY ? alpha : qbeta-1;
-        int qscore = quiesce(pos, search_node, ply, qalpha, qbeta, 0);
-        if (depth <= PLY || qscore < qbeta) {
-            root_data.stats.razor_prunes[depth_index-1]++;
-            return qscore;
-        }
-        */
+        int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
+        if (qscore < beta) return qscore;
     }
 
     // Internal iterative deepening.
