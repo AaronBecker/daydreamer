@@ -18,6 +18,7 @@ static const int null_eval_margin = 200;
 static const int lmr_pv_early_moves = 10;
 static const int lmr_early_moves = 3;
 static const float lmr_depth_limit = 1.0;
+// TODO: try 4.5, 5.0, 5.5
 static const float futility_depth_limit = 4.0;
 
 static const bool enable_pv_iid = true;
@@ -742,10 +743,14 @@ static int search(position_t* pos,
             depth <= razor_depth_limit &&
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
-            lazy_score + 300 + depth*depth*depth*2 < beta) {
+            lazy_score + razor_margin[depth_index-1] < beta) {
+            //lazy_score + 300 + depth*depth*depth*2 < beta) {
         // Razoring.
-        int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
-        if (qscore < beta) return qscore;
+        int qbeta = depth <= PLY ? beta : beta - razor_qmargin[depth_index-1];
+        int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
+        if (depth <= PLY || qscore < qbeta) return qscore;
+        //int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
+        //if (qscore < beta) return qscore;
     }
 
     // Internal iterative deepening.
