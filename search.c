@@ -30,7 +30,7 @@ static const float iid_non_pv_depth_cutoff = 8.0;
 static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
-static const int qfutility_margin = 80;
+static const int qfutility_margin = 65;
 static const int razor_margin[razor_depth_limit] = { 300, 300, 350 };
 static const int razor_qmargin[razor_depth_limit] = { 125, 300, 300 };
 
@@ -671,7 +671,7 @@ static int search(position_t* pos,
 {
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
-    if (depth <= 0.5) return quiesce(pos, search_node, ply, alpha, beta, depth);
+    if (depth < 0.5) return quiesce(pos, search_node, ply, alpha, beta, depth);
 
     int orig_alpha = alpha;
     alpha = MAX(alpha, mated_in(ply));
@@ -981,7 +981,7 @@ static int quiesce(position_t* pos,
         pos->num_pieces[pos->side_to_move] > 2;
     int num_qmoves = 0;
     move_selector_t selector;
-    generation_t gen_type = depth > -1 && eval + 150 >= alpha ?
+    generation_t gen_type = depth >= 0 && eval + 150 >= alpha ?
         Q_CHECK_GEN : Q_GEN;
     init_move_selector(&selector, pos, gen_type,
             search_node, hash_move, depth, ply);
