@@ -62,7 +62,7 @@ void unload_gtb(void)
     tb_paths = tbpaths_done(tb_paths);
 }
 
-static void fill_gtb_arrays(position_t* pos,
+static void fill_gtb_arrays(const position_t* pos,
         unsigned int* ws,
         unsigned int* bs,
         unsigned char* wp,
@@ -98,7 +98,7 @@ static void fill_gtb_arrays(position_t* pos,
     bp[count] = tb_NOPIECE;
 }
 
-bool probe_gtb_soft(position_t* pos, int* score)
+bool probe_gtb_soft(const position_t* pos, int* score)
 {
     int stm = stm_to_gtb(pos->side_to_move);
     int ep = square_to_gtb(pos->ep_square);
@@ -119,7 +119,7 @@ bool probe_gtb_soft(position_t* pos, int* score)
     return success;
 }
 
-bool probe_gtb_hard(position_t* pos, int* score)
+bool probe_gtb_hard(const position_t* pos, int* score)
 {
     int stm = stm_to_gtb(pos->side_to_move);
     int ep = square_to_gtb(pos->ep_square);

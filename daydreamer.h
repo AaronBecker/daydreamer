@@ -125,8 +125,8 @@ void position_to_fen_str(const position_t* pos, char* fen);
 // gtb.c
 bool load_gtb(char* gtb_pathlist, int cache_size_bytes);
 void unload_gtb(void);
-bool probe_gtb_soft(position_t* pos, int* value);
-bool probe_gtb_hard(position_t* pos, int* value);
+bool probe_gtb_soft(const position_t* pos, int* value);
+bool probe_gtb_hard(const position_t* pos, int* value);
 
 // hash.c
 void init_hash(void);
