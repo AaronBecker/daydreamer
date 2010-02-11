@@ -85,6 +85,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     int b_minor = bn + bb;
     int b_piece = 2*b_major + b_minor;
     int b_all = bq + br + bb + bn + bp;
+    md->population = w_all + b_all + 2;
 
     // Pair bonuses
     if (wb > 1) {

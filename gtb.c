@@ -52,8 +52,6 @@ bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
     tbcache_init(cache_size_bytes);
     tbstats_reset();
     bool success = tb_is_initialized() && tbcache_is_on();
-    printf("%s\n", success ? "Gaviota TBs initialized" :
-            "Couldn't open Gaviota TBs");
     return success;
 }
 

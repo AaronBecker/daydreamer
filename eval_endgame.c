@@ -63,10 +63,9 @@ eg_score_fn eg_score_fns[] = {
 
 bool endgame_score(const position_t* pos, eval_data_t* ed, int* score)
 {
-    if (options.use_gtb && ed->md->eg_type == EG_KPK) {
+    if (options.use_gtb && ed->md->population < 5) {
         int result;
-        bool hit = probe_gtb_soft(pos, &result);
-        if (hit) {
+        if (probe_gtb_soft(pos, &result)) {
             *score  = result * (pos->side_to_move == WHITE ? 1 : -1);
             return true;
         }

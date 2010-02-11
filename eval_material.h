@@ -42,6 +42,7 @@ typedef struct {
     hashkey_t key;
     endgame_flags_t eg_flags;
     endgame_type_t eg_type;
+    char population;
     int phase;
     int scale[2];
     score_t score;

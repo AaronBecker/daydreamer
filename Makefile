@@ -59,7 +59,7 @@ pgo-finish: pgo-clean
 
 all: default
 
-daydreamer: obj $(OBJFILES) gtb
+daydreamer: gtb obj $(OBJFILES)
 	$(CC) $(LDFLAGS) $(OBJFILES) -o daydreamer
 
 tags: $(SRCFILES)
