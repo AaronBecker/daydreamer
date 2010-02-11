@@ -61,9 +61,35 @@ eg_score_fn eg_score_fns[] = {
     NULL,           //EG_LAST
 };
 
+bool eg_use_tb[] = {
+    false,           //EG_NONE,
+    false,           //EG_WIN,
+    false,           //EG_DRAW,
+    true,            //EG_KQKQ,
+    true,            //EG_KQKP,
+    true,            //EG_KRKR,
+    true,            //EG_KRKB,
+    true,            //EG_KRKN,
+    true,            //EG_KRKP,
+    true,            //EG_KRPKR,
+    false,           //EG_KRPPKRP,
+    true,            //EG_KBBKN,
+    true,            //EG_KBNK,
+    true,            //EG_KBPKB,
+    true,            //EG_KBPKN,
+    true,            //EG_KPKB,
+    false,           //EG_KBPPKB,
+    true,            //EG_KNPK,
+    true,            //EG_KBPK,
+    true,            //EG_KPK,
+    false,           //EG_LAST
+};
+
+
 bool endgame_score(const position_t* pos, eval_data_t* ed, int* score)
 {
-    if (options.use_gtb && ed->md->population < 5) {
+    //if (options.use_gtb && ed->md->population < 5) {
+    if (options.use_gtb && eg_use_tb[ed->md->eg_type]) {
         int result;
         if (probe_gtb_soft(pos, &result)) {
             *score  = result * (pos->side_to_move == WHITE ? 1 : -1);
