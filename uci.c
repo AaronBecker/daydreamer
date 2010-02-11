@@ -133,6 +133,19 @@ static void uci_handle_ext(char* command)
         char filename[256] = "book.bin";
         sscanf(command+4, " %s", filename);
         test_book(filename, pos);
+    } else if (!strncasecmp(command, "gtb", 3)) {
+        if (options.use_gtb) {
+            int score;
+            bool success = probe_gtb_hard(pos, &score);
+            if (success) {
+                printf("score: %d\n", (MATE_VALUE-abs(score)) *
+                    (score < 0 ? -1 : 1));
+            } else {
+                printf("Tablebase lookup failed\n");
+            }
+        } else {
+            printf("Gaviota TBs not loaded\n");
+        }
     } else if (!strncasecmp(command, "print", 5)) {
         print_board(pos, false);
         move_t moves[255];

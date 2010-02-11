@@ -63,12 +63,23 @@ eg_score_fn eg_score_fns[] = {
 
 bool endgame_score(const position_t* pos, eval_data_t* ed, int* score)
 {
+    if (options.use_gtb && ed->md->eg_type == EG_KPK) {
+        int result;
+        bool hit = probe_gtb_soft(pos, &result);
+        if (hit) {
+            *score  = result * (pos->side_to_move == WHITE ? 1 : -1);
+            return true;
+        }
+    }
+    return false;
+    /*
     eg_score_fn fn = eg_score_fns[ed->md->eg_type];
     if (fn) {
         *score = fn(pos, ed);
         return true;
     }
     return false;
+    */
 }
 
 void determine_endgame_scale(const position_t* pos,

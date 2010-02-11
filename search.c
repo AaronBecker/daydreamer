@@ -721,7 +721,6 @@ static int search(position_t* pos,
         do_nullmove(pos, &undo);
         float null_r = 2.0 + ((depth + 2.0)/4.0) +
             CLAMP(0, 1.5, (lazy_score-beta)/100.0);
-        //if (lazy_score - beta > PAWN_VAL) null_r += PLY;
         int null_score = -search(pos, search_node+1, ply+1,
                 -beta, -beta+1, depth - null_r);
         undo_nullmove(pos, &undo);
@@ -981,7 +980,7 @@ static int quiesce(position_t* pos,
         pos->num_pieces[pos->side_to_move] > 2;
     int num_qmoves = 0;
     move_selector_t selector;
-    generation_t gen_type = depth >= -1 && eval + 150 >= alpha ?
+    generation_t gen_type = depth > -1 && eval + 150 >= alpha ?
         Q_CHECK_GEN : Q_GEN;
     init_move_selector(&selector, pos, gen_type,
             search_node, hash_move, depth, ply);
