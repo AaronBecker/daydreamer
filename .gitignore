@@ -2,7 +2,9 @@
 .vimproject
 tags
 daydreamer
+daydreamer_*
 daydreamer.log
+gtb/libgtb.a
 polyglot
 .DS_Store
 *.dylib
