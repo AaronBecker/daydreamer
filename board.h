@@ -67,10 +67,10 @@ typedef int square_t;
 #define index_to_square(index)      ((index)+((index) & ~0x07))
 
 typedef uint8_t castle_rights_t;
-#define WHITE_OO                        0x01
+#define BLACK_OOO                       0x01
 #define BLACK_OO                        0x01 << 1
 #define WHITE_OOO                       0x01 << 2
-#define BLACK_OOO                       0x01 << 3
+#define WHITE_OO                        0x01 << 3
 #define CASTLE_ALL                      (WHITE_OO | BLACK_OO | \
                                             WHITE_OOO | BLACK_OOO)
 #define CASTLE_NONE                     0

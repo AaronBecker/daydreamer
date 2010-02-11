@@ -224,6 +224,38 @@ static void handle_clear_hash(void* opt, char* value)
 }
 
 /*
+ * Turns Gaviota tablebase use on and off.
+ */
+static void handle_gtb_use(void* opt, char* value)
+{
+    uci_option_t* option = opt;
+    if (!option->value) return;
+    strncpy(option->value, value, 128);
+    bool val = !strcasecmp(value, "true");
+    if (val) {
+        load_gtb(get_option_string("Gaviota tablebase path"), 0);
+    } else unload_gtb();
+    memcpy(option->address, &val, sizeof(bool));
+}
+
+/*
+ * Sets the path used to look for Gaviota bitbases, reloading them if the
+ * appropriate option is set.
+ */
+static void handle_gtb_path(void* opt, char* value)
+{
+    uci_option_t* option = opt;
+    strncpy(option->value, value, 128);
+    int len = strlen(option->value);
+    if (strrchr(option->value, DIR_SEP[0]) - option->value + 1 != len) {
+        strcat(option->value, DIR_SEP);
+    }
+    if (options.use_gtb) {
+        load_gtb(value, 0);
+    }
+}
+
+/*
  * Turns Scorpio bitbase use on and off.
  */
 static void handle_egbb_use(void* opt, char* value)
@@ -233,7 +265,7 @@ static void handle_egbb_use(void* opt, char* value)
     strncpy(option->value, value, 128);
     bool val = !strcasecmp(value, "true");
     if (val) {
-        load_egbb(get_option_string("Endgame bitbase path"), 0);
+        load_egbb(get_option_string("Scorpio bitbase path"), 0);
     } else unload_egbb();
     memcpy(option->address, &val, sizeof(bool));
 }
@@ -287,9 +319,13 @@ void init_uci_options()
             0, 0, NULL, &options.chess960, &default_handler);
     add_uci_option("Arena-style 960 castling", OPTION_CHECK, "false",
             0, 0, NULL, &options.arena_castle, &default_handler);
-    add_uci_option("Use endgame bitbases", OPTION_CHECK, "false",
+    add_uci_option("Use Gaviota tablebases", OPTION_CHECK, "false",
+            0, 0, NULL, &options.use_gtb, &handle_gtb_use);
+    add_uci_option("Gaviota tablebase path", OPTION_STRING, ".",
+            0, 0, NULL, NULL, &handle_gtb_path);
+    add_uci_option("Use Scorpio bitbases", OPTION_CHECK, "false",
             0, 0, NULL, &options.use_egbb, &handle_egbb_use);
-    add_uci_option("Endgame bitbase path", OPTION_STRING, ".",
+    add_uci_option("Scorpio bitbase path", OPTION_STRING, ".",
             0, 0, NULL, NULL, &handle_egbb_path);
     add_uci_option("Pawn cache size", OPTION_SPIN, "1",
             1, 64, NULL, NULL, &handle_pawn_cache);

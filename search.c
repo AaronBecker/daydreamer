@@ -18,7 +18,6 @@ static const int null_eval_margin = 200;
 static const int lmr_pv_early_moves = 10;
 static const int lmr_early_moves = 3;
 static const float lmr_depth_limit = 1.0;
-// TODO: try 4.5, 5.0, 5.5
 static const float futility_depth_limit = 5.0;
 
 static const bool enable_pv_iid = true;
@@ -743,14 +742,12 @@ static int search(position_t* pos,
             depth <= razor_depth_limit &&
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
-            //lazy_score + razor_margin[depth_index-1] < beta) {
-            lazy_score + 300 + depth*depth*depth*2 < beta) {
+            lazy_score + razor_margin[depth_index-1] < beta) {
         // Razoring.
-        //int qbeta = depth <= PLY ? beta : beta - razor_qmargin[depth_index-1];
-        //int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
-        //if (depth <= PLY || qscore < qbeta) return qscore;
-        int qscore = quiesce(pos, search_node, ply, alpha, beta, 0);
-        if (qscore < beta) return qscore;
+        if (depth <= PLY) return quiesce(pos, search_node, ply, alpha, beta, 0);
+        int qbeta = beta - razor_qmargin[depth_index-1];
+        int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
+        if (qscore < qbeta) return qscore;
     }
 
     // Internal iterative deepening.
@@ -984,7 +981,7 @@ static int quiesce(position_t* pos,
         pos->num_pieces[pos->side_to_move] > 2;
     int num_qmoves = 0;
     move_selector_t selector;
-    generation_t gen_type = depth > -1 && eval + 150 >= alpha ?
+    generation_t gen_type = depth >= -1 && eval + 150 >= alpha ?
         Q_CHECK_GEN : Q_GEN;
     init_move_selector(&selector, pos, gen_type,
             search_node, hash_move, depth, ply);

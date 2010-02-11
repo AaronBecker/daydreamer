@@ -14,7 +14,7 @@ extern "C" {
 #endif
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.61"
-#define ENGINE_VERSION_NAME     " ss6_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " ss7_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
@@ -121,6 +121,12 @@ int move_to_san_str(position_t* pos, move_t move, char* str);
 int line_to_san_str(position_t* pos, move_t* line, char* san);
 move_t san_str_to_move(position_t* pos, char* san);
 void position_to_fen_str(const position_t* pos, char* fen);
+
+// gtb.c
+bool load_gtb(char* gtb_pathlist, int cache_size_bytes);
+void unload_gtb(void);
+bool probe_gtb_soft(position_t* pos, int* value);
+bool probe_gtb_hard(position_t* pos, int* value);
 
 // hash.c
 void init_hash(void);

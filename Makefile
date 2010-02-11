@@ -14,14 +14,14 @@ CC = /usr/bin/gcc $(GCCFLAGS)
 CTAGS = ctags
 
 COMMONFLAGS = -Wall -Wextra -Wno-unused-function $(ARCHFLAGS)
-LDFLAGS = $(ARCHFLAGS) -ldl
+LDFLAGS = $(ARCHFLAGS) -ldl -Lgtb -lgtb
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0 -DEXPENSIVE_TESTS -DASSERT2
 ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
 DEFAULTFLAGS = $(COMMONFLAGS) -g -O2
 OPTFLAGS = $(COMMONFLAGS) -O3 -msse -DNDEBUG
 PGO1FLAGS = $(OPTFLAGS) -fprofile-generate
 PGO2FLAGS = $(OPTFLAGS) -fprofile-use
-CFLAGS = $(DEFAULTFLAGS)
+CFLAGS = $(DEFAULTFLAGS) -Igtb
 
 DBGCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEBUGFLAGS)\\\"\"
 OPTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(OPTFLAGS)\\\"\"
@@ -59,7 +59,7 @@ pgo-finish: pgo-clean
 
 all: default
 
-daydreamer: obj $(OBJFILES)
+daydreamer: obj $(OBJFILES) gtb
 	$(CC) $(LDFLAGS) $(OBJFILES) -o daydreamer
 
 tags: $(SRCFILES)
@@ -70,6 +70,9 @@ obj/%.o: %.c
 
 obj:
 	mkdir obj
+
+gtb:
+	cd gtb && $(MAKE)
 
 pgo-clean:
 	rm obj/*.o daydreamer

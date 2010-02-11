@@ -35,6 +35,7 @@ typedef struct {
     int output_delay;
     bool use_book;
     bool use_egbb;
+    bool use_gtb;
     bool verbose;
     bool chess960;
     bool arena_castle;
