@@ -805,7 +805,8 @@ static int search(position_t* pos,
                 // TODO: try pruning based on pure move ordering, or work
                 // move order into the history count
                 // TODO: experiment with pruning inside pv
-                if (history_prune_enabled && is_history_prune_allowed(
+                if (history_prune_enabled && depth <= 3.0 &&
+                        is_history_prune_allowed(
                             &root_data.history, move, depth)) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
