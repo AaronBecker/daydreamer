@@ -31,8 +31,7 @@ static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
 // TODO: try other values in [40, 80]
-static const int qfutility_margin = 65;
-// TODO: try 350->325 or so
+static const int qfutility_margin = 55;
 // TODO: do something about the indexing, since this isn't used at ply=1 (?)
 static const int razor_margin[razor_depth_limit] = { 300, 300, 325 };
 static const int razor_qmargin[razor_depth_limit] = { 125, 300, 300 };
@@ -983,6 +982,7 @@ static int quiesce(position_t* pos,
         pos->num_pieces[pos->side_to_move] > 2;
     int num_qmoves = 0;
     move_selector_t selector;
+    // TODO: try -0.5 depth cutoff
     generation_t gen_type = depth >= 0 && eval + 150 >= alpha ?
         Q_CHECK_GEN : Q_GEN;
     init_move_selector(&selector, pos, gen_type,
