@@ -5,26 +5,30 @@
 // TODO: Tune these values, in particular the endgame values.
 // TODO: bonus/penalty for occupying a lot of space.
 static const int isolation_penalty[2][8] = {
-    {10, 10, 10, 15, 15, 10, 10, 10},
-    {20, 20, 20, 20, 20, 20, 20, 20}
+    { 6, 6, 6, 8, 8, 6, 6, 6 },
+    { 8, 8, 8, 8, 8, 8, 8, 8 }
+};
+static const int open_isolation_penalty[2][8] = {
+    { 18, 18, 18, 20, 20, 18, 18, 18 },
+    { 24, 24, 24, 24, 24, 24, 24, 24 }
 };
 static const int doubled_penalty[2][8] = {
-    { 5, 10, 15, 20, 20, 15, 10,  5},
-    {20, 20, 20, 20, 20, 20, 20, 20}
+    { 5, 5, 5, 6, 6, 5, 5, 5 },
+    { 6, 7, 8, 8, 8, 8, 7, 6 }
 };
 static const int passed_bonus[2][8] = {
-    { 0,  5, 10, 20, 60, 120, 200, 0},
-    { 0, 10, 20, 25, 75, 135, 225, 0},
+    { 0,  5, 10, 20, 60, 120, 200, 0 },
+    { 0, 10, 20, 25, 75, 135, 225, 0 },
 };
 static const int candidate_bonus[2][8] = {
-    { 0,  5,  5, 10, 20, 30, 0, 0},
-    { 0,  5, 10, 15, 30, 45, 0, 0},
+    { 0,  5,  5, 10, 20, 30, 0, 0 },
+    { 0,  5, 10, 15, 30, 45, 0, 0 },
 };
 static const int backward_penalty[2][8] = {
-    { 5, 10, 10, 15, 15, 10, 10,  5},
-    {20, 20, 20, 20, 20, 20, 20, 20}
+    { 14, 15, 16, 17, 17, 16, 15, 14 },
+    { 23, 24, 24, 25, 25, 24, 24, 23 }
 };
-static const int connected_bonus[2] = {10, 20};
+static const int connected_bonus[2] = { 10, 20 };
 static const int unstoppable_passer_bonus[8] = {
     0, 500, 525, 550, 575, 600, 650, 0
 };
@@ -202,10 +206,16 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             pd->queenside_storm[color] += queen_storm[sq ^ (0x70*color)];
 
             // Isolated pawns.
-            bool isolated = !(neighbor_file_mask[file] & our_pawns);
+            bool isolated = (neighbor_file_mask[file] & our_pawns) == 0;
             if (isolated) {
-                pd->score[color].midgame -= isolation_penalty[0][file];
-                pd->score[color].endgame -= isolation_penalty[1][file];
+                bool open = (in_front_mask[color][ind] & their_pawns) == 0;
+                if (open) {
+                    pd->score[color].midgame -= open_isolation_penalty[0][file];
+                    pd->score[color].endgame -= open_isolation_penalty[1][file];
+                } else {
+                    pd->score[color].midgame -= isolation_penalty[0][file];
+                    pd->score[color].endgame -= isolation_penalty[1][file];
+                }
             }
 
             // Doubled pawns.
