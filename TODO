@@ -4,15 +4,12 @@ Search
     Better statistics gathering/reporting
     recognize singular replies
     prefetching for trans table entries
-    sign-only SEE
     TBB?
     Try multiple moves in TT, instead of PV cache
     Test effects of reducing PV-specific decisions
     Re-write the guts of the move selector, because they're awful now.
     Make pawn eval and king safety scores available inside search
     less distinction (or no distinction) between search and qsearch
-    smooth lmr reduction curve (with fractional plies)
-    try full eval after nullmove fails instead of just for futility
 
 shrink trans table entry size
 evaluation hashing, possibly material info hashing
@@ -22,10 +19,6 @@ Interface
     PGN parsing
 
 Evaluation
-    add some basic endgame knowledge (opp bishops, etc)
-    general-purpose endgame recognizer and scaler
-    material imbalance tables
-    bounded eval with early exit
     improved king safety and passed pawn evaluation
     Try alternate king safety implementations
     rewrite eval to always work from white's perspective
@@ -33,13 +26,5 @@ Evaluation
     more sophisticated pawn shelter scoring
 
 Bugs
-    In mate positions (eg 5k2/8/8/8/8/2Q5/8/3K4 w - -), after long searches the
-    shortest mate found will gradually increase in length (ie, a "mate 9" score
-    is later replaced with "mate 11")
-
-    Performance on 1nbq1r1k/3rbp1p/p1p1pp1Q/1p6/P1pPN3/5NP1/1P2PPBP/R4RK1 w - -
-    (bm f3g5, mate in 4) is really bad
-
-    Performance on 4r1k1/p1qr1p2/2pb1Bp1/1p5p/3P1n1R/1B3P2/PP3PK1/2Q4R w - -
-    (bm c1f4, mate in 6) is really bad
-
+    I'm concerned about a root fail-high bug for e7e4 in this position:
+    1r1r2k1/2p1qp1p/6p1/ppQB1b2/5Pn1/2R1P1P1/PP5P/R1B3K1 b

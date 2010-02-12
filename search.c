@@ -30,6 +30,7 @@ static const float iid_non_pv_depth_cutoff = 8.0;
 static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
+// TODO: try other values in [40, 80]
 static const int qfutility_margin = 65;
 // TODO: try 350->325 or so
 // TODO: do something about the indexing, since this isn't used at ply=1 (?)
