@@ -31,7 +31,7 @@ static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 200;
 
 // TODO: try other values in [40, 80]
-static const int qfutility_margin = 55;
+static const int qfutility_margin = 65;
 // TODO: do something about the indexing, since this isn't used at ply=1 (?)
 static const int razor_margin[razor_depth_limit] = { 300, 300, 325 };
 static const int razor_qmargin[razor_depth_limit] = { 125, 300, 300 };
