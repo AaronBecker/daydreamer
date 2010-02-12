@@ -31,7 +31,9 @@ static void generate_moves(move_selector_t* sel);
 static void score_moves(move_selector_t* sel);
 static void score_qsearch_moves(move_selector_t* sel);
 static void sort_moves(move_selector_t* sel);
+static void sort_qsearch_moves(move_selector_t* sel);
 static void sort_root_moves(move_selector_t* sel);
+static void sort_move_list(move_selector_t* sel);
 static int64_t score_tactical_move(position_t* pos, move_t move);
 static move_t get_best_move(move_selector_t* sel, int64_t* score);
 static move_cache_t* get_pv_move_list(const position_t* pos);
@@ -133,7 +135,6 @@ static void generate_moves(move_selector_t* sel)
             break;
         case PHASE_EVASIONS:
             sel->moves_end = generate_evasions(sel->pos, sel->moves);
-            score_moves(sel);
             sort_moves(sel);
             break;
         case PHASE_ROOT:
@@ -150,25 +151,22 @@ static void generate_moves(move_selector_t* sel)
                 }
                 sel->moves[i] = NO_MOVE;
                 sel->moves_end = i;
-                sort_moves(sel);
+                sort_move_list(sel);
                 break;
             }
         case PHASE_NON_PV:
             sel->moves_end = generate_pseudo_moves(sel->pos, sel->moves);
-            score_moves(sel);
             sort_moves(sel);
             break;
         case PHASE_QSEARCH_CH:
             sel->moves_end = generate_quiescence_moves(
                     sel->pos, sel->moves, true);
-            score_qsearch_moves(sel);
-            sort_moves(sel);
+            sort_qsearch_moves(sel);
             break;
         case PHASE_QSEARCH:
             sel->moves_end = generate_quiescence_moves(
                     sel->pos, sel->moves, false);
-            score_qsearch_moves(sel);
-            sort_moves(sel);
+            sort_qsearch_moves(sel);
             break;
         case PHASE_DEFERRED:
             sel->moves = sel->deferred_moves;
@@ -213,27 +211,6 @@ move_t select_move(move_selector_t* sel)
                 sel->quiet_moves_so_far++;
             }
             return move;
-            /*
-            if (sel->current_move_index >= sel->ordered_moves) {
-                move = sel->moves[sel->current_move_index++];
-                if (!move) break;
-                sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) {
-                    sel->quiet_moves_so_far++;
-                }
-                return move;
-            } else {
-                assert(sel->current_move_index <= sel->moves_end);
-                move = get_best_move(sel, NULL);
-                if (!move) break;
-                check_pseudo_move_legality(sel->pos, move);
-                sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) {
-                    sel->quiet_moves_so_far++;
-                }
-                return move;
-            }
-            */
         case PHASE_PV:
         case PHASE_NON_PV:
             while (true) {
@@ -253,7 +230,6 @@ move_t select_move(move_selector_t* sel)
 
         case PHASE_QSEARCH:
         case PHASE_QSEARCH_CH:
-            // FIXME: move exclusion is really not right here for checks. FIX THIS!
             while (true) {
                 assert(sel->current_move_index <= sel->moves_end);
                 int64_t score = sel->scores[sel->current_move_index];
@@ -272,44 +248,6 @@ move_t select_move(move_selector_t* sel)
                 return move;
             }
             break;
-///////////
-/*
-            while (sel->current_move_index >= sel->ordered_moves) {
-                move = sel->moves[sel->current_move_index++];
-                if (move == NO_MOVE) break;
-                if (move == sel->hash_move[0] ||
-                        !is_pseudo_move_legal(sel->pos, move)) {
-                    continue;
-                }
-                sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) {
-                    sel->quiet_moves_so_far++;
-                }
-                return move;
-            }
-            if (sel->current_move_index >= sel->ordered_moves) break;
-
-            while (true) {
-                assert(sel->current_move_index <= sel->moves_end);
-                int64_t best_score;
-                move = get_best_move(sel, &best_score);
-                if (!move) break;
-                if ((sel->generator == Q_CHECK_GEN ||
-                     sel->generator == Q_GEN) &&
-                    (!get_move_promote(move) ||
-                     get_move_promote(move) != QUEEN) &&
-                    best_score < MAX_HISTORY) continue;
-                if (move == sel->hash_move[0] ||
-                        !is_pseudo_move_legal(sel->pos, move)) continue;
-                check_pseudo_move_legality(sel->pos, move);
-                sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) {
-                    sel->quiet_moves_so_far++;
-                }
-                return move;
-            }
-            break;
-*/
         case PHASE_DEFERRED:
             assert(sel->current_move_index <= sel->moves_end);
             move = sel->moves[sel->current_move_index++];
@@ -341,33 +279,6 @@ bool defer_move(move_selector_t* sel, move_t move)
     return true;
 }
 
-/*
-static move_t get_best_move(move_selector_t* sel, int64_t* score)
-{
-    int offset = sel->current_move_index;
-    move_t move = NO_MOVE;
-    int64_t best_score = INT64_MIN;
-    int index = -1;
-    for (int i=offset; sel->moves[i] != NO_MOVE; ++i) {
-        if (sel->scores[i] > best_score) {
-            best_score = sel->scores[i];
-            index = i;
-        }
-    }
-    if (index != -1) {
-        assert(best_score == sel->scores[index]);
-        move = sel->moves[index];
-        sel->moves[index] = sel->moves[offset];
-        sel->scores[index] = sel->scores[offset];
-        sel->moves[offset] = move;
-        sel->scores[offset] = best_score;
-        sel->current_move_index++;
-    }
-    if (score) *score = best_score;
-    return move;
-}
-*/
-
 static void score_qsearch_moves(move_selector_t* sel)
 {
     move_t* moves = sel->moves;
@@ -385,6 +296,8 @@ static void score_qsearch_moves(move_selector_t* sel)
         } else {
             score = (int64_t)MAX(0,
                     root_data.history.history[history_index(move)]);
+            // TODO: does this help? how does this interact with move cutoff
+            // in select_move?
             if (static_exchange_sign(sel->pos, move) >= 0) score += MAX_HISTORY;
         }
         scores[i] = score;
@@ -396,7 +309,6 @@ static void score_qsearch_moves(move_selector_t* sel)
  * to how good we think they'll be. This just identifies a few key classes
  * of moves and applies scores appropriately. Moves are then selected
  * by |select_move|.
- * TODO: separate scoring functions for different phases.
  */
 static void score_moves(move_selector_t* sel)
 {
@@ -471,13 +383,25 @@ static void sort_root_moves(move_selector_t* sel)
     }
     sel->moves_end = i;
     sel->moves[i] = NO_MOVE;
-    sort_moves(sel);
+    sort_move_list(sel);
+}
+
+static void sort_moves(move_selector_t* sel)
+{
+    score_moves(sel);
+    sort_move_list(sel);
+}
+
+static void sort_qsearch_moves(move_selector_t* sel)
+{
+    score_qsearch_moves(sel);
+    sort_move_list(sel);
 }
 
 /*
  * Selection-sort the move list according to the associated scores.
  */
-static void sort_moves(move_selector_t* sel)
+static void sort_move_list(move_selector_t* sel)
 {
     for (int i=0; sel->moves[i] != NO_MOVE; ++i) {
         move_t move = sel->moves[i];
