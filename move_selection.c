@@ -21,12 +21,6 @@ typedef struct {
     int64_t nodes[256];
 } move_cache_t;
 
-// How many moves should be selected by scanning through the score list and
-// picking the highest available, as opposed to picking them in order? Note
-// that root selection is 0 because the moves are already sorted into the
-// correct order.
-static const int ordered_move_count[6] = { 0, 256, 16, 16, 4, 4 };
-
 static void generate_moves(move_selector_t* sel);
 static void score_moves(move_selector_t* sel);
 static void score_qsearch_moves(move_selector_t* sel);
@@ -63,7 +57,6 @@ void init_move_selector(move_selector_t* sel,
     sel->moves_so_far = 0;
     sel->quiet_moves_so_far = 0;
     sel->pv_index = 0;
-    sel->ordered_moves = ordered_move_count[gen_type];
     if (search_node) {
         sel->mate_killer = search_node->mate_killer;
         sel->killers[0] = search_node->killers[0];
