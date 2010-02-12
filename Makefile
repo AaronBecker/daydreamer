@@ -1,8 +1,8 @@
 
 CLANGFLAGS =
 GCCFLAGS = --std=c99
-ARCHFLAGS = -m64
-#ARCHFLAGS = -m32
+#ARCHFLAGS = -m64
+ARCHFLAGS = -m32
 
 CLANGHOME = $(HOME)/local/clang
 SCANVIEW = $(CLANGHOME)/scan-build
@@ -13,7 +13,7 @@ CC = /usr/bin/gcc $(GCCFLAGS)
 #CC = i386-mingw32-gcc $(GCCFLAGS)
 CTAGS = ctags
 
-COMMONFLAGS = -Wall -Wextra -Wno-unused-function $(ARCHFLAGS)
+COMMONFLAGS = -Wall -Wextra -Wno-unused-function $(ARCHFLAGS) -Igtb
 LDFLAGS = $(ARCHFLAGS) -ldl -Lgtb -lgtb
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0 -DEXPENSIVE_TESTS -DASSERT2
 ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
@@ -21,7 +21,7 @@ DEFAULTFLAGS = $(COMMONFLAGS) -g -O2
 OPTFLAGS = $(COMMONFLAGS) -O3 -msse -DNDEBUG
 PGO1FLAGS = $(OPTFLAGS) -fprofile-generate
 PGO2FLAGS = $(OPTFLAGS) -fprofile-use
-CFLAGS = $(DEFAULTFLAGS) -Igtb
+CFLAGS = $(DEFAULTFLAGS)
 
 DBGCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEBUGFLAGS)\\\"\"
 OPTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(OPTFLAGS)\\\"\"
@@ -34,7 +34,7 @@ SRCFILES := $(wildcard *.c)
 HEADERS  := $(wildcard *.h)
 OBJFILES := $(addprefix obj/, $(patsubst %.c,%.o,$(wildcard *.c)))
 
-.PHONY: all clean tags debug opt pgo-start pgo-finish pgo-clean
+.PHONY: all clean gtb tags debug opt pgo-start pgo-finish pgo-clean
 .DEFAULT_GOAL := default
 
 analyze:
@@ -72,11 +72,11 @@ obj:
 	mkdir obj
 
 gtb:
-	cd gtb && $(MAKE)
+	(cd gtb && $(MAKE))
 
 pgo-clean:
 	rm obj/*.o daydreamer
 
 clean:
-	rm -rf obj daydreamer tags
+	rm -rf obj daydreamer tags && (cd gtb && $(MAKE) clean)
 

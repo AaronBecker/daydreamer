@@ -1,12 +1,8 @@
 
-CC = gcc
-ARCHFLAGS = -m64
-#ARCHFLAGS = -m32
-INCLUDE =  -Isysport/ -Icompression/ -Icompression/liblzf/ \
+override INCLUDE = -Isysport/ -Icompression/ -Icompression/liblzf/ \
 	   -Icompression/zlib/ -Icompression/lzma/ -Icompression/huffman/
-DEFINE = -DZ_PREFIX -DNDEBUG
-CFLAGS = -Wall -Wextra -O2 $(INCLUDE) $(DEFINE) $(ARCHFLAGS)
-LDFLAGS = $(ARCHFLAGS) -lpthread -lm
+override DEFINE = -DZ_PREFIX -DNDEBUG
+override CFLAGS = -Wall -Wextra -O2 $(INCLUDE) $(DEFINE) $(ARCHFLAGS)
 
 SRCFILES = gtb-probe.c decode.c possatt.c sysport/sysport.c \
 	   compression/wrap.c compression/huffman/hzip.c \
