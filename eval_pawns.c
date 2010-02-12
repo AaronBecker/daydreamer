@@ -9,8 +9,8 @@ static const int isolation_penalty[2][8] = {
     { 8, 8, 8, 8, 8, 8, 8, 8 }
 };
 static const int open_isolation_penalty[2][8] = {
-    { 18, 18, 18, 20, 20, 18, 18, 18 },
-    { 24, 24, 24, 24, 24, 24, 24, 24 }
+    { 14, 14, 15, 16, 16, 15, 14, 14 },
+    { 16, 17, 18, 20, 20, 18, 17, 16 }
 };
 static const int doubled_penalty[2][8] = {
     { 5, 5, 5, 6, 6, 5, 5, 5 },
@@ -21,14 +21,14 @@ static const int passed_bonus[2][8] = {
     { 0, 10, 20, 25, 75, 135, 225, 0 },
 };
 static const int candidate_bonus[2][8] = {
-    { 0,  5,  5, 10, 20, 30, 0, 0 },
-    { 0,  5, 10, 15, 30, 45, 0, 0 },
+    { 0, 5,  5, 10, 20, 30, 0, 0 },
+    { 0, 5, 10, 15, 30, 45, 0, 0 },
 };
 static const int backward_penalty[2][8] = {
-    { 14, 15, 16, 17, 17, 16, 15, 14 },
-    { 23, 24, 24, 25, 25, 24, 24, 23 }
+    { 6, 6, 6,  8,  8, 6, 6, 6 },
+    { 8, 9, 9, 10, 10, 9, 9, 8 }
 };
-static const int connected_bonus[2] = { 10, 20 };
+static const int connected_bonus[2] = { 5, 5 };
 static const int unstoppable_passer_bonus[8] = {
     0, 500, 525, 550, 575, 600, 650, 0
 };
