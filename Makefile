@@ -72,7 +72,7 @@ obj:
 	mkdir obj
 
 gtb:
-	(cd gtb && $(MAKE))
+	(cd gtb && $(MAKE) ARCHFLAGS="$(ARCHFLAGS)" OPTFLAGS="$(OPTFLAGS)")
 
 pgo-clean:
 	rm obj/*.o daydreamer

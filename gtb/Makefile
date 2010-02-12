@@ -6,7 +6,7 @@ override INCLUDE = -Isysport/ -Icompression/ -Icompression/liblzf/ \
 override DEFINE = -DZ_PREFIX -DNDEBUG
 override CFLAGS = -Wall -Wextra $(INCLUDE) $(DEFINE) $(ARCHFLAGS) $(OPTFLAGS)
 
-SRCFILES = gtb-probe.c decode.c possatt.c sysport/sysport.c \
+SRCFILES := gtb-probe.c decode.c possatt.c sysport/sysport.c \
 	   compression/wrap.c compression/huffman/hzip.c \
 	   compression/lzma/LzmaEnc.c compression/lzma/LzmaDec.c \
 	   compression/lzma/Alloc.c compression/lzma/LzFind.c \
@@ -19,18 +19,19 @@ SRCFILES = gtb-probe.c decode.c possatt.c sysport/sysport.c \
 	   compression/zlib/trees.c compression/zlib/zutil.c \
 	   compression/liblzf/lzf_c.c compression/liblzf/lzf_d.c
 OBJFILES := $(patsubst %.c,%.o,$(SRCFILES))
+LIBNAME := libgtb.a
 
-.PHONY: all clean gtb
-.DEFAULT_GOAL := gtb
+.PHONY: all clean
+.DEFAULT_GOAL := $(LIBNAME)
 
-all: gtb
+all: $(LIBNAME)
 
-gtb: $(OBJFILES)
-	$(AR) rcs libgtb.a $(OBJFILES)
+$(LIBNAME): $(OBJFILES)
+	$(AR) rcs $@ $(OBJFILES)
 
 obj/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJFILES) libgtb.a
+	rm -f $(OBJFILES) $(LIBNAME)
 
