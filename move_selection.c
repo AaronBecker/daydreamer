@@ -29,6 +29,7 @@ static const int ordered_move_count[6] = { 0, 256, 16, 16, 4, 4 };
 
 static void generate_moves(move_selector_t* sel);
 static void score_moves(move_selector_t* sel);
+static void score_qsearch_moves(move_selector_t* sel);
 static void sort_moves(move_selector_t* sel);
 static void sort_root_moves(move_selector_t* sel);
 static int64_t score_tactical_move(position_t* pos, move_t move);
@@ -160,13 +161,13 @@ static void generate_moves(move_selector_t* sel)
         case PHASE_QSEARCH_CH:
             sel->moves_end = generate_quiescence_moves(
                     sel->pos, sel->moves, true);
-            score_moves(sel);
+            score_qsearch_moves(sel);
             sort_moves(sel);
             break;
         case PHASE_QSEARCH:
             sel->moves_end = generate_quiescence_moves(
                     sel->pos, sel->moves, false);
-            score_moves(sel);
+            score_qsearch_moves(sel);
             sort_moves(sel);
             break;
         case PHASE_DEFERRED:
@@ -366,6 +367,29 @@ static move_t get_best_move(move_selector_t* sel, int64_t* score)
     return move;
 }
 */
+
+static void score_qsearch_moves(move_selector_t* sel)
+{
+    move_t* moves = sel->moves;
+    int64_t* scores = sel->scores;
+
+    const int64_t grain = MAX_HISTORY;
+    const int64_t hash_score = 1000 * grain;
+    for (int i=0; moves[i] != NO_MOVE; ++i) {
+        const move_t move = moves[i];
+        int64_t score = 0ull;
+        if (move == sel->hash_move[0]) {
+            score = hash_score;
+        } else if (get_move_capture(move) || get_move_promote(move)) {
+            score = score_tactical_move(sel->pos, move);
+        } else {
+            score = (int64_t)MAX(0,
+                    root_data.history.history[history_index(move)]);
+            if (static_exchange_sign(sel->pos, move) >= 0) score += MAX_HISTORY;
+        }
+        scores[i] = score;
+    }
+}
 
 /*
  * Take an unordered list of pseudo-legal moves and score them according

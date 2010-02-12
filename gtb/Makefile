@@ -1,8 +1,10 @@
 
+ARCHFLAGS = -m64
+OPTFLAGS = -O3 -msse
 override INCLUDE = -Isysport/ -Icompression/ -Icompression/liblzf/ \
 	   -Icompression/zlib/ -Icompression/lzma/ -Icompression/huffman/
 override DEFINE = -DZ_PREFIX -DNDEBUG
-override CFLAGS = -Wall -Wextra -O2 $(INCLUDE) $(DEFINE) $(ARCHFLAGS)
+override CFLAGS = -Wall -Wextra $(INCLUDE) $(DEFINE) $(ARCHFLAGS) $(OPTFLAGS)
 
 SRCFILES = gtb-probe.c decode.c possatt.c sysport/sysport.c \
 	   compression/wrap.c compression/huffman/hzip.c \
