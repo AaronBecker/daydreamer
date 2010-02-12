@@ -138,8 +138,9 @@ static void uci_handle_ext(char* command)
             int score;
             bool success = probe_gtb_hard(pos, &score);
             if (success) {
-                printf("score: %d\n", (MATE_VALUE-abs(score)) *
-                    (score < 0 ? -1 : 1));
+                printf("score: %d\n", score == 0 ? 0 :
+                        (MATE_VALUE-abs(score)) *
+                        (score < 0 ? -1 : 1));
             } else {
                 printf("Tablebase lookup failed\n");
             }
