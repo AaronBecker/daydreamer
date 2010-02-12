@@ -218,23 +218,34 @@ static bool should_deepen(search_data_t* data)
     return true;
 }
 
-/*
- * Should we look up the current position in an endgame database?
- */
-static bool should_probe_egbb(position_t* pos,
+static bool check_eg_database(position_t* pos,
         float depth,
         int ply,
-        int m50,
         int alpha,
-        int beta)
+        int beta,
+        int* score)
 {
-    if (!options.use_egbb) return false;
     //TODO: evaluate 5 man bases
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 4) return false;
-    if ((is_mate_score(alpha) && alpha > 0) ||
-            (is_mate_score(beta) && beta < 0)) return false;
-    return (m50 == 0 || (ply > 2*(depth_to_index(depth) + ply)/3));
+    if (options.use_gtb) {
+        // For DTM tablebases, just look.
+        if (probe_gtb_soft(pos, score)) {
+            ++root_data.stats.egbb_hits;
+            return true;
+        }
+    } else if (options.use_egbb) {
+        // For bitbases, ensure some progress constraints first.
+        if ((is_mate_score(alpha) && alpha > 0) ||
+                (is_mate_score(beta) && beta < 0)) return false;
+        if (pos->fifty_move_counter != 0 &&
+                (ply <= 2*(depth_to_index(depth) + ply)/3)) return false;
+        if (probe_egbb(pos, score, ply)) {
+            ++root_data.stats.egbb_hits;
+            return true;
+        }
+    }
+    return false;
 }
 
 /*
@@ -695,15 +706,9 @@ static int search(position_t* pos,
         return MAX(alpha, trans_entry->score);
     }
 
-    // Check endgame bitbases if appropriate
     int score;
-    if (should_probe_egbb(pos, (int)depth, ply,
-                pos->fifty_move_counter, alpha, beta)) {
-        if (probe_egbb(pos, &score, ply)) {
-            ++root_data.stats.egbb_hits;
-            return score;
-        }
-    }
+    // Check endgame bitbases/tablebases if appropriate
+    if (check_eg_database(pos, depth, ply, alpha, beta, &score)) return score;
 
     open_node(&root_data, ply);
     if (full_window) root_data.pvnodes_searched++;
@@ -952,15 +957,9 @@ static int quiesce(position_t* pos,
         return MAX(alpha, trans_entry->score);
     }
 
-    // Check endgame bitbases if appropriate
     int score;
-    if (should_probe_egbb(pos, depth, ply,
-                pos->fifty_move_counter, alpha, beta)) {
-        if (probe_egbb(pos, &score, ply)) {
-            ++root_data.stats.egbb_hits;
-            return score;
-        }
-    }
+    // Check endgame bitbases/tablebases if appropriate
+    if (check_eg_database(pos, depth, ply, alpha, beta, &score)) return score;
 
     eval_data_t ed;
     if (ply >= MAX_SEARCH_PLY-1) return full_eval(pos, &ed);
