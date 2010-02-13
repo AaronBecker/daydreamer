@@ -21,7 +21,7 @@ extern "C" {
     #define ROOK_VAL         490
     #define QUEEN_VAL        1010
     #define KING_VAL         20000
-    #define EG_PAWN_VAL      100
+    #define EG_PAWN_VAL      115
     #define EG_KNIGHT_VAL    390
     #define EG_BISHOP_VAL    390
     #define EG_ROOK_VAL      640
