@@ -89,9 +89,7 @@ bool should_try_prune(move_selector_t* sel, move_t move)
 {
     return !get_move_capture(move) &&
         !get_move_promote(move) &&
-        !is_move_castle(move) &&
-        move != sel->killers[0] &&
-        move != sel->killers[1];
+        !is_move_castle(move);
 }
 
 float lmr_reduction(move_selector_t* sel, move_t move)
