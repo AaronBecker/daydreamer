@@ -983,7 +983,7 @@ static int quiesce(position_t* pos,
     int num_qmoves = 0;
     move_selector_t selector;
     // TODO: try -0.5 depth cutoff
-    generation_t gen_type = depth >= 0 && eval + 150 >= alpha ?
+    generation_t gen_type = depth >= -0.5 && eval + 150 >= alpha ?
         Q_CHECK_GEN : Q_GEN;
     init_move_selector(&selector, pos, gen_type,
             search_node, hash_move, depth, ply);
