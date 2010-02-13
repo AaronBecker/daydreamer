@@ -32,7 +32,7 @@ GITFLAGS = -DGIT_VERSION=\"\\\"`git rev-parse --short HEAD`\\\"\"
 
 SRCFILES := $(wildcard *.c)
 HEADERS  := $(wildcard *.h)
-OBJFILES := $(addprefix obj/, $(patsubst %.c,%.o,$(wildcard *.c)))
+OBJFILES := $(SRCFILES:.c=.o)
 
 .PHONY: all clean gtb tags debug opt pgo-start pgo-finish pgo-clean
 .DEFAULT_GOAL := default
@@ -59,24 +59,22 @@ pgo-finish: pgo-clean
 
 all: default
 
-daydreamer: gtb obj $(OBJFILES)
+daydreamer: gtb $(OBJFILES)
 	$(CC) $(LDFLAGS) $(OBJFILES) -o daydreamer
 
 tags: $(SRCFILES)
 	$(CTAGS) $(HEADERS) $(SRCFILES)
 
-obj/%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-obj:
-	mkdir obj
-
 gtb:
 	(cd gtb && $(MAKE) ARCHFLAGS="$(ARCHFLAGS)" OPTFLAGS="$(OPTFLAGS)")
 
 pgo-clean:
-	rm obj/*.o daydreamer
+	rm build/*.o daydreamer
 
 clean:
-	rm -rf obj daydreamer tags && (cd gtb && $(MAKE) clean)
+	rm -rf .depend daydreamer tags && (cd gtb && $(MAKE) clean)
 
+.depend: $(SRCFILES)
+	$(CC) -MM $(CFLAGS) $(SRCFILES) > $@
+
+include .depend
