@@ -9,15 +9,6 @@ extern "C" {
 #include <limits.h>
 #include <stdlib.h>
 
-#ifndef GIT_VERSION
-#define GIT_VERSION
-#endif
-#define ENGINE_NAME             "Daydreamer"
-#define ENGINE_VERSION_NUMBER   "1.61"
-#define ENGINE_VERSION_NAME     " ms3_" GIT_VERSION
-#define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
-#define ENGINE_AUTHOR           "Aaron Becker"
-
 #ifndef MIN
 #define	MIN(a,b) (((a)<(b))?(a):(b))
 #endif

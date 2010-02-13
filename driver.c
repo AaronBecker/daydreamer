@@ -1,4 +1,5 @@
 
+#include "version.h"
 #include "daydreamer.h"
 #include <string.h>
 #include <strings.h>
