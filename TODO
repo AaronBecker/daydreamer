@@ -28,3 +28,6 @@ Evaluation
 Bugs
     I'm concerned about a root fail-high bug for e7e4 in this position:
     1r1r2k1/2p1qp1p/6p1/ppQB1b2/5Pn1/2R1P1P1/PP5P/R1B3K1 b
+
+    Similar problem here: (bm b1h7)
+    1qrrbbk1/1p1nnppp/p3p3/4P3/2P5/1PN1N3/PB2Q1PP/1B2RR1K w - - 0 21
