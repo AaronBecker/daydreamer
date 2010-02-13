@@ -13,17 +13,17 @@ extern "C" {
     #define QUEEN_VAL     900
     #define KING_VAL      20000
 #else
-    #define PAWN_VAL         85
-    #define KNIGHT_VAL       340
-    #define BISHOP_VAL       340
-    #define ROOK_VAL         490
-    #define QUEEN_VAL        1010
+    #define PAWN_VAL         100
+    #define KNIGHT_VAL       325
+    #define BISHOP_VAL       325
+    #define ROOK_VAL         500
+    #define QUEEN_VAL        975
     #define KING_VAL         20000
-    #define EG_PAWN_VAL      115
-    #define EG_KNIGHT_VAL    390
-    #define EG_BISHOP_VAL    390
-    #define EG_ROOK_VAL      640
-    #define EG_QUEEN_VAL     1210
+    #define EG_PAWN_VAL      100
+    #define EG_KNIGHT_VAL    325
+    #define EG_BISHOP_VAL    325
+    #define EG_ROOK_VAL      500
+    #define EG_QUEEN_VAL     975
     #define EG_KING_VAL      20000
 #endif
 #define WON_ENDGAME         (2*QUEEN_VAL)
