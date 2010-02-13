@@ -72,7 +72,7 @@ static void add_scaled_score(score_t* score, score_t* addend, int scale)
  */
 static int blend_score(score_t* score, int phase)
 {
-    return (phase*score->midgame + (1024-phase)*score->endgame) / 1024;
+    return (phase*score->midgame + (MAX_PHASE-phase)*score->endgame) / MAX_PHASE;
 }
 
 /*
@@ -317,11 +317,8 @@ bool is_draw(const position_t* pos)
  */
 int game_phase(const position_t* pos)
 {
-    static const int max_scaled_count = 4 + 4 + 8 + 8;
-    int scaled_count = pos->piece_count[WN] + pos->piece_count[WB] +
+    return pos->piece_count[WN] + pos->piece_count[WB] +
         2*pos->piece_count[WR] + 4*pos->piece_count[WQ] +
         pos->piece_count[BN] + pos->piece_count[BB] +
         2*pos->piece_count[BR] + 4*pos->piece_count[BQ];
-    int phase = scaled_count * 1024 / max_scaled_count;
-    return CLAMP(phase, 0, 1024);
 }

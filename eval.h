@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#define MAX_PHASE           24
+
 #ifdef UFO_EVAL
     #define PAWN_VAL      100
     #define KNIGHT_VAL    320
