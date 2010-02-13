@@ -4,7 +4,9 @@
 #ifdef UFO_EVAL
 #include "pst_ufo.inc"
 #else
-#include "pst.inc"
+//#include "pst.inc"
+// FIXME
+#include "pst_ipp.inc"
 #endif
 
 static const int pawn_scale = 1024;
