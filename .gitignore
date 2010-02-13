@@ -1,6 +1,7 @@
 *.o
 .vimproject
 tags
+.depend
 daydreamer
 daydreamer_*
 daydreamer.log

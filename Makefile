@@ -72,7 +72,7 @@ pgo-clean:
 	rm build/*.o daydreamer
 
 clean:
-	rm -rf .depend daydreamer tags && (cd gtb && $(MAKE) clean)
+	rm -rf .depend daydreamer tags $(OBJFILES) && (cd gtb && $(MAKE) clean)
 
 .depend: $(SRCFILES)
 	$(CC) -MM $(CFLAGS) $(SRCFILES) > $@
