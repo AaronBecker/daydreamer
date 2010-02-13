@@ -27,8 +27,7 @@ static const int backward_penalty[2][8] = {
     { 6, 6, 6,  8,  8, 6, 6, 6 },
     { 8, 9, 9, 10, 10, 9, 9, 8 }
 };
-// TODO: test 10/20 again
-static const int connected_bonus[2] = { 10, 15 };
+static const int connected_bonus[2] = { 5, 2 };
 static const int unstoppable_passer_bonus[8] = {
     0, 500, 525, 550, 575, 600, 650, 0
 };
