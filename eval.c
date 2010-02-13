@@ -72,7 +72,7 @@ static void add_scaled_score(score_t* score, score_t* addend, int scale)
  */
 static int blend_score(score_t* score, int phase)
 {
-    return (phase*score->midgame + (MAX_PHASE-phase)*score->endgame) / MAX_PHASE;
+    return (phase*score->midgame + (MAX_PHASE-phase)*score->endgame)/MAX_PHASE;
 }
 
 /*
@@ -234,8 +234,8 @@ void report_eval(const position_t* pos)
     int piece_square_eval =
             ((phase)*(pos->piece_square_eval[side].midgame -
                 pos->piece_square_eval[side^1].midgame) +
-            (1024-phase)*(pos->piece_square_eval[side].endgame -
-                pos->piece_square_eval[side^1].endgame)) / 1024;
+            (MAX_PHASE-phase)*(pos->piece_square_eval[side].endgame -
+                pos->piece_square_eval[side^1].endgame)) / MAX_PHASE;
     printf("info string psq score: %d\n", piece_square_eval);
 
     int material_adjust = 0;
@@ -312,8 +312,8 @@ bool is_draw(const position_t* pos)
 }
 
 /*
- * Is this position an opening or an endgame? Scored on a scale of 0-1024,
- * with 1024 being a pure opening and 0 a pure endgame.
+ * Is this position an opening or an endgame? Scored on a scale of 0-24,
+ * with 24 being a pure opening and 0 a pure endgame.
  */
 int game_phase(const position_t* pos)
 {

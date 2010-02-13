@@ -2,6 +2,7 @@
 #include "daydreamer.h"
 #include <string.h>
 
+// TODO: Tune these values, in particular the endgame values.
 // TODO: bonus/penalty for occupying a lot of space.
 static const int isolation_penalty[2][8] = {
     { 6, 6, 6, 8, 8, 6, 6, 6 },
@@ -27,7 +28,7 @@ static const int backward_penalty[2][8] = {
     { 6, 6, 6,  8,  8, 6, 6, 6 },
     { 8, 9, 9, 10, 10, 9, 9, 8 }
 };
-static const int connected_bonus[2] = { 5, 2 };
+static const int connected_bonus[2] = { 5, 5 };
 static const int unstoppable_passer_bonus[8] = {
     0, 500, 525, 550, 575, 600, 650, 0
 };
