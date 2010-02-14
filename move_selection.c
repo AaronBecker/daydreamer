@@ -188,13 +188,6 @@ move_t select_move(move_selector_t* sel)
             sel->moves_so_far++;
             return move;
         case PHASE_ROOT:
-            move = sel->moves[sel->current_move_index++];
-            if (!move) break;
-            sel->moves_so_far++;
-            if (!get_move_capture(move) && get_move_promote(move) != QUEEN) {
-                sel->quiet_moves_so_far++;
-            }
-            return move;
         case PHASE_EVASIONS:
             move = sel->moves[sel->current_move_index++];
             if (!move) break;
@@ -224,17 +217,15 @@ move_t select_move(move_selector_t* sel)
         case PHASE_QSEARCH_CH:
             while (true) {
                 assert(sel->current_move_index <= sel->moves_end);
-                int64_t score = sel->scores[sel->current_move_index];
                 move = sel->moves[sel->current_move_index++];
                 if (!move) break;
-                if ((!get_move_promote(move) ||
-                            get_move_promote(move) != QUEEN) &&
-                        score < MAX_HISTORY) continue;
+                const piece_type_t promote = get_move_promote(move);
+                if (promote && promote != QUEEN) continue;
                 if (move == sel->hash_move[0] ||
                         !is_pseudo_move_legal(sel->pos, move)) continue;
                 check_pseudo_move_legality(sel->pos, move);
                 sel->moves_so_far++;
-                if (!get_move_capture(move) && get_move_promote(move)!=QUEEN) {
+                if (!get_move_capture(move) && promote != QUEEN) {
                     sel->quiet_moves_so_far++;
                 }
                 return move;
@@ -284,13 +275,14 @@ static void score_qsearch_moves(move_selector_t* sel)
         if (move == sel->hash_move[0]) {
             score = hash_score;
         } else if (get_move_capture(move) || get_move_promote(move)) {
-            score = score_tactical_move(sel->pos, move);
+            piece_type_t piece = get_move_piece_type(move);
+            piece_type_t promote = get_move_promote(move);
+            piece_type_t capture = piece_type(get_move_capture(move));
+            int tactic_bonus = 0;
+            if (promote == QUEEN) tactic_bonus = 100;
+            score = 6*capture - piece + 5 + tactic_bonus;
         } else {
-            score = (int64_t)MAX(0,
-                    root_data.history.history[history_index(move)]);
-            // TODO: does this help? how does this interact with move cutoff
-            // in select_move?
-            if (static_exchange_sign(sel->pos, move) >= 0) score += MAX_HISTORY;
+            score = root_data.history.history[history_index(move)];
         }
         scores[i] = score;
     }

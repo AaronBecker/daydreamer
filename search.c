@@ -996,6 +996,7 @@ static int quiesce(position_t* pos,
                 get_move_promote(move) != QUEEN &&
                 eval + material_value(get_move_capture(move)) +
                 qfutility_margin < alpha) continue;
+        if (move != hash_move && static_exchange_sign(pos, move) < 0) continue;
         undo_info_t undo;
         do_move(pos, move, &undo);
         score = -quiesce(pos, search_node+1, ply+1, -beta, -alpha, depth-PLY);
