@@ -82,6 +82,14 @@ void increment_transposition_age(void)
     set_transposition_age((generation + 1) % generation_limit);
 }
 
+void prefetch_transposition(position_t* pos)
+{
+    void* addr = transposition_table + (pos->hash % num_buckets)*bucket_size;
+    for (unsigned int i=0; i<sizeof(transposition_entry_t); i+=64) {
+        __builtin_prefetch(addr+i);
+    }
+}
+
 /*
  * Get the entry for the given position, if it exists.
  */
