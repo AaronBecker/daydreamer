@@ -783,10 +783,6 @@ static int search(position_t* pos,
         undo_info_t undo;
         do_move(pos, move, &undo);
         float ext = extend(pos, move, single_reply, full_window);
-        if (ext && defer_move(&selector, move)) {
-            undo_move(pos, move, &undo);
-            continue;
-        }
         if (num_legal_moves == 1) {
             // First move, use full window search.
             score = -search(pos, search_node+1, ply+1,
@@ -832,6 +828,11 @@ static int search(position_t* pos,
                     continue;
                 }
             }
+            if (defer_move(&selector, move)) {
+                undo_move(pos, move, &undo);
+                continue;
+            }
+
             // Late move reduction (LMR), as described by Tord Romstad at
             // http://www.glaurungchess.com/lmr.html
             const bool move_is_late = full_window ?

@@ -3,7 +3,7 @@
 #include <string.h>
 
 extern search_data_t root_data;
-static const bool defer_enabled = false;
+static const bool defer_enabled = true;
 static bool pv_cache_enabled = true;
 
 selection_phase_t phase_table[6][8] = {
@@ -251,11 +251,13 @@ move_t select_move(move_selector_t* sel)
 
 bool defer_move(move_selector_t* sel, move_t move)
 {
-    if (!defer_enabled) return false;
+    // FIXME: "quiet" underpromotions are being miscounted here.
     assert(move == sel->moves[sel->current_move_index]);
+    if (!defer_enabled) return false;
     if (*sel->phase == PHASE_DEFERRED ||
-            *sel->phase == PHASE_TRANS ||
-            sel->scores[sel->current_move_index] > MAX_HISTORY) return false;
+            *sel->phase == PHASE_TRANS) return false;
+    if (!get_move_capture(move) && !get_move_promote(move)) return false;
+    if (static_exchange_sign(sel->pos, move) >= 0) return false;
     sel->deferred_moves[sel->num_deferred_moves++] = move;
     sel->deferred_moves[sel->num_deferred_moves] = NO_MOVE;
     sel->moves_so_far--;
@@ -278,9 +280,8 @@ static void score_qsearch_moves(move_selector_t* sel)
             piece_type_t piece = get_move_piece_type(move);
             piece_type_t promote = get_move_promote(move);
             piece_type_t capture = piece_type(get_move_capture(move));
-            int tactic_bonus = 0;
-            if (promote == QUEEN) tactic_bonus = 100;
-            score = 6*capture - piece + 5 + tactic_bonus;
+            int tactic_bonus = promote == QUEEN ? 100 : 0;
+            score = MAX_HISTORY + 6*capture - piece + 5 + tactic_bonus;
         } else {
             score = root_data.history.history[history_index(move)];
         }
@@ -300,8 +301,8 @@ static void score_moves(move_selector_t* sel)
     int64_t* scores = sel->scores;
 
     const int64_t grain = MAX_HISTORY;
-    const int64_t hash_score = 1000 * grain;
-    const int64_t killer_score = 700 * grain;
+    const int64_t hash_score = 4*grain;
+    const int64_t killer_score = 2*grain;
     for (int i=0; moves[i] != NO_MOVE; ++i) {
         const move_t move = moves[i];
         int64_t score = 0ull;
@@ -310,7 +311,12 @@ static void score_moves(move_selector_t* sel)
         } else if (move == sel->mate_killer) {
             score = hash_score-1;
         } else if (get_move_capture(move) || get_move_promote(move)) {
-            score = score_tactical_move(sel->pos, move);
+            piece_type_t piece = get_move_piece_type(move);
+            piece_type_t promote = get_move_promote(move);
+            piece_type_t capture = piece_type(get_move_capture(move));
+            int tactic_bonus = promote == QUEEN ? 100 : 0;
+            if (promote == QUEEN) tactic_bonus = 100;
+            score = 3*grain + 6*capture - piece + 5 + tactic_bonus;
         } else if (move == sel->killers[0]) {
             score = killer_score;
         } else if (move == sel->killers[1]) {
