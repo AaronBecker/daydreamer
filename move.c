@@ -206,6 +206,7 @@ void do_move(position_t* pos, move_t move, undo_info_t* undo)
     pos->hash ^= castle_hash(pos);
     pos->hash ^= side_hash(pos);
     check_board_validity(pos);
+    prefetch_transposition(pos);
 }
 
 /*
@@ -278,10 +279,11 @@ void do_nullmove(position_t* pos, undo_info_t* undo)
     pos->hash ^= side_hash(pos);
     pos->ep_square = EMPTY;
     pos->hash ^= ep_hash(pos);
-    pos->fifty_move_counter++;
+    pos->fifty_move_counter = 0;
     pos->hash_history[pos->ply++] = undo->hash;
     pos->prev_move = NULL_MOVE;
     check_board_validity(pos);
+    prefetch_transposition(pos);
 }
 
 /*
