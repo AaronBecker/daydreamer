@@ -200,11 +200,13 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     add_scaled_score(&phase_score, &component_score, king_attack_scale);
 
     // Tempo
-    phase_score.midgame += 4;
-    phase_score.endgame += 8;
+    phase_score.midgame += 9;
+    phase_score.endgame += 2;
 
     score = blend_score(&phase_score, ed->md->phase);
     score = (score * endgame_scale[score > 0 ? side : side^1]) / 16;
+    if (pos->fifty_move_counter > 50) score = score *
+        ((101 - pos->fifty_move_counter) / 50);
 
     if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, side^1)) score = MAX(score, DRAW_VALUE);
