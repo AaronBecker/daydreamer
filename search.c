@@ -849,10 +849,8 @@ static int search(position_t* pos,
             if (score > alpha) {
                 score = -search(pos, search_node+1, ply+1,
                         -alpha-1, -alpha, depth+ext-PLY);
-                if (full_window && score > alpha && score < beta) {
-                    score = -search(pos, search_node+1, ply+1,
+                if (score > alpha) score = -search(pos, search_node+1, ply+1,
                         -beta, -alpha, depth+ext-PLY);
-                }
             }
         }
         searched_moves[num_searched_moves++] = move;
