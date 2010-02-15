@@ -487,8 +487,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
         int beta = mate_in(-1);
         int last_score = search_data->scores_by_iteration[depth_index-1];
         if (depth > 5*PLY && options.multi_pv == 1) {
-            alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 35;
-            beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 35;
+            alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 40;
+            beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 40;
             if (options.verbose) {
                 printf("info string root window is (%d, %d)\n", alpha, beta);
             }
@@ -849,8 +849,10 @@ static int search(position_t* pos,
             if (score > alpha) {
                 score = -search(pos, search_node+1, ply+1,
                         -alpha-1, -alpha, depth+ext-PLY);
-                if (score > alpha) score = -search(pos, search_node+1, ply+1,
+                if (full_window && score > alpha && score < beta) {
+                    score = -search(pos, search_node+1, ply+1,
                         -beta, -alpha, depth+ext-PLY);
+                }
             }
         }
         searched_moves[num_searched_moves++] = move;
