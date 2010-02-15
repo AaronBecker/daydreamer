@@ -27,7 +27,7 @@ static const float iid_non_pv_depth_reduction = 2.0;
 static const float iid_pv_depth_cutoff = 5.0;
 static const float iid_non_pv_depth_cutoff = 8.0;
 
-static const bool obvious_move_enabled = true;
+static const bool obvious_move_enabled = false;
 static const int obvious_move_margin = 200;
 
 // TODO: try other values in [40, 80]
