@@ -162,10 +162,10 @@ static float extend(position_t* pos,
 {
     if (is_check(pos) || single_reply) return PLY;
     // FIXME: test this, for god's sake
-    square_t sq = get_move_to(move);
-    if (piece_type(pos->board[sq]) == PAWN &&
-            (square_rank(sq) == RANK_7 ||
-             square_rank(sq) == RANK_2)) return PLY/2;
+    //square_t sq = get_move_to(move);
+    //if (piece_type(pos->board[sq]) == PAWN &&
+    //        (square_rank(sq) == RANK_7 ||
+    //         square_rank(sq) == RANK_2)) return PLY/2;
     return 0;
 }
 
