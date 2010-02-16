@@ -276,10 +276,10 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     }
 
     if (opp_bishop) {
-        int scale;
+        int scale = 16;
         if (md->eg_type == EG_KBPKB) scale = 0;
-        else if (w_piece == 1 && b_piece == 1) scale = 12;
-        else scale = 8;
+        else if (w_piece == 1 && b_piece == 1) scale = 8;
+        //else scale = 12;
         md->scale[WHITE] = md->scale[BLACK] = scale;
     }
     if (!wp) {
