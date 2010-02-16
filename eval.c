@@ -203,8 +203,9 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     phase_score.midgame += 9;
     phase_score.endgame += 2;
 
+    phase_score.endgame =
+        (phase_score.endgame * endgame_scale[score > 0 ? side : side^1]) / 16;
     score = blend_score(&phase_score, ed->md->phase);
-    score = (score * endgame_scale[score > 0 ? side : side^1]) / 16;
 
     if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, side^1)) score = MAX(score, DRAW_VALUE);
