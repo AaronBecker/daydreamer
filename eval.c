@@ -25,8 +25,12 @@ const int shield_value[2][17] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 2, 0, 0, 0, 0, 0 },
 };
 
+const int pawn_dir[2][9] = {
+    { N, N, NNW-1, NNW, NNW+1, NNE-1, NNE, NNE+1, 0 },
+    { S, S, SSW-1, SSW, SSW+1, SSE-1, SSE, SSE+1, 0 },
+};
 const int king_attack_score[16] = {
-    0, 5, 20, 20, 40, 80, 0, 0, 0, 5, 20, 20, 40, 80, 0, 0
+    0, 10, 25, 25, 50, 100, 0, 0, 0, 10, 25, 50, 50, 100, 0, 0
 };
 const int multiple_king_attack_scale[16] = {
     0, 128, 512, 640, 896, 960, 1024, 1024,
@@ -120,6 +124,7 @@ static score_t evaluate_king_shield(const position_t* pos)
 static score_t evaluate_king_attackers(const position_t* pos)
 {
     int score[2] = {0, 0};
+
     for (color_t side = WHITE; side <= BLACK; ++side) {
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
@@ -128,6 +133,14 @@ static score_t evaluate_king_attackers(const position_t* pos)
             const square_t attacker = pos->pieces[side][i];
             if (piece_attacks_near(pos, attacker, opp_king)) {
                 score[side] += king_attack_score[pos->board[attacker]];
+                num_attackers++;
+            }
+        }
+        if (!num_attackers) continue;
+        const piece_t opp_pawn = create_piece(side^1, PAWN);
+        for (int i=0; pawn_dir[side][i]; ++i) {
+            if (pos->board[opp_king + pawn_dir[side][i]] == opp_pawn) {
+                score[side] += king_attack_score[opp_pawn];
                 num_attackers++;
             }
         }
@@ -203,9 +216,8 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     phase_score.midgame += 9;
     phase_score.endgame += 2;
 
-    phase_score.endgame =
-        (phase_score.endgame * endgame_scale[score > 0 ? side : side^1]) / 16;
     score = blend_score(&phase_score, ed->md->phase);
+    score = (score * endgame_scale[score > 0 ? side : side^1]) / 16;
 
     if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, side^1)) score = MAX(score, DRAW_VALUE);
