@@ -159,9 +159,6 @@ static float extend(position_t* pos,
     // TODO: test recapture extensions
     // TODO: test half ply for non-pv check
     if (is_check(pos) || single_reply) return PLY;
-    // Extend when a capture leads to a pawn endgame
-    if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] == 2 &&
-            get_move_capture_type(move) > PAWN) return PLY;
     square_t sq = get_move_to(move);
     if (piece_type(pos->board[sq]) == PAWN &&
             (square_rank(sq) == RANK_7 ||
