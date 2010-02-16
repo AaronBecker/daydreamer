@@ -30,7 +30,7 @@ const int pawn_dir[2][9] = {
     { S, S, SSW-1, SSW, SSW+1, SSE-1, SSE, SSE+1, 0 },
 };
 const int king_attack_score[16] = {
-    0, 10, 25, 25, 50, 100, 0, 0, 0, 10, 25, 50, 50, 100, 0, 0
+    0, 10, 20, 20, 40, 80, 0, 0, 0, 10, 20, 20, 40, 80, 0, 0
 };
 const int multiple_king_attack_scale[16] = {
     0, 128, 512, 640, 896, 960, 1024, 1024,
