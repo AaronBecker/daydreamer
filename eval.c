@@ -87,7 +87,7 @@ static int file_shield(const position_t* pos, color_t side, square_t square)
     for (square_t sq = square + push;
             gap < 7 && pos->board[sq] != pawn;
             sq += push, gap++) {}
-    if (gap == 8) gap = 0;
+    if (gap == 7) gap = 0;
     return 36 - gap*gap;
 }
 
@@ -103,6 +103,7 @@ static int file_storm(const position_t* pos, color_t side, square_t square)
     else if (gap == 2) gap = 60;
     else if (gap == 3) gap = 30;
     else if (gap == 4) gap = 10;
+    else gap = 0;
     return gap;
 }
 
