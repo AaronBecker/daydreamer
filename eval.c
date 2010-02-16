@@ -15,7 +15,7 @@ static const int pattern_scale = 1024;
 // values tested: 768, (1024), 1280
 static const int pieces_scale = 1024;
 // values tested: 768, (1024), 1280
-static const int shield_scale = 1704;
+static const int shield_scale = 1024;
 // values tested: 1024, 1280, 1576, (1704), 2048
 static const int king_attack_scale = 1024;
 // values tested: 640, 768, (896), 1024, 1536
@@ -96,13 +96,13 @@ static int file_storm(const position_t* pos, color_t side, square_t square)
     int push = pawn_push[side];
     const piece_t pawn = create_piece(side^1, PAWN);
     int gap = 1;
-    for (square_t sq = square + push;
-            gap < 5 && pos->board[sq] != pawn;
-            sq += push, gap++) {}
-    if (gap == 1) gap = 15;
-    else if (gap == 2) gap = 60;
-    else if (gap == 3) gap = 30;
-    else if (gap == 4) gap = 10;
+    square_t sq = square + push;
+    for (; gap < 5 && pos->board[sq] != pawn; sq += push, gap++) {}
+    rank_t r = relative_rank[side][square_rank(sq)];
+    //if (r == 2) gap = 15;
+    if (r == 3) gap = 60;
+    else if (r == 4) gap = 30;
+    else if (r == 5) gap = 10;
     else gap = 0;
     return gap;
 }
