@@ -150,22 +150,21 @@ bool should_stop_searching(search_data_t* data)
  * and pawn pushes to the 7th (relative) rank.
  * Note: |move| has already been made in |pos|. We need both anyway for
  * efficiency.
- * TODO: recapture extensions might be good. Also, fractional extensions,
- * and fractional plies in general.
- * TODO: test the value of pawn push extensions. Maybe limit the situations
- * in which the pushes are extended to pv?
  */
 static float extend(position_t* pos,
         move_t move,
         bool single_reply,
         bool full_window)
 {
+    // TODO: test recapture extensions
+    // TODO: test half ply for non-pv check
     if (is_check(pos) || single_reply) return PLY;
-    // FIXME: test this, for god's sake
-    //square_t sq = get_move_to(move);
-    //if (piece_type(pos->board[sq]) == PAWN &&
-    //        (square_rank(sq) == RANK_7 ||
-    //         square_rank(sq) == RANK_2)) return PLY/2;
+    if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] == 1 &&
+            get_move_capture_type(move) > PAWN) return PLY;
+    square_t sq = get_move_to(move);
+    if (piece_type(pos->board[sq]) == PAWN &&
+            (square_rank(sq) == RANK_7 ||
+             square_rank(sq) == RANK_2)) return PLY/2;
     return 0;
 }
 
