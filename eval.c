@@ -25,10 +25,10 @@ const int shield_value[2][17] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 2, 0, 0, 0, 0, 0 },
 };
 
-const int pawn_dir[2][9] = {
-    { N, N, NNW-1, NNW, NNW+1, NNE-1, NNE, NNE+1, 0 },
-    { S, S, SSW-1, SSW, SSW+1, SSE-1, SSE, SSE+1, 0 },
-};
+//const int pawn_dir[2][9] = {
+//    { N, N, NNW-1, NNW, NNW+1, NNE-1, NNE, NNE+1, 0 },
+//    { S, S, SSW-1, SSW, SSW+1, SSE-1, SSE, SSE+1, 0 },
+//};
 const int king_attack_score[16] = {
     0, 5, 20, 20, 40, 80, 0, 0, 0, 5, 20, 20, 40, 80, 0, 0
 };
@@ -79,6 +79,48 @@ static int blend_score(score_t* score, int phase)
     return (phase*score->midgame + (MAX_PHASE-phase)*score->endgame)/MAX_PHASE;
 }
 
+static int file_shield(const position_t* pos, color_t side, square_t square)
+{
+    int push = pawn_push[side];
+    const piece_t pawn = create_piece(side, PAWN);
+    int gap = 1;
+    for (square_t sq = square + push;
+            gap < 7 && pos->board[sq] != pawn;
+            sq += push, gap++) {}
+    if (gap == 8) gap = 0;
+    return 36 - gap*gap;
+}
+
+static int file_storm(const position_t* pos, color_t side, square_t square)
+{
+    int push = pawn_push[side];
+    const piece_t pawn = create_piece(side^1, PAWN);
+    int gap = 1;
+    for (square_t sq = square + push;
+            gap < 5 && pos->board[sq] != pawn;
+            sq += push, gap++) {}
+    if (gap == 1) gap = 15;
+    else if (gap == 2) gap = 60;
+    else if (gap == 3) gap = 30;
+    else if (gap == 4) gap = 10;
+    return gap;
+}
+
+static int square_safeness(const position_t* pos,
+        color_t side,
+        square_t square)
+{
+    file_t file = square_file(square);
+    int unsafeness = file_shield(pos, side, square);
+    if (file > FILE_A) unsafeness += file_shield(pos, side, square + W);
+    if (file < FILE_H) unsafeness += file_shield(pos, side, square + E);
+    if (!unsafeness) unsafeness = 15;
+    unsafeness += file_storm(pos, side, square);
+    if (file > FILE_A) unsafeness += file_storm(pos, side, square + W);
+    if (file < FILE_H) unsafeness += file_storm(pos, side, square + E);
+    return -unsafeness;
+}
+
 /*
  * Give some points for pawns directly in front of your king.
  */
@@ -104,10 +146,12 @@ static score_t evaluate_king_shield(const position_t* pos)
 {
     int score[2] = {0, 0};
     if (pos->piece_count[WQ] != 0) {
-        score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
+        score[WHITE] = square_safeness(pos, WHITE, pos->pieces[WHITE][0]);
+        //score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
     }
     if (pos->piece_count[BQ] != 0) {
-        score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
+        score[BLACK] = square_safeness(pos, BLACK, pos->pieces[BLACK][0]);
+        //score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
     }
     color_t side = pos->side_to_move;
     score_t phase_score;
@@ -136,14 +180,14 @@ static score_t evaluate_king_attackers(const position_t* pos)
                 num_attackers++;
             }
         }
-        if (!num_attackers) continue;
-        const piece_t opp_pawn = create_piece(side^1, PAWN);
-        for (int i=0; pawn_dir[side][i]; ++i) {
-            if (pos->board[opp_king + pawn_dir[side][i]] == opp_pawn) {
-                score[side] += king_attack_score[opp_pawn];
-                num_attackers++;
-            }
-        }
+        //if (!num_attackers) continue;
+        //const piece_t opp_pawn = create_piece(side^1, PAWN);
+        //for (int i=0; pawn_dir[side][i]; ++i) {
+        //    if (pos->board[opp_king + pawn_dir[side][i]] == opp_pawn) {
+        //        score[side] += king_attack_score[opp_pawn];
+        //        num_attackers++;
+        //    }
+        //}
         score[side] = score[side] *
             multiple_king_attack_scale[num_attackers] / 1024;
     }
