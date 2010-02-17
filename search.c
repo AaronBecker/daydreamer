@@ -150,15 +150,18 @@ bool should_stop_searching(search_data_t* data)
  * and pawn pushes to the 7th (relative) rank.
  * Note: |move| has already been made in |pos|. We need both anyway for
  * efficiency.
+ * TODO: recapture extensions might be good. Also, fractional extensions,
+ * and fractional plies in general.
+ * TODO: test the value of pawn push extensions. Maybe limit the situations
+ * in which the pushes are extended to pv?
  */
 static float extend(position_t* pos,
         move_t move,
         bool single_reply,
         bool full_window)
 {
-    // TODO: test recapture extensions
-    if (single_reply) return PLY;
-    if (is_check(pos)) return full_window ? 1.1 : 0.75;
+    if (is_check(pos) || single_reply) return PLY;
+    // FIXME: test this, for god's sake
     square_t sq = get_move_to(move);
     if (piece_type(pos->board[sq]) == PAWN &&
             (square_rank(sq) == RANK_7 ||
@@ -812,9 +815,11 @@ static int search(position_t* pos,
                 // TODO: try pruning based on pure move ordering, or work
                 // move order into the history count
                 // TODO: experiment with pruning inside pv
-                if (history_prune_enabled && depth <= 3.0 &&
-                        is_history_prune_allowed(
-                            &root_data.history, move, depth)) {
+                if (history_prune_enabled &&
+                        num_legal_moves > (int)(2.5 + 0.75*expf(depth))) { 
+                        //depth <= 3.0 &&
+                        //is_history_prune_allowed(
+                        //    &root_data.history, move, depth)) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
                     if (full_window) add_pv_move(&selector, move, 0);
