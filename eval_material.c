@@ -85,6 +85,9 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     int b_minor = bn + bb;
     int b_piece = 2*b_major + b_minor;
     int b_all = bq + br + bb + bn + bp;
+    bool opp_bishop = w_piece == 1 && b_piece == 1 && wb == 1 && bb == 1 &&
+        square_color(pos->pieces[WHITE][1]) !=
+        square_color(pos->pieces[BLACK][1]);
     md->population = w_all + b_all + 2;
 
     // Pair bonuses
@@ -269,9 +272,11 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             md->eg_type == EG_KQKQ ||
             md->eg_type == EG_KRKR) {
         md->scale[BLACK] = md->scale[WHITE] = 0;
-        return;
     }
-
+    if (opp_bishop) {
+        md->scale[WHITE] = md->scale[BLACK] = md->eg_type == EG_KBPKB ? 0 : 8;
+    }
+    if (md->scale[WHITE] == 0 && md->scale[BLACK] == 0) return;
     if (!wp) {
         if (w_piece == 1) {
             md->scale[WHITE] = 0;

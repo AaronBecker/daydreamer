@@ -28,7 +28,7 @@ static const float iid_pv_depth_cutoff = 5.0;
 static const float iid_non_pv_depth_cutoff = 8.0;
 
 static const bool obvious_move_enabled = true;
-static const int obvious_move_margin = 200;
+static const int obvious_move_margin = 250;
 
 // TODO: try other values in [40, 80]
 static const int qfutility_margin = 65;
@@ -150,18 +150,15 @@ bool should_stop_searching(search_data_t* data)
  * and pawn pushes to the 7th (relative) rank.
  * Note: |move| has already been made in |pos|. We need both anyway for
  * efficiency.
- * TODO: recapture extensions might be good. Also, fractional extensions,
- * and fractional plies in general.
- * TODO: test the value of pawn push extensions. Maybe limit the situations
- * in which the pushes are extended to pv?
  */
 static float extend(position_t* pos,
         move_t move,
         bool single_reply,
         bool full_window)
 {
+    // TODO: test recapture extensions
+    // TODO: test half ply for non-pv check
     if (is_check(pos) || single_reply) return PLY;
-    // FIXME: test this, for god's sake
     square_t sq = get_move_to(move);
     if (piece_type(pos->board[sq]) == PAWN &&
             (square_rank(sq) == RANK_7 ||
@@ -201,7 +198,7 @@ static bool should_deepen(search_data_t* data)
     // We can stop early if our best move is obvious.
     if (obvious_move_enabled && data->obvious_move &&
             data->depth_limit == MAX_SEARCH_PLY &&
-            !data->node_limit && data->current_depth >= 6*PLY) return false;
+            !data->node_limit && data->current_depth >= 7*PLY) return false;
 
     // Allocate some extra time when the root score drops.
     depth = depth_to_index(data->current_depth);
@@ -488,8 +485,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
         int beta = mate_in(-1);
         int last_score = search_data->scores_by_iteration[depth_index-1];
         if (depth > 5*PLY && options.multi_pv == 1) {
-            alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 40;
-            beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 40;
+            alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 45;
+            beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 45;
             if (options.verbose) {
                 printf("info string root window is (%d, %d)\n", alpha, beta);
             }
@@ -511,6 +508,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
 
         // Check the obvious move, if any.
         if (search_data->pv[0] != search_data->obvious_move) {
+            // TODO:test
+            //|| id_score <= alpha || id_score >= beta) {
             search_data->obvious_move = NO_MOVE;
         }
 
