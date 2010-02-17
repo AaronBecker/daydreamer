@@ -181,7 +181,7 @@ static bool should_deepen(search_data_t* data)
     // Allocate more search time when the root position is unclear.
     if (data->current_depth < 6*PLY) data->time_bonus = 0;
     else data->time_bonus = MAX(data->time_bonus,
-            real_target * data->root_indecisiveness / 2);
+            data->time_target * data->root_indecisiveness / 2);
 
     // If we're much more than halfway through our time, we won't make it
     // through the first move of the next iteration anyway.
@@ -519,11 +519,11 @@ void deepening_search(search_data_t* search_data, bool ponder)
         if (id_score <= alpha) {
             consecutive_fail_lows++;
             consecutive_fail_highs = 0;
-            search_data->root_indecisiveness += 4;
+            search_data->root_indecisiveness += 3;
         } else if (id_score >= beta) {
             consecutive_fail_lows = 0;
             consecutive_fail_highs++;
-            search_data->root_indecisiveness += 4;
+            search_data->root_indecisiveness += 3;
         } else {
             consecutive_fail_lows = 0;
             consecutive_fail_highs = 0;
