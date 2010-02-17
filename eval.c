@@ -87,7 +87,7 @@ static int file_shield(const position_t* pos, color_t side, square_t square)
     for (square_t sq = square + push;
             pos->board[sq] != pawn && pos->board[sq] != OUT_OF_BOUNDS;
             sq += push, gap++) {}
-    if (gap > 6) gap = 0;
+    if (--gap > 6) gap = 0;
     gap = 6 - gap;
     return 36 - gap*gap;
 }
@@ -98,13 +98,14 @@ static int file_storm(const position_t* pos, color_t side, square_t square)
     const piece_t pawn = create_piece(side^1, PAWN);
     int gap = 1;
     square_t sq = square + push;
-    for (; gap < 5 && pos->board[sq] != pawn; sq += push, gap++) {}
-    rank_t r = relative_rank[side][square_rank(sq)];
-    //if (r == 2) gap = 15;
-    if (r == 3) gap = 60;
-    else if (r == 4) gap = 30;
-    else if (r == 5) gap = 10;
-    else gap = 0;
+    for (; pos->board[sq] != pawn && pos->board[sq] != OUT_OF_BOUNDS;
+            sq += push, gap++) {}
+    if (gap > 4) return 0;
+    // TODO: investigate this
+    if (gap == 1) gap = 20;
+    else if (gap == 2) gap = 60;
+    else if (gap == 3) gap = 30;
+    else gap = 10;
     return gap;
 }
 
@@ -121,6 +122,19 @@ static int square_safeness(const position_t* pos,
     if (file > FILE_A) unsafeness += file_storm(pos, side, square + W);
     if (file < FILE_H) unsafeness += file_storm(pos, side, square + E);
     return -unsafeness;
+}
+
+static int king_pawn_safeness(const position_t* pos)
+{
+    int score[2] = {0, 0};
+    if (pos->piece_count[WQ] != 0) {
+        score[WHITE] = square_safeness(pos, WHITE, pos->pieces[WHITE][0]);
+    }
+    if (pos->piece_count[BQ] != 0) {
+        score[BLACK] = square_safeness(pos, BLACK, pos->pieces[BLACK][0]);
+    }
+    color_t side = pos->side_to_move;
+    return score[side]-score[side^1];
 }
 
 /*
@@ -149,11 +163,11 @@ static score_t evaluate_king_shield(const position_t* pos)
     int score[2] = {0, 0};
     if (pos->piece_count[WQ] != 0) {
         score[WHITE] = square_safeness(pos, WHITE, pos->pieces[WHITE][0]);
-        //score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
+        score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
     }
     if (pos->piece_count[BQ] != 0) {
         score[BLACK] = square_safeness(pos, BLACK, pos->pieces[BLACK][0]);
-        //score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
+        score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
     }
     color_t side = pos->side_to_move;
     score_t phase_score;
@@ -196,6 +210,7 @@ static score_t evaluate_king_attackers(const position_t* pos)
     color_t side = pos->side_to_move;
     score_t phase_score;
     phase_score.midgame = score[side]-score[side^1];
+    phase_score.midgame += king_pawn_safeness(pos);
     phase_score.endgame = 0;
     return phase_score;
 }
