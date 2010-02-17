@@ -21,14 +21,10 @@ static const int king_attack_scale = 1024;
 // values tested: 640, 768, (896), 1024, 1536
 
 const int shield_value[2][17] = {
-    { 0, 8, 0, 0, 0, 0, 0, 0, 0,-8, 0, 0, 0, 0, 0, 0, 0 },
-    { 0,-8, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 12, 1, 2, 0, 0, 0, 0, 0, -8,-1,-2, 0, 0, 0, 0, 0 },
+    { 0, -8,-1,-2, 0, 0, 0, 0, 0, 12, 1, 2, 0, 0, 0, 0, 0 },
 };
 
-//const int pawn_dir[2][9] = {
-//    { N, N, NNW-1, NNW, NNW+1, NNE-1, NNE, NNE+1, 0 },
-//    { S, S, SSW-1, SSW, SSW+1, SSE-1, SSE, SSE+1, 0 },
-//};
 const int king_attack_score[16] = {
     0, 5, 20, 20, 40, 80, 0, 0, 0, 5, 20, 20, 40, 80, 0, 0
 };
@@ -80,86 +76,20 @@ static int blend_score(score_t* score, int phase)
 }
 
 /*
-static int file_shield(const position_t* pos, color_t side, square_t square)
-{
-    int push = pawn_push[side];
-    const piece_t pawn = create_piece(side, PAWN);
-    int gap = 1;
-    for (square_t sq = square + push;
-            pos->board[sq] != pawn && pos->board[sq] != OUT_OF_BOUNDS;
-            sq += push, gap++) {}
-    if (--gap > 6) gap = 0;
-    gap = 6 - gap;
-    return 36 - gap*gap;
-}
-
-static int file_storm(const position_t* pos, color_t side, square_t square)
-{
-    int push = pawn_push[side];
-    const piece_t pawn = create_piece(side^1, PAWN);
-    int gap = 1;
-    square_t sq = square + push;
-    for (; pos->board[sq] != pawn && pos->board[sq] != OUT_OF_BOUNDS;
-            sq += push, gap++) {}
-    if (gap > 4) return 0;
-    // TODO: investigate this
-    if (gap == 1) gap = 20;
-    else if (gap == 2) gap = 60;
-    else if (gap == 3) gap = 30;
-    else gap = 10;
-    return gap;
-}
-
-static int square_safeness(const position_t* pos,
-        color_t side,
-        square_t square)
-{
-    file_t file = square_file(square);
-    int unsafeness = file_shield(pos, side, square)*2;
-    if (file > FILE_A) unsafeness += file_shield(pos, side, square + W);
-    if (file < FILE_H) unsafeness += file_shield(pos, side, square + E);
-    if (!unsafeness && square_rank(square) == RANK_1) unsafeness = 15;
-    unsafeness += file_storm(pos, side, square);
-    if (file > FILE_A) unsafeness += file_storm(pos, side, square + W);
-    if (file < FILE_H) unsafeness += file_storm(pos, side, square + E);
-    return -unsafeness;
-}
-
-static int king_pawn_safeness(const position_t* pos)
-{
-    int score[2] = {0, 0};
-    if (pos->piece_count[WQ] != 0) {
-        score[WHITE] = square_safeness(pos, WHITE, pos->pieces[WHITE][0]);
-    }
-    if (pos->piece_count[BQ] != 0) {
-        score[BLACK] = square_safeness(pos, BLACK, pos->pieces[BLACK][0]);
-    }
-    color_t side = pos->side_to_move;
-    return score[side]-score[side^1];
-}
-*/
-
-/*
  * Give some points for pawns directly in front of your king.
  */
 static int king_shield_score(const position_t* pos, color_t side, square_t king)
 {
     int s = 0;
     int push = pawn_push[side];
-    s += shield_value[side][pos->board[king-1]];
-    s += shield_value[side][pos->board[king+1]];
-
-    s += shield_value[side][pos->board[king+push-1]] * 2;
-    s += shield_value[side][pos->board[king+push]] * 4;
-    s += shield_value[side][pos->board[king+push+1]] * 2;
-
+    s += shield_value[side][pos->board[king-1]] / 2;
+    s += shield_value[side][pos->board[king+1]] / 2;
+    s += shield_value[side][pos->board[king+push-1]];
+    s += shield_value[side][pos->board[king+push]] * 2;
+    s += shield_value[side][pos->board[king+push+1]];
     s += shield_value[side][pos->board[king+2*push-1]] / 2;
     s += shield_value[side][pos->board[king+2*push]];
     s += shield_value[side][pos->board[king+2*push+1]] / 2;
-
-    s += shield_value[side][pos->board[king+3*push-1]] / 4;
-    s += shield_value[side][pos->board[king+3*push]] / 2;
-    s += shield_value[side][pos->board[king+3*push+1]] / 4;
     return s;
 }
 
@@ -190,7 +120,6 @@ static score_t evaluate_king_shield(const position_t* pos)
 static score_t evaluate_king_attackers(const position_t* pos)
 {
     int score[2] = {0, 0};
-
     for (color_t side = WHITE; side <= BLACK; ++side) {
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
@@ -202,21 +131,12 @@ static score_t evaluate_king_attackers(const position_t* pos)
                 num_attackers++;
             }
         }
-        //if (!num_attackers) continue;
-        //const piece_t opp_pawn = create_piece(side^1, PAWN);
-        //for (int i=0; pawn_dir[side][i]; ++i) {
-        //    if (pos->board[opp_king + pawn_dir[side][i]] == opp_pawn) {
-        //        score[side] += king_attack_score[opp_pawn];
-        //        num_attackers++;
-        //    }
-        //}
         score[side] = score[side] *
             multiple_king_attack_scale[num_attackers] / 1024;
     }
     color_t side = pos->side_to_move;
     score_t phase_score;
     phase_score.midgame = score[side]-score[side^1];
-    //phase_score.midgame += king_pawn_safeness(pos);
     phase_score.endgame = 0;
     return phase_score;
 }
@@ -274,20 +194,8 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     add_scaled_score(&phase_score, &component_score, pattern_scale);
     component_score = pieces_score(pos, ed->pd);
     add_scaled_score(&phase_score, &component_score, pieces_scale);
-
     component_score = evaluate_king_shield(pos);
-    // Apply pawn storm bonuses
-    score = 0;
-    file_t king_file[2] = { square_file(pos->pieces[WHITE][0]),
-                            square_file(pos->pieces[BLACK][0]) };
-    if (king_file[WHITE] < FILE_D && king_file[BLACK] > FILE_E) {
-        score = ed->pd->kingside_storm[WHITE] - ed->pd->kingside_storm[BLACK];
-    } else if (king_file[WHITE] > FILE_E && king_file[BLACK] < FILE_D) {
-        score = ed->pd->queenside_storm[WHITE] - ed->pd->queenside_storm[BLACK];
-    }
-    component_score.midgame += score;
     add_scaled_score(&phase_score, &component_score, shield_scale);
-
     component_score = evaluate_king_attackers(pos);
     add_scaled_score(&phase_score, &component_score, king_attack_scale);
 
