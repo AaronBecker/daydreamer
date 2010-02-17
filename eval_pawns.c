@@ -35,6 +35,8 @@ static const int unstoppable_passer_bonus[8] = {
 static const int advanceable_passer_bonus[8] = {
     0, 20, 25, 30, 35, 40, 80, 0
 };
+// TODO: record king and queen storm scores on a per-file basis, then
+// build up the storm scores based on actual king files and castling rights
 static const int king_storm[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,-10,-10,-10,  0,  0,  0,  0,  0,  0,  0,  0,
