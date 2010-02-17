@@ -199,8 +199,9 @@ static bool should_deepen(search_data_t* data)
             is_mate_score(abs(scores[depth--]))) return false;
 
     // We can stop early if our best move is obvious.
-    if (!data->depth_limit && !data->node_limit && obvious_move_enabled &&
-            data->current_depth >= 6*PLY && data->obvious_move) return false;
+    if (obvious_move_enabled && data->obvious_move &&
+            data->depth_limit == MAX_SEARCH_PLY &&
+            !data->node_limit && data->current_depth >= 6*PLY) return false;
 
     // Allocate some extra time when the root score drops.
     depth = depth_to_index(data->current_depth);
