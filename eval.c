@@ -21,8 +21,8 @@ static const int king_attack_scale = 1024;
 // values tested: 640, 768, (896), 1024, 1536
 
 const int shield_value[2][17] = {
-    { 0, 4, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 2, 0, 0, 0, 0, 0 },
+    { 0, 8, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 1, 2, 0, 0, 0, 0, 0 },
 };
 
 //const int pawn_dir[2][9] = {
@@ -79,6 +79,7 @@ static int blend_score(score_t* score, int phase)
     return (phase*score->midgame + (MAX_PHASE-phase)*score->endgame)/MAX_PHASE;
 }
 
+/*
 static int file_shield(const position_t* pos, color_t side, square_t square)
 {
     int push = pawn_push[side];
@@ -114,10 +115,10 @@ static int square_safeness(const position_t* pos,
         square_t square)
 {
     file_t file = square_file(square);
-    int unsafeness = file_shield(pos, side, square);
+    int unsafeness = file_shield(pos, side, square)*2;
     if (file > FILE_A) unsafeness += file_shield(pos, side, square + W);
     if (file < FILE_H) unsafeness += file_shield(pos, side, square + E);
-    if (!unsafeness) unsafeness = 15;
+    if (!unsafeness && square_rank(square) == RANK_1) unsafeness = 15;
     unsafeness += file_storm(pos, side, square);
     if (file > FILE_A) unsafeness += file_storm(pos, side, square + W);
     if (file < FILE_H) unsafeness += file_storm(pos, side, square + E);
@@ -136,6 +137,7 @@ static int king_pawn_safeness(const position_t* pos)
     color_t side = pos->side_to_move;
     return score[side]-score[side^1];
 }
+*/
 
 /*
  * Give some points for pawns directly in front of your king.
@@ -144,14 +146,20 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
 {
     int s = 0;
     int push = pawn_push[side];
-    s += shield_value[side][pos->board[king-1]] / 2;
-    s += shield_value[side][pos->board[king+1]] / 2;
-    s += shield_value[side][pos->board[king+push-1]];
-    s += shield_value[side][pos->board[king+push]] * 2;
-    s += shield_value[side][pos->board[king+push+1]];
+    s += shield_value[side][pos->board[king-1]];
+    s += shield_value[side][pos->board[king+1]];
+
+    s += shield_value[side][pos->board[king+push-1]] * 2;
+    s += shield_value[side][pos->board[king+push]] * 4;
+    s += shield_value[side][pos->board[king+push+1]] * 2;
+
     s += shield_value[side][pos->board[king+2*push-1]] / 2;
     s += shield_value[side][pos->board[king+2*push]];
     s += shield_value[side][pos->board[king+2*push+1]] / 2;
+
+    s += shield_value[side][pos->board[king+3*push-1]] / 4;
+    s += shield_value[side][pos->board[king+3*push]] / 2;
+    s += shield_value[side][pos->board[king+3*push+1]] / 4;
     return s;
 }
 
@@ -162,11 +170,9 @@ static score_t evaluate_king_shield(const position_t* pos)
 {
     int score[2] = {0, 0};
     if (pos->piece_count[WQ] != 0) {
-        score[WHITE] = square_safeness(pos, WHITE, pos->pieces[WHITE][0]);
         score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
     }
     if (pos->piece_count[BQ] != 0) {
-        score[BLACK] = square_safeness(pos, BLACK, pos->pieces[BLACK][0]);
         score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
     }
     color_t side = pos->side_to_move;
@@ -210,7 +216,7 @@ static score_t evaluate_king_attackers(const position_t* pos)
     color_t side = pos->side_to_move;
     score_t phase_score;
     phase_score.midgame = score[side]-score[side^1];
-    phase_score.midgame += king_pawn_safeness(pos);
+    //phase_score.midgame += king_pawn_safeness(pos);
     phase_score.endgame = 0;
     return phase_score;
 }
@@ -268,8 +274,20 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     add_scaled_score(&phase_score, &component_score, pattern_scale);
     component_score = pieces_score(pos, ed->pd);
     add_scaled_score(&phase_score, &component_score, pieces_scale);
-    //component_score = evaluate_king_shield(pos);
-    //add_scaled_score(&phase_score, &component_score, shield_scale);
+
+    component_score = evaluate_king_shield(pos);
+    // Apply pawn storm bonuses
+    score = 0;
+    file_t king_file[2] = { square_file(pos->pieces[WHITE][0]),
+                            square_file(pos->pieces[BLACK][0]) };
+    if (king_file[WHITE] < FILE_D && king_file[BLACK] > FILE_E) {
+        score = ed->pd->kingside_storm[WHITE] - ed->pd->kingside_storm[BLACK];
+    } else if (king_file[WHITE] > FILE_E && king_file[BLACK] < FILE_D) {
+        score = ed->pd->queenside_storm[WHITE] - ed->pd->queenside_storm[BLACK];
+    }
+    component_score.midgame += score;
+    add_scaled_score(&phase_score, &component_score, shield_scale);
+
     component_score = evaluate_king_attackers(pos);
     add_scaled_score(&phase_score, &component_score, king_attack_scale);
 

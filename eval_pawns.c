@@ -347,12 +347,6 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 }
             }
         }
-        // Apply pawn storm bonuses
-        //if (king_file[side] < FILE_E && king_file[side^1] > FILE_E) {
-        //    storm_score[side] = pd->kingside_storm[side];
-        //} else if (king_file[side] > FILE_E && king_file[side^1] < FILE_E) {
-        //    storm_score[side] = pd->queenside_storm[side];
-        //}
     }
 
     color_t side = pos->side_to_move;
