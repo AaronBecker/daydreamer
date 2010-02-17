@@ -21,8 +21,8 @@ static const int king_attack_scale = 1024;
 // values tested: 640, 768, (896), 1024, 1536
 
 const int shield_value[2][17] = {
-    { 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 8, 0, 0, 0, 0, 0, 0, 0,-8, 0, 0, 0, 0, 0, 0, 0 },
+    { 0,-8, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0 },
 };
 
 //const int pawn_dir[2][9] = {
@@ -277,14 +277,14 @@ int full_eval(const position_t* pos, eval_data_t* ed)
 
     component_score = evaluate_king_shield(pos);
     // Apply pawn storm bonuses
-    //score = 0;
-    //file_t king_file[2] = { square_file(pos->pieces[WHITE][0]),
-    //                        square_file(pos->pieces[BLACK][0]) };
-    //if (king_file[WHITE] < FILE_D && king_file[BLACK] > FILE_E) {
-    //    score = ed->pd->kingside_storm[WHITE] - ed->pd->kingside_storm[BLACK];
-    //} else if (king_file[WHITE] > FILE_E && king_file[BLACK] < FILE_D) {
-    //    score = ed->pd->queenside_storm[WHITE] - ed->pd->queenside_storm[BLACK];
-    //}
+    score = 0;
+    file_t king_file[2] = { square_file(pos->pieces[WHITE][0]),
+                            square_file(pos->pieces[BLACK][0]) };
+    if (king_file[WHITE] < FILE_D && king_file[BLACK] > FILE_E) {
+        score = ed->pd->kingside_storm[WHITE] - ed->pd->kingside_storm[BLACK];
+    } else if (king_file[WHITE] > FILE_E && king_file[BLACK] < FILE_D) {
+        score = ed->pd->queenside_storm[WHITE] - ed->pd->queenside_storm[BLACK];
+    }
     component_score.midgame += score;
     add_scaled_score(&phase_score, &component_score, shield_scale);
 
