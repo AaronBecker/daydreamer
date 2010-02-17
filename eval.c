@@ -268,8 +268,8 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     add_scaled_score(&phase_score, &component_score, pattern_scale);
     component_score = pieces_score(pos, ed->pd);
     add_scaled_score(&phase_score, &component_score, pieces_scale);
-    component_score = evaluate_king_shield(pos);
-    add_scaled_score(&phase_score, &component_score, shield_scale);
+    //component_score = evaluate_king_shield(pos);
+    //add_scaled_score(&phase_score, &component_score, shield_scale);
     component_score = evaluate_king_attackers(pos);
     add_scaled_score(&phase_score, &component_score, king_attack_scale);
 
