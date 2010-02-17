@@ -816,10 +816,10 @@ static int search(position_t* pos,
                 // move order into the history count
                 // TODO: experiment with pruning inside pv
                 if (history_prune_enabled &&
-                        num_legal_moves > (int)(2.5 + 0.75*expf(depth))) { 
-                        //depth <= 3.0 &&
-                        //is_history_prune_allowed(
-                        //    &root_data.history, move, depth)) {
+                        ((num_legal_moves > (int)(3 + 0.75*expf(depth))) ||
+                        (depth <= 3.0 &&
+                        is_history_prune_allowed(
+                            &root_data.history, move, depth)))) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
                     if (full_window) add_pv_move(&selector, move, 0);
