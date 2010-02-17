@@ -817,7 +817,7 @@ static int search(position_t* pos,
                 // TODO: experiment with pruning inside pv
                 if (history_prune_enabled &&
                         ((num_legal_moves > (int)(3 + 0.75*expf(depth))) ||
-                        (depth <= 3.0 &&
+                        (depth <= 5.0 &&
                         is_history_prune_allowed(
                             &root_data.history, move, depth)))) {
                     num_futile_moves++;
