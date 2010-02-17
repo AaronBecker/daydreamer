@@ -85,9 +85,10 @@ static int file_shield(const position_t* pos, color_t side, square_t square)
     const piece_t pawn = create_piece(side, PAWN);
     int gap = 1;
     for (square_t sq = square + push;
-            gap < 7 && pos->board[sq] != pawn;
+            pos->board[sq] != pawn && pos->board[sq] != OUT_OF_BOUNDS;
             sq += push, gap++) {}
-    if (gap == 7) gap = 0;
+    if (gap > 6) gap = 0;
+    gap = 6 - gap;
     return 36 - gap*gap;
 }
 
