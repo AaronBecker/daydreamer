@@ -302,7 +302,7 @@ static void calculate_search_time(int wtime,
     if (!movestogo) {
         // x+y time control
         root_data.time_target = time/30 + inc;
-        root_data.time_limit = MAX(time/5, inc-250);
+        root_data.time_limit = MAX(time/4, inc-250);
     } else {
         // x/y time control
         root_data.time_target = movestogo == 1 ?
