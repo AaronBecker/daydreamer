@@ -158,7 +158,7 @@ static float extend(position_t* pos,
 {
     // TODO: test recapture extensions
     if (single_reply) return PLY;
-    if (is_check(pos)) return full_window ? PLY : PLY/2;
+    if (is_check(pos)) return full_window ? 1.1 : 0.75;
     square_t sq = get_move_to(move);
     if (piece_type(pos->board[sq]) == PAWN &&
             (square_rank(sq) == RANK_7 ||
