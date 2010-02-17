@@ -35,8 +35,6 @@ static const int unstoppable_passer_bonus[8] = {
 static const int advanceable_passer_bonus[8] = {
     0, 20, 25, 30, 35, 40, 80, 0
 };
-// TODO: record king and queen storm scores on a per-file basis, then
-// build up the storm scores based on actual king files and castling rights
 static const int king_storm[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,-10,-10,-10,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -348,6 +346,12 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                     passer_bonus[side] += advanceable_passer_bonus[rank];
                 }
             }
+        }
+        // Apply pawn storm bonuses
+        if (king_file[side] < FILE_E && king_file[side^1] > FILE_E) {
+            storm_score[side] = pd->kingside_storm[side];
+        } else if (king_file[side] > FILE_E && king_file[side^1] < FILE_E) {
+            storm_score[side] = pd->queenside_storm[side];
         }
     }
 
