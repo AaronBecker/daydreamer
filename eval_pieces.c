@@ -105,11 +105,13 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
         const int* mobile = color_table[side];
         square_t from, to;
         piece_t piece, dummy;
+        int advancedness = 0, num_advanced_pieces = 0;
         int push = pawn_push[side];
         for (int i=1; pos->pieces[side][i] != INVALID_SQUARE; ++i) {
             from = pos->pieces[side][i];
             piece = pos->board[from];
             piece_type_t type = piece_type(piece);
+            rank_t rrank = relative_rank[side][square_rank(from)];
             int ps = 0;
             switch (type) {
                 case PAWN:
@@ -141,6 +143,10 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                         mid_score[side] += bonus;
                         end_score[side] += bonus;
                     }
+                    if (rrank > RANK_4) {
+                        advancedness++;
+                        num_advanced_pieces++;
+                    }
                     break;
                 case QUEEN:
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
@@ -164,6 +170,10 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                         mid_score[side] += rook_on_7[0] / 2;
                         end_score[side] += rook_on_7[1] / 2;
                     }
+                    if (rrank > RANK_4) {
+                        advancedness += 4;
+                        num_advanced_pieces++;
+                    }
                     break;
                 case BISHOP:
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
@@ -178,6 +188,10 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                         int bonus = outpost_score(pos, from, BISHOP);
                         mid_score[side] += bonus;
                         end_score[side] += bonus;
+                    }
+                    if (rrank > RANK_4) {
+                        advancedness++;
+                        num_advanced_pieces++;
                     }
                     break;
                 case ROOK:
@@ -203,10 +217,15 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                             end_score[side] += rook_open_file_bonus[1];
                         }
                     }
+                    if (rrank > RANK_4) {
+                        advancedness += 2;
+                        num_advanced_pieces++;
+                    }
                     break;
                 default: break;
             }
-            mid_score[side] += mobility_score_table[0][type][ps];
+            mid_score[side] += mobility_score_table[0][type][ps] +
+                3 * advancedness * num_advanced_pieces;
             end_score[side] += mobility_score_table[1][type][ps];
         }
     }

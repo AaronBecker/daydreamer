@@ -26,7 +26,7 @@ const int shield_value[2][17] = {
 };
 
 const int king_attack_score[16] = {
-    0, 0, 30, 30, 45, 75, 0, 0, 0, 0, 30, 30, 45, 75, 0, 0
+    0, 5, 20, 20, 40, 80, 0, 0, 0, 5, 20, 20, 40, 80, 0, 0
 };
 const int multiple_king_attack_scale[16] = {
     0, 128, 512, 640, 896, 960, 1024, 1024,
@@ -124,18 +124,15 @@ static score_t evaluate_king_attackers(const position_t* pos)
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
         int num_attackers = 0;
-        int num_undefended = 0;
         for (int i=1; i<pos->num_pieces[side]; ++i) {
             const square_t attacker = pos->pieces[side][i];
-            bool undefended;
-            if (piece_attacks_near(pos, attacker, opp_king, &undefended)) {
+            if (piece_attacks_near(pos, attacker, opp_king)) {
                 score[side] += king_attack_score[pos->board[attacker]];
                 num_attackers++;
-                if (undefended) num_undefended++;
             }
         }
-        score[side] = (score[side] + 8*num_undefended) *
-            multiple_king_attack_scale[num_attackers + num_undefended] / 1024;
+        score[side] = score[side] *
+            multiple_king_attack_scale[num_attackers] / 1024;
     }
     color_t side = pos->side_to_move;
     score_t phase_score;
