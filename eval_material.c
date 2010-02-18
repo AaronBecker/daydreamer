@@ -274,7 +274,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         md->scale[BLACK] = md->scale[WHITE] = 0;
     }
     if (opp_bishop) {
-        md->scale[WHITE] = md->scale[BLACK] = md->eg_type == EG_KBPKB ? 0 : 8;
+        md->scale[WHITE] = md->scale[BLACK] = md->eg_type == EG_KBPKB ? 0 : 12;
     }
     if (md->scale[WHITE] == 0 && md->scale[BLACK] == 0) return;
     if (!wp) {
