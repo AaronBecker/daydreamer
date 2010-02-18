@@ -15,9 +15,9 @@ static const int pattern_scale = 1024;
 // values tested: 768, (1024), 1280
 static const int pieces_scale = 1024;
 // values tested: 768, (1024), 1280
-static const int shield_scale = 1832;
+static const int shield_scale = 1704;
 // values tested: 1024, 1280, 1576, (1704), 2048
-static const int king_attack_scale = 1152;
+static const int king_attack_scale = 1024;
 // values tested: 640, 768, (896), 1024, 1536
 
 const int shield_value[2][17] = {
@@ -26,7 +26,7 @@ const int shield_value[2][17] = {
 };
 
 const int king_attack_score[16] = {
-    0, 5, 20, 20, 40, 80, 0, 0, 0, 5, 20, 20, 40, 80, 0, 0
+    0, 0, 30, 30, 45, 75, 0, 0, 0, 0, 30, 30, 45, 75, 0, 0
 };
 const int multiple_king_attack_scale[16] = {
     0, 128, 512, 640, 896, 960, 1024, 1024,
