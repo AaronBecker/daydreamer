@@ -481,12 +481,13 @@ int move_weight(position_t* pos, move_t move)
     float games = (entry.wins + entry.draws + entry.losses) + 1;
     int scale = entry.recommendation;
     float weight = half_points / games;
-    if (scale == 64) weight /= 128;
-    if (scale == 128) weight *= 128;
+    int int_weight = (int)(weight * 100000);
+    if (scale == 64) int_weight = 0;
+    if (scale == 128) int_weight *= 128;
     printf("info string book move: ");
     print_coord_move(move);
-    printf(" scale: %d weight: %f\n", scale, weight);
-    return (int)(weight * 100000);
+    printf(" scale: %d weight: %d\n", scale, int_weight);
+    return int_weight;
 }
 
 bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
@@ -499,14 +500,16 @@ bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
         uint8_t byte = entry->moves[i];
         //printf("%d: byte move: %d\n", i, byte);
         move_t m = byte_to_move(pos, byte);
+        total_weight += move_weight(pos, m);
         moves[i/2] = m;
-        weights[i/2] = total_weight + move_weight(pos, m);
-        total_weight = weights[i/2];
+        weights[i/2] = total_weight;
         if (move == NO_MOVE) break;
     }
-    int i, choice = random();
+    uint32_t choice = random();
     choice = ((choice<<16) + random()) % total_weight;
-    for (i=0; choice >= weights[i]; ++i) {}
+    printf("choice %d\n", choice);
+    int i;
+    for (i=0; choice >= (uint32_t)weights[i]; ++i) {}
     if (i >= entry->num_moves) {
         printf("i: %d\nchoice: %d\ntotal_weight: %d\nnum_moves: %d\n",
                 i, choice, total_weight, entry->num_moves);
