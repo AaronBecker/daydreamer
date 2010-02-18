@@ -115,7 +115,7 @@ void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
     // Note: initial byte is reserved for length and flags info
     memset(sig, 0, sizeof(ctg_signature_t));
     int bit_position = 8;
-    uint8_t bits, num_bits;
+    uint8_t bits = 0, num_bits = 0;
     bool flip_board = pos->side_to_move == BLACK;
     color_t white = flip_board ? BLACK : WHITE;
     bool mirror_board = square_file(pos->pieces[white][0]) < FILE_E && pos->castle_rights == 0;
@@ -477,14 +477,16 @@ int move_weight(position_t* pos, move_t move)
     undo_move(pos, move, &undo);
     if (!success) return 0;
 
-    int half_points = (2*entry.wins + entry.draws) * 1024;
-    int games = (entry.wins + entry.draws + entry.losses) * 1024;
+    float half_points = (2*entry.wins + entry.draws) + 1;
+    float games = (entry.wins + entry.draws + entry.losses) + 1;
     int scale = entry.recommendation;
-    if (scale) half_points = (half_points*scale)/128;
-    printf("info string move: ");
+    float weight = half_points / games;
+    if (scale == 64) weight /= 128;
+    if (scale == 128) weight *= 128;
+    printf("info string book move: ");
     print_coord_move(move);
-    printf(" scale: %d weight: %d\n", scale, half_points/games+1);
-    return half_points/games+1;
+    printf(" scale: %d weight: %f\n", scale, weight);
+    return (int)(weight * 100000);
 }
 
 bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
