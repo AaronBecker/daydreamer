@@ -294,7 +294,17 @@ static void handle_book_file(void* opt, char* value)
 {
     uci_option_t* option = opt;
     strncpy(option->value, value, 128);
-    init_book(option->value);
+    int name_len = strlen(value);
+    if (value[name_len-3] == 'c' &&
+            value[name_len-2] == 't' &&
+            value[name_len-1] == 'g') {
+        init_ctg(option->value);
+        options.probe_book = &ctg_get_book_move;
+    } else {
+        init_book(option->value);
+        options.probe_book = &get_book_move;
+    }
+    options.out_of_book = false;
 }
 
 /*

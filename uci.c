@@ -79,6 +79,7 @@ static void uci_handle_command(char* command)
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
     else if (!strncasecmp(command, "ucinewgame", 10)) {
+        options.out_of_book = false;
     } else if (!strncasecmp(command, "setoption name", 14)) {
         set_uci_option(command+15);
     } else if (!strncasecmp(command, "stop", 4)) {
@@ -148,6 +149,8 @@ static void uci_handle_ext(char* command)
         } else {
             printf("Gaviota TBs not loaded\n");
         }
+    } else if (!strncasecmp(command, "ctg", 3)) {
+        ctg_get_book_move(pos);
     } else if (!strncasecmp(command, "print", 5)) {
         print_board(pos, false);
         move_t moves[255];
@@ -171,6 +174,11 @@ static void uci_handle_ext(char* command)
     } else if (!strncasecmp(command, "help", 4) ||
             !strncasecmp(command, "?", 1)) {
         uci_print_help();
+    } else {
+        move_t m = coord_str_to_move(pos, command);
+        if (!m) return;
+        undo_info_t undo;
+        do_move(pos, m, &undo);
     }
 }
 
