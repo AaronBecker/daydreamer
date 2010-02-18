@@ -436,10 +436,10 @@ void deepening_search(search_data_t* search_data, bool ponder)
     start_timer(&search_data->timer);
 
     // Get a move out of the opening book if we can.
-    if (options.use_book && !search_data->infinite &&
+    if (options.use_book && !options.out_of_book && !search_data->infinite &&
             !search_data->depth_limit && !search_data->node_limit &&
             search_data->engine_status != ENGINE_PONDERING) {
-        move_t book_move = get_book_move(&search_data->root_pos);
+        move_t book_move = options.probe_book(&search_data->root_pos);
         if (book_move) {
             if (options.verbose) {
                 printf("info string Found book move.\n");
@@ -449,7 +449,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
             printf("bestmove %s\n", move_str);
             search_data->engine_status = ENGINE_IDLE;
             return;
-        }
+        } else options.out_of_book = true;
     }
 
     // If |search_data| already has a list of root moves, we search only

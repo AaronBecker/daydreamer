@@ -10,40 +10,44 @@ FILE* ctg_file = NULL;
 FILE* cto_file = NULL;
 
 typedef struct {
-    uint32_t pad;
-    uint32_t low;
-    uint32_t high;
+    int pad;
+    int low;
+    int high;
 } page_bounds_t;
 
 page_bounds_t page_bounds;
 
 typedef struct {
-    uint16_t num_positions;
-    uint16_t pad;
-    char entry_buffer[4094];
-} ctg_page_t;
-
-typedef struct {
-    char buf[64];
+    uint8_t buf[64];
     int buf_len;
 } ctg_signature_t;
 
 typedef struct {
     int num_moves;
-    uint16_t moves[50];
+    uint8_t moves[100];
     int total;
     int wins;
     int losses;
     int draws;
-    int reccomendation;
+    int recommendation;
 } ctg_entry_t;
 
+typedef struct {
+    int file_from;
+    int file_to;
+    int rank_from;
+    int rank_to;
+} ctg_move_t;
+
+static move_t squares_to_move(position_t* pos, square_t from, square_t to);
+static bool ctg_get_entry(position_t* pos, ctg_entry_t* entry);
+
 void append_bits_reverse(ctg_signature_t* sig,
-        char bits,
+        uint8_t bits,
         int bit_position,
         int num_bits)
 {
-    char* sig_byte = &sig->buf[bit_position/8];
+    uint8_t * sig_byte = &sig->buf[bit_position/8];
     int offset = bit_position % 8;
     for (int i=offset; i<num_bits+offset; ++i, bits>>=1) {
         if (bits & 1) *sig_byte |= 1 << (7-(i%8));
@@ -68,7 +72,7 @@ void print_signature(ctg_signature_t* sig)
     // Just print as chars
     for (int i=0; i<sig->buf_len; ++i) {
         if (i % 8 == 0) printf("\n");
-        printf("%3d ", sig->buf[i]);
+        printf("%3d ", (char)sig->buf[i]);
     }
     printf("\n");
 }
@@ -109,8 +113,9 @@ int32_t ctg_signature_to_hash(ctg_signature_t* sig)
 void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
 {
     // Note: initial byte is reserved for length and flags info
+    memset(sig, 0, sizeof(ctg_signature_t));
     int bit_position = 8;
-    char bits, num_bits;
+    uint8_t bits, num_bits;
     bool flip_board = pos->side_to_move == BLACK;
     color_t white = flip_board ? BLACK : WHITE;
     bool mirror_board = square_file(pos->pieces[white][0]) < FILE_E && pos->castle_rights == 0;
@@ -182,7 +187,7 @@ void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
     if (has_oo_rights(pos, white^1)) castle += 1;
     if (has_ooo_rights(pos, white^1)) castle += 2;
     if (castle) flag_bit_length += 4;
-    char flag_bits = castle;
+    uint8_t flag_bits = castle;
     if (ep != -1) {
         flag_bits <<= 3;
         for (int i=0; i<3; ++i, ep>>=1) if (ep&1) flag_bits |= (1<<(2-i));
@@ -211,7 +216,7 @@ void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
     sig->buf_len = (bit_position + 7) / 8;
 
     // Write header byte
-    sig->buf[0] = ((char)(sig->buf_len));
+    sig->buf[0] = ((uint8_t)(sig->buf_len));
     if (ep != -1) sig->buf[0] |= 1<<5;
     if (castle) sig->buf[0] |= 1<<6;
 }
@@ -246,83 +251,291 @@ void init_ctg(char* filename)
     page_bounds.high = ntohl(page_bounds.high);
     assert(page_bounds.low <= page_bounds.high);
     fclose(ctb_file);
-
-    printf("low %d high %d\n", page_bounds.low, page_bounds.high);
+    //printf("low %d high %d\n", page_bounds.low, page_bounds.high);
 }
 
 bool ctg_get_page_index(int hash, int* page_index)
 {
-    for (uint32_t mask = 1, key = (hash & mask) + mask;
-            key <= page_bounds.high; mask = (mask << 1) + 1) {
-        if (key >= page_bounds.low) {
-            fseek(cto_file, 16 + (key-1) * 4, SEEK_SET);
+    uint32_t key = 0;
+    for (int mask = 0; key <= (uint32_t)page_bounds.high; mask = (mask << 1) + 1) {
+        key = (hash & mask) + mask;
+        //printf("c=%d\n", key);
+        if (key >= (uint32_t)page_bounds.low) {
+            //printf("found entry with key=%d\n", key);
+            fseek(cto_file, 16 + key*4, SEEK_SET);
             fread(page_index, 4, 1, cto_file);
-            return true;
+            *page_index = ntohl(*page_index);
+            if (*page_index >= 0) return true;
         }
+    }
+    //printf("didn't find entry\n");
+    return false;
+}
+
+#define read_24(buf, pos)   ((buf[pos]<<16) + (buf[(pos)+1]<<8) + (buf[(pos)+2]))
+
+bool ctg_lookup_entry(int page_index, ctg_signature_t* sig, ctg_entry_t* entry)
+{
+    uint8_t buf[4096];
+    fseek(ctg_file, 4096*(page_index + 1), SEEK_SET);
+    if (!fread(buf, 1, 4096, ctg_file)) return false;
+    int num_positions = (buf[0]<<8) + buf[1];
+    int pos = 4;
+    //printf("found %d positions\n", num_positions);
+
+    for (int i=0; i<num_positions; ++i) {
+        int entry_size = buf[pos] % 32;
+        //for (int j=0; j<sig->buf_len; ++j) printf("%d ", (char)buf[pos+j]);
+        //printf("\n");
+        bool equal = true;
+        if (sig->buf_len != entry_size) equal = false;
+        for (int j=0; j<sig->buf_len && equal; ++j) {
+            if (buf[pos+j] != sig->buf[j]) equal = false;
+        }
+        if (!equal) {
+            pos += entry_size + buf[pos+entry_size] + 33;
+            continue;
+        }
+        // Found it, fill in the entry and return.
+        pos += entry_size;
+        entry_size = buf[pos];
+        for (int j=1; j<entry_size; ++j) entry->moves[j-1] = buf[pos+j];
+        entry->num_moves = (entry_size - 1)/2;
+        pos += entry_size;
+        entry->total = read_24(buf, pos);
+        pos += 3;
+        entry->losses = read_24(buf, pos);
+        pos += 3;
+        entry->wins = read_24(buf, pos);
+        pos += 3;
+        entry->draws = read_24(buf, pos);
+        pos += 21;
+        entry->recommendation = buf[pos];
+        return true;
     }
     return false;
 }
 
-bool ctg_read_page(int page_index, ctg_entry_t* entry)
+move_t byte_to_move(position_t* pos, uint8_t byte)
 {
-}
+    //printf("\n<%d> <%d> <%d>\n", byte, (char)byte, (int)byte);
+    const char piece_code[257] = "PNxQPQPxQBKxPBRNxxBKPBxxPxQBxBxxxRBQPxBPQQNxxPBQNQBxNxNQQQBQBxxx"
+                                 "xQQxKQxxxxPQNQxxRxRxBPxxxxxxPxxPxQPQxxBKxRBxxxRQxxBxQxxxxBRRPRQR"
+                                 "QRPxxNRRxxNPKxQQxxQxQxPKRRQPxQxBQxQPxRxxxRxQxRQxQPBxxRxQxBxPQQKx"
+                                 "xBBBRRQPPQBPBRxPxPNNxxxQRQNPxxPKNRxRxQPQRNxPPQQRQQxNRBxNQQQQxQQx";
+    const int piece_index[256]= {
+        5, 2, 9, 2, 2, 1, 4, 9, 2, 2, 1, 9, 1, 1, 2, 1,
+        9, 9, 1, 1, 8, 1, 9, 9, 7, 9, 2, 1, 9, 2, 9, 9,
+        9, 2, 2, 2, 8, 9, 1, 3, 1, 1, 2, 9, 9, 6, 1, 1,
+        2, 1, 2, 9, 1, 9, 1, 1, 2, 1, 1, 2, 1, 9, 9, 9,
+        9, 2, 1, 9, 1, 1, 9, 9, 9, 9, 8, 1, 2, 2, 9, 9,
+        1, 9, 1, 9, 2, 3, 9, 9, 9, 9, 9, 9, 7, 9, 9, 5,
+        9, 1, 2, 2, 9, 9, 1, 1, 9, 2, 1, 0, 9, 9, 1, 2,
+        9, 9, 2, 9, 1, 9, 9, 9, 9, 2, 1, 2, 3, 2, 1, 1,
+        1, 1, 6, 9, 9, 1, 1, 1, 9, 9, 1, 1, 1, 9, 2, 1,
+        9, 9, 2, 9, 1, 9, 2, 1, 1, 1, 1, 3, 9, 1, 9, 2,
+        2, 9, 1, 8, 9, 2, 9, 9, 9, 2, 9, 2, 9, 2, 2, 9,
+        2, 6, 1, 9, 9, 2, 9, 1, 9, 2, 9, 5, 2, 2, 1, 9,
+        9, 1, 2, 1, 2, 2, 2, 7, 7, 2, 2, 6, 2, 1, 9, 4,
+        9, 2, 2, 2, 9, 9, 9, 1, 2, 1, 1, 1, 9, 9, 5, 1,
+        2, 1, 9, 2, 9, 1, 4, 1, 1, 1, 9, 4, 1, 1, 2, 1,
+        2, 1, 9, 2, 2, 2, 0, 1, 2, 2, 2, 2, 9, 1, 2, 9
+    };
+    const int forward[256]= {
+         1,-1, 9, 0, 1, 1, 1, 9, 0, 6,-1, 9, 1, 3, 0,-1,
+         9, 9, 7, 1, 1, 5, 9, 9, 1, 9, 6, 1, 9, 7, 9, 9,
+         9, 0, 2, 6, 1, 9, 7, 1, 5, 0,-2, 9, 9, 1, 1, 0,
+        -2, 0, 5, 9, 2, 9, 1, 4, 4, 0, 6, 5, 5, 9, 9, 9,
+         9, 5, 7, 9,-1, 3, 9, 9, 9, 9, 2, 5, 2, 1, 9, 9,
+         6, 9, 0, 9, 1, 1, 9, 9, 9, 9, 9, 9, 1, 9, 9, 2,
+         9, 6, 2, 7, 9, 9, 3, 1, 9, 7, 4, 0, 9, 9, 0, 7,
+         9, 9, 7, 9, 0, 9, 9, 9, 9, 6, 3, 6, 1, 1, 3, 0,
+         6, 1, 1, 9, 9, 2, 0, 5, 9, 9,-2, 1,-1, 9, 2, 0,
+         9, 9, 1, 9, 3, 9, 1, 0, 0, 4, 6, 2, 9, 2, 9, 4,
+         3, 9, 2, 1, 9, 5, 9, 9, 9, 0, 9, 6, 9, 0, 3, 9,
+         4, 2, 6, 9, 9, 0, 9, 5, 9, 3, 9, 1, 0, 2, 0, 9,
+         9, 2, 2, 2, 0, 4, 5, 1, 2, 7, 3, 1, 5, 0, 9, 1,
+         9, 1, 1, 1, 9, 9, 9, 1, 0, 2,-2, 2, 9, 9, 1, 1,
+        -1, 7, 9, 3, 9, 0, 2, 4, 2,-1, 9, 1, 1, 7, 1, 0,
+         0, 1, 9, 2, 2, 1, 0, 1, 0, 6, 0, 2, 9, 7, 3, 9
+    };
+    const int left[256] = {
+        -1, 2, 9,-2, 0, 0, 1, 9,-4,-6, 0, 9, 1,-3,-3, 2,
+         9, 9,-7, 0,-1,-5, 9, 9, 0, 9, 0, 1, 9,-7, 9, 9,
+         9,-7, 2,-6, 1, 9, 7, 1,-5,-6,-1, 9, 9,-1,-1,-1,
+         1,-3,-5, 9,-1, 9,-2, 0, 4,-5,-6, 5, 5, 9, 9, 9,
+         9,-5, 7, 9,-1,-3, 9, 9, 9, 9, 0, 5,-1, 0, 9, 9,
+         0, 9,-6, 9, 1, 0, 9, 9, 9, 9, 9, 9,-1, 9, 9, 0,
+         9,-6, 0, 7, 9, 9, 3,-1, 9, 0,-4, 0, 9, 9,-5,-7,
+         9, 9, 7, 9,-2, 9, 9, 9, 9, 6, 0, 0,-1, 0, 3,-1,
+         6, 0, 1, 9, 9, 1,-7, 0, 9, 9,-1,-1, 1, 9, 2,-7,
+         9, 9,-1, 9, 0, 9,-1, 1,-3, 0, 0, 0, 9, 0, 9, 4,
+         0, 9,-2, 0, 9, 0, 9, 9, 9,-2, 9, 6, 9,-4,-3, 9,
+         0, 0, 6, 9, 9,-5, 9, 0, 9,-3, 9, 0,-5, 0,-1, 9,
+         9,-2,-2, 2,-1, 0, 0, 1, 0, 0, 3, 0, 5,-2, 9, 0,
+         9, 1,-2, 2, 9, 9, 9, 1,-6, 2, 1, 0, 9, 9, 1, 1,
+        -2, 0, 9, 0, 9,-4, 0,-4, 0,-2, 9,-1, 0,-7, 1,-4,
+        -7,-1, 9, 1, 0,-1, 0, 2,-1, 0,-3,-2, 9, 0, 3, 9
+    };
 
-int main(int argc, char* argv[])
-{
-    char* book = "book.ctg";
-    if (argc > 1) book = argv[1];
-    printf("reading book %s\n", book);
-    init_ctg(book);
+    // Find the piece. Note: the board may be mirrored/flipped.
+    bool flip_board = pos->side_to_move == BLACK;
+    color_t white = flip_board ? BLACK : WHITE;
+    bool mirror_board = square_file(pos->pieces[white][0]) < FILE_E && pos->castle_rights == 0;
+    piece_t flip_piece[] = { 0, BP, BN, BB, BR, BQ, BK, 0, 0, WP, WN, WB, WR, WQ, WK };
+    int file_from = -1, file_to = -1, rank_from = -1, rank_to = -1;
 
-    position_t pos;
-    ctg_signature_t sig;
-    char buf[1024];
-    while (fgets(buf, 1024, stdin)) {
-        set_position(&pos, buf);
-        position_to_ctg_signature(&pos, &sig);
-        print_signature(&sig);
+    // Handle castling.
+    if (byte == 107) {
+        file_from = 4;
+        file_to = 6;
+        rank_from = rank_to = flip_board ? 7 : 0;
+        return squares_to_move(pos,
+                create_square(file_from, rank_from),
+                create_square(file_to, rank_to));
     }
+    if (byte == 246) {
+        file_from = 4;
+        file_to = 2;
+        rank_from = rank_to = flip_board ? 7 : 0;
+        return squares_to_move(pos,
+                create_square(file_from, rank_from),
+                create_square(file_to, rank_to));
+    }
+
+    piece_t pc = NONE;
+    char glyph = piece_code[byte];
+    switch (piece_code[byte]) {
+        case 'P': pc = WP; break;
+        case 'N': pc = WN; break;
+        case 'B': pc = WB; break;
+        case 'R': pc = WR; break;
+        case 'Q': pc = WQ; break;
+        case 'K': pc = WK; break;
+        default: printf("%d -> (%c)\n", byte, glyph); assert(false);
+    }
+
+    int nth_piece = piece_index[byte], piece_count = 0;
+    //printf("finding %c number %d\n", glyph, nth_piece);
+    bool found = false;
+    for (int file=0; file<8 && !found; ++file) {
+        for (int rank=0; rank<8 && !found; ++rank) {
+            square_t sq = create_square(file, rank);
+            if (flip_board) sq = mirror_rank(sq);
+            if (mirror_board) sq = mirror_file(sq);
+            piece_t piece = flip_board ? flip_piece[pos->board[sq]] : pos->board[sq];
+            if (piece == pc) piece_count++;
+            if (piece_count == nth_piece) {
+                file_from = file;
+                rank_from = rank;
+                //printf("found on %c%d\n", file+'a', rank+1);
+                found = true;
+            }
+        }
+    }
+    assert(found);
+
+    file_to = file_from - left[byte];
+    file_to = (file_to + 8) % 8;
+    rank_to = rank_from + forward[byte];
+    rank_to = (rank_to + 8) % 8;
+    if (flip_board) {
+        rank_from = 7-rank_from;
+        rank_to = 7-rank_to;
+    }
+    if (mirror_board) {
+        file_from = 7-file_from;
+        file_to = 7-file_to;
+    }
+    return squares_to_move(pos,
+            create_square(file_from, rank_from),
+            create_square(file_to, rank_to));
 }
 
-/*
-		if (c >= lower_bound){
-			//=== get page number in the cto-file ===
-			//We need this for the ctg-file later on 
-			pathTemp[int(strlen(bookPath))-1]='o';
-			FILE* ctoFile;
-			fopen_s(&ctoFile, pathTemp , "r");
-			_set_fmode(_O_BINARY);
-			if (ctoFile != NULL) {
-				char line[1000];
-
-				//get the number of entries in total
-				fread(line , 1, 16, ctoFile);
-				//int totalEntries=unsigned char((line[4])<<24)+(unsigned char(line[5])<<16)+(unsigned char(line[6])<<8)+unsigned char(line[7]);
-				//printf("skip c=%d entries in cto\n", c);
-				for(unsigned int i=0; i<=c; i++){
-					fread(line , 1, 4, ctoFile);
-				}
-				int pageNumber=unsigned char((line[0])<<24)+(unsigned char(line[1])<<16)+(unsigned char(line[2])<<8)+unsigned char(line[3]);
-				fclose(ctoFile);
-				//Now probe ctg-file! 
-				if(line[0]!=-1 || line[1]!=-1 || line[2]!=-1 || line[3]!=-1){
-					if(getBookEntryFromPage(pageNumber, bb, dEntry1)){
-						return 1;
-					}
-				}
-
-			}
-			else{
-				printf("Error reading cto-file: ");
-				printf(pathTemp);
-				printf("\n");
-			}
-			if (c>=upper_bound){break;}
-		}
-	}
-
-
-	//We found no entry in the book. // 
-	return 0;
+static move_t squares_to_move(position_t* pos, square_t from, square_t to)
+{
+    move_t possible_moves[256];
+    int num_moves = generate_legal_moves(pos, possible_moves);
+    move_t move;
+    for (int i=0; i<num_moves; ++i) {
+        move = possible_moves[i];
+        if (from == get_move_from(move) &&
+                to == get_move_to(move) &&
+                (get_move_promote(move) == NONE ||
+                 get_move_promote(move) == QUEEN)) return move;
+    }
+    assert(false);
+    return NO_MOVE;
 }
-*/
+
+int move_weight(position_t* pos, move_t move)
+{
+    undo_info_t undo;
+    do_move(pos, move, &undo);
+    ctg_entry_t entry;
+    bool success = ctg_get_entry(pos, &entry);
+    undo_move(pos, move, &undo);
+    if (!success) return 0;
+
+    int half_points = (2*entry.wins + entry.draws) * 1024;
+    int games = (entry.wins + entry.draws + entry.losses) * 1024;
+    int scale = entry.recommendation;
+    if (scale) half_points = (half_points*scale)/128;
+    printf("info string move: ");
+    print_coord_move(move);
+    printf(" scale: %d weight: %d\n", scale, half_points/games+1);
+    return half_points/games+1;
+}
+
+bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
+{
+    //printf("looking for %d moves\n", entry->num_moves);
+    move_t moves[50];
+    int weights[50];
+    int total_weight = 0;
+    for (int i=0; i<2*entry->num_moves; i += 2) {
+        uint8_t byte = entry->moves[i];
+        //printf("%d: byte move: %d\n", i, byte);
+        move_t m = byte_to_move(pos, byte);
+        moves[i/2] = m;
+        weights[i/2] = total_weight + move_weight(pos, m);
+        total_weight = weights[i/2];
+        if (move == NO_MOVE) break;
+    }
+    int i, choice = random();
+    choice = ((choice<<16) + random()) % total_weight;
+    for (i=0; choice >= weights[i]; ++i) {}
+    if (i >= entry->num_moves) {
+        printf("i: %d\nchoice: %d\ntotal_weight: %d\nnum_moves: %d\n",
+                i, choice, total_weight, entry->num_moves);
+        assert(false);
+    }
+    *move = moves[i];
+    printf("info string choice: ");
+    print_coord_move(moves[i]);
+    printf("\n");
+    return true;
+}
+
+bool ctg_get_entry(position_t* pos, ctg_entry_t* entry)
+{
+    ctg_signature_t sig;
+    position_to_ctg_signature(pos, &sig);
+    //print_signature(&sig);
+    int page_index, hash = ctg_signature_to_hash(&sig);
+    //printf("position hash: %d\n", hash);
+    if (!ctg_get_page_index(hash, &page_index)) return false;
+    //printf("page index: %d\n", page_index);
+    if (!ctg_lookup_entry(page_index, &sig, entry)) return false;
+    return true;
+}
+
+move_t ctg_get_book_move(position_t* pos)
+{
+    move_t move;
+    ctg_entry_t entry;
+    if (!ctg_get_entry(pos, &entry)) return NO_MOVE;
+    if (!ctg_pick_move(pos, &entry, &move)) return NO_MOVE;
+    return move;
+}
+

@@ -59,6 +59,10 @@ void init_book(char* filename);
 move_t get_book_move(position_t* pos);
 void test_book(char* filename, position_t* pos);
 
+// ctg.c
+void init_ctg(char* filename);
+move_t ctg_get_book_move(position_t* pos);
+
 // daydreamer.c
 void init_daydreamer(void);
 

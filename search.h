@@ -30,10 +30,13 @@ typedef int score_type_t;
 #define SCORE_MASK          0x03
 #define MATE_THREAT         0x04
 
+typedef move_t(*book_fn)(position_t*);
 typedef struct {
     int multi_pv;
     int output_delay;
     bool use_book;
+    book_fn probe_book;
+    bool out_of_book;
     bool use_egbb;
     bool use_gtb;
     bool verbose;
