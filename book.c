@@ -35,6 +35,7 @@ static int num_entries;
 void init_book(char* filename)
 {
     assert(sizeof(book_entry_t) == 16);
+    srandom(time(NULL));
     uint32_t byte_order = 0x0A0B0C0D;
     big_endian = byte_order == htonl(byte_order);
     if (book) fclose(book);
