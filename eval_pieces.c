@@ -234,8 +234,6 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
     }
     int adv_score = 3*advancedness[side]*num_advanced_pieces[side] -
                     3*advancedness[side]*num_advanced_pieces[side];
-    adv_score = 0;
-    ///^^^^^
     side = pos->side_to_move;
     score.midgame = mid_score[side] - mid_score[side^1] + adv_score;
     score.endgame = end_score[side] - end_score[side^1];
