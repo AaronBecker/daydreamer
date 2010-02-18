@@ -72,7 +72,9 @@ move_t get_book_move(position_t* pos)
         total_weight += entry.weight;
     }
     if (index == 0) return NO_MOVE;
-    int i, choice = random() % total_weight;
+
+    uint16_t choice = random() % total_weight;
+    int i;
     for (i=0; choice >= weights[i]; ++i) {}
     assert(i < index);
     return book_move_to_move(pos, moves[i]);
