@@ -152,54 +152,14 @@ bool is_square_attacked(const position_t* pos, square_t sq, color_t side)
 }
 
 /*
- * Is |sq| being directly supported by any pieces on |side|? Works on both
- * occupied and unoccupied squares. Doesn't count kings, because this is
- * being used for king safety calculations.
- */
-bool is_square_defended(const position_t* pos, square_t sq, color_t side)
-{
-    // For every possible supporting piece, look up the attack data for its
-    // square.
-    // Special-case pawns for efficiency.
-    piece_t pawn = create_piece(side, PAWN);
-    if (pos->board[sq - piece_deltas[pawn][0]] == pawn) return true;
-    if (pos->board[sq - piece_deltas[pawn][1]] == pawn) return true;
-
-    square_t from;
-    for (const square_t* pfrom = &pos->pieces[side][1];
-            (from = *pfrom) != INVALID_SQUARE;
-            ++pfrom) {
-        piece_t p = pos->board[from];
-        if (possible_attack(from, sq, p)) {
-            if (piece_slide_type(p) == NO_SLIDE) return true;
-            direction_t att_dir = direction(from, sq);
-            while (from != sq) {
-                from += att_dir;
-                if (from == sq) return true;
-                if (pos->board[from] != EMPTY) break;
-            }
-        }
-    }
-    return false;
-}
-
-/*
  * Is a the piece on |from| attacking a square adjacent to |target|?
  */
-bool piece_attacks_near(const position_t* pos,
-        square_t from,
-        square_t target,
-        bool* unsupported)
+bool piece_attacks_near(const position_t* pos, square_t from, square_t target)
 {
     piece_t p = pos->board[from];
     if (near_attack(from, target, p)) {
+        if (piece_slide_type(p) == NO_SLIDE) return true;
         int delta;
-        if (piece_slide_type(p) == NO_SLIDE) {
-            square_t sq = from + near_attack_deltas[p][128+from-target][0];
-            *unsupported = !is_square_defended(
-                    pos, sq, piece_color(pos->board[target]));
-            return true;
-        }
         for (int i=0; (delta = near_attack_deltas[p][128+from-target][i]) !=
                 INVALID_SQUARE; ++i) {
             square_t sq = from + delta;
@@ -207,11 +167,7 @@ bool piece_attacks_near(const position_t* pos,
             square_t x = from;
             while (x != sq) {
                 x += att_dir;
-                if (x == sq) {
-                    *unsupported = !is_square_defended(
-                            pos, sq, piece_color(pos->board[target]));
-                    return true;
-                }
+                if (x == sq) return true;
                 if (pos->board[x] != EMPTY) break;
             }
         }

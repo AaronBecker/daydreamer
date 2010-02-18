@@ -44,11 +44,7 @@ direction_t pin_direction(const position_t* pos,
         square_t from,
         square_t king_sq);
 bool is_square_attacked(const position_t* pos, square_t square, color_t side);
-bool is_square_defended(const position_t* pos, square_t square, color_t side);
-bool piece_attacks_near(const position_t* pos,
-        square_t from,
-        square_t target,
-        bool* unsupported);
+bool piece_attacks_near(const position_t* pos, square_t from, square_t target);
 uint8_t find_checks(position_t* pos);
 
 // benchmark.c
