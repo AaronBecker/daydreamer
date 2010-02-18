@@ -69,7 +69,9 @@ static void uci_handle_command(char* command)
     while (*c) ++c;
     while (*--c == '\n') *c = '\0';
 
-    if (!strncasecmp(command, "uci", 3)) {
+    if (!strncasecmp(command, "ucinewgame", 10)) {
+        options.out_of_book = false;
+    } else if (!strncasecmp(command, "uci", 3)) {
         printf("id name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
         printf("id author %s\n", ENGINE_AUTHOR);
         print_uci_options();
@@ -78,9 +80,7 @@ static void uci_handle_command(char* command)
     else if (!strncasecmp(command, "quit", 4)) exit(0);
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
-    else if (!strncasecmp(command, "ucinewgame", 10)) {
-        options.out_of_book = false;
-    } else if (!strncasecmp(command, "setoption name", 14)) {
+    else if (!strncasecmp(command, "setoption name", 14)) {
         set_uci_option(command+15);
     } else if (!strncasecmp(command, "stop", 4)) {
         root_data.engine_status = ENGINE_ABORTED;
