@@ -110,6 +110,7 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
         int push = pawn_push[side];
         for (int i=0; pos->pawns[side][i] != INVALID_SQUARE; ++i) {
             from = pos->pawns[side][i];
+            /*
             dummy = pos->board[from+push-1];
             if (dummy > create_piece(side^1, PAWN) &&
                     dummy <= create_piece(side^1, KING)) {
@@ -122,6 +123,7 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                 mid_score[side] += 7;
                 end_score[side] += 12;
             }
+            */
             int ps = (pos->board[from+push] == EMPTY);
             mid_score[side] += mobility_score_table[0][PAWN][ps];
             end_score[side] += mobility_score_table[1][PAWN][ps];
@@ -232,8 +234,8 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
             end_score[side] += mobility_score_table[1][type][ps];
         }
     }
-    int adv_score = 3*advancedness[side]*num_advanced_pieces[side] -
-                    3*advancedness[side]*num_advanced_pieces[side];
+    int adv_score = 2*advancedness[side]*num_advanced_pieces[side] -
+                    2*advancedness[side]*num_advanced_pieces[side];
     side = pos->side_to_move;
     score.midgame = mid_score[side] - mid_score[side^1] + adv_score;
     score.endgame = end_score[side] - end_score[side^1];
