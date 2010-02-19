@@ -145,6 +145,7 @@ void do_move(position_t* pos, move_t move, undo_info_t* undo)
     const square_t to = get_move_to(move);
     assert(valid_board_index(from) && valid_board_index(to));
     pos->ep_square = EMPTY;
+    ++pos->fifty_move_counter;
     if (piece_type(get_move_piece(move)) == PAWN) {
         if (relative_rank[side][square_rank(to)] -
                 relative_rank[side][square_rank(from)] != 1) {
@@ -196,7 +197,6 @@ void do_move(position_t* pos, move_t move, undo_info_t* undo)
         place_piece(pos, create_piece(side, promote_type), to);
     }
 
-    ++pos->fifty_move_counter;
     pos->hash_history[pos->ply++] = undo->hash;
     assert(pos->ply <= HASH_HISTORY_LENGTH);
     pos->side_to_move ^= 1;
