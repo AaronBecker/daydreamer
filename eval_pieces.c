@@ -96,8 +96,8 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
     score_t score;
     int mid_score[2] = {0, 0};
     int end_score[2] = {0, 0};
-    //int advancedness[2] = {0,0};
-    //int num_advanced_pieces[2] = {0,0};
+    int advancedness[2] = {0,0};
+    int num_advanced_pieces[2] = {0,0};
     rank_t king_rank[2] = { relative_rank[WHITE]
                                 [square_rank(pos->pieces[WHITE][0])],
                             relative_rank[BLACK]
@@ -135,7 +135,7 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
             from = pos->pieces[side][i];
             piece = pos->board[from];
             piece_type_t type = piece_type(piece);
-            //rank_t rrank = relative_rank[side][square_rank(from)];
+            rank_t rrank = relative_rank[side][square_rank(from)];
             int ps = 0;
             switch (type) {
                 case KNIGHT:
@@ -152,10 +152,10 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                         mid_score[side] += bonus;
                         end_score[side] += bonus;
                     }
-                    //if (rrank > RANK_4) {
-                    //    advancedness[side]++;
-                    //    num_advanced_pieces[side]++;
-                    //}
+                    if (rrank > RANK_4) {
+                        advancedness[side]++;
+                        num_advanced_pieces[side]++;
+                    }
                     break;
                 case QUEEN:
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
@@ -177,17 +177,17 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                     int mscore = 10 -
                         (abs(square_rank(from) - king_rank[side^1]) +
                          abs(square_file(from) - king_file[side^1]));
-                    mid_score[side] += mscore;
-                    end_score[side] += mscore;
+                    mid_score[side] += mscore/2;
+                    end_score[side] += mscore/2;
                     if (relative_rank[side][square_rank(from)] == RANK_7 &&
                             king_rank[side^1] == RANK_8) {
                         mid_score[side] += rook_on_7[0] / 2;
                         end_score[side] += rook_on_7[1] / 2;
                     }
-                    //if (rrank > RANK_4) {
-                    //    advancedness[side] += 4;
-                    //    num_advanced_pieces[side]++;
-                    //}
+                    if (rrank > RANK_4) {
+                        advancedness[side] += 4;
+                        num_advanced_pieces[side]++;
+                    }
                     break;
                 case BISHOP:
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
@@ -203,10 +203,10 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                         mid_score[side] += bonus;
                         end_score[side] += bonus;
                     }
-                    //if (rrank > RANK_4) {
-                    //    advancedness[side]++;
-                    //    num_advanced_pieces[side]++;
-                    //}
+                    if (rrank > RANK_4) {
+                        advancedness[side]++;
+                        num_advanced_pieces[side]++;
+                    }
                     break;
                 case ROOK:
                     for (to=from-16; pos->board[to]==EMPTY; to-=16, ++ps) {}
@@ -231,10 +231,10 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                             end_score[side] += rook_open_file_bonus[1];
                         }
                     }
-                    //if (rrank > RANK_4) {
-                    //    advancedness[side] += 2;
-                    //    num_advanced_pieces[side]++;
-                    //}
+                    if (rrank > RANK_4) {
+                        advancedness[side] += 2;
+                        num_advanced_pieces[side]++;
+                    }
                     break;
                 default: break;
             }
@@ -242,11 +242,10 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
             end_score[side] += mobility_score_table[1][type][ps];
         }
     }
-    //int adv_score = 2*advancedness[side]*num_advanced_pieces[side] -
-    //                2*advancedness[side]*num_advanced_pieces[side];
+    int adv_score = advancedness[side]*num_advanced_pieces[side] -
+                    advancedness[side]*num_advanced_pieces[side];
     side = pos->side_to_move;
-    score.midgame = mid_score[side] - mid_score[side^1];
-    //+ adv_score;
+    score.midgame = mid_score[side] - mid_score[side^1] + adv_score;
     score.endgame = end_score[side] - end_score[side^1];
     return score;
 }
