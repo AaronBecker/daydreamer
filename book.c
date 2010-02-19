@@ -35,6 +35,7 @@ static int num_entries;
 void init_book(char* filename)
 {
     assert(sizeof(book_entry_t) == 16);
+    srandom(time(NULL));
     uint32_t byte_order = 0x0A0B0C0D;
     big_endian = byte_order == htonl(byte_order);
     if (book) fclose(book);
@@ -71,7 +72,9 @@ move_t get_book_move(position_t* pos)
         total_weight += entry.weight;
     }
     if (index == 0) return NO_MOVE;
-    int i, choice = random() % total_weight;
+
+    uint16_t choice = random() % total_weight;
+    int i;
     for (i=0; choice >= weights[i]; ++i) {}
     assert(i < index);
     return book_move_to_move(pos, moves[i]);
