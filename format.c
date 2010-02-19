@@ -356,7 +356,7 @@ void position_to_fen_str(const position_t* pos, char* fen)
     *fen++ = ' ';
     fen += sprintf(fen, "%d", pos->fifty_move_counter);
     *fen++ = ' ';
-    fen += sprintf(fen, "%d", pos->ply/2);
+    fen += sprintf(fen, "%d", (pos->ply+1)/2);
     *fen = '\0';
 }
 
