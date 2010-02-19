@@ -109,11 +109,11 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
         const int* mobile = color_table[side];
         square_t from, to;
         piece_t piece;
-        //piece_t dummy;
-        //int push = pawn_push[side];
-            /*
+        piece_t dummy;
+        int push = pawn_push[side];
         for (int i=0; pos->pawns[side][i] != INVALID_SQUARE; ++i) {
             from = pos->pawns[side][i];
+            /*
             dummy = pos->board[from+push-1];
             if (dummy > create_piece(side^1, PAWN) &&
                     dummy <= create_piece(side^1, KING)) {
@@ -126,11 +126,11 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                 mid_score[side] += 7;
                 end_score[side] += 12;
             }
+            */
             int ps = (pos->board[from+push] == EMPTY);
             mid_score[side] += mobility_score_table[0][PAWN][ps];
             end_score[side] += mobility_score_table[1][PAWN][ps];
         }
-            */
         for (int i=1; pos->pieces[side][i] != INVALID_SQUARE; ++i) {
             from = pos->pieces[side][i];
             piece = pos->board[from];
@@ -174,11 +174,13 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                     ps += mobile[pos->board[to]];
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
+                    /*
                     int mscore = 10 -
                         (abs(square_rank(from) - king_rank[side^1]) +
                          abs(square_file(from) - king_file[side^1]));
                     mid_score[side] += mscore/2;
                     end_score[side] += mscore/2;
+                    */
                     if (relative_rank[side][square_rank(from)] == RANK_7 &&
                             king_rank[side^1] == RANK_8) {
                         mid_score[side] += rook_on_7[0] / 2;
@@ -245,7 +247,8 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
     int adv_score = advancedness[side]*num_advanced_pieces[side] -
                     advancedness[side]*num_advanced_pieces[side];
     side = pos->side_to_move;
-    score.midgame = mid_score[side] - mid_score[side^1] + adv_score;
+    score.midgame = mid_score[side] - mid_score[side^1];
+    //+ adv_score;
     score.endgame = end_score[side] - end_score[side^1];
     return score;
 }
