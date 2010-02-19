@@ -233,7 +233,8 @@ static void handle_gtb_use(void* opt, char* value)
     strncpy(option->value, value, 128);
     bool val = !strcasecmp(value, "true");
     if (val) {
-        load_gtb(get_option_string("Gaviota tablebase path"), 0);
+        load_gtb(get_option_string("gaviota tablebase path"),
+                options.gtb_cache_size*1024*1024);
     } else unload_gtb();
     memcpy(option->address, &val, sizeof(bool));
 }
@@ -251,7 +252,24 @@ static void handle_gtb_path(void* opt, char* value)
         strcat(option->value, DIR_SEP);
     }
     if (options.use_gtb) {
-        load_gtb(value, 0);
+        load_gtb(value, options.gtb_cache_size*1024*1024);
+    }
+}
+
+/*
+ * Sets the Gaviota tablebase cache size.
+ */
+static void handle_gtb_cache(void* opt, char* value)
+{
+    uci_option_t* option = opt;
+    if (!option->value) return;
+    strncpy(option->value, value, 128);
+    int size;
+    sscanf(value, "%d", &size);
+    memcpy(option->address, &size, sizeof(int));
+    if (options.use_gtb) {
+        load_gtb(get_option_string("gaviota tablebase path"),
+                options.gtb_cache_size*1024*1024);
     }
 }
 
@@ -323,14 +341,16 @@ void init_uci_options()
             0, 0, NULL, &options.use_gtb, &handle_gtb_use);
     add_uci_option("Gaviota tablebase path", OPTION_STRING, ".",
             0, 0, NULL, NULL, &handle_gtb_path);
+    add_uci_option("Gaviota tablebase cache size", OPTION_SPIN, "32",
+            0, 4096, NULL, &options.gtb_cache_size, &handle_gtb_cache);
     add_uci_option("Use Scorpio bitbases", OPTION_CHECK, "false",
             0, 0, NULL, &options.use_egbb, &handle_egbb_use);
     add_uci_option("Scorpio bitbase path", OPTION_STRING, ".",
             0, 0, NULL, NULL, &handle_egbb_path);
     add_uci_option("Pawn cache size", OPTION_SPIN, "1",
-            1, 64, NULL, NULL, &handle_pawn_cache);
+            1, 128, NULL, NULL, &handle_pawn_cache);
     add_uci_option("PV cache size", OPTION_SPIN, "32",
-            1, 128, NULL, NULL, &handle_pv_cache);
+            1, 1024, NULL, NULL, &handle_pv_cache);
     add_uci_option("Output Delay", OPTION_SPIN, "2000",
             0, 1000000, NULL, &options.output_delay, &default_handler);
     add_uci_option("Verbose output", OPTION_CHECK, "false",
