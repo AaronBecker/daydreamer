@@ -1,10 +1,14 @@
 
 ARCHFLAGS = -m64
-OPTFLAGS = -O3 -msse
-override INCLUDE = -Isysport/ -Icompression/ -Icompression/liblzf/ \
+OPTFLAGS = -fast -msse
+INCLUDE = -Isysport/ -Icompression/ -Icompression/liblzf/ \
 	   -Icompression/zlib/ -Icompression/lzma/ -Icompression/huffman/
-override DEFINE = -DZ_PREFIX -DNDEBUG
-override CFLAGS = -Wall -Wextra $(INCLUDE) $(DEFINE) $(ARCHFLAGS) $(OPTFLAGS)
+DEFINE = -DZ_PREFIX -DNDEBUG
+CFLAGS = -Wall -Wextra $(INCLUDE) $(DEFINE) $(ARCHFLAGS) $(OPTFLAGS)
+
+PGO1FLAGS = $(OPTFLAGS) -fprofile-generate
+PGO2FLAGS = $(OPTFLAGS) -fprofile-use
+
 
 SRCFILES := gtb-probe.c decode.c possatt.c sysport/sysport.c \
 	   compression/wrap.c compression/huffman/hzip.c \
@@ -19,6 +23,7 @@ SRCFILES := gtb-probe.c decode.c possatt.c sysport/sysport.c \
 	   compression/zlib/trees.c compression/zlib/zutil.c \
 	   compression/liblzf/lzf_c.c compression/liblzf/lzf_d.c
 OBJFILES := $(patsubst %.c,%.o,$(SRCFILES))
+PROFFILES := $(SRCFILES:.c=.gcno) $(SRCFILES:.c=.gcda)
 LIBNAME := libgtb.a
 
 .PHONY: all clean
@@ -34,4 +39,15 @@ obj/%.o: %.c
 
 clean:
 	rm -f $(OBJFILES) $(LIBNAME)
+
+pgo-clean:
+	rm -f $(PROFFILES)
+
+pgo-start:
+	$(MAKE) $(LIBNAME) CFLAGS="$(PGO1FLAGS) $(CFLAGS)" \
+	    LDFLAGS="$(LDFLAGS) -fprofile-generate"
+
+pgo-finish:
+	$(MAKE) $(LIBNAME) CFLAGS="$(PGO2FLAGS) $(CFLAGS)"
+
 
