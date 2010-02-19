@@ -36,7 +36,6 @@ static const int castle_to_gtb_table[] = {
 
 bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
 {
-    printf("gtb cache size: %d\n", cache_size_bytes/1024/1024);
     if (tb_is_initialized()) unload_gtb();
     assert(tb_paths == NULL);
     assert(cache_size_bytes >= 0);

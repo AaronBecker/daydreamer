@@ -18,7 +18,7 @@ LDFLAGS = $(ARCHFLAGS) -ldl -Lgtb -lgtb
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0 -DEXPENSIVE_TESTS -DASSERT2
 ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
 DEFAULTFLAGS = $(COMMONFLAGS) -g -O2
-OPTFLAGS = $(COMMONFLAGS) -O3 -msse -DNDEBUG
+OPTFLAGS = $(COMMONFLAGS) -fast -msse -DNDEBUG
 PGO1FLAGS = $(OPTFLAGS) -fprofile-generate
 PGO2FLAGS = $(OPTFLAGS) -fprofile-use
 CFLAGS = $(DEFAULTFLAGS)
@@ -33,6 +33,7 @@ GITFLAGS = -DGIT_VERSION=\"\\\"`git rev-parse --short HEAD`\\\"\"
 SRCFILES := $(wildcard *.c)
 HEADERS  := $(wildcard *.h)
 OBJFILES := $(SRCFILES:.c=.o)
+PROFFILES := $(SRCFILES:.c=.gcno) $(SRCFILES:.c=.gcda)
 
 .PHONY: all clean gtb tags debug opt pgo-start pgo-finish pgo-clean
 .DEFAULT_GOAL := default
@@ -54,7 +55,7 @@ pgo-start:
 	$(MAKE) daydreamer CFLAGS="$(PGO1FLAGS) $(GITFLAGS) $(OPTCOMPILESTR)" \
 	    LDFLAGS="$(LDFLAGS) -fprofile-generate"
 
-pgo-finish: pgo-clean
+pgo-finish:
 	$(MAKE) daydreamer CFLAGS="$(PGO2FLAGS) $(GITFLAGS) $(PGOCOMPILESTR)"
 
 all: default
@@ -68,11 +69,11 @@ tags: $(SRCFILES)
 gtb:
 	(cd gtb && $(MAKE) ARCHFLAGS="$(ARCHFLAGS)" OPTFLAGS="$(OPTFLAGS)")
 
-pgo-clean:
-	rm build/*.o daydreamer
-
 clean:
 	rm -rf .depend daydreamer tags $(OBJFILES) && (cd gtb && $(MAKE) clean)
+
+pgo-clean:
+	rm -f $(PROFFILES)
 
 .depend: $(SRCFILES)
 	$(CC) -MM $(CFLAGS) $(SRCFILES) > $@
