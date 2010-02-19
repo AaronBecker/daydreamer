@@ -57,7 +57,7 @@ Copyright (c) 2010 Miguel A. Ballicora
 #include "bzlib.h"
 #endif
 
-size_t _unused;
+static size_t _unused;
 
 /***********************************************************************************************************/
 
