@@ -116,6 +116,7 @@ bool probe_gtb_soft(const position_t* pos, int* score)
         else if (res == tb_BMATE) *score = mated_in(val);
         else if (res == tb_WMATE) *score = mate_in(val);
         else assert(false);
+        if (pos->side_to_move == BLACK) *score *= -1;
     }
     return success;
 }
@@ -137,6 +138,7 @@ bool probe_gtb_hard(const position_t* pos, int* score)
         else if (res == tb_BMATE) *score = mated_in(val);
         else if (res == tb_WMATE) *score = mate_in(val);
         else assert(false);
+        if (pos->side_to_move == BLACK) *score *= -1;
     }
     return success;
 }
