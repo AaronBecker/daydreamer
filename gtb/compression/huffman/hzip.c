@@ -170,7 +170,7 @@ static void freq_report (void);
 /*=== ENCODE/DECODE=================================================*/
 
 size_t _hzip_dummy;
-size_t _unused;
+static size_t _unused;
 
 static int 
 huffman_decode (size_t z, const unsigned char *bz, size_t n, unsigned char *bp)
