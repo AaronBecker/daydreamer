@@ -307,7 +307,7 @@ bool can_win(const position_t* pos, color_t side)
 bool is_draw(const position_t* pos)
 {
     return pos->fifty_move_counter > 100 ||
-        (pos->fifty_move_counter == 100 && is_check(pos)) ||
+        (pos->fifty_move_counter == 100 && !is_check(pos)) ||
         insufficient_material(pos) ||
         is_repetition(pos);
 }
