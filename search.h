@@ -36,6 +36,7 @@ typedef struct {
     bool use_book;
     bool use_egbb;
     bool use_gtb;
+    int gtb_cache_size;
     bool verbose;
     bool chess960;
     bool arena_castle;
