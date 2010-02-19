@@ -228,10 +228,17 @@ static bool check_eg_database(position_t* pos,
 {
     //TODO: evaluate 5 man bases
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
-            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 4) return false;
+            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 5) return false;
     if (options.use_gtb) {
         // For DTM tablebases, just look.
-        if (probe_gtb_soft(pos, score)) {
+        // TODO: figure out if there's a way to make probe_soft load cache in
+        // the background; loading cache during pondering is an uneasy compromise.
+        if (root_data.engine_status == ENGINE_PONDERING) {
+            if (probe_gtb_hard(pos, score)) {
+                ++root_data.stats.egbb_hits;
+                return true;
+            }
+        } else if (probe_gtb_soft(pos, score)) {
             ++root_data.stats.egbb_hits;
             return true;
         }
