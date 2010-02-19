@@ -232,18 +232,15 @@ static bool check_eg_database(position_t* pos,
     if (options.use_gtb) {
         // For DTM tablebases, just look.
         // TODO: figure out if there's a way to make probe_soft load cache in
-        // the background; loading cache during pondering is an uneasy compromise.
+        // the background; loading cache during pondering is an uneasy
+        // compromise.
         if (root_data.engine_status == ENGINE_PONDERING) {
             if (probe_gtb_hard(pos, score)) {
                 ++root_data.stats.egbb_hits;
-                put_transposition(pos, NO_MOVE, MAX_SEARCH_PLY, *score,
-                        SCORE_EXACT, false);
                 return true;
             }
         } else if (probe_gtb_soft(pos, score)) {
             ++root_data.stats.egbb_hits;
-            put_transposition(pos, NO_MOVE, MAX_SEARCH_PLY, *score,
-                    SCORE_EXACT, false);
             return true;
         }
     } else if (options.use_egbb) {
