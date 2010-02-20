@@ -479,7 +479,7 @@ int move_weight(position_t* pos, move_t move)
 
     float half_points = (2*entry.wins + entry.draws);
     float games = (entry.wins + entry.draws + entry.losses);
-    float weight = (games < 2 || half_points < 2) ? 0.0 : half_points / games;
+    float weight = (games < 3 || half_points < 3) ? 0.0 : half_points / games;
     int int_weight = (int)(weight * 100000);
     if (entry.recommendation == 64) int_weight = 0;
     if (entry.recommendation == 128) int_weight *= 128;
