@@ -477,16 +477,15 @@ int move_weight(position_t* pos, move_t move)
     undo_move(pos, move, &undo);
     if (!success) return 0;
 
-    float half_points = (2*entry.wins + entry.draws) + 1;
-    float games = (entry.wins + entry.draws + entry.losses) + 1;
-    int scale = entry.recommendation;
-    float weight = half_points / games;
+    float half_points = (2*entry.wins + entry.draws);
+    float games = (entry.wins + entry.draws + entry.losses);
+    float weight = (games < 2 || half_points < 2) ? 0.0 : half_points / games;
     int int_weight = (int)(weight * 100000);
-    if (scale == 64) int_weight = 0;
-    if (scale == 128) int_weight *= 128;
+    if (entry.recommendation == 64) int_weight = 0;
+    if (entry.recommendation == 128) int_weight *= 128;
     printf("info string book move: ");
     print_coord_move(move);
-    printf(" scale: %d weight: %d\n", scale, int_weight);
+    printf(" weight: %d\n", int_weight);
     return int_weight;
 }
 
