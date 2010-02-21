@@ -257,7 +257,7 @@ void init_ctg(char* filename)
 bool ctg_get_page_index(int hash, int* page_index)
 {
     uint32_t key = 0;
-    for (int mask = 0; key <= (uint32_t)page_bounds.high; mask = (mask << 1) + 1) {
+    for (int mask = 1; key <= (uint32_t)page_bounds.high; mask = (mask << 1) + 1) {
         key = (hash & mask) + mask;
         //printf("c=%d\n", key);
         if (key >= (uint32_t)page_bounds.low) {
@@ -503,6 +503,10 @@ bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
         moves[i/2] = m;
         weights[i/2] = total_weight;
         if (move == NO_MOVE) break;
+    }
+    if (total_weight == 0) {
+        *move = NO_MOVE;
+        return false;
     }
     uint32_t choice = random();
     choice = ((choice<<16) + random()) % total_weight;
