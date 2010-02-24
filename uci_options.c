@@ -306,7 +306,8 @@ static void handle_egbb_path(void* opt, char* value)
 }
 
 /*
- * Sets the path to the opening book, in Polyglot format.
+ * Sets the path to the opening book, in Polyglot or ctg format, and
+ * set the function for book probing accordingly.
  */
 static void handle_book_file(void* opt, char* value)
 {
@@ -316,11 +317,11 @@ static void handle_book_file(void* opt, char* value)
     if (value[name_len-3] == 'c' &&
             value[name_len-2] == 't' &&
             value[name_len-1] == 'g') {
-        init_ctg(option->value);
-        options.probe_book = &ctg_get_book_move;
+        init_ctg_book(option->value);
+        options.probe_book = &get_ctg_book_move;
     } else {
-        init_book(option->value);
-        options.probe_book = &get_book_move;
+        init_poly_book(option->value);
+        options.probe_book = &get_poly_book_move;
     }
     options.out_of_book = false;
 }

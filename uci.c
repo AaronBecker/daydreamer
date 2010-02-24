@@ -150,7 +150,7 @@ static void uci_handle_ext(char* command)
             printf("Gaviota TBs not loaded\n");
         }
     } else if (!strncasecmp(command, "ctg", 3)) {
-        ctg_get_book_move(pos);
+        get_ctg_book_move(pos);
     } else if (!strncasecmp(command, "print", 5)) {
         print_board(pos, false);
         move_t moves[255];
