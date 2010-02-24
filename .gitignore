@@ -4,8 +4,9 @@ tags
 .depend
 daydreamer
 daydreamer_*
-daydreamer.exe
+daydreamer.*
 daydreamer.log
+book.*
 gtb/libgtb.a
 polyglot
 .DS_Store
