@@ -3,8 +3,8 @@ ARCHFLAGS = -m64
 OPTFLAGS = -fast -msse
 INCLUDE = -Isysport/ -Icompression/ -Icompression/liblzf/ \
 	   -Icompression/zlib/ -Icompression/lzma/ -Icompression/huffman/
-DEFINE = -DZ_PREFIX -DNDEBUG
-CFLAGS = -Wall -Wextra $(INCLUDE) $(DEFINE) $(ARCHFLAGS) $(OPTFLAGS)
+override DEFINE = -DZ_PREFIX -DNDEBUG
+override CFLAGS = -Wall -Wextra $(INCLUDE) $(DEFINE) $(ARCHFLAGS) $(OPTFLAGS)
 
 PGO1FLAGS = $(OPTFLAGS) -fprofile-generate
 PGO2FLAGS = $(OPTFLAGS) -fprofile-use
