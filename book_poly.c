@@ -1,6 +1,7 @@
 
 #include "daydreamer.h"
 
+// Endian-ness fixer for 64-bit types.
 #define ntohll(x) \
     (!big_endian ? \
     ((((x) & 0xff00000000000000ULL) >> 56) | \
