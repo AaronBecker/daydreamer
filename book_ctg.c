@@ -1,10 +1,15 @@
 
 #include "daydreamer.h"
-#include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <stdint.h>
-#include <assert.h>
+
+/*
+ * Interface to ctg format books. The huffman codes and ctg move decoding are
+ * derived from Stephan Vermeire's ctg code for Brutus.
+ * (http://www.xs4all.nl/~vermeire/brutus.html)
+ */
+
+#define read_24(buf, pos)   \
+    ((buf[pos]<<16) + (buf[(pos)+1]<<8) + (buf[(pos)+2]))
 
 FILE* ctg_file = NULL;
 FILE* cto_file = NULL;
@@ -41,8 +46,63 @@ typedef struct {
 
 static move_t squares_to_move(position_t* pos, square_t from, square_t to);
 static bool ctg_get_entry(position_t* pos, ctg_entry_t* entry);
+static bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move);
 
-void append_bits_reverse(ctg_signature_t* sig,
+/*
+ * Initialize the ctg-format opening book with the given filename. The
+ * filename gives the .ctg file, and there must be corresponding .cto and .ctb
+ * files in the same directory. Note that all these methods depend on global
+ * state in the form of ctg and cto file pointers.
+ */
+void init_ctg_book(char* filename)
+{
+    int name_len = strlen(filename);
+    assert(filename[name_len-3] == 'c' &&
+            filename[name_len-2] == 't' &&
+            filename[name_len-1] == 'g');
+    char fbuf[1024];
+    strcpy(fbuf, filename);
+    if (ctg_file) {
+        assert(cto_file);
+        fclose(ctg_file);
+        fclose(cto_file);
+    }
+    ctg_file = fopen(fbuf, "r");
+    fbuf[name_len-1] = 'o';
+    cto_file = fopen(fbuf, "r");
+    fbuf[name_len-1] = 'b';
+    FILE* ctb_file = fopen(fbuf, "r");
+    fbuf[name_len-1] = 'g';
+    if (!ctg_file || !cto_file || !ctb_file) {
+        printf("info string Couldn't load book %s\n", fbuf);
+        return;
+    }
+
+    // Read out upper and lower page limits.
+    fread(&page_bounds, 12, 1, ctb_file);
+    page_bounds.low = ntohl(page_bounds.low);
+    page_bounds.high = ntohl(page_bounds.high);
+    assert(page_bounds.low <= page_bounds.high);
+    fclose(ctb_file);
+}
+
+/*
+ * Look up the book moves given for |pos| and select one from the possible
+ * choices.
+ */
+move_t get_ctg_book_move(position_t* pos)
+{
+    move_t move;
+    ctg_entry_t entry;
+    if (!ctg_get_entry(pos, &entry)) return NO_MOVE;
+    if (!ctg_pick_move(pos, &entry, &move)) return NO_MOVE;
+    return move;
+}
+
+/*
+ * Push the given bits on to the end of |sig|.
+ */
+static void append_bits_reverse(ctg_signature_t* sig,
         uint8_t bits,
         int bit_position,
         int num_bits)
@@ -51,15 +111,13 @@ void append_bits_reverse(ctg_signature_t* sig,
     int offset = bit_position % 8;
     for (int i=offset; i<num_bits+offset; ++i, bits>>=1) {
         if (bits & 1) *sig_byte |= 1 << (7-(i%8));
-        //printf("%d", bits&1 ? 1 : 0);
         if (i%8 == 7) *(++sig_byte) = 0;
     }
-    //printf(" ");
 }
 
-void print_signature(ctg_signature_t* sig)
+static void print_signature(ctg_signature_t* sig)
 {
-    // Print bits
+    // Print as bits.
     printf("\n%d byte signature", sig->buf_len);
     for (int i=0; i<sig->buf_len; ++i) {
         if (i % 8 == 0) printf("\n");
@@ -69,7 +127,7 @@ void print_signature(ctg_signature_t* sig)
         printf(" ");
     }
 
-    // Just print as chars
+    // Print as chars.
     for (int i=0; i<sig->buf_len; ++i) {
         if (i % 8 == 0) printf("\n");
         printf("%3d ", (char)sig->buf[i]);
@@ -77,49 +135,25 @@ void print_signature(ctg_signature_t* sig)
     printf("\n");
 }
 
-int32_t ctg_signature_to_hash(ctg_signature_t* sig)
-{
-    static const uint32_t hash_bits[64] = {
-        0x3100d2bf, 0x3118e3de, 0x34ab1372, 0x2807a847,
-        0x1633f566, 0x2143b359, 0x26d56488, 0x3b9e6f59,
-        0x37755656, 0x3089ca7b, 0x18e92d85, 0x0cd0e9d8,
-        0x1a9e3b54, 0x3eaa902f, 0x0d9bfaae, 0x2f32b45b,
-        0x31ed6102, 0x3d3c8398, 0x146660e3, 0x0f8d4b76,
-        0x02c77a5f, 0x146c8799, 0x1c47f51f, 0x249f8f36,
-        0x24772043, 0x1fbc1e4d, 0x1e86b3fa, 0x37df36a6,
-        0x16ed30e4, 0x02c3148e, 0x216e5929, 0x0636b34e,
-        0x317f9f56, 0x15f09d70, 0x131026fb, 0x38c784b1,
-        0x29ac3305, 0x2b485dc5, 0x3c049ddc, 0x35a9fbcd,
-        0x31d5373b, 0x2b246799, 0x0a2923d3, 0x08a96e9d,
-        0x30031a9f, 0x08f525b5, 0x33611c06, 0x2409db98,
-        0x0ca4feb2, 0x1000b71e, 0x30566e32, 0x39447d31,
-        0x194e3752, 0x08233a95, 0x0f38fe36, 0x29c7cd57,
-        0x0f7b3a39, 0x328e8a16, 0x1e7d1388, 0x0fba78f5,
-        0x274c7e7c, 0x1e8be65c, 0x2fa0b0bb, 0x1eb6c371
-    };
-
-    int32_t hash = 0;
-    int16_t tmp = 0;
-    for (int i=0; i<sig->buf_len; ++i) {
-        int8_t byte = sig->buf[i];
-        tmp += ((0x0f - (byte & 0x0f)) << 2) + 1;
-        hash += hash_bits[tmp & 0x3f];
-        tmp += ((0xf0 - (byte & 0xf0)) >> 2) + 1;
-        hash += hash_bits[tmp & 0x3f];
-    }
-    return hash;
-}
-
-void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
+/*
+ * Compute the huffman encoding of the given position, according to
+ * ctg convention.
+ */
+static void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
 {
     // Note: initial byte is reserved for length and flags info
     memset(sig, 0, sizeof(ctg_signature_t));
     int bit_position = 8;
     uint8_t bits = 0, num_bits = 0;
+
+    // The board is flipped if it's black's turn, and mirrored if the king is on the queenside with
+    // no castling rights for either side.
     bool flip_board = pos->side_to_move == BLACK;
     color_t white = flip_board ? BLACK : WHITE;
     bool mirror_board = square_file(pos->pieces[white][0]) < FILE_E && pos->castle_rights == 0;
     piece_t flip_piece[] = { 0, BP, BN, BB, BR, BQ, BK, 0, 0, WP, WN, WB, WR, WQ, WK };
+
+    // For each board square, append the huffman bit sequence for its contents.
     for (int file=0; file<8; ++file) {
         for (int rank=0; rank<8; ++rank) {
             square_t sq = create_square(file, rank);
@@ -127,45 +161,19 @@ void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
             if (mirror_board) sq = mirror_file(sq);
             piece_t piece = flip_board ? flip_piece[pos->board[sq]] : pos->board[sq];
             switch (piece) {
-                case EMPTY: bits = 0x0;
-                            num_bits = 1;
-                            break;
-                case WP: bits = 0x3;
-                         num_bits = 3;
-                         break;
-                case BP: bits = 0x7;
-                         num_bits = 3;
-                         break;
-                case WN: bits = 0x9;
-                         num_bits = 5;
-                         break;
-                case BN: bits = 0x19;
-                         num_bits = 5;
-                         break;
-                case WB: bits = 0x5;
-                         num_bits = 5;
-                         break;
-                case BB: bits = 0x15;
-                         num_bits = 5;
-                         break;
-                case WR: bits = 0xD;
-                         num_bits = 5;
-                         break;
-                case BR: bits = 0x1D;
-                         num_bits = 5;
-                         break;
-                case WQ: bits = 0x11;
-                         num_bits = 6;
-                         break;
-                case BQ: bits = 0x31;
-                         num_bits = 6;
-                         break;
-                case WK: bits = 0x1;
-                         num_bits = 6;
-                         break;
-                case BK: bits = 0x21;
-                         num_bits = 6;
-                         break;
+                case EMPTY: bits = 0x0; num_bits = 1; break;
+                case WP: bits = 0x3; num_bits = 3; break;
+                case BP: bits = 0x7; num_bits = 3; break;
+                case WN: bits = 0x9; num_bits = 5; break;
+                case BN: bits = 0x19; num_bits = 5; break;
+                case WB: bits = 0x5; num_bits = 5; break;
+                case BB: bits = 0x15; num_bits = 5; break;
+                case WR: bits = 0xD; num_bits = 5; break;
+                case BR: bits = 0x1D; num_bits = 5; break;
+                case WQ: bits = 0x11; num_bits = 6; break;
+                case BQ: bits = 0x31; num_bits = 6; break;
+                case WK: bits = 0x1; num_bits = 6; break;
+                case BK: bits = 0x21; num_bits = 6; break;
                 default: assert(false);
             }
             append_bits_reverse(sig, bits, bit_position, num_bits);
@@ -173,7 +181,8 @@ void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
         }
     }
 
-    // Encode castling and en passant rights.
+    // Encode castling and en passant rights. These must sit flush at the end
+    // of the final byte, so we also have to figure out how much to pad.
     int ep = -1;
     int flag_bit_length = 0;
     if (pos->ep_square) {
@@ -221,45 +230,51 @@ void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
     if (castle) sig->buf[0] |= 1<<6;
 }
 
-void init_ctg(char* filename)
+/*
+ * Convert a position's huffman code to a 4 byte hash.
+ */
+static int32_t ctg_signature_to_hash(ctg_signature_t* sig)
 {
-    int name_len = strlen(filename);
-    assert(filename[name_len-3] == 'c' &&
-            filename[name_len-2] == 't' &&
-            filename[name_len-1] == 'g');
-    char fbuf[1024];
-    strcpy(fbuf, filename);
-    if (ctg_file) {
-        assert(cto_file);
-        fclose(ctg_file);
-        fclose(cto_file);
-    }
-    ctg_file = fopen(fbuf, "r");
-    fbuf[name_len-1] = 'o';
-    cto_file = fopen(fbuf, "r");
-    fbuf[name_len-1] = 'b';
-    FILE* ctb_file = fopen(fbuf, "r");
-    fbuf[name_len-1] = 'g';
-    if (!ctg_file || !cto_file || !ctb_file) {
-        printf("info string Couldn't load book %s\n", fbuf);
-        return;
-    }
+    static const uint32_t hash_bits[64] = {
+        0x3100d2bf, 0x3118e3de, 0x34ab1372, 0x2807a847,
+        0x1633f566, 0x2143b359, 0x26d56488, 0x3b9e6f59,
+        0x37755656, 0x3089ca7b, 0x18e92d85, 0x0cd0e9d8,
+        0x1a9e3b54, 0x3eaa902f, 0x0d9bfaae, 0x2f32b45b,
+        0x31ed6102, 0x3d3c8398, 0x146660e3, 0x0f8d4b76,
+        0x02c77a5f, 0x146c8799, 0x1c47f51f, 0x249f8f36,
+        0x24772043, 0x1fbc1e4d, 0x1e86b3fa, 0x37df36a6,
+        0x16ed30e4, 0x02c3148e, 0x216e5929, 0x0636b34e,
+        0x317f9f56, 0x15f09d70, 0x131026fb, 0x38c784b1,
+        0x29ac3305, 0x2b485dc5, 0x3c049ddc, 0x35a9fbcd,
+        0x31d5373b, 0x2b246799, 0x0a2923d3, 0x08a96e9d,
+        0x30031a9f, 0x08f525b5, 0x33611c06, 0x2409db98,
+        0x0ca4feb2, 0x1000b71e, 0x30566e32, 0x39447d31,
+        0x194e3752, 0x08233a95, 0x0f38fe36, 0x29c7cd57,
+        0x0f7b3a39, 0x328e8a16, 0x1e7d1388, 0x0fba78f5,
+        0x274c7e7c, 0x1e8be65c, 0x2fa0b0bb, 0x1eb6c371
+    };
 
-    // Read out upper and lower page limits.
-    fread(&page_bounds, 12, 1, ctb_file);
-    page_bounds.low = ntohl(page_bounds.low);
-    page_bounds.high = ntohl(page_bounds.high);
-    assert(page_bounds.low <= page_bounds.high);
-    fclose(ctb_file);
-    //printf("low %d high %d\n", page_bounds.low, page_bounds.high);
+    int32_t hash = 0;
+    int16_t tmp = 0;
+    for (int i=0; i<sig->buf_len; ++i) {
+        int8_t byte = sig->buf[i];
+        tmp += ((0x0f - (byte & 0x0f)) << 2) + 1;
+        hash += hash_bits[tmp & 0x3f];
+        tmp += ((0xf0 - (byte & 0xf0)) >> 2) + 1;
+        hash += hash_bits[tmp & 0x3f];
+    }
+    return hash;
 }
 
-bool ctg_get_page_index(int hash, int* page_index)
+
+/*
+ * Find the page index associated with a given position |hash|.
+ */
+static bool ctg_get_page_index(int hash, int* page_index)
 {
     uint32_t key = 0;
     for (int mask = 1; key <= (uint32_t)page_bounds.high; mask = (mask << 1) + 1) {
         key = (hash & mask) + mask;
-        //printf("c=%d\n", key);
         if (key >= (uint32_t)page_bounds.low) {
             //printf("found entry with key=%d\n", key);
             fseek(cto_file, 16 + key*4, SEEK_SET);
@@ -272,21 +287,23 @@ bool ctg_get_page_index(int hash, int* page_index)
     return false;
 }
 
-#define read_24(buf, pos)   ((buf[pos]<<16) + (buf[(pos)+1]<<8) + (buf[(pos)+2]))
 
-bool ctg_lookup_entry(int page_index, ctg_signature_t* sig, ctg_entry_t* entry)
+/*
+ * Find and copy out a ctg entry, given its page index and signature.
+ */
+static bool ctg_lookup_entry(int page_index, ctg_signature_t* sig, ctg_entry_t* entry)
 {
+    // Pages are a uniform 4096 bytes.
     uint8_t buf[4096];
     fseek(ctg_file, 4096*(page_index + 1), SEEK_SET);
     if (!fread(buf, 1, 4096, ctg_file)) return false;
     int num_positions = (buf[0]<<8) + buf[1];
-    int pos = 4;
     //printf("found %d positions\n", num_positions);
 
+    // Just scan through the list until we find a matching signature.
+    int pos = 4;
     for (int i=0; i<num_positions; ++i) {
         int entry_size = buf[pos] % 32;
-        //for (int j=0; j<sig->buf_len; ++j) printf("%d ", (char)buf[pos+j]);
-        //printf("\n");
         bool equal = true;
         if (sig->buf_len != entry_size) equal = false;
         for (int j=0; j<sig->buf_len && equal; ++j) {
@@ -296,7 +313,8 @@ bool ctg_lookup_entry(int page_index, ctg_signature_t* sig, ctg_entry_t* entry)
             pos += entry_size + buf[pos+entry_size] + 33;
             continue;
         }
-        // Found it, fill in the entry and return.
+        // Found it, fill in the entry and return. Annoyingly, most of the
+        // fields are 24 bits long.
         pos += entry_size;
         entry_size = buf[pos];
         for (int j=1; j<entry_size; ++j) entry->moves[j-1] = buf[pos+j];
@@ -316,9 +334,15 @@ bool ctg_lookup_entry(int page_index, ctg_signature_t* sig, ctg_entry_t* entry)
     return false;
 }
 
-move_t byte_to_move(position_t* pos, uint8_t byte)
+/*
+ * Convert a ctg-format move to native format. The ctg move format seems
+ * really bizarre; maybe there's some simpler formulation. The ctg move
+ * indicates the piece type, the index of the piece to be moved (counting
+ * from A1 to H8 by ranks), and the delta x and delta y of the move.
+ * We just look these values up in big tables.
+ */
+static move_t byte_to_move(position_t* pos, uint8_t byte)
 {
-    //printf("\n<%d> <%d> <%d>\n", byte, (char)byte, (int)byte);
     const char piece_code[257] = "PNxQPQPxQBKxPBRNxxBKPBxxPxQBxBxxxRBQPxBPQQNxxPBQNQBxNxNQQQBQBxxx"
                                  "xQQxKQxxxxPQNQxxRxRxBPxxxxxxPxxPxQPQxxBKxRBxxxRQxxBxQxxxxBRRPRQR"
                                  "QRPxxNRRxxNPKxQQxxQxQxPKRRQPxQxBQxQPxRxxxRxQxRQxQPBxxRxQxBxPQQKx"
@@ -415,8 +439,8 @@ move_t byte_to_move(position_t* pos, uint8_t byte)
         default: printf("%d -> (%c)\n", byte, glyph); assert(false);
     }
 
+    // Find the piece.
     int nth_piece = piece_index[byte], piece_count = 0;
-    //printf("finding %c number %d\n", glyph, nth_piece);
     bool found = false;
     for (int file=0; file<8 && !found; ++file) {
         for (int rank=0; rank<8 && !found; ++rank) {
@@ -428,13 +452,13 @@ move_t byte_to_move(position_t* pos, uint8_t byte)
             if (piece_count == nth_piece) {
                 file_from = file;
                 rank_from = rank;
-                //printf("found on %c%d\n", file+'a', rank+1);
                 found = true;
             }
         }
     }
     assert(found);
 
+    // Normalize rank and file values.
     file_to = file_from - left[byte];
     file_to = (file_to + 8) % 8;
     rank_to = rank_from + forward[byte];
@@ -452,6 +476,10 @@ move_t byte_to_move(position_t* pos, uint8_t byte)
             create_square(file_to, rank_to));
 }
 
+/*
+ * Given source and destination squares for a move, produce the corresponding
+ * native format move.
+ */
 static move_t squares_to_move(position_t* pos, square_t from, square_t to)
 {
     move_t possible_moves[256];
@@ -468,7 +496,11 @@ static move_t squares_to_move(position_t* pos, square_t from, square_t to)
     return NO_MOVE;
 }
 
-int move_weight(position_t* pos, move_t move)
+/*
+ * Assign a weight to the given move, which indicates its relative
+ * probability of being selected.
+ */
+static int move_weight(position_t* pos, move_t move)
 {
     undo_info_t undo;
     do_move(pos, move, &undo);
@@ -489,15 +521,16 @@ int move_weight(position_t* pos, move_t move)
     return int_weight;
 }
 
-bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
+/*
+ * Do the actual work of choosing amongst all book moves according to weight.
+ */
+static bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
 {
-    //printf("looking for %d moves\n", entry->num_moves);
     move_t moves[50];
     int weights[50];
     int total_weight = 0;
     for (int i=0; i<2*entry->num_moves; i += 2) {
         uint8_t byte = entry->moves[i];
-        //printf("%d: byte move: %d\n", i, byte);
         move_t m = byte_to_move(pos, byte);
         total_weight += move_weight(pos, m);
         moves[i/2] = m;
@@ -525,25 +558,17 @@ bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
     return true;
 }
 
-bool ctg_get_entry(position_t* pos, ctg_entry_t* entry)
+/*
+ * Get the ctg entry associated with the given position.
+ */
+static bool ctg_get_entry(position_t* pos, ctg_entry_t* entry)
 {
     ctg_signature_t sig;
     position_to_ctg_signature(pos, &sig);
-    //print_signature(&sig);
     int page_index, hash = ctg_signature_to_hash(&sig);
-    //printf("position hash: %d\n", hash);
     if (!ctg_get_page_index(hash, &page_index)) return false;
-    //printf("page index: %d\n", page_index);
     if (!ctg_lookup_entry(page_index, &sig, entry)) return false;
     return true;
 }
 
-move_t ctg_get_book_move(position_t* pos)
-{
-    move_t move;
-    ctg_entry_t entry;
-    if (!ctg_get_entry(pos, &entry)) return NO_MOVE;
-    if (!ctg_pick_move(pos, &entry, &move)) return NO_MOVE;
-    return move;
-}
 

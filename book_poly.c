@@ -32,7 +32,7 @@ static int num_entries;
 /*
  * Load the given book file, in Polyglot format.
  */
-void init_book(char* filename)
+void init_poly_book(char* filename)
 {
     assert(sizeof(book_entry_t) == 16);
     srandom(time(NULL));
@@ -52,7 +52,7 @@ void init_book(char* filename)
  * NO_MOVE. If more than one alternative exists, choose randomly among all
  * weighted possibilities.
  */
-move_t get_book_move(position_t* pos)
+move_t get_poly_book_move(position_t* pos)
 {
     uint64_t key = book_hash(pos);
     int offset = find_book_key(key);
@@ -452,7 +452,7 @@ uint64_t book_hash(position_t* pos)
  */
 void test_book(char* filename, position_t* pos)
 {
-    init_book(filename);
+    init_poly_book(filename);
     uint64_t key = book_hash(pos);
     printf("Book hash key: %"PRIu64"\n", key);
     int offset = find_book_key(key);
