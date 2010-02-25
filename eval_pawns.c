@@ -179,8 +179,7 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             rank_t rrank = relative_rank[color][rank];
 
             // Passed pawns and passed pawn candidates.
-            bool passed = !(passed_mask[color][ind] & their_pawns) &&
-                !(in_front_mask[color][ind] & our_pawns);
+            bool passed = !(passed_mask[color][ind] & their_pawns);
             if (passed) {
                 set_bit(pd->passed_bb[color], ind);
                 pd->passed[color][pd->num_passed[color]++] = sq;
@@ -228,15 +227,10 @@ pawn_data_t* analyze_pawns(const position_t* pos)
 
             // Connected pawns.
             bool connected = neighbor_file_mask[file] & our_pawns &
-                (rank_mask[rank] | rank_mask[rank + (color == WHITE ? -1:1)]);
+                (rank_mask[rank] | rank_mask[rank + (color == WHITE ? 1:-1)]);
             if (connected) {
-                if (passed) {
-                    pd->score[color].midgame += connected_passer[0][rank];
-                    pd->score[color].endgame += connected_passer[1][rank];
-                } else {
-                    pd->score[color].midgame += connected_bonus[0];
-                    pd->score[color].endgame += connected_bonus[1];
-                }
+                pd->score[color].midgame += connected_bonus[0];
+                pd->score[color].endgame += connected_bonus[1];
             }
             
             // Backward pawns (unsupportable by pawns, can't advance)
@@ -309,6 +303,15 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
             eg_passer_bonus[side] += king_dist_bonus[rank] *
                 (distance(target, pos->pieces[side^1][0]) -
                  distance(target, pos->pieces[side][0]));
+
+            // Is the passer connected to another friendly pawn?
+            if (pos->board[passer-1] == our_pawn ||
+                    pos->board[passer+1] == our_pawn ||
+                    pos->board[passer-push-1] == our_pawn ||
+                    pos->board[passer-push+1] == our_pawn) {
+                passer_bonus[side] += connected_passer[0][rank];
+                eg_passer_bonus[side] += connected_passer[1][rank];
+            }
 
             // Find rooks behind the passer.
             square_t sq;

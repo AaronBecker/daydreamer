@@ -6,7 +6,7 @@
 #else
 //#include "pst.inc"
 // FIXME
-#include "pst_ipp.inc"
+#include "pst_new.inc"
 #endif
 
 static const int pawn_scale = 1024;
