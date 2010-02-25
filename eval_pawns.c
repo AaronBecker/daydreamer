@@ -179,7 +179,8 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             rank_t rrank = relative_rank[color][rank];
 
             // Passed pawns and passed pawn candidates.
-            bool passed = !(passed_mask[color][ind] & their_pawns);
+            bool passed = !(passed_mask[color][ind] & their_pawns) &&
+                !(in_front_mask[color][ind] & our_pawns);
             if (passed) {
                 set_bit(pd->passed_bb[color], ind);
                 pd->passed[color][pd->num_passed[color]++] = sq;
