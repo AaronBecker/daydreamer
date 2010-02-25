@@ -2,6 +2,7 @@
 #include "daydreamer.h"
 #include "gtb/gtb-probe.h"
 #include <string.h>
+#include <pthread.h>
 
 #define piece_to_gtb(p)     piece_to_gtb_table[p]
 #define square_to_gtb(s)    square_to_index(s)
@@ -141,4 +142,71 @@ bool probe_gtb_hard(const position_t* pos, int* score)
         if (pos->side_to_move == BLACK) *score *= -1;
     }
     return success;
+}
+
+static bool gtb_worker_busy = false;
+struct {
+    int stm, ep, castle;
+    unsigned int ws[17], bs[17];
+    unsigned char wp[17], bp[17];
+} gtb_args;
+static void* gtb_probe_firm_worker(void* payload);
+
+bool probe_gtb_firm(const position_t* pos, int* score)
+{
+    int stm = stm_to_gtb(pos->side_to_move);
+    int ep = square_to_gtb(pos->ep_square);
+    int castle = castle_to_gtb(pos->castle_rights);
+
+    unsigned int ws[17], bs[17];
+    unsigned char wp[17], bp[17];
+    fill_gtb_arrays(pos, ws, bs, wp, bp);
+
+    unsigned res, val;
+    int success = tb_probe_soft(stm, ep, castle, ws, bs, wp, bp, &res, &val);
+    if (success) {
+        if (res == tb_DRAW) *score = DRAW_VALUE;
+        else if (res == tb_BMATE) *score = mated_in(val);
+        else if (res == tb_WMATE) *score = mate_in(val);
+        else assert(false);
+        if (pos->side_to_move == BLACK) *score *= -1;
+        return true;
+    }
+
+    // spawn probe_hard thread
+    if (gtb_worker_busy) return false;
+    gtb_worker_busy = true;
+
+    gtb_args.stm = stm;
+    gtb_args.ep = ep;
+    gtb_args.castle = castle;
+    int i;
+    for (i=0; ws[i] != tb_NOSQUARE; ++i) gtb_args.ws[i] = ws[i];
+    gtb_args.ws[i] = tb_NOSQUARE;
+    for (i=0; bs[i] != tb_NOSQUARE; ++i) gtb_args.bs[i] = bs[i];
+    gtb_args.bs[i] = tb_NOSQUARE;
+    for (i=0; wp[i] != tb_NOPIECE; ++i) gtb_args.wp[i] = wp[i];
+    gtb_args.wp[i] = tb_NOPIECE;
+    for (i=0; bp[i] != tb_NOPIECE; ++i) gtb_args.bp[i] = bp[i];
+    gtb_args.bp[i] = tb_NOPIECE;
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, &gtb_probe_firm_worker, NULL);
+    return false;
+}
+
+void* gtb_probe_firm_worker(void* payload)
+{
+    unsigned res, val;
+    int success = tb_probe_hard(gtb_args.stm,
+            gtb_args.ep,
+            gtb_args.castle,
+            gtb_args.ws,
+            gtb_args.bs,
+            gtb_args.wp,
+            gtb_args.bp,
+            &res,
+            &val);
+    gtb_worker_busy = false;
+    (void)success; (void)payload;
+    return NULL;
 }

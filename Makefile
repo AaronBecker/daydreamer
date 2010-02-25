@@ -14,7 +14,7 @@ CC = /usr/bin/gcc $(GCCFLAGS)
 CTAGS = ctags
 
 COMMONFLAGS = -Wall -Wextra -Wno-unused-function $(ARCHFLAGS) -Igtb
-LDFLAGS = $(ARCHFLAGS) -ldl -Lgtb -lgtb
+LDFLAGS = $(ARCHFLAGS) -ldl -Lgtb -lgtb -lpthread
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0 -DEXPENSIVE_TESTS -DASSERT2
 ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
 DEFAULTFLAGS = $(COMMONFLAGS) -g -O2
