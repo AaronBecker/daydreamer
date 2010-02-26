@@ -4,34 +4,34 @@ from subprocess import Popen, PIPE
 import sys
 import optparse
 
-engine_prefix = '/Users/abecker/misc_code/chess_engines/'
-cutechess_path = '/Users/abecker/misc_code/cutechess-cli/cutechess-cli.sh'
-daydreamer_path = '/Users/abecker/code/daydreamer/'
+concurrency = '7'
+engine_prefix = '/expand/home/abecker/mac/src/'
+cutechess_path = '/expand/home/abecker/mac/src/cutechess-cli/cutechess-cli.sh'
+daydreamer_path = '/expand/home/abecker/mac/src/daydreamer/'
+pgnin = '/expand/home/abecker/mac/src/daydreamer/tests/openings.pgn'
+
 programs = {
-    'roce' : 'cmd=' + engine_prefix + 'roce38m/roce38_32 proto=uci',
-    'tscp' : 'cmd=' + engine_prefix + 'tscp181/tscp proto=xboard name=tscp',
-    'mediocre' : 'cmd=' + engine_prefix + \
-            'mediocre_v0/mediocre.sh proto=uci',
-    'clarabit' : 'cmd=' + engine_prefix + 'Clarabit_x32_win/clarabit.sh proto=uci',
-    #'amundsen' : 'cmd=' + engine_prefix + 'amundsen-0.80/amundsen' + \
-    #        ' proto=xboard name="Amundsen 0.80"',
-    # illegal moves
-    'bikjump' : 'cmd=' + engine_prefix + 'bikjump32/bikjump.sh proto=uci',
     'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
-    'greko' : 'cmd=' + engine_prefix + 'greko-6.5/bin/greko proto=uci name=greko',
-    'vicki' : 'cmd=' + engine_prefix + 'vicki0.041a/vicki.sh' + \
-            ' proto=xboard name=Vicki',
-    'plisk' : 'cmd=' + engine_prefix + 'plisk_0-1/plisk_osx proto=uci',
-    'biglion' : 'cmd=' + engine_prefix + 'BigLion_223x/biglion.sh proto=uci',
+    'greko' : 'cmd=' + engine_prefix + \
+            'greko-6.5/bin/greko proto=uci name=greko',
     'sungorus' : 'cmd=' + engine_prefix + 'sungorus-1.2/sungorus proto=uci',
-    'diablo' : 'cmd=' + engine_prefix + 'diablo/diablo proto=uci',
-    'dirty' : 'cmd=' + engine_prefix + 'dirty_acca3/dirty.sh proto=xboard name=Dirty',
-    #'amateur' : 'cmd=' + engine_prefix + 'amateur282/amateur.sh ' + \
-    #        'proto=xboard name=Amateur',
-    # illegal moves
-    'romichess' : 'cmd=' + engine_prefix + 'romichess_P3k/romichess.sh proto=xboard name=Romichess',
-    #'gnuchess' : 'cmd=gnuchess' + ' proto=xboard' + ' name=gnuchess',
-    }
+    'sungorus64' : 'cmd=' + engine_prefix + 'sungorus-1.2/sungorus64 proto=uci',
+    'diablo64' : 'cmd=' + engine_prefix + 'diablo/diablo64 proto=uci',
+    'dirty' : 'cmd=' + engine_prefix + \
+            'dirty_acca3/dirty.sh proto=xboard name=Dirty',
+    'romichess' : 'cmd=' + engine_prefix + \
+            'romichess_P3k/romichess.sh proto=xboard name=Romichess',
+    'viper64' : 'cmd=' + engine_prefix + \
+            'viper/viper64 proto=uci option."Number of threads"=1',
+    'glaurung64' : 'cmd=' + engine_prefix + \
+            'glaurung121/glaurung64.sh proto=uci option."Number of threads"=1',
+    'hamsters' : 'cmd=' + engine_prefix + 'hamsters/hamsters proto=uci',
+    'cyrano' : 'cmd=' + engine_prefix + 'cyrano/cyrano.sh proto=uci',
+    'alaric' : 'cmd=' + engine_prefix + 'alaric/alaric.sh proto=uci',
+    'spike' : 'cmd=' + engine_prefix + 'spike/spike.sh proto=uci',
+    'protector' : 'cmd=' + engine_prefix + 'protector/protector.sh proto=uci',
+}
+
 
 def main(argv=None):
     if argv is None:
@@ -53,8 +53,6 @@ def main(argv=None):
     timecontrol = args[1]
     gamecount = args[2]
     outfile_base = args[3]
-    logfile = open(outfile_base + '.log', 'w')
-    summary = open(outfile_base + '.summary', 'w')
     if not programs.has_key(primary_engine):
         pr_eng_str = 'cmd=' + daydreamer_path + primary_engine + ' proto=uci'
     else:
@@ -64,23 +62,17 @@ def main(argv=None):
             sec_eng_str = 'cmd=' + daydreamer_path + engine + ' proto=uci'
         else:
             sec_eng_str = programs[engine]
-        cutechess_args = '-pgnin tests/NoomenTestsuite2008.pgn ' + \
-                '-fcp ' + pr_eng_str + ' -scp ' + \
+        cutechess_args = '-concurrency ' + concurrency + ' -pgnin ' + pgnin + \
+                ' -repeat ' + '-fcp ' + pr_eng_str + ' -scp ' + \
                 sec_eng_str + ' -both tc=' + timecontrol + \
-                ' -games ' + gamecount + ' -pgnout ' + outfile_base + '.pgn'
-        #'-book tests/performance.bin -bookdepth 12 ' + \
+                ' -games ' + gamecount + ' -pgnout ' + \
+                outfile_base + '.pgn'
         if settings.debug:
             cutechess_args += ' -debug'
         command = cutechess_path + " " + cutechess_args
         print command
-        logfile.write(command + '\n')
-        output, error = Popen(command, shell=True, stdout=PIPE).communicate()
-        print output
-        logfile.write(output + '\n')
-        if error is not None:
-            print error
-            logfile.write(error + '\n')
-        summary.write(output.split('\n')[-3] + '\n')
+        proc = Popen(command, shell=True)
+        os.waitpid(proc.pid, 0)
 
 if __name__ == "__main__":
     status = main()
