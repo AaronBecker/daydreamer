@@ -90,11 +90,11 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     // Pair bonuses
     if (wb > 1) {
         md->score.midgame += 30;
-        md->score.endgame += 55;
+        md->score.endgame += 45;
     }
     if (bb > 1) {
         md->score.midgame -= 30;
-        md->score.endgame -= 55;
+        md->score.endgame -= 45;
     }
     if (wr > 1) {
         md->score.midgame -= 12;

@@ -1,7 +1,7 @@
 
 #include "daydreamer.h"
 
-static const int trapped_bishop = 150;
+static const int trapped_bishop = 100;
 
 /*
  * Find simple bad patterns that won't show up within reasonable search
