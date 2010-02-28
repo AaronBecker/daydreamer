@@ -34,7 +34,7 @@ static const int knight_outpost[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  1,  4,  4,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  2,  4,  5,  5,  4,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  3,  6,  9,  9,  6,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  3,  6,  6,  6,  6,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  1,  3,  4,  4,  3,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
@@ -44,7 +44,7 @@ static const int bishop_outpost[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     1,  2,  2,  2,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     3,  5,  6,  6,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    3,  5,  6,  9,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    3,  5,  6,  6,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     1,  2,  2,  2,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
@@ -71,7 +71,7 @@ static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
         piece_t our_pawn = create_piece(side, PAWN);
         if (pos->board[sq - pawn_push[side] - 1] == our_pawn ||
                 pos->board[sq - pawn_push[side] + 1] == our_pawn) {
-            score += bonus/2;
+            score += bonus;
             // Even better if an opposing knight/bishop can't capture it.
             // TODO: take care of the case where there's one opposing bishop
             // that's the wrong color. The position data structure needs to

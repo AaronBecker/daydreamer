@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define MAX_PHASE           40
+#define MAX_PHASE           24
 
 #ifdef UFO_EVAL
     #define PAWN_VAL      100

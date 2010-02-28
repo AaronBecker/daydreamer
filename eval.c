@@ -333,12 +333,13 @@ bool is_draw(const position_t* pos)
 }
 
 /*
- * Is this position an opening or an endgame, with 0 as a pure endgame.
+ * Is this position an opening or an endgame? Scored on a scale of 0-24,
+ * with 24 being a pure opening and 0 a pure endgame.
  */
 int game_phase(const position_t* pos)
 {
-    return 3*pos->piece_count[WN] + 3*pos->piece_count[WB] +
-        5*pos->piece_count[WR] + 9*pos->piece_count[WQ] +
-        3*pos->piece_count[BN] + 3*pos->piece_count[BB] +
-        5*pos->piece_count[BR] + 9*pos->piece_count[BQ];
+    return pos->piece_count[WN] + pos->piece_count[WB] +
+        2*pos->piece_count[WR] + 4*pos->piece_count[WQ] +
+        pos->piece_count[BN] + pos->piece_count[BB] +
+        2*pos->piece_count[BR] + 4*pos->piece_count[BQ];
 }
