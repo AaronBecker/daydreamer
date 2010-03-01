@@ -990,7 +990,7 @@ static int quiesce(position_t* pos,
     bool allow_futility = qfutility_enabled &&
         !full_window &&
         !is_check(pos) &&
-        ed.king_safety >= 0 &&
+        ed.king_safety >= -100 &&
         pos->num_pieces[pos->side_to_move] > 2;
     int num_qmoves = 0;
     move_selector_t selector;
