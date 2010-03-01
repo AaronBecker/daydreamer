@@ -5,14 +5,9 @@ static const int mobility_score_table[2][8][32] = {
     { // midgame
         {0},
         {0, 4},
-        //{-22, -14, -8, -4, 0, 4, 8, 11, 13},
         {-8, -4, 0, 4, 8, 12, 16, 18, 20},
-        //{-45, -35, -26, -18, -11, -5, 0, 5, 10, 15, 24, 27, 29, 30, 30, 30},
         {-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 40, 40, 40, 40},
-        //{-24, -18, -13, -12, -6, -4, -2, 0, 2, 4, 6, 8, 9, 10, 11, 12},
         {-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20},
-        //{-18, -13, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-        //    11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12},
         {-20, -19, -18, -17, -16, -15, -14, -13, -12, -11, -10, -9, -8, -7,
             -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
         {0}, {0}
@@ -20,14 +15,9 @@ static const int mobility_score_table[2][8][32] = {
     { // endgame
         {0},
         {0, 12},
-        //{-22, -14, -8, -4, 0, 3, 5, 6, 6},
         {-8, -4, 0, 4, 8, 12, 16, 18, 20},
-        //{-51, -40, -30, -21, -13, -6, 0, 5, 10, 15, 24, 27, 29, 30, 30, 30},
         {-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 40, 40, 40, 40},
-        //{-38, -30, -23, -17, -12, -8 -4, 0, 4, 8, 12, 16, 19, 21, 22, 23},
         {-10, -6, -2, 2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50},
-        //{-18, -13, -9, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-        //    11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12},
         {-20, -18, -16, -14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12,
             14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42},
         {0}, {0}
@@ -110,8 +100,6 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                                 [square_rank(pos->pieces[WHITE][0])],
                             relative_rank[BLACK]
                                 [square_rank(pos->pieces[BLACK][0])] };
-    file_t king_file[2] = { square_file(pos->pieces[WHITE][0]),
-                            square_file(pos->pieces[BLACK][0]) };
     color_t side;
     for (side=WHITE; side<=BLACK; ++side) {
         const int* mobile = color_table[side];
@@ -171,12 +159,6 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                     ps += mobile[pos->board[to]];
                     for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
                     ps += mobile[pos->board[to]];
-                    int tropism = 14 -
-                        (abs(square_file(from) - king_file[side^1]) +
-                         abs(relative_rank[side][square_rank(from)] -
-                             king_rank[side^1]));
-                    mid_score[side] += tropism;
-                    end_score[side] += tropism;
                     if (relative_rank[side][square_rank(from)] == RANK_7 &&
                             king_rank[side^1] == RANK_8) {
                         mid_score[side] += rook_on_7[0] / 2;
