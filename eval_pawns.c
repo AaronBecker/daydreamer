@@ -201,14 +201,10 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 }
             }
 
-            // Pawn storm scores.
-            pd->kingside_storm[color] += king_storm[sq ^ (0x70*color)];
-            pd->queenside_storm[color] += queen_storm[sq ^ (0x70*color)];
-
             // Isolated pawns.
             bool isolated = (neighbor_file_mask[file] & our_pawns) == 0;
+            bool open = (in_front_mask[color][ind] & their_pawns) == 0;
             if (isolated) {
-                bool open = (in_front_mask[color][ind] & their_pawns) == 0;
                 if (open) {
                     pd->score[color].midgame -= open_isolation_penalty[0][file];
                     pd->score[color].endgame -= open_isolation_penalty[1][file];
@@ -217,6 +213,18 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                     pd->score[color].endgame -= isolation_penalty[1][file];
                 }
             }
+
+            // Pawn storm scores.
+            int storm = king_storm[sq ^ (0x70*color)];
+            if (storm && (passed_mask[color][ind] &
+                        (~file_mask[file]) & their_pawns)) storm += storm/2;
+            if (storm && open) storm += storm/2;
+            pd->kingside_storm[color] += storm;
+            storm = queen_storm[sq ^ (0x70*color)];
+            if (storm && (passed_mask[color][ind] &
+                        (~file_mask[file]) & their_pawns)) storm += storm/2;
+            if (storm && open) storm += storm/2;
+            pd->queenside_storm[color] += storm;
 
             // Doubled pawns.
             bool doubled = (in_front_mask[color^1][ind] & our_pawns) != 0;
