@@ -1,24 +1,15 @@
 
 #include "daydreamer.h"
 
-#ifdef UFO_EVAL
-#include "pst_ufo.inc"
-#else
 //#include "pst.inc"
 // FIXME
 #include "pst_new.inc"
-#endif
 
 static const int pawn_scale = 1024;
-// values tested: 640, (768), 896, 1024, 1536
 static const int pattern_scale = 1024;
-// values tested: 768, (1024), 1280
 static const int pieces_scale = 1024;
-// values tested: 768, (1024), 1280
 static const int shield_scale = 1024+128;
-// values tested: 1024, 1280, 1576, (1704), 2048
 static const int king_attack_scale = 1024;
-// values tested: 640, 768, (896), 1024, 1536
 
 const int shield_value[2][17] = {
     { 0, 8, 2, 4, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -202,9 +193,6 @@ int simple_eval(const position_t* pos)
  */
 int full_eval(const position_t* pos, eval_data_t* ed)
 {
-#ifdef UFO_EVAL
-    return simple_eval(pos);
-#endif
     color_t side = pos->side_to_move;
     score_t phase_score, component_score;
     component_score = pawn_score(pos, &ed->pd);
