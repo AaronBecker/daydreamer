@@ -100,7 +100,8 @@ move_t get_ctg_book_move(position_t* pos)
 }
 
 /*
- * Push the given bits on to the end of |sig|.
+ * Push the given bits on to the end of |sig|. This is a helper function that
+ * makes the huffman encoding of positions a little cleaner.
  */
 static void append_bits_reverse(ctg_signature_t* sig,
         uint8_t bits,
@@ -115,6 +116,9 @@ static void append_bits_reverse(ctg_signature_t* sig,
     }
 }
 
+/*
+ * Print out the huffman signature |sig|, as both bits and bytes.
+ */
 static void print_signature(ctg_signature_t* sig)
 {
     // Print as bits.
@@ -146,12 +150,16 @@ static void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
     int bit_position = 8;
     uint8_t bits = 0, num_bits = 0;
 
-    // The board is flipped if it's black's turn, and mirrored if the king is on the queenside with
-    // no castling rights for either side.
+    // The board is flipped if it's black's turn, and mirrored if the king is
+    // on the queenside with no castling rights for either side.
     bool flip_board = pos->side_to_move == BLACK;
     color_t white = flip_board ? BLACK : WHITE;
-    bool mirror_board = square_file(pos->pieces[white][0]) < FILE_E && pos->castle_rights == 0;
-    piece_t flip_piece[] = { 0, BP, BN, BB, BR, BQ, BK, 0, 0, WP, WN, WB, WR, WQ, WK };
+    bool mirror_board = square_file(pos->pieces[white][0]) < FILE_E &&
+        pos->castle_rights == 0;
+    piece_t flip_piece[] = {
+        0, BP, BN, BB, BR, BQ, BK, 0,
+        0, WP, WN, WB, WR, WQ, WK
+    };
 
     // For each board square, append the huffman bit sequence for its contents.
     for (int file=0; file<8; ++file) {
@@ -159,7 +167,9 @@ static void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
             square_t sq = create_square(file, rank);
             if (flip_board) sq = mirror_rank(sq);
             if (mirror_board) sq = mirror_file(sq);
-            piece_t piece = flip_board ? flip_piece[pos->board[sq]] : pos->board[sq];
+            piece_t piece = flip_board ?
+                flip_piece[pos->board[sq]] :
+                pos->board[sq];
             switch (piece) {
                 case EMPTY: bits = 0x0; num_bits = 1; break;
                 case WP: bits = 0x3; num_bits = 3; break;
@@ -273,7 +283,8 @@ static int32_t ctg_signature_to_hash(ctg_signature_t* sig)
 static bool ctg_get_page_index(int hash, int* page_index)
 {
     uint32_t key = 0;
-    for (int mask = 1; key <= (uint32_t)page_bounds.high; mask = (mask << 1) + 1) {
+    for (int mask = 1; key <= (uint32_t)page_bounds.high;
+            mask = (mask << 1) + 1) {
         key = (hash & mask) + mask;
         if (key >= (uint32_t)page_bounds.low) {
             //printf("found entry with key=%d\n", key);
@@ -291,7 +302,9 @@ static bool ctg_get_page_index(int hash, int* page_index)
 /*
  * Find and copy out a ctg entry, given its page index and signature.
  */
-static bool ctg_lookup_entry(int page_index, ctg_signature_t* sig, ctg_entry_t* entry)
+static bool ctg_lookup_entry(int page_index,
+        ctg_signature_t* sig,
+        ctg_entry_t* entry)
 {
     // Pages are a uniform 4096 bytes.
     uint8_t buf[4096];
@@ -343,10 +356,11 @@ static bool ctg_lookup_entry(int page_index, ctg_signature_t* sig, ctg_entry_t* 
  */
 static move_t byte_to_move(position_t* pos, uint8_t byte)
 {
-    const char piece_code[257] = "PNxQPQPxQBKxPBRNxxBKPBxxPxQBxBxxxRBQPxBPQQNxxPBQNQBxNxNQQQBQBxxx"
-                                 "xQQxKQxxxxPQNQxxRxRxBPxxxxxxPxxPxQPQxxBKxRBxxxRQxxBxQxxxxBRRPRQR"
-                                 "QRPxxNRRxxNPKxQQxxQxQxPKRRQPxQxBQxQPxRxxxRxQxRQxQPBxxRxQxBxPQQKx"
-                                 "xBBBRRQPPQBPBRxPxPNNxxxQRQNPxxPKNRxRxQPQRNxPPQQRQQxNRBxNQQQQxQQx";
+    const char piece_code[257] =
+        "PNxQPQPxQBKxPBRNxxBKPBxxPxQBxBxxxRBQPxBPQQNxxPBQNQBxNxNQQQBQBxxx"
+        "xQQxKQxxxxPQNQxxRxRxBPxxxxxxPxxPxQPQxxBKxRBxxxRQxxBxQxxxxBRRPRQR"
+        "QRPxxNRRxxNPKxQQxxQxQxPKRRQPxQxBQxQPxRxxxRxQxRQxQPBxxRxQxBxPQQKx"
+        "xBBBRRQPPQBPBRxPxPNNxxxQRQNPxxPKNRxRxQPQRNxPPQQRQQxNRBxNQQQQxQQx";
     const int piece_index[256]= {
         5, 2, 9, 2, 2, 1, 4, 9, 2, 2, 1, 9, 1, 1, 2, 1,
         9, 9, 1, 1, 8, 1, 9, 9, 7, 9, 2, 1, 9, 2, 9, 9,
@@ -405,8 +419,12 @@ static move_t byte_to_move(position_t* pos, uint8_t byte)
     // Find the piece. Note: the board may be mirrored/flipped.
     bool flip_board = pos->side_to_move == BLACK;
     color_t white = flip_board ? BLACK : WHITE;
-    bool mirror_board = square_file(pos->pieces[white][0]) < FILE_E && pos->castle_rights == 0;
-    piece_t flip_piece[] = { 0, BP, BN, BB, BR, BQ, BK, 0, 0, WP, WN, WB, WR, WQ, WK };
+    bool mirror_board = square_file(pos->pieces[white][0]) < FILE_E &&
+        pos->castle_rights == 0;
+    piece_t flip_piece[] = {
+        0, BP, BN, BB, BR, BQ, BK, 0,
+        0, WP, WN, WB, WR, WQ, WK
+    };
     int file_from = -1, file_to = -1, rank_from = -1, rank_to = -1;
 
     // Handle castling.
@@ -427,6 +445,7 @@ static move_t byte_to_move(position_t* pos, uint8_t byte)
                 create_square(file_to, rank_to));
     }
 
+    // Look up piece type. Note: positions are always white to move.
     piece_t pc = NONE;
     char glyph = piece_code[byte];
     switch (piece_code[byte]) {
@@ -447,7 +466,8 @@ static move_t byte_to_move(position_t* pos, uint8_t byte)
             square_t sq = create_square(file, rank);
             if (flip_board) sq = mirror_rank(sq);
             if (mirror_board) sq = mirror_file(sq);
-            piece_t piece = flip_board ? flip_piece[pos->board[sq]] : pos->board[sq];
+            piece_t piece = flip_board ?
+                flip_piece[pos->board[sq]] : pos->board[sq];
             if (piece == pc) piece_count++;
             if (piece_count == nth_piece) {
                 file_from = file;
@@ -570,5 +590,4 @@ static bool ctg_get_entry(position_t* pos, ctg_entry_t* entry)
     if (!ctg_lookup_entry(page_index, &sig, entry)) return false;
     return true;
 }
-
 
