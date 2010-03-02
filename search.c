@@ -12,7 +12,6 @@ static const bool value_prune_enabled = true;
 static const bool qfutility_enabled = true;
 static const bool lmr_enabled = true;
 
-#define razor_depth_limit       3
 static const float null_verification_reduction = 5.0;
 static const int null_eval_margin = 200;
 static const int lmr_pv_early_moves = 10;
@@ -30,11 +29,9 @@ static const float iid_non_pv_depth_cutoff = 8.0;
 static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 250;
 
-// TODO: try other values in [40, 80]
 static const int qfutility_margin = 65;
-// TODO: do something about the indexing, since this isn't used at ply=1 (?)
-static const int razor_margin[razor_depth_limit] = { 300, 300, 325 };
-static const int razor_qmargin[razor_depth_limit] = { 125, 300, 300 };
+static const int razor_margin[] = { 300, 300, 300, 325 };
+static const int razor_qmargin[] = { 125, 125, 300, 300 };
 
 static search_result_t root_search(search_data_t* search_data,
         int alpha,
@@ -150,10 +147,6 @@ bool should_stop_searching(search_data_t* data)
  * and pawn pushes to the 7th (relative) rank.
  * Note: |move| has already been made in |pos|. We need both anyway for
  * efficiency.
- * TODO: recapture extensions might be good. Also, fractional extensions,
- * and fractional plies in general.
- * TODO: test the value of pawn push extensions. Maybe limit the situations
- * in which the pushes are extended to pv?
  */
 static float extend(position_t* pos,
         move_t move,
@@ -161,7 +154,6 @@ static float extend(position_t* pos,
         bool full_window)
 {
     if (is_check(pos) || single_reply) return PLY;
-    // FIXME: test this, for god's sake
     square_t sq = get_move_to(move);
     if (piece_type(pos->board[sq]) == PAWN &&
             (square_rank(sq) == RANK_7 ||
@@ -759,10 +751,10 @@ static int search(position_t* pos,
             depth <= 3.5 &&
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
-            lazy_score + razor_margin[depth_index-1] < beta) {
+            lazy_score + razor_margin[depth_index] < beta) {
         // Razoring.
         if (depth <= PLY) return quiesce(pos, search_node, ply, alpha, beta, 0);
-        int qbeta = beta - razor_qmargin[depth_index-1];
+        int qbeta = beta - razor_qmargin[depth_index];
         int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
         if (qscore < qbeta) return qscore;
     }
@@ -993,7 +985,6 @@ static int quiesce(position_t* pos,
         pos->num_pieces[pos->side_to_move] > 2;
     int num_qmoves = 0;
     move_selector_t selector;
-    // TODO: try -0.5 depth cutoff
     generation_t gen_type = depth >= -0.5 && eval + 150 >= alpha ?
         Q_CHECK_GEN : Q_GEN;
     init_move_selector(&selector, pos, gen_type,
