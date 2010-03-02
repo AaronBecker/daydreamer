@@ -52,7 +52,6 @@ typedef struct {
 typedef struct {
     pawn_data_t* pd;
     material_data_t* md;
-    int king_safety;
 } eval_data_t;
 
 typedef void(*eg_scale_fn)(const position_t*, eval_data_t*, int scale[2]);

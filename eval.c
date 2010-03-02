@@ -99,12 +99,37 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
 static score_t evaluate_king_shield(const position_t* pos)
 {
     int score[2] = {0, 0};
-    if (pos->piece_count[WQ] != 0) {
-        score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
-    }
+    int oo_score[2] = {0, 0};
+    int ooo_score[2] = {0, 0};
+    int castle_score[2] = {0, 0};
     if (pos->piece_count[BQ] != 0) {
-        score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
+        score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
+        /*
+        if (has_oo_rights(pos, WHITE)) {
+            oo_score[WHITE] = king_shield_score(pos, WHITE, G1);
+        }
+        if (has_ooo_rights(pos, WHITE)) {
+            ooo_score[WHITE] = king_shield_score(pos, WHITE, C1);
+        }
+        castle_score[WHITE] = MAX(score[WHITE],
+            MAX(oo_score[WHITE], ooo_score[WHITE]));
+        */
     }
+    if (pos->piece_count[WQ] != 0) {
+        score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
+        /*
+        if (has_oo_rights(pos, BLACK)) {
+            oo_score[BLACK] = king_shield_score(pos, BLACK, G8);
+        }
+        if (has_ooo_rights(pos, WHITE)) {
+            ooo_score[BLACK] = king_shield_score(pos, BLACK, C8);
+        }
+        castle_score[BLACK] = MAX(score[BLACK],
+            MAX(oo_score[BLACK], ooo_score[BLACK]));
+        */
+    }
+    //score[WHITE] = (score[WHITE] + castle_score[WHITE]) / 2;
+    //score[BLACK] = (score[BLACK] + castle_score[BLACK]) / 2;
     color_t side = pos->side_to_move;
     score_t phase_score;
     phase_score.midgame = score[side]-score[side^1];
@@ -184,7 +209,6 @@ int simple_eval(const position_t* pos)
  */
 int full_eval(const position_t* pos, eval_data_t* ed)
 {
-    ed->king_safety = 0;
 #ifdef UFO_EVAL
     return simple_eval(pos);
 #endif
@@ -216,11 +240,8 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     component_score = pieces_score(pos, ed->pd);
     add_scaled_score(&phase_score, &component_score, pieces_scale);
     component_score = evaluate_king_shield(pos);
-    // TODO: get king safety for each side separately
-    ed->king_safety += component_score.midgame;
     add_scaled_score(&phase_score, &component_score, shield_scale);
     component_score = evaluate_king_attackers(pos);
-    ed->king_safety += component_score.midgame;
     add_scaled_score(&phase_score, &component_score, king_attack_scale);
 
     // Tempo
