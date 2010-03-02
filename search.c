@@ -153,6 +153,7 @@ static float extend(position_t* pos,
         bool single_reply,
         bool full_window)
 {
+    (void)full_window;
     if (is_check(pos) || single_reply) return PLY;
     square_t sq = get_move_to(move);
     if (piece_type(pos->board[sq]) == PAWN &&
