@@ -98,42 +98,39 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
  */
 static score_t evaluate_king_shield(const position_t* pos)
 {
+    score_t phase_score;
+    phase_score.midgame = phase_score.endgame = 0;
+    //if (pos->piece_count[BQ] + pos->piece_count[WQ] == 0) return phase_score;
     int score[2] = {0, 0};
     int oo_score[2] = {0, 0};
     int ooo_score[2] = {0, 0};
     int castle_score[2] = {0, 0};
-    if (pos->piece_count[BQ] != 0) {
-        score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
-        /*
-        if (has_oo_rights(pos, WHITE)) {
-            oo_score[WHITE] = king_shield_score(pos, WHITE, G1);
-        }
-        if (has_ooo_rights(pos, WHITE)) {
-            ooo_score[WHITE] = king_shield_score(pos, WHITE, C1);
-        }
-        castle_score[WHITE] = MAX(score[WHITE],
-            MAX(oo_score[WHITE], ooo_score[WHITE]));
-        */
+    score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
+    /*
+    if (has_oo_rights(pos, WHITE)) {
+        oo_score[WHITE] = king_shield_score(pos, WHITE, G1);
     }
-    if (pos->piece_count[WQ] != 0) {
-        score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
-        /*
-        if (has_oo_rights(pos, BLACK)) {
-            oo_score[BLACK] = king_shield_score(pos, BLACK, G8);
-        }
-        if (has_ooo_rights(pos, WHITE)) {
-            ooo_score[BLACK] = king_shield_score(pos, BLACK, C8);
-        }
-        castle_score[BLACK] = MAX(score[BLACK],
-            MAX(oo_score[BLACK], ooo_score[BLACK]));
-        */
+    if (has_ooo_rights(pos, WHITE)) {
+        ooo_score[WHITE] = king_shield_score(pos, WHITE, C1);
     }
+    castle_score[WHITE] = MAX(score[WHITE],
+        MAX(oo_score[WHITE], ooo_score[WHITE]));
+    */
+    score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
+    /*
+    if (has_oo_rights(pos, BLACK)) {
+        oo_score[BLACK] = king_shield_score(pos, BLACK, G8);
+    }
+    if (has_ooo_rights(pos, WHITE)) {
+        ooo_score[BLACK] = king_shield_score(pos, BLACK, C8);
+    }
+    castle_score[BLACK] = MAX(score[BLACK],
+        MAX(oo_score[BLACK], ooo_score[BLACK]));
+    */
     //score[WHITE] = (score[WHITE] + castle_score[WHITE]) / 2;
     //score[BLACK] = (score[BLACK] + castle_score[BLACK]) / 2;
     color_t side = pos->side_to_move;
-    score_t phase_score;
     phase_score.midgame = score[side]-score[side^1];
-    phase_score.endgame = 0;
     return phase_score;
 }
 
