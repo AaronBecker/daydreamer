@@ -215,12 +215,12 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             }
 
             // Pawn storm scores.
-            int storm = king_storm[sq ^ (0x70*color)];
+            int storm = 1.5*king_storm[sq ^ (0x70*color)];
             if (storm && (passed_mask[color][ind] &
                         (~file_mask[file]) & their_pawns)) storm += storm/2;
             if (storm && open) storm += storm/2;
             pd->kingside_storm[color] += storm;
-            storm = queen_storm[sq ^ (0x70*color)];
+            storm = 1.5*queen_storm[sq ^ (0x70*color)];
             if (storm && (passed_mask[color][ind] &
                         (~file_mask[file]) & their_pawns)) storm += storm/2;
             if (storm && open) storm += storm/2;
