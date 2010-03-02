@@ -76,6 +76,6 @@ pgo-clean:
 	rm -f $(PROFFILES)
 
 .depend: $(SRCFILES)
-	$(CC) -MM $(CFLAGS) $(SRCFILES) > $@
+	$(CC) -MM $(DEFAULTFLAGS) $(SRCFILES) > $@
 
 include .depend
