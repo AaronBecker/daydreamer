@@ -37,6 +37,8 @@ void init_poly_book(char* filename)
 {
     assert(sizeof(book_entry_t) == 16);
     srandom(time(NULL));
+    // Figure out if we're on a big- or little-endian system. If we didn't
+    // have to roll our own htonll fuction this wouldn't be necessary.
     uint32_t byte_order = 0x0A0B0C0D;
     big_endian = byte_order == htonl(byte_order);
     if (book) fclose(book);
@@ -64,6 +66,8 @@ move_t get_poly_book_move(position_t* pos)
     uint16_t total_weight = 0;
     int index = 0;
     book_entry_t entry;
+    // Read all book entries with the correct key. They're all stored
+    // contiguously, so just scan through as long as the key matches.
     while (true) {
         assert(offset+index < num_entries);
         read_book_entry(offset+index, &entry);
@@ -74,6 +78,7 @@ move_t get_poly_book_move(position_t* pos)
     }
     if (index == 0) return NO_MOVE;
 
+    // Choose randomly amonst the weighted options.
     uint16_t choice = random() % total_weight;
     int i;
     for (i=0; choice >= weights[i]; ++i) {}
@@ -91,6 +96,8 @@ int find_book_key(uint64_t target_key)
     int high = num_entries, low = -1, mid = 0;
     book_entry_t entry;
 
+    // Since the positions are all in sorted order, just binary search to find
+    // the target key.
     while (low < high) {
         mid = (high + low) / 2;
         read_book_entry(mid, &entry);
@@ -150,6 +157,7 @@ move_t book_move_to_move(position_t* pos, uint16_t book_move)
     return NO_MOVE;
 }
 
+// Polyglot zobrist hash keys.
 const uint64_t book_random[781] = {
     0x9D39247E33776D41ULL, 0x2AF7398005AAA5C7ULL, 0x44DB015024623547ULL,
     0x9C15F73E62A76AE2ULL, 0x75834465489C0C89ULL, 0x3290AC3A203001BFULL,
