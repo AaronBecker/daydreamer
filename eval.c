@@ -15,7 +15,7 @@ static const int pattern_scale = 1024;
 // values tested: 768, (1024), 1280
 static const int pieces_scale = 1024;
 // values tested: 768, (1024), 1280
-static const int shield_scale = 1024+256;
+static const int shield_scale = 1024+128;
 // values tested: 1024, 1280, 1576, (1704), 2048
 static const int king_attack_scale = 1024;
 // values tested: 640, 768, (896), 1024, 1536
