@@ -82,13 +82,12 @@ void report_eval(const position_t* pos);
 bool insufficient_material(const position_t* pos);
 bool can_win(const position_t* pos, color_t side);
 bool is_draw(const position_t* pos);
-int game_phase(const position_t* pos);
 
 // eval_endgame.c
-bool endgame_score(const position_t* pos, eval_data_t* ed, int* score);
-void determine_endgame_scale(const position_t* pos,
+bool scale_endgame(const position_t* pos,
         eval_data_t* ed,
-        int endgame_scale[2]);
+        int endgame_scale[2],
+        int* score);
 
 // eval_king.c
 score_t evaluate_king_shield(const position_t* pos);
@@ -98,6 +97,7 @@ score_t evaluate_king_attackers(const position_t* pos);
 void init_material_table(const int max_bytes);
 void clear_material_table(void);
 material_data_t* get_material_data(const position_t* pos);
+int game_phase(const position_t* pos);
 
 // eval_patterns.c
 score_t pattern_score(const position_t*pos);

@@ -341,3 +341,14 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     }
 }
 
+/*
+ * Is this position an opening or an endgame? Scored on a scale of 0-24,
+ * with 24 being a pure opening and 0 a pure endgame.
+ */
+int game_phase(const position_t* pos)
+{
+    return pos->piece_count[WN] + pos->piece_count[WB] +
+        2*pos->piece_count[WR] + 4*pos->piece_count[WQ] +
+        pos->piece_count[BN] + pos->piece_count[BB] +
+        2*pos->piece_count[BR] + 4*pos->piece_count[BQ];
+}
