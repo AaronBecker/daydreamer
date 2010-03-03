@@ -6,8 +6,7 @@
 static const int pawn_scale = 1024;
 static const int pattern_scale = 1024;
 static const int pieces_scale = 1024;
-static const int shield_scale = 1024+128;
-static const int king_attack_scale = 1024+128;
+static const int king_safety_scale = 1024;
 
 /*
  * Initialize all static evaluation data structures.
@@ -119,10 +118,8 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     add_scaled_score(&phase_score, &component_score, pattern_scale);
     component_score = pieces_score(pos, ed->pd);
     add_scaled_score(&phase_score, &component_score, pieces_scale);
-    component_score = evaluate_king_shield(pos);
-    add_scaled_score(&phase_score, &component_score, shield_scale);
-    component_score = evaluate_king_attackers(pos);
-    add_scaled_score(&phase_score, &component_score, king_attack_scale);
+    component_score = king_safety_score(pos, ed);
+    add_scaled_score(&phase_score, &component_score, king_safety_scale);
 
     // Tempo
     phase_score.midgame += 9;
@@ -184,10 +181,8 @@ void report_eval(const position_t* pos)
 
     score_t king_score;
     king_score.endgame = king_score.midgame = 0;
-    king_score = evaluate_king_attackers(pos);
-    printf("info string king attackers: %d\n", king_score.midgame);
-    king_score = evaluate_king_shield(pos);
-    printf("info string king shield: %d\n", king_score.midgame);
+    king_score = king_safety_score(pos, NULL);
+    printf("info string king safety: %d\n", king_score.midgame);
 
     score_t phase_score;
     phase_score.endgame = phase_score.midgame = 0;
