@@ -123,7 +123,7 @@ static void scale_krkp(const position_t* pos, eval_data_t* ed, int scale[2])
     if ((wk < bp && square_file(wk) == prom_sq) ||
             (distance(wk, prom_sq) + 1 - tempo < distance(bk, prom_sq)) ||
             (distance(bk, bp) - (tempo^1) >= 3 && distance(bk, wr) >= 3)) {
-        scale[strong_side] = 16;
+        scale[strong_side] = 1024;
         scale[weak_side] = 0;
         return;
     }
@@ -229,8 +229,8 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
             wr_file == p_file && wr != prom_sq &&
             distance(wk, prom_sq) < distance(bk, prom_sq) - 2 + tempo &&
             distance(wk, prom_sq) < distance(bk, wr + tempo)) {
-        scale[strong_side] = 16 - distance(wp, prom_sq);
-        scale[weak_side] = 1;
+        scale[strong_side] = 64*(16 - distance(wp, prom_sq));
+        scale[weak_side] = 64;
         return;
     }
 
@@ -241,7 +241,7 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
             (distance(bk, wr) + tempo > 2 ||
              (distance(wk, prom_sq) < distance(bk, wr) + tempo &&
               distance(wk, wp + N) < distance(bk, wr) + tempo))) {
-        scale[strong_side] = 16 - distance(wp, prom_sq);
+        scale[strong_side] = 64*(16 - distance(wp, prom_sq));
         scale[weak_side] = 0;
         return;
     }
@@ -250,12 +250,12 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
     int bk_file = square_file(bk);
     if (p_rank < RANK_5 && bk > wp) {
         if (bk_file == p_file) {
-            scale[strong_side] = 2;
-            scale[weak_side] = 1;
+            scale[strong_side] = 128;
+            scale[weak_side] = 64;
             return;
         } else if (abs(bk_file - p_file) == 1 && distance(wk, bk) > 2) {
-            scale[strong_side] = 3;
-            scale[weak_side] = 1;
+            scale[strong_side] = 192;
+            scale[weak_side] = 64;
             return;
         }
     }
