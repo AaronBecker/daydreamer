@@ -84,10 +84,9 @@ bool can_win(const position_t* pos, color_t side);
 bool is_draw(const position_t* pos);
 
 // eval_endgame.c
-bool scale_endgame(const position_t* pos,
+void determine_endgame_scale(const position_t* pos,
         eval_data_t* ed,
-        int endgame_scale[2],
-        int* score);
+        int endgame_scale[2]);
 
 // eval_king.c
 score_t evaluate_king_shield(const position_t* pos);
