@@ -7,7 +7,7 @@ const int shield_value[2][17] = {
 };
 
 const int king_attack_score[16] = {
-    0, 5, 15, 15, 25, 60, 0, 0, 0, 5, 15, 15, 25, 60, 0, 0
+    0, 5, 20, 20, 35, 75, 0, 0, 0, 5, 20, 20, 35, 75, 0, 0
 };
 const int multiple_king_attack_scale[16] = {
     0, 0, 512, 640, 896, 960, 1024, 1024,
