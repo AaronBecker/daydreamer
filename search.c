@@ -703,7 +703,7 @@ static int search(position_t* pos,
     // Get move from transposition table if possible.
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
-    int hash_score = trans_entry ? trans_entry->score : 0;
+    int hash_score = trans_entry && trans_entry->flags & SCORE_LOWERBOUND ? trans_entry->score : mated_in(-1);
     bool mate_threat = trans_entry && trans_entry->flags & MATE_THREAT;
     if (!full_window && trans_entry &&
             is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
