@@ -246,8 +246,10 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     }
 
     // Endgame scaling factors
-    md->scale[WHITE] = md->scale[BLACK] = 1024;
-    if (md->eg_type == EG_DRAW) {
+    md->scale[WHITE] = md->scale[BLACK] = 16;
+    if (md->eg_type == EG_DRAW ||
+            md->eg_type == EG_KQKQ ||
+            md->eg_type == EG_KRKR) {
         md->scale[BLACK] = md->scale[WHITE] = 0;
         return;
     }
@@ -262,28 +264,33 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             if (b_piece != 0 || bp == 0) {
                 md->scale[WHITE] = 0;
             } else {
-                md->scale[WHITE] = 16;
+                md->scale[WHITE] = 64;
             }
         } else if (w_piece == 2 && wb == 2 && b_piece == 1 && bn == 1) {
             md->scale[WHITE] = 512;
-        } else if (w_piece <= b_piece) {
-            md->scale[WHITE] = 0;
         } else if (w_piece - b_piece <= 1 && w_major <= 2) {
             md->scale[WHITE] = 128;
         }
     } else if (wp == 1) {
-        if (b_piece) {
+        if (b_minor != 0) {
             if (w_piece == 1) {
                 md->scale[WHITE] = 256;
             } else if (w_piece == 2 && wn == 2) {
                 md->scale[WHITE] = 256;
-            } else if (w_piece - b_piece + br <= 0 && w_major <= 2) {
+            } else if (w_piece - b_piece <= 0 && w_major <= 2) {
+                md->scale[WHITE] = 512;
+            }
+        } else if (br) {
+            if (w_piece == 1) {
+                md->scale[WHITE] = 256;
+            } else if (w_piece == 2 && wn == 2) {
+                md->scale[WHITE] = 256;
+            } else if (w_piece - b_piece + 1 <= 0 && w_major <= 2) {
                 md->scale[WHITE] = 512;
             }
         }
     }
 
-    // Scaling for black exactly mirrors white.
     if (!bp) {
         if (b_piece == 1) {
             md->scale[BLACK] = 0;
@@ -291,22 +298,28 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             if (w_piece != 0 || wp == 0) {
                 md->scale[BLACK] = 0;
             } else {
-                md->scale[BLACK] = 16;
+                md->scale[BLACK] = 64;
             }
         } else if (b_piece == 2 && bb == 2 && w_piece == 1 && wn == 1) {
             md->scale[BLACK] = 512;
-        } else if (b_piece <= w_piece) {
-            md->scale[BLACK] = 0;
         } else if (b_piece - w_piece <= 1 && b_major <= 2) {
             md->scale[BLACK] = 128;
         }
     } else if (bp == 1) {
-        if (w_piece) {
+        if (w_minor != 0) {
             if (b_piece == 1) {
                 md->scale[BLACK] = 256;
             } else if (b_piece == 2 && bn == 2) {
                 md->scale[BLACK] = 256;
-            } else if (b_piece - w_piece + wr <= 0 && b_major <= 2) {
+            } else if (b_piece - w_piece <= 0 && b_major <= 2) {
+                md->scale[BLACK] = 512;
+            }
+        } else if (wr) {
+            if (b_piece == 1) {
+                md->scale[BLACK] = 256;
+            } else if (b_piece == 2 && bn == 2) {
+                md->scale[BLACK] = 256;
+            } else if (b_piece - w_piece + 1 <= 0 && b_major <= 2) {
                 md->scale[BLACK] = 512;
             }
         }
@@ -324,3 +337,4 @@ int game_phase(const position_t* pos)
         pos->piece_count[BN] + pos->piece_count[BB] +
         2*pos->piece_count[BR] + 4*pos->piece_count[BQ];
 }
+
