@@ -63,8 +63,7 @@ int simple_eval(const position_t* pos)
 
     int score = 0;
     int endgame_scale[2];
-    determine_endgame_scale(pos, &ed, endgame_scale);
-    if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
+    if (scale_endgame(pos, &ed, endgame_scale, &score)) return score;
 
     score_t phase_score = ed.md->score;
     if (side == BLACK) {
@@ -100,11 +99,8 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     ed->md = get_material_data(pos);
 
     int score = 0;
-    //if (endgame_score(pos, ed, &score)) return score;
-
     int endgame_scale[2];
-    determine_endgame_scale(pos, ed, endgame_scale);
-    if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
+    if (scale_endgame(pos, ed, endgame_scale, &score)) return score;
 
     phase_score = ed->md->score;
     if (side == BLACK) {
@@ -239,14 +235,4 @@ bool is_draw(const position_t* pos)
         is_repetition(pos);
 }
 
-/*
- * Is this position an opening or an endgame? Scored on a scale of 0-24,
- * with 24 being a pure opening and 0 a pure endgame.
- */
-int game_phase(const position_t* pos)
-{
-    return pos->piece_count[WN] + pos->piece_count[WB] +
-        2*pos->piece_count[WR] + 4*pos->piece_count[WQ] +
-        pos->piece_count[BN] + pos->piece_count[BB] +
-        2*pos->piece_count[BR] + 4*pos->piece_count[BQ];
-}
+
