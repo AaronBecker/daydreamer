@@ -24,13 +24,10 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KRKN,
     &scale_krkp,    //EG_KRKP,
     NULL,//&scale_krpkr,   //EG_KRPKR,
-    NULL,           //EG_KRPPKRP,
-    NULL,           //EG_KBBKN,
     NULL,           //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
     NULL,//&scale_kpkb,    //EG_KPKB,
-    NULL,           //EG_KBPPKB,
     &scale_knpk,    //EG_KNPK,
     &scale_kbpk,    //EG_KBPK,
     &scale_kpk,     //EG_KPK,
@@ -39,8 +36,8 @@ eg_scale_fn eg_scale_fns[] = {
 
 eg_score_fn eg_score_fns[] = {
     NULL,           //EG_NONE,
-    &score_win,     //EG_WIN,
-    &score_draw,    //EG_DRAW,
+    NULL,//&score_win,     //EG_WIN,
+    NULL,           //EG_DRAW,
     NULL,           //EG_KQKQ,
     NULL,           //EG_KQKP,
     NULL,           //EG_KRKR,
@@ -48,13 +45,10 @@ eg_score_fn eg_score_fns[] = {
     NULL,           //EG_KRKN,
     NULL,           //EG_KRKP,
     NULL,           //EG_KRPKR,
-    NULL,           //EG_KRPPKRP,
-    NULL,           //EG_KBBKN,
     &score_kbnk,    //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
     NULL,           //EG_KPKB,
-    NULL,           //EG_KBPPKB,
     NULL,           //EG_KNPK,
     NULL,           //EG_KBPK,
     NULL,           //EG_KPK,
@@ -424,12 +418,6 @@ static int score_win(const position_t* pos, eval_data_t* ed)
         score += WON_ENDGAME;
     }
     return score * (strong_side == pos->side_to_move ? 1 : -1);
-}
-
-static int score_draw(const position_t* pos, eval_data_t* ed)
-{
-    (void)pos; (void)ed;
-    return DRAW_VALUE;
 }
 
 static int score_kbnk(const position_t* pos, eval_data_t* ed)

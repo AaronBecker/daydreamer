@@ -230,12 +230,6 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         } else if (wr == 1 && br == 1 && bp == 1) {
             md->eg_type = EG_KRPKR;
             md->strong_side = BLACK;
-        } else if (wb == 2 && bn == 1) {
-            md->eg_type = EG_KBBKN;
-            md->strong_side = WHITE;
-        } else if (bb == 2 && wn == 1) {
-            md->eg_type = EG_KBBKN;
-            md->strong_side = BLACK;
         } else if (wb == 1 && wp == 1 && bb == 1) {
             md->eg_type = EG_KBPKB;
             md->strong_side = WHITE;
@@ -249,18 +243,6 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             md->eg_type = EG_KBPKN;
             md->strong_side = BLACK;
         }
-    } else if (wb == 1 && wp == 2 && bb == 1) {
-        md->eg_type = EG_KBPPKB;
-        md->strong_side = WHITE;
-    } else if (bb == 1 && bp == 2 && wb == 1) {
-        md->eg_type = EG_KBPPKB;
-        md->strong_side = BLACK;
-    } else if (wr == 1 && wp == 2 && br == 1 && bp == 1) {
-        md->eg_type = EG_KRPPKRP;
-        md->strong_side = WHITE;
-    } else if (br == 1 && bp == 2 && wr == 1 && wp == 1) {
-        md->eg_type = EG_KRPPKRP;
-        md->strong_side = BLACK;
     }
 
     // Endgame scaling factors
