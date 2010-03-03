@@ -778,8 +778,8 @@ static int search(position_t* pos,
     }
 
     bool dominating_hash = false;
-    if (!exclude_move && hash_move && depth >= iid_depth) {
-        int exclusion_score = search(pos, search_node, ply, alpha, beta, depth/2.0, hash_move);
+    if (!exclude_move && !full_window && hash_move && depth >= iid_depth) {
+        int exclusion_score = search(pos, search_node, ply, alpha, beta, iid_depth, hash_move);
         if (exclusion_score + domination_margin < hash_score) dominating_hash = true;
     }
 
@@ -798,7 +798,7 @@ static int search(position_t* pos,
         undo_info_t undo;
         do_move(pos, move, &undo);
 
-        float ext = extend(pos, move, single_reply, full_window);
+        float ext = dominating_hash && move == hash_move ? 1 : extend(pos, move, single_reply, full_window);
         if (ext && defer_move(&selector, move)) {
             undo_move(pos, move, &undo);
             continue;
@@ -859,7 +859,7 @@ static int search(position_t* pos,
                 !mate_threat &&
                 depth > lmr_depth_limit;
             float lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
-            if (dominating_hash && move != hash_move) lmr_red += 1.0;
+            //if (dominating_hash && move != hash_move) lmr_red += 1.0;
             if (lmr_red) score = -search(pos, search_node+1, ply+1,
                     -alpha-1, -alpha, depth-lmr_red-PLY, NO_MOVE);
             else score = alpha+1;
