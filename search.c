@@ -778,10 +778,12 @@ static int search(position_t* pos,
     }
 
     bool dominating_hash = false;
+    /*
     if (!exclude_move && !full_window && hash_move && depth >= iid_depth) {
         int exclusion_score = search(pos, search_node, ply, alpha, beta, iid_depth, hash_move);
         if (exclusion_score + domination_margin < hash_score) dominating_hash = true;
     }
+    */
 
     move_t searched_moves[256];
     move_selector_t selector;
