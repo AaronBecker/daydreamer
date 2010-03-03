@@ -1,6 +1,5 @@
 
 #include "daydreamer.h"
-
 #include "pst.inc"
 
 static const int pawn_scale = 1024;
@@ -38,8 +37,8 @@ void init_eval(void)
  */
 static void add_scaled_score(score_t* score, score_t* addend, int scale)
 {
-    score->midgame += addend->midgame * scale / 1024;
-    score->endgame += addend->endgame * scale / 1024;
+    score->midgame += (addend->midgame * scale) / 1024;
+    score->endgame += (addend->endgame * scale) / 1024;
 }
 
 /*
@@ -51,7 +50,7 @@ static int blend_score(score_t* score, int phase)
 }
 
 /*
- * Perform a simple position evaluation based just on material and piece
+ * Perform a simple position evaluation based just on material info and piece
  * square bonuses.
  */
 int simple_eval(const position_t* pos)
@@ -88,8 +87,7 @@ int simple_eval(const position_t* pos)
 }
 
 /*
- * Do full, more expensive evaluation of the position. Not implemented yet,
- * so just return the simple evaluation.
+ * Do full, more expensive evaluation of the position.
  */
 int full_eval(const position_t* pos, eval_data_t* ed)
 {
@@ -231,5 +229,4 @@ bool is_draw(const position_t* pos)
         insufficient_material(pos) ||
         is_repetition(pos);
 }
-
 
