@@ -246,14 +246,15 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     }
 
     // Endgame scaling factors
-    md->scale[WHITE] = md->scale[BLACK] = 16;
-    if (md->eg_type == EG_DRAW ||
-            md->eg_type == EG_KQKQ ||
-            md->eg_type == EG_KRKR) {
+    md->scale[WHITE] = md->scale[BLACK] = 1024;
+    if (md->eg_type == EG_DRAW) {
         md->scale[BLACK] = md->scale[WHITE] = 0;
         return;
     }
 
+    // It's hard to win if you don't have any pawns, or if you only have one
+    // and your opponent can trade it for a piece without leaving mating
+    // material. Bishops tend to be better than knights in this scenario.
     if (!wp) {
         if (w_piece == 1) {
             md->scale[WHITE] = 0;
@@ -261,33 +262,28 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             if (b_piece != 0 || bp == 0) {
                 md->scale[WHITE] = 0;
             } else {
-                md->scale[WHITE] = 1;
+                md->scale[WHITE] = 16;
             }
         } else if (w_piece == 2 && wb == 2 && b_piece == 1 && bn == 1) {
-            md->scale[WHITE] = 8;
+            md->scale[WHITE] = 512;
+        } else if (w_piece <= b_piece) {
+            md->scale[WHITE] = 0;
         } else if (w_piece - b_piece <= 1 && w_major <= 2) {
-            md->scale[WHITE] = 2;
+            md->scale[WHITE] = 128;
         }
     } else if (wp == 1) {
-        if (b_minor != 0) {
+        if (b_piece) {
             if (w_piece == 1) {
-                md->scale[WHITE] = 4;
+                md->scale[WHITE] = 256;
             } else if (w_piece == 2 && wn == 2) {
-                md->scale[WHITE] = 4;
-            } else if (w_piece - b_piece <= 0 && w_major <= 2) {
-                md->scale[WHITE] = 8;
-            }
-        } else if (br) {
-            if (w_piece == 1) {
-                md->scale[WHITE] = 4;
-            } else if (w_piece == 2 && wn == 2) {
-                md->scale[WHITE] = 4;
-            } else if (w_piece - b_piece + 1 <= 0 && w_major <= 2) {
-                md->scale[WHITE] = 8;
+                md->scale[WHITE] = 256;
+            } else if (w_piece - b_piece + br <= 0 && w_major <= 2) {
+                md->scale[WHITE] = 512;
             }
         }
     }
 
+    // Scaling for black exactly mirrors white.
     if (!bp) {
         if (b_piece == 1) {
             md->scale[BLACK] = 0;
@@ -295,29 +291,23 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             if (w_piece != 0 || wp == 0) {
                 md->scale[BLACK] = 0;
             } else {
-                md->scale[BLACK] = 1;
+                md->scale[BLACK] = 16;
             }
         } else if (b_piece == 2 && bb == 2 && w_piece == 1 && wn == 1) {
-            md->scale[BLACK] = 8;
+            md->scale[BLACK] = 512;
+        } else if (b_piece <= w_piece) {
+            md->scale[BLACK] = 0;
         } else if (b_piece - w_piece <= 1 && b_major <= 2) {
-            md->scale[BLACK] = 2;
+            md->scale[BLACK] = 128;
         }
     } else if (bp == 1) {
-        if (w_minor != 0) {
+        if (w_piece) {
             if (b_piece == 1) {
-                md->scale[BLACK] = 4;
+                md->scale[BLACK] = 256;
             } else if (b_piece == 2 && bn == 2) {
-                md->scale[BLACK] = 4;
-            } else if (b_piece - w_piece <= 0 && b_major <= 2) {
-                md->scale[BLACK] = 8;
-            }
-        } else if (wr) {
-            if (b_piece == 1) {
-                md->scale[BLACK] = 4;
-            } else if (b_piece == 2 && bn == 2) {
-                md->scale[BLACK] = 4;
-            } else if (b_piece - w_piece + 1 <= 0 && b_major <= 2) {
-                md->scale[BLACK] = 8;
+                md->scale[BLACK] = 256;
+            } else if (b_piece - w_piece + wr <= 0 && b_major <= 2) {
+                md->scale[BLACK] = 512;
             }
         }
     }
