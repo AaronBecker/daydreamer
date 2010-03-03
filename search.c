@@ -28,6 +28,7 @@ static const float iid_non_pv_depth_cutoff = 8.0;
 
 static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 250;
+static const int domination_margin = 15;
 
 static const int qfutility_margin = 65;
 static const int razor_margin[] = { 300, 300, 300, 325 };
@@ -41,7 +42,8 @@ static int search(position_t* pos,
         int ply,
         int alpha,
         int beta,
-        float depth);
+        float depth,
+        move_t exclude_move);
 static int quiesce(position_t* pos,
         search_node_t* search_node,
         int ply,
@@ -609,7 +611,7 @@ static search_result_t root_search(search_data_t* search_data,
             // Use full window search.
             alpha = mated_in(-1);
             score = -search(pos, search_data->search_stack,
-                    1, -beta, -alpha, search_data->current_depth+ext-PLY);
+                    1, -beta, -alpha, search_data->current_depth+ext-PLY, NO_MOVE);
         } else {
             const bool try_lmr = lmr_enabled &&
                 num_moves > 10 &&
@@ -619,10 +621,10 @@ static search_result_t root_search(search_data_t* search_data,
             int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
             if (lmr_red) {
                 score = -search(pos, search_data->search_stack,
-                        1, -alpha-1, -alpha, depth-lmr_red-PLY);
+                        1, -alpha-1, -alpha, depth-lmr_red-PLY, NO_MOVE);
             } else {
                 score = -search(pos, search_data->search_stack,
-                    1, -alpha-1, -alpha, search_data->current_depth+ext-PLY);
+                    1, -alpha-1, -alpha, search_data->current_depth+ext-PLY, NO_MOVE);
             }
             if (score > alpha) {
                 if (score > alpha) {
@@ -635,7 +637,7 @@ static search_result_t root_search(search_data_t* search_data,
                     search_data->resolving_fail_high = true;
                     score = -search(pos, search_data->search_stack,
                             1, -beta, -alpha,
-                            search_data->current_depth+ext-PLY);
+                            search_data->current_depth+ext-PLY, NO_MOVE);
                 }
             }
         }
@@ -684,7 +686,8 @@ static int search(position_t* pos,
         int ply,
         int alpha,
         int beta,
-        float depth)
+        float depth,
+        move_t exclude_move)
 {
     search_node->pv[ply] = NO_MOVE;
     if (root_data.engine_status == ENGINE_ABORTED) return 0;
@@ -700,6 +703,7 @@ static int search(position_t* pos,
     // Get move from transposition table if possible.
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
+    int hash_score = trans_entry ? trans_entry->score : 0;
     bool mate_threat = trans_entry && trans_entry->flags & MATE_THREAT;
     if (!full_window && trans_entry &&
             is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
@@ -733,14 +737,14 @@ static int search(position_t* pos,
         float null_r = 2.0 + ((depth + 2.0)/4.0) +
             CLAMP(0, 1.5, (lazy_score-beta)/100.0);
         int null_score = -search(pos, search_node+1, ply+1,
-                -beta, -beta+1, depth - null_r);
+                -beta, -beta+1, depth - null_r, NO_MOVE);
         undo_nullmove(pos, &undo);
         if (is_mate_score(null_score) && null_score < 0) mate_threat = true;
         if (null_score >= beta) {
             if (verification_enabled) {
                 float rdepth = depth - null_verification_reduction;
                 if (rdepth > 0) null_score = search(pos,
-                        search_node, ply, alpha, beta, rdepth);
+                        search_node, ply, alpha, beta, rdepth, NO_MOVE);
             }
             root_data.stats.nullmove_cutoffs[
                 depth_to_index(root_data.current_depth)]++;
@@ -761,16 +765,22 @@ static int search(position_t* pos,
     }
 
     // Internal iterative deepening.
+    const int iid_depth = full_window ?
+            depth - iid_pv_depth_reduction :
+            MIN(depth/2, depth - iid_non_pv_depth_reduction);
     if (iid_enabled &&
             hash_move == NO_MOVE &&
             is_iid_allowed(full_window, depth)) {
-        const int iid_depth = full_window ?
-                depth - iid_pv_depth_reduction :
-                MIN(depth/2, depth - iid_non_pv_depth_reduction);
         assert(iid_depth > 0);
-        search(pos, search_node, ply, alpha, beta, iid_depth);
+        hash_score = search(pos, search_node, ply, alpha, beta, iid_depth, NO_MOVE);
         hash_move = search_node->pv[ply];
         search_node->pv[ply] = NO_MOVE;
+    }
+
+    bool dominating_hash = false;
+    if (!exclude_move && hash_move && depth >= iid_depth) {
+        int exclusion_score = search(pos, search_node, ply, alpha, beta, depth/2.0, hash_move);
+        if (exclusion_score + domination_margin < hash_score) dominating_hash = true;
     }
 
     move_t searched_moves[256];
@@ -783,9 +793,11 @@ static int search(position_t* pos,
             move = select_move(&selector)) {
         num_legal_moves = selector.moves_so_far;
         int64_t nodes_before = root_data.nodes_searched;
+        if (move == exclude_move) continue;
 
         undo_info_t undo;
         do_move(pos, move, &undo);
+
         float ext = extend(pos, move, single_reply, full_window);
         if (ext && defer_move(&selector, move)) {
             undo_move(pos, move, &undo);
@@ -794,7 +806,7 @@ static int search(position_t* pos,
         if (num_legal_moves == 1) {
             // First move, use full window search.
             score = -search(pos, search_node+1, ply+1,
-                    -beta, -alpha, depth+ext-PLY);
+                    -beta, -alpha, depth+ext-PLY, NO_MOVE);
         } else {
             // Futility pruning. Note: it would be nice to do extensions and
             // futility before calling do_move, but this would require more
@@ -846,15 +858,16 @@ static int search(position_t* pos,
                 !ext &&
                 !mate_threat &&
                 depth > lmr_depth_limit;
-            const float lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
+            float lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
+            if (dominating_hash && move != hash_move) lmr_red += 1.0;
             if (lmr_red) score = -search(pos, search_node+1, ply+1,
-                    -alpha-1, -alpha, depth-lmr_red-PLY);
+                    -alpha-1, -alpha, depth-lmr_red-PLY, NO_MOVE);
             else score = alpha+1;
             if (score > alpha) {
                 score = -search(pos, search_node+1, ply+1,
-                        -alpha-1, -alpha, depth+ext-PLY);
+                        -alpha-1, -alpha, depth+ext-PLY, NO_MOVE);
                 if (score > alpha) score = -search(pos, search_node+1, ply+1,
-                        -beta, -alpha, depth+ext-PLY);
+                        -beta, -alpha, depth+ext-PLY, NO_MOVE);
             }
         }
         searched_moves[num_searched_moves++] = move;
@@ -884,7 +897,7 @@ static int search(position_t* pos,
                 if (is_mate_score(score) && score > 0) {
                     search_node->mate_killer = move;
                 }
-                put_transposition(pos, move, (int)depth, beta,
+                if (!exclude_move) put_transposition(pos, move, (int)depth, beta,
                         SCORE_LOWERBOUND, mate_threat);
                 root_data.stats.move_selection[
                     MIN(num_legal_moves-1, HIST_BUCKETS)]++;
@@ -912,12 +925,14 @@ static int search(position_t* pos,
     root_data.stats.move_selection[MIN(num_legal_moves-1, HIST_BUCKETS)]++;
     if (full_window) root_data.stats.pv_move_selection[
         MIN(num_legal_moves-1, HIST_BUCKETS)]++;
-    if (alpha == orig_alpha) {
-        put_transposition(pos, NO_MOVE, (int)depth, alpha,
-                SCORE_UPPERBOUND, mate_threat);
-    } else {
-        put_transposition(pos, search_node->pv[ply], (int)depth, alpha,
-                SCORE_EXACT, mate_threat);
+    if (!exclude_move) {
+        if (alpha == orig_alpha) {
+            put_transposition(pos, NO_MOVE, (int)depth, alpha,
+                    SCORE_UPPERBOUND, mate_threat);
+        } else {
+            put_transposition(pos, search_node->pv[ply], (int)depth, alpha,
+                    SCORE_EXACT, mate_threat);
+        }
     }
     return alpha;
 }

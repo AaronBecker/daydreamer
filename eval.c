@@ -63,7 +63,10 @@ int simple_eval(const position_t* pos)
 
     int score = 0;
     int endgame_scale[2];
-    if (scale_endgame(pos, &ed, endgame_scale, &score)) return score;
+    //if (scale_endgame(pos, &ed, endgame_scale, &score)) return score;
+    determine_endgame_scale(pos, &ed, endgame_scale);
+    if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
+    
 
     score_t phase_score = ed.md->score;
     if (side == BLACK) {
@@ -100,7 +103,9 @@ int full_eval(const position_t* pos, eval_data_t* ed)
 
     int score = 0;
     int endgame_scale[2];
-    if (scale_endgame(pos, ed, endgame_scale, &score)) return score;
+    //if (scale_endgame(pos, ed, endgame_scale, &score)) return score;
+    determine_endgame_scale(pos, ed, endgame_scale);
+    if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
 
     phase_score = ed->md->score;
     if (side == BLACK) {
