@@ -7,7 +7,7 @@ static const int pawn_scale = 1024;
 static const int pattern_scale = 1024;
 static const int pieces_scale = 1024;
 static const int shield_scale = 1024+128;
-static const int king_attack_scale = 1024+128;
+static const int king_attack_scale = 1024+256;
 
 /*
  * Initialize all static evaluation data structures.
