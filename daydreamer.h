@@ -89,8 +89,9 @@ void determine_endgame_scale(const position_t* pos,
         int endgame_scale[2]);
 
 // eval_king.c
-score_t evaluate_king_shield(const position_t* pos);
-score_t evaluate_king_attackers(const position_t* pos);
+int evaluate_king_shield(const position_t* pos);
+int evaluate_king_attackers(const position_t* pos);
+score_t evaluate_king_safety(const position_t* pos, eval_data_t* ed);
 //score_t king_safety_score(const position_t* pos, eval_data_t* ed);
 
 // eval_material.c
