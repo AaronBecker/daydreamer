@@ -291,26 +291,26 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
     for (color_t side=WHITE; side<=BLACK; ++side) {
         const square_t push = pawn_push[side];
         piece_t our_pawn = create_piece(side, PAWN);
+        piece_t opp_pawn = create_piece(side^1, PAWN);
+        piece_t opp_king = create_piece(side^1, KING);
         for (int i=0; pos->pawns[side][i] != INVALID_SQUARE; ++i) {
             square_t from = pos->pawns[side][i];
+            /*
             if (pos->board[from+push] == EMPTY) {
                 passer_bonus[side] += 2;
                 eg_passer_bonus[side] += 6;
             }
-            /*
-            dummy = pos->board[from+push-1];
-            if (dummy > create_piece(side^1, PAWN) &&
-                    dummy <= create_piece(side^1, KING)) {
-                mid_score[side] += 7;
-                end_score[side] += 12;
+            */
+            piece_t dummy = pos->board[from+push-1];
+            if (dummy > opp_pawn && dummy <= opp_king) {
+                passer_bonus[side] += 6;
+                eg_passer_bonus[side] += 10;
             }
             dummy = pos->board[from+push+1];
-            if (dummy > create_piece(side^1, PAWN) &&
-                    dummy <= create_piece(side^1, KING)) {
-                mid_score[side] += 7;
-                end_score[side] += 12;
+            if (dummy > opp_pawn && dummy <= opp_king) {
+                passer_bonus[side] += 6;
+                eg_passer_bonus[side] += 10;
             }
-            */
         }
 
         for (int i=0; i<pd->num_passed[side]; ++i) {
