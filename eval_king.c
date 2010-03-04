@@ -10,7 +10,7 @@ const int shield_value[2][17] = {
 };
 
 const int king_attack_score[16] = {
-    0, 5, 20, 20, 40, 80, 0, 0, 0, 5, 20, 20, 40, 80, 0, 0
+    0, 5, 15, 15, 35, 75, 0, 0, 0, 5, 15, 15, 35, 75, 0, 0
 };
 const int multiple_king_attack_scale[16] = {
     0, 0, 512, 640, 896, 960, 1024, 1024,
@@ -103,7 +103,7 @@ static int evaluate_king_attackers(const position_t* pos, int shield_score[2])
             }
         }
         score[side] = (score[side]*
-                (200 - MIN(100, shield_score[side]))/100)*
+                (200 - MIN(100, shield_score[side]))/50)*
             multiple_king_attack_scale[num_attackers]/1024;
         score[side] = score[side] * king_attack_scale / 1024;
         score[side] += shield_score[side] * shield_scale / 1024;
