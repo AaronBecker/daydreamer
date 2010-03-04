@@ -2,7 +2,7 @@
 #include "daydreamer.h"
 
 static const int shield_scale = 1024+128;
-static const int king_attack_scale = 1024;
+static const int king_attack_scale = 1024+128;
 
 const int shield_value[2][17] = {
     { 0, 8, 2, 4, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -10,7 +10,7 @@ const int shield_value[2][17] = {
 };
 
 const int king_attack_score[16] = {
-    0, 5, 15, 15, 35, 75, 0, 0, 0, 5, 15, 15, 35, 75, 0, 0
+    0, 5, 15, 15, 30, 60, 0, 0, 0, 5, 15, 15, 30, 60, 0, 0
 };
 const int multiple_king_attack_scale[16] = {
     0, 0, 512, 640, 896, 960, 1024, 1024,
