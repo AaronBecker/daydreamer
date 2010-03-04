@@ -39,12 +39,10 @@ score_t king_safety_score(const position_t* pos, eval_data_t* ed)
             }
         }
         score[side] = score[side] *
-            multiple_king_attack_scale[num_attackers] * king_attack_scale /
-            (1024*1024);
-        //score[side] = (score[side]*
-        //        (200 - MIN(100, shield_score[side]))/75)*
-        //    multiple_king_attack_scale[num_attackers] / 1024 *
-        //    king_attack_scale / 1024;
+                (200 - MIN(100, shield_score[side]))/50;
+        score[side] = score[side] *
+            multiple_king_attack_scale[num_attackers] / 1024;
+        score[side] = score[side] * king_attack_scale / 1024;
     }
     color_t side = pos->side_to_move;
     score_t phase_score;
