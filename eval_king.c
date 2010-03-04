@@ -26,8 +26,11 @@ score_t king_safety_score(const position_t* pos, eval_data_t* ed)
     (void)ed;
     int score[2] = {0, 0};
     int shield_score[2] = {0, 0};
+    if (pos->piece_count[WQ] != 0) shield_score[BLACK] =
+        king_shield_score(pos, BLACK);
+    if (pos->piece_count[BQ] != 0) shield_score[WHITE] =
+        king_shield_score(pos, WHITE);
     for (color_t side = WHITE; side <= BLACK; ++side) {
-        shield_score[side] = king_shield_score(pos, side);
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
         int num_attackers = 0;
@@ -39,7 +42,7 @@ score_t king_safety_score(const position_t* pos, eval_data_t* ed)
             }
         }
         score[side] = score[side] *
-                (200 - MIN(100, shield_score[side]))/50;
+                (200 - MIN(100, shield_score[side^1]))/100;
         score[side] = score[side] *
             multiple_king_attack_scale[num_attackers] / 1024;
         score[side] = score[side] * king_attack_scale / 1024;
@@ -86,7 +89,8 @@ static int king_shield_score(const position_t* pos, color_t side)
         ooo_score = shield_score(pos, side, C1 + A8*side);
     }
     castle_score = MAX(score, MAX(oo_score, ooo_score));
-    return (score + castle_score) * shield_scale / 2048;
+    score = (score + castle_score) / 2;
+    return score * shield_scale / 1024;
 }
 
 /*
