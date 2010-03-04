@@ -294,8 +294,8 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
         for (int i=0; pos->pawns[side][i] != INVALID_SQUARE; ++i) {
             square_t from = pos->pawns[side][i];
             if (pos->board[from+push] == EMPTY) {
-                passer_bonus[side] += 4;
-                eg_passer_bonus[side] += 12;
+                passer_bonus[side] += 2;
+                eg_passer_bonus[side] += 6;
             }
             /*
             dummy = pos->board[from+push-1];
