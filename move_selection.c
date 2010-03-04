@@ -4,7 +4,7 @@
 
 extern search_data_t root_data;
 static const bool defer_enabled = false;
-static bool pv_cache_enabled = true;
+static bool pv_cache_enabled = false;
 
 selection_phase_t phase_table[6][8] = {
     { PHASE_BEGIN, PHASE_ROOT, PHASE_END },
