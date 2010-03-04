@@ -4,7 +4,7 @@
 
 /*
  * Interface to ctg format books. The huffman codes and ctg move decoding are
- * derived from Stephan Vermeire's ctg code for Brutus.
+ * based on Stephan Vermeire's ctg code for Brutus.
  * (http://www.xs4all.nl/~vermeire/brutus.html)
  */
 
