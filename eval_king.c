@@ -1,7 +1,7 @@
 
 #include "daydreamer.h"
 
-static const int shield_scale = 1024+256;
+static const int shield_scale = 1024+128;
 static const int king_attack_scale = 1024+256;
 
 const int shield_value[2][17] = {
