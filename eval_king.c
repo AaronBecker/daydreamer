@@ -92,6 +92,7 @@ static int evaluate_king_attackers(const position_t* pos, int shield_score[2])
 {
     int score[2] = {0, 0};
     for (color_t side = WHITE; side <= BLACK; ++side) {
+        score[side] = shield_score[side];
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
         int num_attackers = 0;
@@ -102,14 +103,13 @@ static int evaluate_king_attackers(const position_t* pos, int shield_score[2])
                 num_attackers++;
             }
         }
-        score[side] = score[side] *
+        score[side] += score[side] *
             multiple_king_attack_scale[num_attackers] / 1024 *
             king_attack_scale / 1024;
         //score[side] = (score[side]*
         //        (200 - MIN(100, shield_score[side]))/75)*
         //    multiple_king_attack_scale[num_attackers] / 1024 *
         //    king_attack_scale / 1024;
-        score[side] += shield_score[side];
     }
     color_t side = pos->side_to_move;
     return score[side]-score[side^1];
