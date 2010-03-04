@@ -144,6 +144,7 @@ int full_eval(const position_t* pos, eval_data_t* ed)
  */
 void report_eval(const position_t* pos)
 {
+    /*
     color_t side = pos->side_to_move;
     int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
     int phase = game_phase(pos);
@@ -205,6 +206,7 @@ void report_eval(const position_t* pos)
     int score = material_eval + piece_square_eval + material_adjust +
         blend_score(&phase_score, phase);
     printf("info string score: %d\n", score);
+    */
 }
 
 /*
