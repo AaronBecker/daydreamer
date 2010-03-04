@@ -1,6 +1,9 @@
 
 #include "daydreamer.h"
 
+static const int shield_scale = 1024+128;
+static const int king_attack_scale = 1024;
+
 const int shield_value[2][17] = {
     { 0, 8, 2, 4, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 2, 4, 1, 1, 0, 0, 0 },
@@ -13,6 +16,17 @@ const int multiple_king_attack_scale[16] = {
     0, 0, 512, 640, 896, 960, 1024, 1024,
     1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024
 };
+
+score_t evaluate_king_safety(const position_t* pos, eval_data_t* ed)
+{
+    (void)ed;
+    score_t phase_score;
+    int shield_score = evaluate_king_shield(pos) * shield_scale / 1024;
+    int attacker_score = evaluate_king_attackers(pos) * king_attack_scale / 1024;
+    phase_score.midgame = shield_score + attacker_score;
+    phase_score.endgame = 0;
+    return phase_score;
+}
 
 /*
  * Give some points for pawns directly in front of your king.
@@ -35,10 +49,8 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
 /*
  * Compute the overall balance of king safety offered by pawn shields.
  */
-score_t evaluate_king_shield(const position_t* pos)
+int evaluate_king_shield(const position_t* pos)
 {
-    score_t phase_score;
-    phase_score.midgame = phase_score.endgame = 0;
     //if (pos->piece_count[BQ] + pos->piece_count[WQ] == 0) return phase_score;
     int score[2] = {0, 0};
     int oo_score[2] = {0, 0};
@@ -65,8 +77,7 @@ score_t evaluate_king_shield(const position_t* pos)
     score[WHITE] = (score[WHITE] + castle_score[WHITE]) / 2;
     score[BLACK] = (score[BLACK] + castle_score[BLACK]) / 2;
     color_t side = pos->side_to_move;
-    phase_score.midgame = score[side]-score[side^1];
-    return phase_score;
+    return score[side]-score[side^1];
 }
 
 /*
@@ -74,7 +85,7 @@ score_t evaluate_king_shield(const position_t* pos)
  * attacking a square adjacent to the king.
  * TODO: This could probably be a lot more sophisticated.
  */
-score_t evaluate_king_attackers(const position_t* pos)
+int evaluate_king_attackers(const position_t* pos)
 {
     int score[2] = {0, 0};
     for (color_t side = WHITE; side <= BLACK; ++side) {
@@ -92,9 +103,6 @@ score_t evaluate_king_attackers(const position_t* pos)
             multiple_king_attack_scale[num_attackers] / 1024;
     }
     color_t side = pos->side_to_move;
-    score_t phase_score;
-    phase_score.midgame = score[side]-score[side^1];
-    phase_score.endgame = 0;
-    return phase_score;
+    return score[side]-score[side^1];
 }
 

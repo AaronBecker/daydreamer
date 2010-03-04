@@ -6,6 +6,7 @@
 static const int pawn_scale = 1024;
 static const int pattern_scale = 1024;
 static const int pieces_scale = 1024;
+static const int safety_scale = 1024;
 static const int shield_scale = 1024+128;
 static const int king_attack_scale = 1024;
 
@@ -119,10 +120,12 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     add_scaled_score(&phase_score, &component_score, pattern_scale);
     component_score = pieces_score(pos, ed->pd);
     add_scaled_score(&phase_score, &component_score, pieces_scale);
-    component_score = evaluate_king_shield(pos);
-    add_scaled_score(&phase_score, &component_score, shield_scale);
-    component_score = evaluate_king_attackers(pos);
-    add_scaled_score(&phase_score, &component_score, king_attack_scale);
+    component_score = evaluate_king_safety(pos, ed);
+    add_scaled_score(&phase_score, &component_score, safety_scale);
+    //component_score = evaluate_king_shield(pos);
+    //add_scaled_score(&phase_score, &component_score, shield_scale);
+    //component_score = evaluate_king_attackers(pos);
+    //add_scaled_score(&phase_score, &component_score, king_attack_scale);
 
     // Tempo
     phase_score.midgame += 9;
@@ -182,12 +185,11 @@ void report_eval(const position_t* pos)
     if (side == BLACK) material_adjust *= -1;
     printf("info string mat_adj total: %d\n", material_adjust);
 
-    score_t king_score;
-    king_score.endgame = king_score.midgame = 0;
+    int king_score;
     king_score = evaluate_king_attackers(pos);
-    printf("info string king attackers: %d\n", king_score.midgame);
+    printf("info string king attackers: %d\n", king_score);
     king_score = evaluate_king_shield(pos);
-    printf("info string king shield: %d\n", king_score.midgame);
+    printf("info string king shield: %d\n", king_score);
 
     score_t phase_score;
     phase_score.endgame = phase_score.midgame = 0;
