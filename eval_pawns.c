@@ -247,10 +247,10 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 pd->score[color].endgame += connected_bonus[1];
             }
 
-            // Space bonus for advanced central pawns.
-            int space = central_space[sq ^ (0x70*color)];
-            if (connected) space += space/2;
-            pd->score[color].midgame += space;
+            // Space bonus for connected advanced central pawns.
+            if (connected) {
+                pd->score[color].midgame += central_space[sq ^ (0x70*color)];
+            }
 
             // Backward pawns (unsupportable by pawns, can't advance).
             // TODO: a simpler formulation would be nice.
