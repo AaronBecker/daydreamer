@@ -15,11 +15,11 @@ const int shield_value[2][17] = {
 };
 
 const int king_attack_score[16] = {
-    0, 5, 20, 20, 40, 80, 0, 0, 0, 5, 20, 20, 40, 80, 0, 0
+    0, 0, 16, 16, 32, 64, 0, 0, 0, 0, 16, 16, 32, 64, 0, 0
 };
 const int multiple_king_attack_scale[16] = {
-    0, 0, 512, 640, 896, 960, 1024, 1024,
-    1024, 1024, 1024, 1024, 1024, 1024, 1024, 1024
+    0, 0, 768, 896, 1152, 1216, 1280, 1280,
+    1280, 1280, 1280, 1280, 1280, 1280, 1280, 1280
 };
 
 score_t evaluate_king_safety(const position_t* pos, eval_data_t* ed)
@@ -97,7 +97,7 @@ static void evaluate_king_attackers(const position_t* pos,
         int shield_score[2],
         int score[2])
 {
-    const int good_shield = 14*8;
+    const int bad_shield = 14*2;
     for (color_t side = WHITE; side <= BLACK; ++side) {
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
@@ -109,9 +109,7 @@ static void evaluate_king_attackers(const position_t* pos,
                 num_attackers++;
             }
         }
-        score[side] *= (1 + ((float)(good_shield-MIN(good_shield,
-                            shield_score[side^1])))/good_shield);
-            //6*(2*good_shield-MIN(good_shield, shield_score[side^1])) / (6*good_shield);
+        if (shield_score[side^1] <= bad_shield) num_attackers += 2;
         score[side] = score[side] *
             multiple_king_attack_scale[num_attackers] / 1024;
     }
