@@ -28,13 +28,21 @@ static const int backward_penalty[2][8] = {
     { 6, 6, 6,  8,  8, 6, 6, 6 },
     { 8, 9, 9, 10, 10, 9, 9, 8 }
 };
-static const int connected_bonus[2] = { 5, 5 };
 static const int unstoppable_passer_bonus[8] = {
     0, 500, 525, 550, 575, 600, 650, 0
 };
 static const int advanceable_passer_bonus[8] = {
     0, 20, 25, 30, 35, 40, 80, 0
 };
+static const int king_dist_bonus[8] = {
+    0, 0, 5, 10, 15, 20, 25, 0
+};
+static const int connected_passer[2][8] = {
+    { 0, 0, 1, 2,  5, 15, 20, 0},
+    { 0, 0, 2, 5, 15, 40, 60, 0}
+};
+static const int connected_bonus[2] = { 5, 5 };
+static const int passer_rook[2] = { 15, 30 };
 static const int king_storm[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,-10,-10,-10,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -59,19 +67,11 @@ static const int central_space[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  3,  4,  4,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  3,  4,  4,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  3,  4,  4,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  2,  4,  4,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  2,  4,  4,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  1,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-};
-static const int king_dist_bonus[8] = {
-    0, 0, 5, 10, 15, 20, 25, 0
-};
-static const int passer_rook[2] = { 15, 30 };
-static const int connected_passer[2][8] = {
-    { 0, 0, 1, 2,  5, 15, 20, 0},
-    { 0, 0, 2, 5, 15, 40, 60, 0}
 };
 
 static pawn_data_t* pawn_table = NULL;
@@ -247,9 +247,9 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 pd->score[color].endgame += connected_bonus[1];
             }
 
-            // Pawn space bonus for advanced central pawns.
+            // Space bonus for advanced central pawns.
             int space = central_space[sq ^ (0x70*color)];
-            if (connected) space *= 2;
+            if (connected) space += space/2;
             pd->score[color].midgame += space;
 
             // Backward pawns (unsupportable by pawns, can't advance).
