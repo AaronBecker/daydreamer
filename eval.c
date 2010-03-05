@@ -3,12 +3,10 @@
 
 #include "pst.inc"
 
-static const int pawn_scale = 1024;
-static const int pattern_scale = 1024;
-static const int pieces_scale = 1024;
-static const int safety_scale = 1024;
-static const int shield_scale = 1024+128;
-static const int king_attack_scale = 1024;
+#define pawn_scale 1024
+#define pattern_scale 1024
+#define pieces_scale 1024
+#define safety_scale 1024
 
 /*
  * Initialize all static evaluation data structures.
@@ -122,10 +120,6 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     add_scaled_score(&phase_score, &component_score, pieces_scale);
     component_score = evaluate_king_safety(pos, ed);
     add_scaled_score(&phase_score, &component_score, safety_scale);
-    //component_score = evaluate_king_shield(pos);
-    //add_scaled_score(&phase_score, &component_score, shield_scale);
-    //component_score = evaluate_king_attackers(pos);
-    //add_scaled_score(&phase_score, &component_score, king_attack_scale);
 
     // Tempo
     phase_score.midgame += 9;
