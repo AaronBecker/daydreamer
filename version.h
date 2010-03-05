@@ -7,7 +7,7 @@
 #endif
 #define ENGINE_NAME             "Daydreamer"
 #define ENGINE_VERSION_NUMBER   "1.61"
-#define ENGINE_VERSION_NAME     " kd3_" GIT_VERSION
+#define ENGINE_VERSION_NAME     " kd4_" GIT_VERSION
 #define ENGINE_VERSION          ENGINE_VERSION_NUMBER ENGINE_VERSION_NAME
 #define ENGINE_AUTHOR           "Aaron Becker"
 
