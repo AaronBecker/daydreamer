@@ -95,7 +95,7 @@ static void evaluate_king_attackers(const position_t* pos,
         int shield_score[2],
         int score[2])
 {
-    static const int bad_shield = 16;
+    static const int bad_shield = 28;
     for (color_t side = WHITE; side <= BLACK; ++side) {
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
@@ -107,8 +107,7 @@ static void evaluate_king_attackers(const position_t* pos,
                 num_attackers++;
             }
         }
-        if (shield_score[side^1] <= 2*bad_shield) num_attackers++;
-        if (shield_score[side^1] <= bad_shield) num_attackers++;
+        if (shield_score[side^1] <= bad_shield) num_attackers += 2;
         score[side] = score[side] * king_attack_scale[num_attackers] / 1024;
     }
 }
