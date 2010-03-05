@@ -24,16 +24,15 @@ const int king_attack_scale[16] = {
 score_t evaluate_king_safety(const position_t* pos, eval_data_t* ed)
 {
     (void)ed;
-    score_t phase_score;
     int shield_score[2], attack_score[2];
 
     evaluate_king_shield(pos, shield_score);
     evaluate_king_attackers(pos, shield_score, attack_score);
 
+    score_t phase_score;
     color_t side = pos->side_to_move;
-    phase_score.midgame =
-        (shield_score[side] - shield_score[side^1])*shield_scale/1024 +
-        (attack_score[side] - attack_score[side^1]);
+    phase_score.midgame = (attack_score[side] - attack_score[side^1]) +
+        (shield_score[side] - shield_score[side^1])*shield_scale/1024;
     phase_score.endgame = 0;
     return phase_score;
 }
@@ -61,6 +60,7 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
  */
 static void evaluate_king_shield(const position_t* pos, int score[2])
 {
+    score[WHITE] = score[BLACK] = 0;
     //if (pos->piece_count[BQ] + pos->piece_count[WQ] == 0) return phase_score;
     int oo_score[2] = {0, 0};
     int ooo_score[2] = {0, 0};
@@ -95,8 +95,9 @@ static void evaluate_king_attackers(const position_t* pos,
         int shield_score[2],
         int score[2])
 {
-    static const int bad_shield = 32;
+    static const int bad_shield = 28;
     for (color_t side = WHITE; side <= BLACK; ++side) {
+        score[side] = 0;
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
         int num_attackers = 0;
