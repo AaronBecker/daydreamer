@@ -10,8 +10,8 @@ static int evaluate_king_attackers(const position_t* pos,
         int score[2]);
 
 const int shield_value[2][17] = {
-    { 0, 8, 2, 4, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 2, 4, 1, 1, 0, 0, 0 },
+    { 0, 8, 2, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0,-4, 0, 0, 0 },
+    { 0, 0, 0, 0, 0,-4, 0, 0, 0, 8, 2, 4, 1, 0, 0, 0, 0 },
 };
 
 const int king_attack_score[16] = {
@@ -46,15 +46,15 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
 {
     int s = 0;
     int push = pawn_push[side];
-    s += shield_value[side][pos->board[king-1]] * 2;
-    s += shield_value[side][pos->board[king+1]] * 2;
-    s += shield_value[side][pos->board[king+push-1]] * 4;
-    s += shield_value[side][pos->board[king+push]] * 8;
-    s += shield_value[side][pos->board[king+push+1]] * 4;
+    s += shield_value[side][pos->board[king-1]];
+    s += shield_value[side][pos->board[king+1]];
+    s += shield_value[side][pos->board[king+push-1]] * 2;
+    s += shield_value[side][pos->board[king+push]] * 3;
+    s += shield_value[side][pos->board[king+push+1]] * 2;
     s += shield_value[side][pos->board[king+2*push-1]];
     s += shield_value[side][pos->board[king+2*push]] * 2;
     s += shield_value[side][pos->board[king+2*push+1]];
-    return s;
+    return 2*s;
 }
 
 /*
