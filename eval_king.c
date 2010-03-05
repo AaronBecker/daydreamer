@@ -95,7 +95,7 @@ static void evaluate_king_attackers(const position_t* pos,
         int shield_score[2],
         int score[2])
 {
-    static const int bad_shield = 64;
+    static const int bad_shield = 32;
     for (color_t side = WHITE; side <= BLACK; ++side) {
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
