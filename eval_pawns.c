@@ -55,11 +55,18 @@ static const int queen_storm[0x80] = {
    14, 16, 14,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
+static const int central_space[0x80] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  3,  4,  4,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  3,  4,  4,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  3,  4,  4,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+};
 static const int king_dist_bonus[8] = {
     0, 0, 5, 10, 15, 20, 25, 0
-};
-static const int passer_blockade[8] = {
-    0, 0, 0, 5, 20, 45, 60, 0
 };
 static const int passer_rook[2] = { 15, 30 };
 static const int connected_passer[2][8] = {
@@ -213,7 +220,7 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 }
             }
 
-            // Pawn storm scores.
+            // Pawn storm scores. Only used in opposite-castling positions.
             int storm = 1.5*king_storm[sq ^ (0x70*color)];
             if (storm && (passed_mask[color][ind] &
                         (~file_mask[file]) & their_pawns)) storm += storm/2;
@@ -239,8 +246,14 @@ pawn_data_t* analyze_pawns(const position_t* pos)
                 pd->score[color].midgame += connected_bonus[0];
                 pd->score[color].endgame += connected_bonus[1];
             }
-            
-            // Backward pawns (unsupportable by pawns, can't advance)
+
+            // Pawn space bonus for advanced central pawns.
+            int space = central_space[sq ^ (0x70*color)];
+            if (connected) space *= 2;
+            pd->score[color].midgame += space;
+
+            // Backward pawns (unsupportable by pawns, can't advance).
+            // TODO: a simpler formulation would be nice.
             if (!passed && !isolated && !connected &&
                     pos->board[sq+push-1] != opp_pawn &&
                     pos->board[sq+push+1] != opp_pawn) {
@@ -331,19 +344,8 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 eg_passer_bonus[side] -= passer_rook[1];
             }
 
-            // How easily can the pawn be advanced?
-            piece_t target_piece = pos->board[target];
-            if (target_piece != EMPTY) {
-                /*
-                // Evaluate blockages in front of the passer.
-                if (piece_color(target_piece) == side) {
-                    passer_bonus[side] -= passer_blockade[rank] / 2;
-                } else {
-                    passer_bonus[side] -= passer_blockade[rank];
-                }
-                */
-            } else {
-                // Can the pawn advance without being captured?
+            // Can the pawn advance without being captured?
+            if (pos->board[target] == EMPTY) {
                 move_t push = rank == RANK_7 ?
                     create_move_promote(passer, target,
                             create_piece(side, PAWN), EMPTY, QUEEN) :
