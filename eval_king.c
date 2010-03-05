@@ -110,7 +110,7 @@ static void evaluate_king_attackers(const position_t* pos,
             }
         }
         score[side] = score[side] *
-            6*(good_shield-MIN(good_shield, shield_score[side^1])) / (4*good_shield);
+            6*(2*good_shield-MIN(good_shield, shield_score[side^1])) / (6*good_shield);
         score[side] = score[side] *
             multiple_king_attack_scale[num_attackers] / 1024;
     }
