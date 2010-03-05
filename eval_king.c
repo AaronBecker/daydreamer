@@ -29,11 +29,7 @@ score_t evaluate_king_safety(const position_t* pos, eval_data_t* ed)
     int shield_score[2], attack_score[2];
 
     evaluate_king_shield(pos, shield_score);
-    //shield_score[WHITE] = shield_score[WHITE] * shield_scale / 1024;
-    //shield_score[BLACK] = shield_score[BLACK] * shield_scale / 1024;
     evaluate_king_attackers(pos, shield_score, attack_score);
-    //attack_score[WHITE] = attack_score[WHITE] * attack_scale / 1024;
-    //attack_score[BLACK] = attack_score[BLACK] * attack_scale / 1024;
 
     color_t side = pos->side_to_move;
     phase_score.midgame =
@@ -53,7 +49,7 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
     s += shield_value[side][pos->board[king-1]] * 2;
     s += shield_value[side][pos->board[king+1]] * 2;
     s += shield_value[side][pos->board[king+push-1]] * 4;
-    s += shield_value[side][pos->board[king+push]] * 6;
+    s += shield_value[side][pos->board[king+push]] * 8;
     s += shield_value[side][pos->board[king+push+1]] * 4;
     s += shield_value[side][pos->board[king+2*push-1]];
     s += shield_value[side][pos->board[king+2*push]] * 2;
