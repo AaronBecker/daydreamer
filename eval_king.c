@@ -2,7 +2,6 @@
 #include "daydreamer.h"
 
 #define shield_scale (1024+128)
-#define attack_scale (1024)
 
 static void evaluate_king_shield(const position_t* pos, int score[2]);
 static void evaluate_king_attackers(const position_t* pos,
@@ -17,9 +16,9 @@ const int shield_value[2][17] = {
 const int king_attack_score[16] = {
     0, 0, 16, 16, 32, 64, 0, 0, 0, 0, 16, 16, 32, 64, 0, 0
 };
-const int multiple_king_attack_scale[16] = {
-    0, 0, 768, 896, 1152, 1216, 1280, 1280,
-    1280, 1280, 1280, 1280, 1280, 1280, 1280, 1280
+const int king_attack_scale[16] = {
+    0, 0, 768, 896, 1152, 1216, 1280, 1344,
+    1408, 1472, 1536, 1600, 1600, 1600, 1600, 1600
 };
 
 score_t evaluate_king_safety(const position_t* pos, eval_data_t* ed)
@@ -34,7 +33,7 @@ score_t evaluate_king_safety(const position_t* pos, eval_data_t* ed)
     color_t side = pos->side_to_move;
     phase_score.midgame =
         (shield_score[side] - shield_score[side^1])*shield_scale/1024 +
-        (attack_score[side] - attack_score[side^1])*attack_scale/1024;
+        (attack_score[side] - attack_score[side^1]);
     phase_score.endgame = 0;
     return phase_score;
 }
@@ -91,13 +90,12 @@ static void evaluate_king_shield(const position_t* pos, int score[2])
 /*
  * Compute a measure of king safety given by the number and type of pieces
  * attacking a square adjacent to the king.
- * TODO: This could probably be a lot more sophisticated.
  */
 static void evaluate_king_attackers(const position_t* pos,
         int shield_score[2],
         int score[2])
 {
-    const int bad_shield = 14*2;
+    static const int bad_shield = 14*2;
     for (color_t side = WHITE; side <= BLACK; ++side) {
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
@@ -110,8 +108,7 @@ static void evaluate_king_attackers(const position_t* pos,
             }
         }
         if (shield_score[side^1] <= bad_shield) num_attackers += 2;
-        score[side] = score[side] *
-            multiple_king_attack_scale[num_attackers] / 1024;
+        score[side] = score[side] * king_attack_scale[num_attackers] / 1024;
     }
 }
 
