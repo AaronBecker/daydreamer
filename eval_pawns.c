@@ -59,7 +59,7 @@ static const int king_dist_bonus[8] = {
     0, 0, 5, 10, 15, 20, 25, 0
 };
 static const int passer_blockade[8] = {
-    0, 0, 0, 5, 10, 15, 20, 0
+    0, 0, 0, 5, 20, 45, 60, 0
 };
 static const int passer_rook[2] = { 15, 30 };
 static const int connected_passer[2][8] = {
@@ -302,7 +302,7 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 if (pos->side_to_move == side) --prom_dist;
                 square_t prom_sq = create_square(square_file(passer), RANK_8);
                 if (distance(pos->pieces[side^1][0], prom_sq) > prom_dist) {
-                    eg_passer_bonus[side] += unstoppable_passer_bonus[rank];
+                    passer_bonus[side] += unstoppable_passer_bonus[rank];
                 }
             }
 
@@ -351,7 +351,6 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                             create_piece(side, PAWN), EMPTY);
                 if (static_exchange_sign(pos, push) >= 0) {
                     passer_bonus[side] += advanceable_passer_bonus[rank];
-                    eg_passer_bonus[side] += advanceable_passer_bonus[rank];
                 }
             }
         }
@@ -369,9 +368,9 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
         (pd->score[side^1].midgame + passer_bonus[side^1]) +
         storm_score[side] - storm_score[side^1];
     score.endgame = pd->score[side].endgame +
-        eg_passer_bonus[side] -
+        passer_bonus[side] + eg_passer_bonus[side] -
         (pd->score[side^1].endgame +
-         eg_passer_bonus[side^1]);
+         passer_bonus[side^1] + eg_passer_bonus[side^1]);
     return score;
 }
 
