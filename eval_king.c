@@ -1,8 +1,8 @@
 
 #include "daydreamer.h"
 
-#define shield_scale (1024+128)
-#define attack_scale (1024)
+#define shield_scale (1024+128+64)
+#define attack_scale (1024+128)
 
 static void evaluate_king_shield(const position_t* pos, int score[2]);
 static void evaluate_king_attackers(const position_t* pos,
@@ -109,8 +109,8 @@ static void evaluate_king_attackers(const position_t* pos,
                 num_attackers++;
             }
         }
-        score[side] = score[side] *
-            (2*good_shield-MIN(good_shield, shield_score[side^1])) / good_shield;
+        //score[side] = score[side] *
+        //    (2*good_shield-MIN(good_shield, shield_score[side^1])) / good_shield;
         score[side] = score[side] *
             multiple_king_attack_scale[num_attackers] / 1024;
     }
