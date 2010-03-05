@@ -1,8 +1,8 @@
 
 #include "daydreamer.h"
 
-static const int shield_scale = 1024;
-static const int attack_scale = 1024;
+#define shield_scale 1024
+#define attack_scale (1024+128+64)
 
 static void evaluate_king_shield(const position_t* pos, int score[2]);
 static void evaluate_king_attackers(const position_t* pos,
@@ -10,8 +10,8 @@ static void evaluate_king_attackers(const position_t* pos,
         int score[2]);
 
 const int shield_value[2][17] = {
-    { 0,10, 2, 4, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0,10, 2, 4, 1, 1, 0, 0, 0 },
+    { 0, 8, 2, 4, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 2, 4, 1, 1, 0, 0, 0 },
 };
 
 const int king_attack_score[16] = {
