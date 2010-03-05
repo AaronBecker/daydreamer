@@ -5,13 +5,13 @@ static const int shield_scale = 1024;
 static const int attack_scale = 1024;
 
 static void evaluate_king_shield(const position_t* pos, int score[2]);
-static int evaluate_king_attackers(const position_t* pos,
+static void evaluate_king_attackers(const position_t* pos,
         int shield_score[2],
         int score[2]);
 
 const int shield_value[2][17] = {
-    { 0, 8, 2, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 2, 4, 0, 0, 0, 0, 0 },
+    { 0,10, 3, 5, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0,10, 3, 5, 1, 1, 0, 0, 0 },
 };
 
 const int king_attack_score[16] = {
@@ -48,9 +48,9 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
     int push = pawn_push[side];
     s += shield_value[side][pos->board[king-1]] * 2;
     s += shield_value[side][pos->board[king+1]] * 2;
-    s += shield_value[side][pos->board[king+push-1]] * 6;
-    s += shield_value[side][pos->board[king+push]] * 8;
-    s += shield_value[side][pos->board[king+push+1]] * 6;
+    s += shield_value[side][pos->board[king+push-1]] * 5;
+    s += shield_value[side][pos->board[king+push]] * 6;
+    s += shield_value[side][pos->board[king+push+1]] * 5;
     s += shield_value[side][pos->board[king+2*push-1]] * 2;
     s += shield_value[side][pos->board[king+2*push]] * 4;
     s += shield_value[side][pos->board[king+2*push+1]] * 2;
@@ -93,7 +93,7 @@ static void evaluate_king_shield(const position_t* pos, int score[2])
  * attacking a square adjacent to the king.
  * TODO: This could probably be a lot more sophisticated.
  */
-static int evaluate_king_attackers(const position_t* pos,
+static void evaluate_king_attackers(const position_t* pos,
         int shield_score[2],
         int score[2])
 {
