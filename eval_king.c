@@ -17,8 +17,8 @@ const int king_attack_score[16] = {
     0, 0, 16, 16, 32, 64, 0, 0, 0, 0, 16, 16, 32, 64, 0, 0
 };
 const int king_attack_scale[16] = {
-    0, 0, 768, 896, 1152, 1216, 1280, 1280,
-    1280, 1280, 1280, 1280, 1280, 1280, 1280, 1280
+    0, 0, 640, 800, 1120, 1200, 1280, 1280,
+    1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536
 };
 
 score_t evaluate_king_safety(const position_t* pos, eval_data_t* ed)
@@ -95,7 +95,7 @@ static void evaluate_king_attackers(const position_t* pos,
         int shield_score[2],
         int score[2])
 {
-    static const int bad_shield = 28;
+    static const int bad_shield = 64;
     for (color_t side = WHITE; side <= BLACK; ++side) {
         if (pos->piece_count[create_piece(side, QUEEN)] == 0) continue;
         const square_t opp_king = pos->pieces[side^1][0];
