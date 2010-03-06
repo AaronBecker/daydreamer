@@ -125,10 +125,12 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     if (opp_bishops &&
             endgame_scale[WHITE] == 1024 &&
             endgame_scale[BLACK] == 1024) {
-        if (pos->num_pieces[WHITE] == 2 && pos->num_pieces[BLACK] == 2) {
+        if (pos->num_pieces[WHITE] == 2 &&
+                pos->num_pieces[BLACK] == 2 &&
+                abs(pos->num_pawns[WHITE] - pos->num_pawns[BLACK]) < 3) {
             endgame_scale[WHITE] = endgame_scale[BLACK] = 512;
         } else {
-            endgame_scale[WHITE] = endgame_scale[BLACK] = 1024-256;
+            //endgame_scale[WHITE] = endgame_scale[BLACK] = 1024-256;
         }
     }
 
@@ -136,10 +138,8 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     phase_score.midgame += 9;
     phase_score.endgame += 2;
 
-    phase_score.endgame = phase_score.endgame *
-        endgame_scale[score > 0 ? side : side^1] / 1024;
     score = blend_score(&phase_score, ed->md->phase);
-    //score = (score * endgame_scale[score > 0 ? side : side^1]) / 1024;
+    score = (score * endgame_scale[score > 0 ? side : side^1]) / 1024;
 
     if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
     if (!can_win(pos, side^1)) score = MAX(score, DRAW_VALUE);
