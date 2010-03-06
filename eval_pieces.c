@@ -44,7 +44,7 @@ static const int bishop_outpost[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     1,  2,  2,  2,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     3,  5,  6,  6,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    3,  5,  6,  9,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    3,  5,  6,  6,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     1,  2,  2,  2,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
@@ -106,31 +106,13 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
     for (side=WHITE; side<=BLACK; ++side) {
         const int* mobile = color_table[side];
         square_t from, to;
-        piece_t piece, dummy;
-        int push = pawn_push[side];
+        piece_t piece;
         for (int i=1; pos->pieces[side][i] != INVALID_SQUARE; ++i) {
             from = pos->pieces[side][i];
             piece = pos->board[from];
             piece_type_t type = piece_type(piece);
             int ps = 0;
             switch (type) {
-                // FIXME: PAWN case isn't actually used, since this is just
-                // the pieces array. Try adding this to eval_pawns.
-                case PAWN:
-                    ps = (pos->board[from+push] == EMPTY);
-                    dummy = pos->board[from+push-1];
-                    if (dummy > create_piece(side^1, PAWN) &&
-                            dummy <= create_piece(side^1, KING)) {
-                        mid_score[side] += 7;
-                        end_score[side] += 12;
-                    }
-                    dummy = pos->board[from+push+1];
-                    if (dummy > create_piece(side^1, PAWN) &&
-                            dummy <= create_piece(side^1, KING)) {
-                        mid_score[side] += 7;
-                        end_score[side] += 12;
-                    }
-                    break;
                 case KNIGHT:
                     ps += mobile[pos->board[from-33]];
                     ps += mobile[pos->board[from-31]];
