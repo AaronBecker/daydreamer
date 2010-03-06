@@ -113,13 +113,24 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     phase_score.endgame += pos->piece_square_eval[side].endgame -
         pos->piece_square_eval[side^1].endgame;
 
+    bool opp_bishops;
     add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
     add_scaled_score(&phase_score, &component_score, pattern_scale);
-    component_score = pieces_score(pos, ed->pd);
+    component_score = pieces_score(pos, ed, &opp_bishops);
     add_scaled_score(&phase_score, &component_score, pieces_scale);
     component_score = evaluate_king_safety(pos, ed);
     add_scaled_score(&phase_score, &component_score, safety_scale);
+
+    if (opp_bishops &&
+            endgame_scale[WHITE] == 1024 &&
+            endgame_scale[BLACK] == 1024) {
+        if (pos->num_pieces[WHITE] == 2 && pos->num_pieces[BLACK] == 2) {
+            endgame_scale[WHITE] = endgame_scale[BLACK] = 512;
+        } else {
+            endgame_scale[WHITE] = endgame_scale[BLACK] = 512+256;
+        }
+    }
 
     // Tempo
     phase_score.midgame += 9;
@@ -193,7 +204,7 @@ void report_eval(const position_t* pos)
     printf("info string pawns (mid,end): (%d, %d)\n",
             p_score.midgame, p_score.endgame);
     add_scaled_score(&phase_score, &p_score, 1024);
-    score_t pc_score = pieces_score(pos, pd);
+    score_t pc_score = pieces_score(pos, ed);
     printf("info string pieces (mid,end): (%d, %d)\n",
             pc_score.midgame, pc_score.endgame);
     add_scaled_score(&phase_score, &pc_score, 1024);
