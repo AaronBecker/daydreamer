@@ -48,6 +48,7 @@ static int quiesce(position_t* pos,
         int alpha,
         int beta,
         float depth);
+static uint64_t get_root_node_count(move_t move);
 
 /*
  * Zero out all search variables prior to starting a search. Leaves the
@@ -181,8 +182,8 @@ static bool should_deepen(search_data_t* data)
 
     // If we're much more than halfway through our time, we won't make it
     // through the first move of the next iteration anyway.
-    if (data->time_target &&
-            real_target - so_far < real_target * 60 / 100) return false;
+    if (data->time_target && real_target - so_far <
+            real_target * 60 / 100) return false;
 
     // Go ahead and quit if we have a mate.
     int* scores = data->scores_by_iteration;
@@ -194,7 +195,9 @@ static bool should_deepen(search_data_t* data)
     // We can stop early if our best move is obvious.
     if (obvious_move_enabled && data->obvious_move &&
             data->depth_limit == MAX_SEARCH_PLY &&
-            !data->node_limit && data->current_depth >= 7*PLY) return false;
+            !data->node_limit && data->current_depth >= 7*PLY &&
+            get_root_node_count(data->obvious_move) >
+            data->nodes_searched * 10 / 9) return false;
 
     // Allocate some extra time when the root score drops.
     depth = depth_to_index(data->current_depth);
