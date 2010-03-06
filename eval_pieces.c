@@ -93,7 +93,7 @@ static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
  * and assign a bonus or penalty accordingly. Also assign miscellaneous
  * bonuses based on outpost squares, open files, etc.
  */
-score_t pieces_score(const position_t* pos, eval_data_t* ed, bool* opp_bishop)
+score_t pieces_score(const position_t* pos, pawn_data_t* pd)
 {
     score_t score;
     int mid_score[2] = {0, 0};
@@ -103,9 +103,7 @@ score_t pieces_score(const position_t* pos, eval_data_t* ed, bool* opp_bishop)
                             relative_rank[BLACK]
                                 [square_rank(pos->pieces[BLACK][0])] };
     color_t side;
-    uint8_t bishop_color[2] = {0, 0};
     for (side=WHITE; side<=BLACK; ++side) {
-        if (ed->md->scale[side] == 0) continue;
         const int* mobile = color_table[side];
         square_t from, to;
         piece_t piece;
@@ -124,7 +122,7 @@ score_t pieces_score(const position_t* pos, eval_data_t* ed, bool* opp_bishop)
                     ps += mobile[pos->board[from+18]];
                     ps += mobile[pos->board[from+31]];
                     ps += mobile[pos->board[from+33]];
-                    if (square_is_outpost(ed->pd, from, side)) {
+                    if (square_is_outpost(pd, from, side)) {
                         int bonus = outpost_score(pos, from, KNIGHT);
                         mid_score[side] += bonus;
                         end_score[side] += bonus;
@@ -162,12 +160,11 @@ score_t pieces_score(const position_t* pos, eval_data_t* ed, bool* opp_bishop)
                     ps += mobile[pos->board[to]];
                     for (to=from+17; pos->board[to]==EMPTY; to+=17, ++ps) {}
                     ps += mobile[pos->board[to]];
-                    if (square_is_outpost(ed->pd, from, side)) {
+                    if (square_is_outpost(pd, from, side)) {
                         int bonus = outpost_score(pos, from, BISHOP);
                         mid_score[side] += bonus;
                         end_score[side] += bonus;
                     }
-                    bishop_color[side] |= (square_color(from) + 1);
                     break;
                 case ROOK:
                     for (to=from-16; pos->board[to]==EMPTY; to-=16, ++ps) {}
@@ -184,10 +181,10 @@ score_t pieces_score(const position_t* pos, eval_data_t* ed, bool* opp_bishop)
                         end_score[side] += rook_on_7[1];
                     }
                     file_t file = square_file(from);
-                    if (file_is_half_open(ed->pd, file, side)) {
+                    if (file_is_half_open(pd, file, side)) {
                         mid_score[side] += rook_half_open_file_bonus[0];
                         end_score[side] += rook_half_open_file_bonus[1];
-                        if (file_is_half_open(ed->pd, file, side^1)) {
+                        if (file_is_half_open(pd, file, side^1)) {
                             mid_score[side] += rook_open_file_bonus[0];
                             end_score[side] += rook_open_file_bonus[1];
                         }
@@ -199,8 +196,6 @@ score_t pieces_score(const position_t* pos, eval_data_t* ed, bool* opp_bishop)
             end_score[side] += mobility_score_table[1][type][ps];
         }
     }
-    *opp_bishop = (pos->piece_count[WB] == 1 && pos->piece_count[BB] == 1 &&
-            bishop_color[WHITE] != bishop_color[BLACK]);
     side = pos->side_to_move;
     score.midgame = mid_score[side] - mid_score[side^1];
     score.endgame = end_score[side] - end_score[side^1];

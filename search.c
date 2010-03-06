@@ -803,8 +803,8 @@ static int search(position_t* pos,
             // futility before calling do_move, but this would require more
             // efficient ways of identifying important moves without actually
             // making them.
-            // TODO: try pruning when
-            // full_window && num_legal_moves >= depth + lmr_pv_early_moves
+            bool bad_history = is_history_prune_allowed(
+                    &root_data.history, move, depth);
             const bool prune_futile = futility_enabled &&
                 !full_window &&
                 !ext &&
@@ -819,9 +819,7 @@ static int search(position_t* pos,
                 // TODO: try pruning based on pure move ordering, or work
                 // move order into the history count
                 // TODO: experiment with pruning inside pv
-                if (history_prune_enabled && depth <= 3.0 &&
-                        is_history_prune_allowed(
-                            &root_data.history, move, depth)) {
+                if (history_prune_enabled && depth <= 3.0 && bad_history) {
                     num_futile_moves++;
                     undo_move(pos, move, &undo);
                     if (full_window) add_pv_move(&selector, move, 0);
@@ -849,7 +847,7 @@ static int search(position_t* pos,
                 !ext &&
                 !mate_threat &&
                 depth > lmr_depth_limit;
-            const float lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
+            const float lmr_red = try_lmr ? lmr_reduction(&selector, move) + bad_history ? 0.25 : 0 : 0;
             if (lmr_red) score = -search(pos, search_node+1, ply+1,
                     -alpha-1, -alpha, depth-lmr_red-PLY);
             else score = alpha+1;
