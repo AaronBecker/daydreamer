@@ -6,6 +6,9 @@ static const int trapped_bishop = 150;
 /*
  * Find simple bad patterns that won't show up within reasonable search
  * depths. This is mostly trapped and blocked pieces.
+ * TODO: add some trapped knight/rook patterns here.
+ * TODO: maybe merge this with eval_pieces so we have access to piece
+ * mobility information.
  */
 score_t pattern_score(const position_t*pos)
 {

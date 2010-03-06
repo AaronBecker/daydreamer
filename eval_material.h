@@ -20,14 +20,11 @@ typedef enum {
     EG_KRKN,
     EG_KRKP,
     EG_KRPKR,
-    EG_KRPPKRP,
 
-    EG_KBBKN,
     EG_KBNK,
     EG_KBPKB,
     EG_KBPKN,
     EG_KPKB,
-    EG_KBPPKB,
 
     EG_KNPK,
     EG_KBPK,

@@ -77,21 +77,31 @@ void init_move_selector(move_selector_t* sel,
 }
 
 /*
- * Is there only one possible move in the current position? This may need to
- * be changed for phased move generation later.
+ * Is there only one possible move in the current position? This just assumes
+ * that in non-check situations we'll have more than one move. This isn't
+ * completely accurate, but missing the single reply extension in those cases
+ * where this test is inaccurate isn't a problem.
  */
 bool has_single_reply(move_selector_t* sel)
 {
     return *sel->phase == PHASE_EVASIONS && sel->moves_end == 1;
 }
 
+/*
+ * Should we allow pruning on this move? This just screens moves out based on
+ * high-level criteria; value- and history-based criteria are applied after.
+ */
 bool should_try_prune(move_selector_t* sel, move_t move)
 {
+    (void)sel;
     return !get_move_capture(move) &&
         !get_move_promote(move) &&
         !is_move_castle(move);
 }
 
+/*
+ * How much should we reduce the given move in LMR?
+ */
 float lmr_reduction(move_selector_t* sel, move_t move)
 {
     assert(sel->moves[sel->current_move_index-1] == move);
@@ -101,8 +111,8 @@ float lmr_reduction(move_selector_t* sel, move_t move)
         !is_move_castle(move) &&
         move != sel->killers[0] &&
         move != sel->killers[1];
-    return do_lmr ?
-        (sel->scores[sel->current_move_index-1]<0 ? 2*PLY : PLY) : 0;
+    if (!do_lmr) return 0;
+    return sel->scores[sel->current_move_index-1] < 0 ? 2*PLY : PLY;
 }
 
 /*
@@ -249,45 +259,6 @@ move_t select_move(move_selector_t* sel)
     return select_move(sel);
 }
 
-bool defer_move(move_selector_t* sel, move_t move)
-{
-    if (!defer_enabled) return false;
-    assert(move == sel->moves[sel->current_move_index]);
-    if (*sel->phase == PHASE_DEFERRED ||
-            *sel->phase == PHASE_TRANS ||
-            sel->scores[sel->current_move_index] > MAX_HISTORY) return false;
-    sel->deferred_moves[sel->num_deferred_moves++] = move;
-    sel->deferred_moves[sel->num_deferred_moves] = NO_MOVE;
-    sel->moves_so_far--;
-    return true;
-}
-
-static void score_qsearch_moves(move_selector_t* sel)
-{
-    move_t* moves = sel->moves;
-    int64_t* scores = sel->scores;
-
-    const int64_t grain = MAX_HISTORY;
-    const int64_t hash_score = 1000 * grain;
-    for (int i=0; moves[i] != NO_MOVE; ++i) {
-        const move_t move = moves[i];
-        int64_t score = 0ull;
-        if (move == sel->hash_move[0]) {
-            score = hash_score;
-        } else if (get_move_capture(move) || get_move_promote(move)) {
-            piece_type_t piece = get_move_piece_type(move);
-            piece_type_t promote = get_move_promote(move);
-            piece_type_t capture = piece_type(get_move_capture(move));
-            int tactic_bonus = 0;
-            if (promote == QUEEN) tactic_bonus = 100;
-            score = 6*capture - piece + 5 + tactic_bonus;
-        } else {
-            score = root_data.history.history[history_index(move)];
-        }
-        scores[i] = score;
-    }
-}
-
 /*
  * Take an unordered list of pseudo-legal moves and score them according
  * to how good we think they'll be. This just identifies a few key classes
@@ -321,6 +292,36 @@ static void score_moves(move_selector_t* sel)
             score = killer_score-3;
         } else {
             score = (int64_t)root_data.history.history[history_index(move)];
+        }
+        scores[i] = score;
+    }
+}
+
+/*
+ * Quiescence-specific move scoring. This is simpler than normal scoring,
+ * because SEE testing is deferred until after futility in the quiescent search.
+ */
+static void score_qsearch_moves(move_selector_t* sel)
+{
+    move_t* moves = sel->moves;
+    int64_t* scores = sel->scores;
+
+    const int64_t grain = MAX_HISTORY;
+    const int64_t hash_score = 1000 * grain;
+    for (int i=0; moves[i] != NO_MOVE; ++i) {
+        const move_t move = moves[i];
+        int64_t score = 0ull;
+        if (move == sel->hash_move[0]) {
+            score = hash_score;
+        } else if (get_move_capture(move) || get_move_promote(move)) {
+            piece_type_t piece = get_move_piece_type(move);
+            piece_type_t promote = get_move_promote(move);
+            piece_type_t capture = piece_type(get_move_capture(move));
+            int tactic_bonus = 0;
+            if (promote == QUEEN) tactic_bonus = 100;
+            score = 6*capture - piece + 5 + tactic_bonus;
+        } else {
+            score = root_data.history.history[history_index(move)];
         }
         scores[i] = score;
     }
@@ -370,12 +371,18 @@ static void sort_root_moves(move_selector_t* sel)
     sort_move_list(sel);
 }
 
+/*
+ * Combined score-and-sort for normal search nodes.
+ */
 static void sort_moves(move_selector_t* sel)
 {
     score_moves(sel);
     sort_move_list(sel);
 }
 
+/*
+ * Combined score-and-sort for quiescent search nodes.
+ */
 static void sort_qsearch_moves(move_selector_t* sel)
 {
     score_qsearch_moves(sel);
@@ -399,6 +406,24 @@ static void sort_move_list(move_selector_t* sel)
         sel->scores[j+1] = score;
         sel->moves[j+1] = move;
     }
+}
+
+/*
+ * Add the move to a list of deferred moves, which will be retried in the
+ * last phase. Currently this isn't used; I haven't found a deferment scheme
+ * that helps at all.
+ */
+bool defer_move(move_selector_t* sel, move_t move)
+{
+    if (!defer_enabled) return false;
+    assert(move == sel->moves[sel->current_move_index]);
+    if (*sel->phase == PHASE_DEFERRED ||
+            *sel->phase == PHASE_TRANS ||
+            sel->scores[sel->current_move_index] > MAX_HISTORY) return false;
+    sel->deferred_moves[sel->num_deferred_moves++] = move;
+    sel->deferred_moves[sel->num_deferred_moves] = NO_MOVE;
+    sel->moves_so_far--;
+    return true;
 }
 
 struct {
