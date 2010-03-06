@@ -443,6 +443,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
             }
             char move_str[7];
             move_to_coord_str(book_move, move_str);
+            printf("info depth 0 nodes 0 pv %s\n", move_str);
             printf("bestmove %s\n", move_str);
             search_data->engine_status = ENGINE_IDLE;
             return;
