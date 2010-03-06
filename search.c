@@ -339,7 +339,7 @@ static void record_failure(history_t* h, move_t move, int depth)
 static bool is_history_prune_allowed(history_t* h, move_t move, int depth)
 {
     int index = history_index(move);
-    return 5 * depth_to_index(depth) * h->success[index] < 4 * h->failure[index];
+    return 4 * depth_to_index(depth) * h->success[index] < 5 * h->failure[index];
 }
 
 /*
