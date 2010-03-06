@@ -20,11 +20,13 @@ static const float lmr_depth_limit = 1.0;
 static const float futility_depth_limit = 5.0;
 
 static const bool enable_pv_iid = true;
-static const bool enable_non_pv_iid = false;
+static const bool enable_non_pv_iid = true;
 static const float iid_pv_depth_reduction = 2.0;
 static const float iid_non_pv_depth_reduction = 2.0;
 static const float iid_pv_depth_cutoff = 5.0;
 static const float iid_non_pv_depth_cutoff = 8.0;
+static const int iid_pv_margin = 300;
+static const int iid_nonpv_margin = 150;
 
 static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 250;
@@ -345,12 +347,15 @@ static bool is_history_prune_allowed(history_t* h, move_t move, int depth)
 /*
  * Can we do internal iterative deepening?
  */
-static bool is_iid_allowed(bool full_window, float depth)
+static bool is_iid_allowed(bool full_window, float depth, int margin)
 {
-    if (full_window && (!enable_pv_iid ||
-                iid_pv_depth_cutoff >= depth)) return false;
+    if (full_window &&
+            (!enable_pv_iid ||
+             iid_pv_depth_cutoff >= depth ||
+             margin > iid_pv_margin)) return false;
     else if (!enable_non_pv_iid ||
-            iid_non_pv_depth_cutoff >= depth) return false;
+            iid_non_pv_depth_cutoff >= depth ||
+            margin > iid_nonpv_margin) return false;
     return true;
 }
 
@@ -754,9 +759,8 @@ static int search(position_t* pos,
     }
 
     // Internal iterative deepening.
-    if (iid_enabled &&
-            hash_move == NO_MOVE &&
-            is_iid_allowed(full_window, depth)) {
+    if (iid_enabled && hash_move == NO_MOVE &&
+            is_iid_allowed(full_window, depth, beta-lazy_score)) {
         const int iid_depth = full_window ?
                 depth - iid_pv_depth_reduction :
                 MIN(depth/2, depth - iid_non_pv_depth_reduction);
