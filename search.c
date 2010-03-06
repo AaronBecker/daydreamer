@@ -339,17 +339,7 @@ static void record_failure(history_t* h, move_t move, int depth)
 static bool is_history_prune_allowed(history_t* h, move_t move, int depth)
 {
     int index = history_index(move);
-    return depth_to_index(depth) * h->success[index] < h->failure[index];
-}
-
-/*
- * History heuristic for depth reduction.
- * TODO: try actually using this
- */
-static bool is_history_reduction_allowed(history_t* h, move_t move)
-{
-    int index = history_index(move);
-    return h->success[index] / 8 < h->failure[index];
+    return 5 * depth_to_index(depth) * h->success[index] < 4 * h->failure[index];
 }
 
 /*
@@ -849,7 +839,6 @@ static int search(position_t* pos,
                 depth > lmr_depth_limit;
             float lmr_red = 0;
             if (try_lmr) lmr_red = lmr_reduction(&selector, move);
-            if (lmr_red && is_history_reduction_allowed(&root_data.history, move)) lmr_red += 0.5;
             if (lmr_red) score = -search(pos, search_node+1, ply+1,
                     -alpha-1, -alpha, depth-lmr_red-PLY);
             else score = alpha+1;
