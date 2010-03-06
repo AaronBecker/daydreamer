@@ -105,6 +105,7 @@ score_t pieces_score(const position_t* pos, eval_data_t* ed, bool* opp_bishop)
     color_t side;
     uint8_t bishop_color[2] = {0, 0};
     for (side=WHITE; side<=BLACK; ++side) {
+        if (ed->md->scale[side] == 0) continue;
         const int* mobile = color_table[side];
         square_t from, to;
         piece_t piece;
