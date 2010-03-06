@@ -107,7 +107,7 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data);
 void print_pawn_stats(void);
 
 // eval_pieces.c
-score_t pieces_score(const position_t* pos, pawn_data_t* pd);
+score_t pieces_score(const position_t* pos, eval_data_t* ed, bool* opp_bishop);
 
 // format.c
 int square_to_coord_str(square_t sq, char* str);
