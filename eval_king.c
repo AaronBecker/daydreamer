@@ -61,28 +61,31 @@ static int king_shield_score(const position_t* pos, color_t side, square_t king)
 static void evaluate_king_shield(const position_t* pos, int score[2])
 {
     score[WHITE] = score[BLACK] = 0;
-    //if (pos->piece_count[BQ] + pos->piece_count[WQ] == 0) return phase_score;
     int oo_score[2] = {0, 0};
     int ooo_score[2] = {0, 0};
     int castle_score[2] = {0, 0};
-    score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
-    if (has_oo_rights(pos, WHITE)) {
-        oo_score[WHITE] = king_shield_score(pos, WHITE, G1);
+    if (pos->piece_count[BQ]) {
+        score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
+        if (has_oo_rights(pos, WHITE)) {
+            oo_score[WHITE] = king_shield_score(pos, WHITE, G1);
+        }
+        if (has_ooo_rights(pos, WHITE)) {
+            ooo_score[WHITE] = king_shield_score(pos, WHITE, C1);
+        }
+        castle_score[WHITE] = MAX(score[WHITE],
+            MAX(oo_score[WHITE], ooo_score[WHITE]));
     }
-    if (has_ooo_rights(pos, WHITE)) {
-        ooo_score[WHITE] = king_shield_score(pos, WHITE, C1);
+    if (pos->piece_count[WQ]) {
+        score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
+        if (has_oo_rights(pos, BLACK)) {
+            oo_score[BLACK] = king_shield_score(pos, BLACK, G8);
+        }
+        if (has_ooo_rights(pos, WHITE)) {
+            ooo_score[BLACK] = king_shield_score(pos, BLACK, C8);
+        }
+        castle_score[BLACK] = MAX(score[BLACK],
+                MAX(oo_score[BLACK], ooo_score[BLACK]));
     }
-    castle_score[WHITE] = MAX(score[WHITE],
-        MAX(oo_score[WHITE], ooo_score[WHITE]));
-    score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
-    if (has_oo_rights(pos, BLACK)) {
-        oo_score[BLACK] = king_shield_score(pos, BLACK, G8);
-    }
-    if (has_ooo_rights(pos, WHITE)) {
-        ooo_score[BLACK] = king_shield_score(pos, BLACK, C8);
-    }
-    castle_score[BLACK] = MAX(score[BLACK],
-        MAX(oo_score[BLACK], ooo_score[BLACK]));
     score[WHITE] = (score[WHITE] + castle_score[WHITE]) / 2;
     score[BLACK] = (score[BLACK] + castle_score[BLACK]) / 2;
 }
