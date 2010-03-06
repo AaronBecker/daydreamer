@@ -24,13 +24,10 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KRKN,
     &scale_krkp,    //EG_KRKP,
     NULL,//&scale_krpkr,   //EG_KRPKR,
-    NULL,           //EG_KRPPKRP,
-    NULL,           //EG_KBBKN,
     NULL,           //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
     NULL,//&scale_kpkb,    //EG_KPKB,
-    NULL,           //EG_KBPPKB,
     &scale_knpk,    //EG_KNPK,
     &scale_kbpk,    //EG_KBPK,
     &scale_kpk,     //EG_KPK,
@@ -39,56 +36,32 @@ eg_scale_fn eg_scale_fns[] = {
 
 eg_score_fn eg_score_fns[] = {
     NULL,           //EG_NONE,
-    &score_win,     //EG_WIN,
-    &score_draw,    //EG_DRAW,
+    NULL,//&score_win,     //EG_WIN,
+    NULL,           //EG_DRAW,
     NULL,           //EG_KQKQ,
     NULL,           //EG_KQKP,
     NULL,           //EG_KRKR,
     NULL,           //EG_KRKB,
     NULL,           //EG_KRKN,
     NULL,           //EG_KRKP,
-    &score_krpkr,   //EG_KRPKR,
-    NULL,           //EG_KRPPKRP,
-    NULL,           //EG_KBBKN,
+    NULL,           //EG_KRPKR,
     &score_kbnk,    //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
     NULL,           //EG_KPKB,
-    NULL,           //EG_KBPPKB,
     NULL,           //EG_KNPK,
     NULL,           //EG_KBPK,
     NULL,           //EG_KPK,
     NULL,           //EG_LAST
 };
 
-bool eg_use_tb[] = {
-    false,           //EG_NONE,
-    false,           //EG_WIN,
-    false,           //EG_DRAW,
-    true,            //EG_KQKQ,
-    true,            //EG_KQKP,
-    true,            //EG_KRKR,
-    true,            //EG_KRKB,
-    true,            //EG_KRKN,
-    true,            //EG_KRKP,
-    true,            //EG_KRPKR,
-    false,           //EG_KRPPKRP,
-    true,            //EG_KBBKN,
-    true,            //EG_KBNK,
-    true,            //EG_KBPKB,
-    true,            //EG_KBPKN,
-    true,            //EG_KPKB,
-    false,           //EG_KBPPKB,
-    true,            //EG_KNPK,
-    true,            //EG_KBPK,
-    true,            //EG_KPK,
-    false,           //EG_LAST
-};
-
-
-bool endgame_score(const position_t* pos, eval_data_t* ed, int* score)
+bool scale_endgame(const position_t* pos,
+        eval_data_t* ed,
+        int endgame_scale[2],
+        int* score)
 {
-    //if (options.use_gtb && ed->md->population < 5) {
+    /*
+    if (options.use_gtb && ed->md->population < 5) {
     if (options.use_gtb && eg_use_tb[ed->md->eg_type]) {
         int result;
         if (probe_gtb_soft(pos, &result)) {
@@ -97,14 +70,21 @@ bool endgame_score(const position_t* pos, eval_data_t* ed, int* score)
         }
     }
     return false;
-    /*
-    eg_score_fn fn = eg_score_fns[ed->md->eg_type];
-    if (fn) {
-        *score = fn(pos, ed);
+    */
+    endgame_scale[WHITE] = ed->md->scale[WHITE];
+    endgame_scale[BLACK] = ed->md->scale[BLACK];
+    if (!endgame_scale[WHITE] && !endgame_scale[BLACK]) {
+        *score = DRAW_VALUE;
         return true;
     }
+    eg_score_fn score_fn = eg_score_fns[ed->md->eg_type];
+    if (score_fn) {
+        *score = score_fn(pos, ed);
+        return true;
+    }
+    eg_scale_fn scale_fn = eg_scale_fns[ed->md->eg_type];
+    if (scale_fn) scale_fn(pos, ed, endgame_scale);
     return false;
-    */
 }
 
 void determine_endgame_scale(const position_t* pos,
@@ -143,7 +123,7 @@ static void scale_krkp(const position_t* pos, eval_data_t* ed, int scale[2])
     if ((wk < bp && square_file(wk) == prom_sq) ||
             (distance(wk, prom_sq) + 1 - tempo < distance(bk, prom_sq)) ||
             (distance(bk, bp) - (tempo^1) >= 3 && distance(bk, wr) >= 3)) {
-        scale[strong_side] = 16;
+        scale[strong_side] = 1024;
         scale[weak_side] = 0;
         return;
     }
@@ -249,8 +229,8 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
             wr_file == p_file && wr != prom_sq &&
             distance(wk, prom_sq) < distance(bk, prom_sq) - 2 + tempo &&
             distance(wk, prom_sq) < distance(bk, wr + tempo)) {
-        scale[strong_side] = 16 - distance(wp, prom_sq);
-        scale[weak_side] = 1;
+        scale[strong_side] = 64*(16 - distance(wp, prom_sq));
+        scale[weak_side] = 64;
         return;
     }
 
@@ -261,7 +241,7 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
             (distance(bk, wr) + tempo > 2 ||
              (distance(wk, prom_sq) < distance(bk, wr) + tempo &&
               distance(wk, wp + N) < distance(bk, wr) + tempo))) {
-        scale[strong_side] = 16 - distance(wp, prom_sq);
+        scale[strong_side] = 64*(16 - distance(wp, prom_sq));
         scale[weak_side] = 0;
         return;
     }
@@ -270,12 +250,12 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
     int bk_file = square_file(bk);
     if (p_rank < RANK_5 && bk > wp) {
         if (bk_file == p_file) {
-            scale[strong_side] = 2;
-            scale[weak_side] = 1;
+            scale[strong_side] = 128;
+            scale[weak_side] = 64;
             return;
         } else if (abs(bk_file - p_file) == 1 && distance(wk, bk) > 2) {
-            scale[strong_side] = 3;
-            scale[weak_side] = 1;
+            scale[strong_side] = 192;
+            scale[weak_side] = 64;
             return;
         }
     }
@@ -440,12 +420,6 @@ static int score_win(const position_t* pos, eval_data_t* ed)
     return score * (strong_side == pos->side_to_move ? 1 : -1);
 }
 
-static int score_draw(const position_t* pos, eval_data_t* ed)
-{
-    (void)pos; (void)ed;
-    return DRAW_VALUE;
-}
-
 static int score_kbnk(const position_t* pos, eval_data_t* ed)
 {
     color_t strong_side = ed->md->strong_side;
@@ -468,102 +442,3 @@ static int score_kbnk(const position_t* pos, eval_data_t* ed)
         (strong_side == pos->side_to_move ? 1 : -1);
 }
 
-static int score_krpkr(const position_t* pos, eval_data_t* ed)
-{
-    color_t strong_side = ed->md->strong_side;
-    color_t weak_side = strong_side^1;
-    assert(pos->num_pieces[strong_side] == 2);
-    assert(pos->num_pawns[strong_side] == 1);
-    assert(pos->num_pieces[weak_side] == 2);
-    assert(pos->num_pawns[weak_side] == 0);
-
-    square_t wk = pos->pieces[strong_side][0];
-    square_t bk = pos->pieces[weak_side][0];
-    square_t wr = pos->pieces[strong_side][1];
-    square_t br = pos->pieces[weak_side][1];
-    square_t wp = pos->pawns[strong_side][0];
-    bool tempo = strong_side == pos->side_to_move;
- 
-    if (strong_side == BLACK) {
-        wk = mirror_rank(wk);
-        bk = mirror_rank(bk);
-        wr = mirror_rank(wr);
-        br = mirror_rank(br);
-        wp = mirror_rank(wp);
-    }
-    if (square_file(wp) >= FILE_E) {
-        wk = mirror_file(wk);
-        bk = mirror_file(bk);
-        wr = mirror_file(wr);
-        br = mirror_file(br);
-        wp = mirror_file(wp);
-    }
-
-    int wk_rank = square_rank(wk);
-    int br_rank = square_rank(br);
-    int wr_rank = square_rank(wr);
-    int p_rank = square_rank(wp);
-    int p_file = square_file(wp);
-    int prom_sq = p_file + A8;
-
-    // Lots of tricky rook endgames. Credit goes to Silman's Complete Endgame
-    // Course (great book), checked against Stockfish's implementation.
-    // I'm horrible at rook endgames over the board, so yeah.
-
-    // The Philidor position is a draw.
-    if (p_rank < RANK_6 && distance(bk, prom_sq) <= 1 && wk_rank < RANK_6 &&
-            (((p_rank < RANK_4 && wr_rank != RANK_6)) ||
-            br_rank == RANK_6)) return 0;
-
-    // Philidor defense after white pushes the pawn. Black needs to check
-    // the white king from behind.
-    int br_file = square_file(br);
-    if (p_rank >= RANK_6 && distance(bk, prom_sq) <= 1 &&
-            wk_rank + tempo <= RANK_6 &&
-            (br_rank == RANK_1 || (abs(br_file - p_file) > 2))) return 0;
-
-    if (p_rank >= RANK_6 && bk == prom_sq && br_rank == RANK_1 &&
-            (!tempo || distance(wk, wp) > 1)) return 0;
-
-    // Fiddly rook-pawn promotion blocked by friendly rook. G7 and H7 are
-    // the only places the black king is safe.
-    int wk_file = square_file(wk);
-    if (wp == A7 && wr == A8 && (bk == G7 || bk == H7) &&
-            (br_file == FILE_A && (br_rank < RANK_4 ||
-                                   wk_file > FILE_C ||
-                                   wk_rank < RANK_6))) return 0;
-
-    // Blockaded pawn with the white king far away is a draw.
-    if (p_rank < RANK_6 && bk == wp + N &&
-            distance(wk, wp) - tempo > 1 &&
-            distance(wk, br) - tempo > 1) return 0;
-
-    // Generic supported pawn on 7 usually wins if the king is close.
-    int wr_file = square_file(wr);
-    int val = 0;
-    if (p_rank == RANK_7 && p_file != FILE_A &&
-            wr_file == p_file && wr != prom_sq &&
-            distance(wk, prom_sq) < distance(bk, prom_sq) - 2 + tempo &&
-            distance(wk, prom_sq) < distance(bk, wr + tempo)) {
-        val = EG_ROOK_VAL - distance(wp, prom_sq) + tempo;
-    }
-
-    // Generic less-advanced pawn, less favorable.
-    if (!val && p_file != FILE_A && wr_file == p_file && wr < wp &&
-            distance(wk, prom_sq) < distance(bk, prom_sq) - 2 + tempo &&
-            distance(wk, wp + N) < distance(bk, wp + N) - 2 + tempo &&
-            (distance(bk, wr) + tempo > 2 ||
-             (distance(wk, prom_sq) < distance(bk, wr) + tempo &&
-              distance(wk, wp + N) < distance(bk, wr) + tempo))) {
-        val = EG_PAWN_VAL - distance(wk, prom_sq) + 16*p_rank;
-    }
-
-    // Blocked, unsupported pawn; usually a draw.
-    int bk_file = square_file(bk);
-    if (!val && p_rank < RANK_5 && bk > wp) {
-        if (bk_file == p_file) val =  5;
-        else if (abs(bk_file - p_file) == 1 && distance(wk, bk) > 2) val = 10;
-    }
-    if (!val) val = EG_PAWN_VAL + p_rank*5 - (p_file == FILE_A ? 25 : 0);
-    return val * (strong_side == pos->side_to_move ? 1 : -1);
-}

@@ -230,12 +230,6 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         } else if (wr == 1 && br == 1 && bp == 1) {
             md->eg_type = EG_KRPKR;
             md->strong_side = BLACK;
-        } else if (wb == 2 && bn == 1) {
-            md->eg_type = EG_KBBKN;
-            md->strong_side = WHITE;
-        } else if (bb == 2 && wn == 1) {
-            md->eg_type = EG_KBBKN;
-            md->strong_side = BLACK;
         } else if (wb == 1 && wp == 1 && bb == 1) {
             md->eg_type = EG_KBPKB;
             md->strong_side = WHITE;
@@ -249,22 +243,10 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             md->eg_type = EG_KBPKN;
             md->strong_side = BLACK;
         }
-    } else if (wb == 1 && wp == 2 && bb == 1) {
-        md->eg_type = EG_KBPPKB;
-        md->strong_side = WHITE;
-    } else if (bb == 1 && bp == 2 && wb == 1) {
-        md->eg_type = EG_KBPPKB;
-        md->strong_side = BLACK;
-    } else if (wr == 1 && wp == 2 && br == 1 && bp == 1) {
-        md->eg_type = EG_KRPPKRP;
-        md->strong_side = WHITE;
-    } else if (br == 1 && bp == 2 && wr == 1 && wp == 1) {
-        md->eg_type = EG_KRPPKRP;
-        md->strong_side = BLACK;
     }
 
     // Endgame scaling factors
-    md->scale[WHITE] = md->scale[BLACK] = 16;
+    md->scale[WHITE] = md->scale[BLACK] = 1024;
     if (md->eg_type == EG_DRAW ||
             md->eg_type == EG_KQKQ ||
             md->eg_type == EG_KRKR) {
@@ -272,6 +254,9 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         return;
     }
 
+    // It's hard to win if you don't have any pawns, or if you only have one
+    // and your opponent can trade it for a piece without leaving mating
+    // material. Bishops tend to be better than knights in this scenario.
     if (!wp) {
         if (w_piece == 1) {
             md->scale[WHITE] = 0;
@@ -279,29 +264,29 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             if (b_piece != 0 || bp == 0) {
                 md->scale[WHITE] = 0;
             } else {
-                md->scale[WHITE] = 1;
+                md->scale[WHITE] = 64;
             }
         } else if (w_piece == 2 && wb == 2 && b_piece == 1 && bn == 1) {
-            md->scale[WHITE] = 8;
+            md->scale[WHITE] = 512;
         } else if (w_piece - b_piece <= 1 && w_major <= 2) {
-            md->scale[WHITE] = 2;
+            md->scale[WHITE] = 128;
         }
     } else if (wp == 1) {
         if (b_minor != 0) {
             if (w_piece == 1) {
-                md->scale[WHITE] = 4;
+                md->scale[WHITE] = 256;
             } else if (w_piece == 2 && wn == 2) {
-                md->scale[WHITE] = 4;
+                md->scale[WHITE] = 256;
             } else if (w_piece - b_piece <= 0 && w_major <= 2) {
-                md->scale[WHITE] = 8;
+                md->scale[WHITE] = 512;
             }
         } else if (br) {
             if (w_piece == 1) {
-                md->scale[WHITE] = 4;
+                md->scale[WHITE] = 256;
             } else if (w_piece == 2 && wn == 2) {
-                md->scale[WHITE] = 4;
+                md->scale[WHITE] = 256;
             } else if (w_piece - b_piece + 1 <= 0 && w_major <= 2) {
-                md->scale[WHITE] = 8;
+                md->scale[WHITE] = 512;
             }
         }
     }
@@ -313,31 +298,43 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             if (w_piece != 0 || wp == 0) {
                 md->scale[BLACK] = 0;
             } else {
-                md->scale[BLACK] = 1;
+                md->scale[BLACK] = 64;
             }
         } else if (b_piece == 2 && bb == 2 && w_piece == 1 && wn == 1) {
-            md->scale[BLACK] = 8;
+            md->scale[BLACK] = 512;
         } else if (b_piece - w_piece <= 1 && b_major <= 2) {
-            md->scale[BLACK] = 2;
+            md->scale[BLACK] = 128;
         }
     } else if (bp == 1) {
         if (w_minor != 0) {
             if (b_piece == 1) {
-                md->scale[BLACK] = 4;
+                md->scale[BLACK] = 256;
             } else if (b_piece == 2 && bn == 2) {
-                md->scale[BLACK] = 4;
+                md->scale[BLACK] = 256;
             } else if (b_piece - w_piece <= 0 && b_major <= 2) {
-                md->scale[BLACK] = 8;
+                md->scale[BLACK] = 512;
             }
         } else if (wr) {
             if (b_piece == 1) {
-                md->scale[BLACK] = 4;
+                md->scale[BLACK] = 256;
             } else if (b_piece == 2 && bn == 2) {
-                md->scale[BLACK] = 4;
+                md->scale[BLACK] = 256;
             } else if (b_piece - w_piece + 1 <= 0 && b_major <= 2) {
-                md->scale[BLACK] = 8;
+                md->scale[BLACK] = 512;
             }
         }
     }
+}
+
+/*
+ * Is this position an opening or an endgame? Scored on a scale of 0-24,
+ * with 24 being a pure opening and 0 a pure endgame.
+ */
+int game_phase(const position_t* pos)
+{
+    return pos->piece_count[WN] + pos->piece_count[WB] +
+        2*pos->piece_count[WR] + 4*pos->piece_count[WQ] +
+        pos->piece_count[BN] + pos->piece_count[BB] +
+        2*pos->piece_count[BR] + 4*pos->piece_count[BQ];
 }
 

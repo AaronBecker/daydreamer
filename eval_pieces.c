@@ -44,7 +44,7 @@ static const int bishop_outpost[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     1,  2,  2,  2,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     3,  5,  6,  6,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    3,  5,  6,  9,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    3,  5,  6,  6,  6,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     1,  2,  2,  2,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
@@ -75,7 +75,8 @@ static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
             // Even better if an opposing knight/bishop can't capture it.
             // TODO: take care of the case where there's one opposing bishop
             // that's the wrong color. The position data structure needs to
-            // be modified a little to make this efficient.
+            // be modified a little to make this efficient, or I need to pull
+            // out bishop color info before doing outposts.
             piece_t their_knight = create_piece(side^1, KNIGHT);
             piece_t their_bishop = create_piece(side^1, BISHOP);
             if (pos->piece_count[their_knight] == 0 &&
@@ -89,7 +90,8 @@ static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
 
 /*
  * Compute the number of squares each non-pawn, non-king piece could move to,
- * and assign a bonus or penalty accordingly.
+ * and assign a bonus or penalty accordingly. Also assign miscellaneous
+ * bonuses based on outpost squares, open files, etc.
  */
 score_t pieces_score(const position_t* pos, pawn_data_t* pd)
 {
@@ -104,29 +106,13 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
     for (side=WHITE; side<=BLACK; ++side) {
         const int* mobile = color_table[side];
         square_t from, to;
-        piece_t piece, dummy;
-        int push = pawn_push[side];
+        piece_t piece;
         for (int i=1; pos->pieces[side][i] != INVALID_SQUARE; ++i) {
             from = pos->pieces[side][i];
             piece = pos->board[from];
             piece_type_t type = piece_type(piece);
             int ps = 0;
             switch (type) {
-                case PAWN:
-                    ps = (pos->board[from+push] == EMPTY);
-                    dummy = pos->board[from+push-1];
-                    if (dummy > create_piece(side^1, PAWN) &&
-                            dummy <= create_piece(side^1, KING)) {
-                        mid_score[side] += 7;
-                        end_score[side] += 12;
-                    }
-                    dummy = pos->board[from+push+1];
-                    if (dummy > create_piece(side^1, PAWN) &&
-                            dummy <= create_piece(side^1, KING)) {
-                        mid_score[side] += 7;
-                        end_score[side] += 12;
-                    }
-                    break;
                 case KNIGHT:
                     ps += mobile[pos->board[from-33]];
                     ps += mobile[pos->board[from-31]];
