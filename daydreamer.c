@@ -70,6 +70,11 @@ const piece_flag_t piece_flags[] = {
     0, BP_FLAG, N_FLAG, B_FLAG, R_FLAG, Q_FLAG, K_FLAG, 0, 0
 };
 
+const piece_t flip_piece[16] = {
+    0, BP, BN, BB, BR, BQ, BK, 0,
+    0, WP, WN, WB, WR, WQ, WK
+};
+
 square_t king_rook_home = H1;
 square_t queen_rook_home = A1;
 square_t king_home = E1;
