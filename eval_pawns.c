@@ -334,16 +334,16 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 eg_passer_bonus[side] += connected_passer[1][rank];
             }
 
-            // Find rooks behind the passer.
-            square_t sq;
-            for (sq = passer - push; pos->board[sq] == EMPTY; sq -= push) {}
-            if (pos->board[sq] == create_piece(side, ROOK)) {
-                passer_bonus[side] += passer_rook[0];
-                eg_passer_bonus[side] += passer_rook[1];
-            } else if (pos->board[sq] == create_piece(side^1, ROOK)) {
-                passer_bonus[side] -= passer_rook[rank];
-                eg_passer_bonus[side] -= passer_rook[1];
-            }
+            //// Find rooks behind the passer.
+            //square_t sq;
+            //for (sq = passer - push; pos->board[sq] == EMPTY; sq -= push) {}
+            //if (pos->board[sq] == create_piece(side, ROOK)) {
+            //    passer_bonus[side] += passer_rook[0];
+            //    eg_passer_bonus[side] += passer_rook[1];
+            //} else if (pos->board[sq] == create_piece(side^1, ROOK)) {
+            //    passer_bonus[side] -= passer_rook[rank];
+            //    eg_passer_bonus[side] -= passer_rook[1];
+            //}
 
             // Can the pawn advance without being captured?
             if (pos->board[target] == EMPTY) {
