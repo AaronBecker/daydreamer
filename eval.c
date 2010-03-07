@@ -95,7 +95,6 @@ int full_eval(const position_t* pos, eval_data_t* ed)
 {
     color_t side = pos->side_to_move;
     score_t phase_score, component_score;
-    component_score = pawn_score(pos, &ed->pd);
     ed->md = get_material_data(pos);
 
     int score = 0;
@@ -113,6 +112,7 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     phase_score.endgame += pos->piece_square_eval[side].endgame -
         pos->piece_square_eval[side^1].endgame;
 
+    component_score = pawn_score(pos, &ed->pd);
     add_scaled_score(&phase_score, &component_score, pawn_scale);
     component_score = pattern_score(pos);
     add_scaled_score(&phase_score, &component_score, pattern_scale);
@@ -138,69 +138,52 @@ int full_eval(const position_t* pos, eval_data_t* ed)
  */
 void report_eval(const position_t* pos)
 {
-    /*
+    eval_data_t ed_storage;
+    eval_data_t* ed = &ed_storage;
     color_t side = pos->side_to_move;
-    int material_eval = pos->material_eval[side] - pos->material_eval[side^1];
-    int phase = game_phase(pos);
-    printf("info string game phase: %d\n", phase);
-    printf("info string material: %d\n", material_eval);
-    printf("info string psq midgame: %d - %d = %d\n",
-            pos->piece_square_eval[side].midgame,
-            pos->piece_square_eval[side^1].midgame,
-            pos->piece_square_eval[side].midgame -
-            pos->piece_square_eval[side^1].midgame);
-    printf("info string psq endgame: %d - %d = %d\n",
-            pos->piece_square_eval[side].endgame,
-            pos->piece_square_eval[side^1].endgame,
-            pos->piece_square_eval[side].endgame -
-            pos->piece_square_eval[side^1].endgame);
-    int piece_square_eval =
-            ((phase)*(pos->piece_square_eval[side].midgame -
-                pos->piece_square_eval[side^1].midgame) +
-            (MAX_PHASE-phase)*(pos->piece_square_eval[side].endgame -
-                pos->piece_square_eval[side^1].endgame)) / MAX_PHASE;
-    printf("info string psq score: %d\n", piece_square_eval);
+    score_t phase_score, component_score;
+    ed->md = get_material_data(pos);
 
-    int material_adjust = 0;
-    material_adjust += pos->piece_count[WB] > 1 ? 50 : 0;
-    material_adjust -= pos->piece_count[BB] > 1 ? 50 : 0;
-    printf("info string mat_adj bishop (w,b): (%d, %d)\n", 
-            pos->piece_count[WB] > 1 ? 50 : 0,
-            pos->piece_count[BB] > 1 ? 50 : 0);
-    material_adjust += pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5);
-    material_adjust -= pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5);
-    printf("info string mat_adj knight: (%d, %d)\n",
-            pos->piece_count[WN] * 5 * (pos->piece_count[WP] - 5),
-            pos->piece_count[BN] * 5 * (pos->piece_count[BP] - 5));
-    material_adjust -= pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5);
-    material_adjust += pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5);
-    printf("info string mat_adj rook: (%d, %d)\n",
-            -pos->piece_count[WR] * 10 * (pos->piece_count[WP] - 5),
-            -pos->piece_count[BR] * 10 * (pos->piece_count[BP] - 5));
-    if (side == BLACK) material_adjust *= -1;
-    printf("info string mat_adj total: %d\n", material_adjust);
+    int score = 0;
+    int endgame_scale[2];
+    determine_endgame_scale(pos, ed, endgame_scale);
+    printf("scale\t(%d, %d)\n", endgame_scale[WHITE], endgame_scale[BLACK]);
 
-    int king_score;
-    king_score = evaluate_king_attackers(pos);
-    printf("info string king attackers: %d\n", king_score);
-    king_score = evaluate_king_shield(pos);
-    printf("info string king shield: %d\n", king_score);
+    phase_score = ed->md->score;
+    if (side == BLACK) {
+        phase_score.midgame *= -1;
+        phase_score.endgame *= -1;
+    }
+    printf("md_score\t(%5d, %5d)\n", phase_score.midgame, phase_score.endgame);
+    phase_score.midgame += pos->piece_square_eval[side].midgame -
+        pos->piece_square_eval[side^1].midgame;
+    phase_score.endgame += pos->piece_square_eval[side].endgame -
+        pos->piece_square_eval[side^1].endgame;
+    printf("psq_score\t(%5d, %5d)\n", phase_score.midgame, phase_score.endgame);
 
-    score_t phase_score;
-    phase_score.endgame = phase_score.midgame = 0;
-    pawn_data_t* pd;
-    score_t p_score = pawn_score(pos, &pd);
-    printf("info string pawns (mid,end): (%d, %d)\n",
-            p_score.midgame, p_score.endgame);
-    add_scaled_score(&phase_score, &p_score, 1024);
-    score_t pc_score = pieces_score(pos, pd);
-    printf("info string pieces (mid,end): (%d, %d)\n",
-            pc_score.midgame, pc_score.endgame);
-    add_scaled_score(&phase_score, &pc_score, 1024);
-    int score = material_eval + piece_square_eval + material_adjust +
-        blend_score(&phase_score, phase);
-    printf("info string score: %d\n", score);
-    */
+    component_score = pawn_score(pos, &ed->pd);
+    add_scaled_score(&phase_score, &component_score, pawn_scale);
+    printf("pawn_score\t(%5d, %5d)\n", phase_score.midgame, phase_score.endgame);
+    component_score = pattern_score(pos);
+    add_scaled_score(&phase_score, &component_score, pattern_scale);
+    printf("pattern_score\t(%5d, %5d)\n", phase_score.midgame, phase_score.endgame);
+    component_score = pieces_score(pos, ed->pd);
+    add_scaled_score(&phase_score, &component_score, pieces_scale);
+    printf("pieces_score\t(%5d, %5d)\n", phase_score.midgame, phase_score.endgame);
+    component_score = evaluate_king_safety(pos, ed);
+    add_scaled_score(&phase_score, &component_score, safety_scale);
+    printf("safety_score\t(%5d, %5d)\n", phase_score.midgame, phase_score.endgame);
+
+    // Tempo
+    phase_score.midgame += 9;
+    phase_score.endgame += 2;
+
+    score = blend_score(&phase_score, ed->md->phase);
+    score = (score * endgame_scale[score > 0 ? side : side^1]) / 1024;
+
+    if (!can_win(pos, side)) score = MIN(score, DRAW_VALUE);
+    if (!can_win(pos, side^1)) score = MAX(score, DRAW_VALUE);
+    printf("final_score\t%5d\n", score);
 }
 
 /*

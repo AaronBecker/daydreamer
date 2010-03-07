@@ -960,6 +960,7 @@ static int quiesce(position_t* pos,
     int eval = alpha;
     if (!is_check(pos)) {
         eval = full_eval(pos, &ed);
+        check_eval_symmetry(pos, eval);
         if (trans_entry && ((eval > trans_entry->score &&
                     trans_entry->flags & SCORE_UPPERBOUND) ||
                 (eval < trans_entry->score &&
