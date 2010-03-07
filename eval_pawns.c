@@ -314,7 +314,7 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 int prom_dist = 8 - rank;
                 if (rank == RANK_2) --prom_dist;
                 if (pos->side_to_move == side) --prom_dist;
-                square_t prom_sq = create_square(square_file(passer), RANK_8);
+                square_t prom_sq = square_file(passer) + A8*side;
                 if (distance(pos->pieces[side^1][0], prom_sq) > prom_dist) {
                     passer_bonus[side] += unstoppable_passer_bonus[rank];
                 }
