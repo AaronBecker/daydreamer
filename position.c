@@ -1,55 +1,35 @@
 
+#include "daydreamer.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "daydreamer.h"
 
 /*
  * Set up the basic data structures of a position. Used internally by
  * set_position, but does not result in a legal board and should not be used
  * elsewhere.
- * TODO: this can be shortened up by just memsetting the whole thing and then
- * setting the relevant -1s, OUT_OF_BOUNDS's and INVALID_SQUAREs
  */
 static void init_position(position_t* position)
 {
+    memset(position, 0, sizeof(position_t));
     position->board = position->_board_storage+64;
     for (int square=0; square<256; ++square) {
         position->_board_storage[square] = OUT_OF_BOUNDS;
     }
     for (int i=0; i<64; ++i) {
         int square = index_to_square(i);
-        position->board[square] = EMPTY;
         position->piece_index[square] = -1;
+        position->board[square] = EMPTY;
     }
 
     for (color_t color=WHITE; color<=BLACK; ++color) {
-        position->num_pieces[color] = 0;
-        position->num_pawns[color] = 0;
         for (int index=0; index<32; ++index) {
             position->pieces[color][index] = INVALID_SQUARE;
         }
         for (int index=0; index<16; ++index) {
             position->pawns[color][index] = INVALID_SQUARE;
         }
-        position->material_eval[color] = 0;
-        position->piece_square_eval[color].midgame = 0;
-        position->piece_square_eval[color].endgame= 0;
     }
-
-    position->fifty_move_counter = 0;
-    position->ep_square = EMPTY;
-    position->ply = 0;
-    position->side_to_move = WHITE;
-    position->castle_rights = CASTLE_NONE;
-    position->prev_move = NO_MOVE;
-    position->check_square = EMPTY;
-    position->is_check = false;
-    position->hash = 0;
-    position->pawn_hash = 0;
-    position->material_hash = 0;
-    memset(position->piece_count, 0, 16 * sizeof(int));
-    memset(position->hash_history, 0, HASH_HISTORY_LENGTH * sizeof(hashkey_t));
 }
 
 /*
@@ -66,16 +46,30 @@ void copy_position(position_t* dst, const position_t* src)
 
 /*
  * Create a copy of |src| with the board flipped, inverting black and white.
- * FIXME: this changes the relative order of pieces in the piece lists, which can lead
- * to asymmetrical results for stuff like |static_exchange_eval|.
  */
 void flip_position(position_t* flipped, const position_t* src)
 {
     init_position(flipped);
-    for (int ind=0; ind<64; ++ind) {
-        square_t sq = index_to_square(ind);
+    // Note: we need to iterate over the piece lists like this instead of
+    // just reading off the board array to ensure that the relative order
+    // of pieces in the piece lists doesn't change in the flipped board. This
+    // ensures that things like |static_exchange_eval| have consistent results
+    // across the flip.
+    for (int i=0; src->pawns[WHITE][i] != INVALID_SQUARE; ++i) {
+        place_piece(flipped, BP, flip_square(src->pawns[WHITE][i]));
+    }
+    for (int i=0; src->pawns[BLACK][i] != INVALID_SQUARE; ++i) {
+        place_piece(flipped, WP, flip_square(src->pawns[BLACK][i]));
+    }
+    for (int i=0; src->pieces[WHITE][i] != INVALID_SQUARE; ++i) {
+        square_t sq = src->pieces[WHITE][i];
         piece_t p = src->board[sq];
-        if (p) place_piece(flipped, flip_piece(p), flip_square(sq));
+        place_piece(flipped, flip_piece(p), flip_square(sq));
+    }
+    for (int i=0; src->pieces[BLACK][i] != INVALID_SQUARE; ++i) {
+        square_t sq = src->pieces[BLACK][i];
+        piece_t p = src->board[sq];
+        place_piece(flipped, flip_piece(p), flip_square(sq));
     }
     flipped->side_to_move = src->side_to_move^1;
     if (src->ep_square) flipped->ep_square = flip_square(src->ep_square);
@@ -348,6 +342,12 @@ bool is_move_legal(position_t* pos, move_t move)
     return legal;
 }
 
+/*
+ * A plausible move is one that was once pseudo-legal, but the board has
+ * changed since the move was generated, so it may not be pseudo-legal any
+ * more. Thus, we don't need to weed out total nonsense moves, but we do
+ * need to do stricter legality checking.
+ */
 bool is_plausible_move_legal(position_t* pos, move_t move)
 {
     assert(!is_check(pos));
