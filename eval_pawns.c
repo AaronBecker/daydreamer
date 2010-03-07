@@ -305,6 +305,7 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
         piece_t our_pawn = create_piece(side, PAWN);
         for (int i=0; i<pd->num_passed[side]; ++i) {
             square_t passer = pd->passed[side][i];
+            assert(pos->board[passer] == create_piece(side, PAWN));
             square_t target = passer + push;
             rank_t rank = relative_rank[side][square_rank(passer)];
             if (pos->num_pieces[side^1] == 1) {
@@ -335,7 +336,7 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
 
             // Find rooks behind the passer.
             square_t sq;
-            for (sq = passer - push; sq == EMPTY; sq -= push) {}
+            for (sq = passer - push; pos->board[sq] == EMPTY; sq -= push) {}
             if (pos->board[sq] == create_piece(side, ROOK)) {
                 passer_bonus[side] += passer_rook[0];
                 eg_passer_bonus[side] += passer_rook[1];
