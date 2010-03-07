@@ -64,8 +64,9 @@ static void evaluate_king_shield(const position_t* pos, int score[2])
     int oo_score[2] = {0, 0};
     int ooo_score[2] = {0, 0};
     int castle_score[2] = {0, 0};
-    if (pos->piece_count[BQ]) {
-        score[WHITE] = king_shield_score(pos, WHITE, pos->pieces[WHITE][0]);
+    square_t wk = pos->pieces[WHITE][0];
+    if (pos->piece_count[BQ] && square_rank(wk) < RANK_3) {
+        score[WHITE] = king_shield_score(pos, WHITE, wk);
         if (has_oo_rights(pos, WHITE)) {
             oo_score[WHITE] = king_shield_score(pos, WHITE, G1);
         }
@@ -75,8 +76,9 @@ static void evaluate_king_shield(const position_t* pos, int score[2])
         castle_score[WHITE] = MAX(score[WHITE],
             MAX(oo_score[WHITE], ooo_score[WHITE]));
     }
-    if (pos->piece_count[WQ]) {
-        score[BLACK] = king_shield_score(pos, BLACK, pos->pieces[BLACK][0]);
+    square_t bk = pos->pieces[BLACK][0];
+    if (pos->piece_count[WQ] && square_rank(bk) > RANK_6) {
+        score[BLACK] = king_shield_score(pos, BLACK, bk);
         if (has_oo_rights(pos, BLACK)) {
             oo_score[BLACK] = king_shield_score(pos, BLACK, G8);
         }
