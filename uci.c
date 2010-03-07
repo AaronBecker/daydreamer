@@ -171,6 +171,9 @@ static void uci_handle_ext(char* command)
             printf("%s ", san);
         }
         printf("\n");
+        eval_data_t ed;
+        int eval = full_eval(pos, &ed);
+        _check_eval_symmetry(pos, eval);
     } else if (!strncasecmp(command, "help", 4) ||
             !strncasecmp(command, "?", 1)) {
         uci_print_help();
