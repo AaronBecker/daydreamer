@@ -42,7 +42,7 @@ static const int connected_passer[2][8] = {
     { 0, 0, 2, 5, 15, 40, 60, 0}
 };
 static const int connected_bonus[2] = { 5, 5 };
-static const int passer_rook[2] = { 10, 30 };
+static const int passer_rook[2] = { 5, 15 };
 static const int king_storm[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,-10,-10,-10,  0,  0,  0,  0,  0,  0,  0,  0,
