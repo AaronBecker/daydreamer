@@ -1,6 +1,6 @@
 #include "daydreamer.h"
-#include <string.h>
 #include <math.h>
+#include <string.h>
 
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
