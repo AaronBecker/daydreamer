@@ -103,5 +103,20 @@ void _check_line(position_t* pos, move_t* moves)
     else undo_move(pos, moves[0], &undo);
 }
 
-// TODO: _check_eval that makes sure white's eval is -1 * black's.
-
+/*
+ * Verify that flipping the board doesn't change the evaluation.
+ */
+void _check_eval_symmetry(const position_t* pos, int normal_eval)
+{
+    eval_data_t ed;
+    position_t flipped_pos;
+    flip_position(&flipped_pos, pos);
+    int flipped_eval = full_eval(&flipped_pos, &ed);
+    if (normal_eval != flipped_eval) {
+        printf("Asymmetric eval. Original:\n");
+        print_board(pos, false);
+        printf("Asymmetric eval. Flipped:\n");
+        print_board(&flipped_pos, false);
+        assert(false);
+    }
+}

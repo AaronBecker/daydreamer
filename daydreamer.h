@@ -1,3 +1,4 @@
+
 #ifndef DAYDREAMER_H
 #define DAYDREAMER_H
 
@@ -132,6 +133,7 @@ int get_hashfull(void);
 hashkey_t hash_position(const position_t* pos);
 hashkey_t hash_pawns(const position_t* pos);
 hashkey_t hash_material(const position_t* pos);
+void set_hash(position_t* pos);
 
 // move.c
 void place_piece(position_t* position, piece_t piece, square_t square);
@@ -187,6 +189,7 @@ uint64_t perft(position_t* position, int depth, bool divide);
 // position.c
 char* set_position(position_t* pos, const char* fen);
 void copy_position(position_t* dst, const position_t* src);
+void flip_position(position_t* flipped, const position_t* src);
 bool is_move_legal(position_t* pos, const move_t move);
 bool is_plausible_move_legal(position_t* pos, move_t move);
 bool is_pseudo_move_legal(position_t* pos, move_t move);
