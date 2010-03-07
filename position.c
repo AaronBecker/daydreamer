@@ -8,6 +8,8 @@
  * Set up the basic data structures of a position. Used internally by
  * set_position, but does not result in a legal board and should not be used
  * elsewhere.
+ * TODO: this can be shortened up by just memsetting the whole thing and then
+ * setting the relevant -1s, OUT_OF_BOUNDS's and INVALID_SQUAREs
  */
 static void init_position(position_t* position)
 {
@@ -63,6 +65,28 @@ void copy_position(position_t* dst, const position_t* src)
 }
 
 /*
+ * Create a copy of |src| with the board flipped, inverting black and white.
+ */
+void flip_position(position_t* flipped, const position_t* src)
+{
+    init_position(flipped);
+    for (int ind=0; ind<64; ++ind) {
+        square_t sq = index_to_square(ind);
+        piece_t p = src->board[sq];
+        if (p) place_piece(flipped, flip_piece(p), flip_square(sq));
+    }
+    flipped->side_to_move = src->side_to_move^1;
+    if (src->ep_square) flipped->ep_square = flip_square(src->ep_square);
+    if (has_ooo_rights(src, WHITE)) add_ooo_rights(flipped, BLACK);
+    if (has_oo_rights(src, WHITE)) add_oo_rights(flipped, BLACK);
+    if (has_ooo_rights(src, BLACK)) add_ooo_rights(flipped, WHITE);
+    if (has_oo_rights(src, BLACK)) add_oo_rights(flipped, WHITE);
+    flipped->fifty_move_counter = src->fifty_move_counter;
+    flipped->ply = src->ply;
+    set_hash(flipped);
+}
+
+/*
  * Given an FEN position description, set the given position to match it.
  * (see wikipedia.org/wiki/Forsyth-Edwards_Notation)
  */
@@ -101,9 +125,9 @@ char* set_position(position_t* pos, const char* fen)
             case '/': square -= 17 + square_file(square); break;
             case ' ': square = INVALID_SQUARE-1; break;
             case '\0':
-            case '\n':check_board_validity(pos);
-                      pos->hash = hash_position(pos);
+            case '\n':set_hash(pos);
                       pos->is_check = find_checks(pos);
+                      check_board_validity(pos);
                       return (char*)fen;
             default: warn("Illegal character in FEN string");
                      warn(orig_fen);
@@ -116,7 +140,7 @@ char* set_position(position_t* pos, const char* fen)
     switch (tolower(*fen)) {
         case 'w': pos->side_to_move = WHITE; break;
         case 'b': pos->side_to_move = BLACK; break;
-        default:  warn("Illegal en passant character in FEN string");
+        default:  warn("Illegal side to move in FEN string");
                   return (char*)fen;
     }
     while (*fen && isspace(*(++fen))) {}
@@ -177,8 +201,8 @@ char* set_position(position_t* pos, const char* fen)
                     }
                 } else {
                     // The fen string must have ended prematurely.
+                    set_hash(pos);
                     check_board_validity(pos);
-                    pos->hash = hash_position(pos);
                     return (char*)fen;
                 }
         }
@@ -186,8 +210,8 @@ char* set_position(position_t* pos, const char* fen)
     }
     while (isspace(*fen)) ++fen;
     if (!*fen) {
+        set_hash(pos);
         check_board_validity(pos);
-        pos->hash = hash_position(pos);
         return (char*)fen;
     }
 
@@ -203,7 +227,7 @@ char* set_position(position_t* pos, const char* fen)
     }
     while (*fen && isspace(*(++fen))) {}
     if (!*fen) {
-        pos->hash = hash_position(pos);
+        set_hash(pos);
         check_board_validity(pos);
         return (char*)fen;
     }
@@ -213,7 +237,7 @@ char* set_position(position_t* pos, const char* fen)
     if (sscanf(fen, "%d %d%n", &pos->fifty_move_counter, &pos->ply,
                 &consumed)) fen += consumed;
     pos->ply = 0;
-    pos->hash = hash_position(pos);
+    set_hash(pos);
     check_board_validity(pos);
     return (char*)fen;
 }

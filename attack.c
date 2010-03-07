@@ -163,6 +163,7 @@ bool piece_attacks_near(const position_t* pos, square_t from, square_t target)
         for (int i=0; (delta = near_attack_deltas[p][128+from-target][i]) !=
                 INVALID_SQUARE; ++i) {
             square_t sq = from + delta;
+            if (pos->board[sq] == OUT_OF_BOUNDS) continue;
             direction_t att_dir = direction(from, sq);
             square_t x = from;
             while (x != sq) {

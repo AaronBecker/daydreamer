@@ -82,7 +82,7 @@ static void evaluate_king_shield(const position_t* pos, int score[2])
         if (has_oo_rights(pos, BLACK)) {
             oo_score[BLACK] = king_shield_score(pos, BLACK, G8);
         }
-        if (has_ooo_rights(pos, WHITE)) {
+        if (has_ooo_rights(pos, BLACK)) {
             ooo_score[BLACK] = king_shield_score(pos, BLACK, C8);
         }
         castle_score[BLACK] = MAX(score[BLACK],

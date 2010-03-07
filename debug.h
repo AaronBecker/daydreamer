@@ -71,6 +71,7 @@ void _check_move_validity(const position_t* pos, move_t move);
 void _check_pseudo_move_legality(position_t* pos, move_t move);
 void _check_position_hash(const position_t* pos);
 void _check_line(position_t* pos, move_t* line);
+void _check_eval_symmetry(const position_t* pos, int normal_eval);
 
 #ifndef EXPENSIVE_CHECKS
 #define check_board_validity(x)                 ((void)0)
@@ -78,12 +79,14 @@ void _check_line(position_t* pos, move_t* line);
 #define check_pseudo_move_legality(x,y)         ((void)0)
 #define check_position_hash(x)                  ((void)0)
 #define check_line(x,y)                         ((void)0)
+#define check_eval_symmetry(x,y)                ((void)0)
 #else
 #define check_board_validity(x)                 _check_board_validity(x)
 #define check_move_validity(x,y)                _check_move_validity(x,y)
 #define check_pseudo_move_legality(x,y)         _check_pseudo_move_legality(x,y)
 #define check_position_hash(x)                  _check_position_hash(x)
 #define check_line(x,y)                         _check_line(x,y)
+#define check_eval_symmetry(x,y)                _check_eval_symmetry(x,y)
 #endif
 
 #ifdef __cplusplus
