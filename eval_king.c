@@ -1,7 +1,8 @@
 
 #include "daydreamer.h"
 
-#define shield_scale (1024+128)
+#define shield_scale (1024)
+#define attack_scale (1024)
 
 static void evaluate_king_shield(const position_t* pos, int score[2]);
 static void evaluate_king_attackers(const position_t* pos,
@@ -16,7 +17,7 @@ const int shield_value[2][17] = {
 const int king_attack_score[16] = {
     0, 0, 16, 16, 32, 64, 0, 0, 0, 0, 16, 16, 32, 64, 0, 0
 };
-const int king_attack_scale[16] = {
+const int num_king_attack_scale[16] = {
     0, 0, 640, 800, 1120, 1200, 1280, 1280,
     1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536
 };
@@ -31,7 +32,8 @@ score_t evaluate_king_safety(const position_t* pos, eval_data_t* ed)
 
     score_t phase_score;
     color_t side = pos->side_to_move;
-    phase_score.midgame = (attack_score[side] - attack_score[side^1]) +
+    phase_score.midgame =
+        (attack_score[side] - attack_score[side^1])*attack_scale/1024 +
         (shield_score[side] - shield_score[side^1])*shield_scale/1024;
     phase_score.endgame = 0;
     return phase_score;
@@ -88,8 +90,8 @@ static void evaluate_king_shield(const position_t* pos, int score[2])
         castle_score[BLACK] = MAX(score[BLACK],
                 MAX(oo_score[BLACK], ooo_score[BLACK]));
     }
-    score[WHITE] = (score[WHITE] + castle_score[WHITE]) / 2;
-    score[BLACK] = (score[BLACK] + castle_score[BLACK]) / 2;
+    score[WHITE] = (score[WHITE] + castle_score[WHITE])/2;
+    score[BLACK] = (score[BLACK] + castle_score[BLACK])/2;
 }
 
 /*
@@ -114,7 +116,7 @@ static void evaluate_king_attackers(const position_t* pos,
             }
         }
         if (shield_score[side^1] <= bad_shield) num_attackers += 2;
-        score[side] = score[side] * king_attack_scale[num_attackers] / 1024;
+        score[side] = score[side]*num_king_attack_scale[num_attackers]/1024;
     }
 }
 
