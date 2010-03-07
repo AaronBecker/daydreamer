@@ -30,6 +30,8 @@ programs = {
     'alaric' : 'cmd=' + engine_prefix + 'alaric/alaric.sh proto=uci',
     'spike' : 'cmd=' + engine_prefix + 'spike/spike.sh proto=uci',
     'protector' : 'cmd=' + engine_prefix + 'protector/protector.sh proto=uci',
+    'spark' : 'cmd=' + engine_prefix + 'spark/spark-0.3a-osx64 proto=uci',
+    'komodo' : 'cmd=' + engine_prefix + 'komodo/komodo.sh proto=uci',
 }
 
 
