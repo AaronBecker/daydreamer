@@ -2,6 +2,8 @@
 #include "daydreamer.h"
 #include <string.h>
 
+#define INVALID_DELTA   0xff
+
 int distance_data_storage[256];
 const int* distance_data = distance_data_storage+128;
 
@@ -13,7 +15,7 @@ const attack_data_t* board_attack_data = board_attack_data_storage + 128;
 piece_flag_t near_attack_data_storage[256];
 const piece_flag_t* near_attack_data = near_attack_data_storage + 128;
 // For each piece and (from, to) pair, which squares need to be checked to
-// determine if the piece is almost attacking the to square?
+// determine if the piece is almost attacking the |to| square?
 square_t near_attack_deltas[16][256][4];
 
 #define near_attack(from, to, piece) \
@@ -30,12 +32,13 @@ static void add_near_attack(square_t target,
 {
     near_attack_data_storage[128+from-target] |= get_piece_flag(piece);
     int i = 0;
-    for (; near_attack_deltas[piece][128+from-target][i] != INVALID_SQUARE;
+    for (; near_attack_deltas[piece][128+from-target][i] != INVALID_DELTA;
             ++i) {
         if (near_attack_deltas[piece][128+from-target][i] == delta) return;
     }
-    assert(near_attack_deltas[piece][128+from-target][i] == INVALID_SQUARE);
+    assert(near_attack_deltas[piece][128+from-target][i] == INVALID_DELTA);
     if (i<3) near_attack_deltas[piece][128+from-target][i] = delta;
+    assert(near_attack_deltas[piece][128+from-target][0] != INVALID_DELTA);
 }
 
 /*
@@ -75,7 +78,7 @@ void generate_attack_data(void)
     for (int i=0; i<16; ++i)
         for (int j=0; j<256; ++j)
             for (int k=0; k<4; ++k)
-                near_attack_deltas[i][j][k] = INVALID_SQUARE;
+                near_attack_deltas[i][j][k] = INVALID_DELTA;
     for (square_t target=A1; target<=H8; ++target) {
         if (!valid_board_index(target)) continue;
         for (square_t from=A1; from<=H8; ++from) {
@@ -161,7 +164,7 @@ bool piece_attacks_near(const position_t* pos, square_t from, square_t target)
         if (piece_slide_type(p) == NO_SLIDE) return true;
         int delta;
         for (int i=0; (delta = near_attack_deltas[p][128+from-target][i]) !=
-                INVALID_SQUARE; ++i) {
+                INVALID_DELTA; ++i) {
             square_t sq = from + delta;
             if (pos->board[sq] == OUT_OF_BOUNDS) continue;
             direction_t att_dir = direction(from, sq);
