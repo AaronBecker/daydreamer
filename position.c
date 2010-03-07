@@ -66,6 +66,8 @@ void copy_position(position_t* dst, const position_t* src)
 
 /*
  * Create a copy of |src| with the board flipped, inverting black and white.
+ * FIXME: this changes the relative order of pieces in the piece lists, which can lead
+ * to asymmetrical results for stuff like |static_exchange_eval|.
  */
 void flip_position(position_t* flipped, const position_t* src)
 {
