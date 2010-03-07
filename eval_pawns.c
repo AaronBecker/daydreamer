@@ -42,7 +42,7 @@ static const int connected_passer[2][8] = {
     { 0, 0, 2, 5, 15, 40, 60, 0}
 };
 static const int connected_bonus[2] = { 5, 5 };
-static const int passer_rook[2] = { 15, 30 };
+static const int passer_rook[2] = { 10, 30 };
 static const int king_storm[0x80] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,-10,-10,-10,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -334,16 +334,16 @@ score_t pawn_score(const position_t* pos, pawn_data_t** pawn_data)
                 eg_passer_bonus[side] += connected_passer[1][rank];
             }
 
-            //// Find rooks behind the passer.
-            //square_t sq;
-            //for (sq = passer - push; pos->board[sq] == EMPTY; sq -= push) {}
-            //if (pos->board[sq] == create_piece(side, ROOK)) {
-            //    passer_bonus[side] += passer_rook[0];
-            //    eg_passer_bonus[side] += passer_rook[1];
-            //} else if (pos->board[sq] == create_piece(side^1, ROOK)) {
-            //    passer_bonus[side] -= passer_rook[rank];
-            //    eg_passer_bonus[side] -= passer_rook[1];
-            //}
+            // Find rooks behind the passer.
+            square_t sq;
+            for (sq = passer - push; pos->board[sq] == EMPTY; sq -= push) {}
+            if (pos->board[sq] == create_piece(side, ROOK)) {
+                passer_bonus[side] += passer_rook[0];
+                eg_passer_bonus[side] += passer_rook[1];
+            } else if (pos->board[sq] == create_piece(side^1, ROOK)) {
+                passer_bonus[side] -= passer_rook[0];
+                eg_passer_bonus[side] -= passer_rook[1];
+            }
 
             // Can the pawn advance without being captured?
             if (pos->board[target] == EMPTY) {

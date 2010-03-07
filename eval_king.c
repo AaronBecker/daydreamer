@@ -1,7 +1,7 @@
 
 #include "daydreamer.h"
 
-#define shield_scale (1024-128)
+#define shield_scale (1024)
 #define attack_scale (1024)
 
 static void evaluate_king_shield(const position_t* pos, int score[2]);
