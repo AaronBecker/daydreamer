@@ -63,11 +63,11 @@ static const int rook_half_open_file_bonus[2] = { 10, 10 };
  */
 static int outpost_score(const position_t* pos, square_t sq, piece_type_t type)
 {
-    int bonus = type == KNIGHT ? knight_outpost[sq] : bishop_outpost[sq];
+    color_t side = piece_color(pos->board[sq]);
+    int bonus = type == KNIGHT ? knight_outpost[sq ^ (0x70*side)] : bishop_outpost[sq ^ (0x70*side)];
     int score = bonus;
     if (bonus) {
         // An outpost is better when supported by pawns.
-        color_t side = piece_color(pos->board[sq]);
         piece_t our_pawn = create_piece(side, PAWN);
         if (pos->board[sq - pawn_push[side] - 1] == our_pawn ||
                 pos->board[sq - pawn_push[side] + 1] == our_pawn) {
