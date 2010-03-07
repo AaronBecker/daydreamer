@@ -31,6 +31,7 @@ typedef enum {
 #define piece_colors_match(p1, p2)      (((p1) >> 3) == ((p2) >> 3))
 #define piece_colors_differ(p1, p2)     (((p1) >> 3) != ((p2) >> 3))
 #define can_capture(p1, p2)             ((((p1) >> 3)^1) == ((p2) >> 3))
+#define flip_piece(p)                   (flip_piece[p])
 
 typedef enum {
     FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NONE
@@ -101,6 +102,7 @@ extern const direction_t piece_deltas[17][16];
 
 extern const direction_t pawn_push[];
 extern const rank_t relative_rank[2][8];
+extern const piece_t flip_piece[16];
 
 extern square_t king_home;
 extern square_t king_rook_home;

@@ -156,10 +156,7 @@ static void position_to_ctg_signature(position_t* pos, ctg_signature_t* sig)
     color_t white = flip_board ? BLACK : WHITE;
     bool mirror_board = square_file(pos->pieces[white][0]) < FILE_E &&
         pos->castle_rights == 0;
-    piece_t flip_piece[] = {
-        0, BP, BN, BB, BR, BQ, BK, 0,
-        0, WP, WN, WB, WR, WQ, WK
-    };
+
 
     // For each board square, append the huffman bit sequence for its contents.
     for (int file=0; file<8; ++file) {
