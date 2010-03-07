@@ -147,7 +147,7 @@ void report_eval(const position_t* pos)
     int score = 0;
     int endgame_scale[2];
     determine_endgame_scale(pos, ed, endgame_scale);
-    printf("scale\t(%d, %d)\n", endgame_scale[WHITE], endgame_scale[BLACK]);
+    printf("scale\t\t(%5d, %5d)\n", endgame_scale[WHITE], endgame_scale[BLACK]);
 
     phase_score = ed->md->score;
     if (side == BLACK) {
