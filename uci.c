@@ -54,7 +54,7 @@ static void uci_print_help(void)
 void uci_read_stream(FILE* stream)
 {
     char command[4096] = { 0 };
-    while (fgets(command, 4096, stream)) uci_handle_command(command);
+    while (fgets(command, 4096, stream)) uci_handle_command(&command[0]);
 }
 
 /*
@@ -67,7 +67,7 @@ static void uci_handle_command(char* command)
     // strip trailing newline.
     char* c = command;
     while (*c) ++c;
-    while (*--c == '\n') *c = '\0';
+    while (c > command && *--c == '\n') *c = '\0';
 
     if (!strncasecmp(command, "ucinewgame", 10)) {
         options.out_of_book = false;
@@ -84,16 +84,23 @@ static void uci_handle_command(char* command)
         set_uci_option(command+15);
     } else if (!strncasecmp(command, "stop", 4)) {
         root_data.engine_status = ENGINE_ABORTED;
-    } else if (strncasecmp(command, "ponderhit", 9) == 0) {
+    } else if (!strncasecmp(command, "ponderhit", 9)) {
         if (should_stop_searching(&root_data)) {
             root_data.engine_status = ENGINE_ABORTED;
         } else if (root_data.engine_status == ENGINE_PONDERING) {
             root_data.engine_status = ENGINE_THINKING;
         }
+    } else if (!strncasecmp(command, "debug", 5)) {
+        command += 5;
+        while (isspace(*command)) ++command;
+        if (!strncasecmp(command, "on", 2)) {
+            set_uci_option("Verbose output value true");
+        } else if (!strncasecmp(command, "off", 3)) {
+            set_uci_option("Verbose output value false");
+        }
     } else {
         uci_handle_ext(command);
     }
-    // TODO: handling for debug. Maybe just set verbose mode on?
 }
 
 /*
