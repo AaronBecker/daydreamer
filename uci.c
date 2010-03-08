@@ -18,6 +18,11 @@ static void calculate_search_time(int wtime,
 static void uci_handle_ext(char* command);
 static int input_available(void);
 
+/*
+ * Print a helpful message that describes non-stadard uci commands supported
+ * by Daydreamer. I secretly believe that no one but me has ever used this or
+ * even read this code.
+ */
 static void uci_print_help(void)
 {
     printf(
