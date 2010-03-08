@@ -23,7 +23,7 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KRKB,
     NULL,           //EG_KRKN,
     &scale_krkp,    //EG_KRKP,
-    NULL,//&scale_krpkr,   //EG_KRPKR,
+    &scale_krpkr,   //EG_KRPKR,
     NULL,           //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
@@ -204,6 +204,13 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
         return;
     }
 
+    // Easy draw against rook and knight pawns with king blocking.
+    int bk_file = square_file(bk);
+    if (p_file < FILE_C && bk > wp && bk_file == p_file) {
+        scale[weak_side] = scale[strong_side] = 0;
+        return;
+    }
+
     // Fiddly rook-pawn promotion blocked by friendly rook. G7 and H7 are
     // the only places the black king is safe.
     int wk_file = square_file(wk);
@@ -230,7 +237,7 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
             distance(wk, prom_sq) < distance(bk, prom_sq) - 2 + tempo &&
             distance(wk, prom_sq) < distance(bk, wr + tempo)) {
         scale[strong_side] = 64*(16 - distance(wp, prom_sq));
-        scale[weak_side] = 64;
+        scale[weak_side] = 32;
         return;
     }
 
@@ -242,12 +249,11 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
              (distance(wk, prom_sq) < distance(bk, wr) + tempo &&
               distance(wk, wp + N) < distance(bk, wr) + tempo))) {
         scale[strong_side] = 64*(16 - distance(wp, prom_sq));
-        scale[weak_side] = 0;
+        scale[weak_side] = 32;
         return;
     }
 
     // Blocked, unsupported pawn; usually a draw.
-    int bk_file = square_file(bk);
     if (p_rank < RANK_5 && bk > wp) {
         if (bk_file == p_file) {
             scale[strong_side] = 128;
