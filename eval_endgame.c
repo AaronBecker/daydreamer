@@ -181,6 +181,7 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
     // Course (great book), checked against Stockfish's implementation.
     // I'm horrible at rook endgames over the board, so yeah.
 
+    /*
     // The Philidor position is a draw.
     if (p_rank < RANK_6 && distance(bk, prom_sq) <= 1 && wk_rank < RANK_6 &&
             (((p_rank < RANK_4 && wr_rank != RANK_6)) ||
@@ -191,7 +192,9 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
 
     // Philidor defense after white pushes the pawn. Black needs to check
     // the white king from behind.
+    */
     int br_file = square_file(br);
+    /*
     if (p_rank >= RANK_6 && distance(bk, prom_sq) <= 1 &&
             wk_rank + tempo <= RANK_6 &&
             (br_rank == RANK_1 || (abs(br_file - p_file) > 2))) {
@@ -205,7 +208,9 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
     }
 
     // Easy draw against rook and knight pawns with king blocking.
+    */
     int bk_file = square_file(bk);
+    /*
     if (p_file < FILE_C && bk > wp && bk_file == p_file) {
         scale[weak_side] = scale[strong_side] = 0;
         return;
@@ -213,7 +218,9 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
 
     // Fiddly rook-pawn promotion blocked by friendly rook. G7 and H7 are
     // the only places the black king is safe.
+    */
     int wk_file = square_file(wk);
+    /*
     if (wp == A7 && wr == A8 && (bk == G7 || bk == H7) &&
             (br_file == FILE_A && (br_rank < RANK_4 ||
                                    wk_file > FILE_C ||
@@ -229,6 +236,7 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
         scale[0] = scale[1] = 0;
         return;
     }
+    */
 
     // Generic supported pawn on 7 usually wins if the king is close.
     int wr_file = square_file(wr);
