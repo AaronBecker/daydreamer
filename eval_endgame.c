@@ -27,7 +27,7 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
-    NULL,//&scale_kpkb,    //EG_KPKB,
+    &scale_kpkb,    //EG_KPKB,
     &scale_knpk,    //EG_KNPK,
     &scale_kbpk,    //EG_KBPK,
     &scale_kpk,     //EG_KPK,
