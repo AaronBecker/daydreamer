@@ -2,27 +2,21 @@ clean up endgame scaler and pst
 Search
     Better statistics gathering/reporting
     recognize singular replies
-    prefetching for trans table entries
-    TBB?
     Try multiple moves in TT, instead of PV cache
-    Test effects of reducing PV-specific decisions
-    Re-write the guts of the move selector, because they're awful now.
     Make pawn eval and king safety scores available inside search
-    less distinction (or no distinction) between search and qsearch
+    implement thread pools
 
 shrink trans table entry size
-evaluation hashing, possibly material info hashing
+evaluation hashing
 
 Interface
     ECO classification
     PGN parsing
 
 Evaluation
-    improved king safety and passed pawn evaluation
     Try alternate king safety implementations
     rewrite eval to always work from white's perspective
-    redo report_eval
-    more sophisticated pawn shelter scoring
+    Simplify endgame scaling
 
 Bugs
     I'm concerned about a root fail-high bug for e7e4 in this position:
