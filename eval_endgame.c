@@ -22,15 +22,15 @@ eg_scale_fn eg_scale_fns[] = {
     NULL,           //EG_KRKR,
     NULL,           //EG_KRKB,
     NULL,           //EG_KRKN,
-    0,//&scale_krkp,    //EG_KRKP,
-    0,//&scale_krpkr,   //EG_KRPKR,
+    &scale_krkp,    //EG_KRKP,
+    &scale_krpkr,   //EG_KRPKR,
     NULL,           //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
-    0,//&scale_kpkb,    //EG_KPKB,
-    0,//&scale_knpk,    //EG_KNPK,
-    0,//&scale_kbpk,    //EG_KBPK,
-    0,//&scale_kpk,     //EG_KPK,
+    NULL,//&scale_kpkb,    //EG_KPKB,
+    &scale_knpk,    //EG_KNPK,
+    &scale_kbpk,    //EG_KBPK,
+    &scale_kpk,     //EG_KPK,
     NULL,           //EG_LAST
 };
 
@@ -45,7 +45,7 @@ eg_score_fn eg_score_fns[] = {
     NULL,           //EG_KRKN,
     NULL,           //EG_KRKP,
     NULL,           //EG_KRPKR,
-    0,//&score_kbnk,    //EG_KBNK,
+    &score_kbnk,    //EG_KBNK,
     NULL,           //EG_KBPKB,
     NULL,           //EG_KBPKN,
     NULL,           //EG_KPKB,
@@ -230,7 +230,6 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
         return;
     }
 
-    /*
     // Generic supported pawn on 7 usually wins if the king is close.
     int wr_file = square_file(wr);
     if (p_rank == RANK_7 && p_file != FILE_A &&
@@ -266,7 +265,6 @@ static void scale_krpkr(const position_t* pos, eval_data_t* ed, int scale[2])
             return;
         }
     }
-    */
 }
 
 static void scale_kpkb(const position_t* pos, eval_data_t* ed, int scale[2])
