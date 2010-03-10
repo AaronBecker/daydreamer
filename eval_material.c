@@ -128,7 +128,6 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     // scaling or scoring.
     md->eg_type = EG_NONE;
     md->scale[WHITE] = md->scale[BLACK] = 1024;
-    /*
     if (w_all + b_all == 0) {
         md->eg_type = EG_DRAW;
     } else if (w_all + b_all == 1) {
@@ -177,6 +176,8 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
                 md->strong_side = WHITE;
             }
         }
+    }
+    /*
     } else if (w_all == 1 && b_all == 1) {
         if (wq && bq) {
             md->eg_type = EG_KQKQ;
@@ -246,11 +247,13 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             md->strong_side = BLACK;
         }
     }
+    */
 
     // Endgame scaling factors
-    if (md->eg_type == EG_DRAW ||
-            md->eg_type == EG_KQKQ ||
-            md->eg_type == EG_KRKR) {
+    if (md->eg_type == EG_WIN) {
+        md->scale[md->strong_side^1] = 0;
+        return;
+    } else if (md->eg_type == EG_DRAW) {
         md->scale[BLACK] = md->scale[WHITE] = 0;
         return;
     }
@@ -262,33 +265,17 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         if (w_piece == 1) {
             md->scale[WHITE] = 0;
         } else if (w_piece == 2 && wn == 2) {
-            if (b_piece != 0 || bp == 0) {
-                md->scale[WHITE] = 0;
-            } else {
-                md->scale[WHITE] = 64;
-            }
-        } else if (w_piece == 2 && wb == 2 && b_piece == 1 && bn == 1) {
-            md->scale[WHITE] = 512;
-        } else if (w_piece - b_piece <= 1 && w_major <= 2) {
+            md->scale[WHITE] = 32;
+        } else if (w_piece - b_piece + 1 <= 0 && w_major <= 2) {
             md->scale[WHITE] = 128;
-        }
-    } else if (wp == 1) {
-        if (b_minor != 0) {
-            if (w_piece == 1) {
-                md->scale[WHITE] = 256;
-            } else if (w_piece == 2 && wn == 2) {
-                md->scale[WHITE] = 256;
-            } else if (w_piece - b_piece <= 0 && w_major <= 2) {
-                md->scale[WHITE] = 512;
-            }
-        } else if (br) {
-            if (w_piece == 1) {
-                md->scale[WHITE] = 256;
-            } else if (w_piece == 2 && wn == 2) {
-                md->scale[WHITE] = 256;
-            } else if (w_piece - b_piece + 1 <= 0 && w_major <= 2) {
-                md->scale[WHITE] = 512;
-            }
+        } else if (w_piece == 2 && wb == 2) {
+            md->scale[WHITE] = 768;
+        } else md->scale[WHITE] = 512;
+    } else if (wp == 1 && b_piece) {
+        if (w_piece == 1 || (w_piece == 2 && wn == 2)) {
+            md->scale[WHITE] = 256;
+        } else if (w_piece - b_piece + (b_major == 0) < 1 && w_major < 3) {
+            md->scale[WHITE] = 512;
         }
     }
 
@@ -296,36 +283,19 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
         if (b_piece == 1) {
             md->scale[BLACK] = 0;
         } else if (b_piece == 2 && bn == 2) {
-            if (w_piece != 0 || wp == 0) {
-                md->scale[BLACK] = 0;
-            } else {
-                md->scale[BLACK] = 64;
-            }
-        } else if (b_piece == 2 && bb == 2 && w_piece == 1 && wn == 1) {
-            md->scale[BLACK] = 512;
-        } else if (b_piece - w_piece <= 1 && b_major <= 2) {
+            md->scale[BLACK] = 32;
+        } else if (b_piece - w_piece + 1 <= 0 && b_major <= 2) {
             md->scale[BLACK] = 128;
-        }
-    } else if (bp == 1) {
-        if (w_minor != 0) {
-            if (b_piece == 1) {
-                md->scale[BLACK] = 256;
-            } else if (b_piece == 2 && bn == 2) {
-                md->scale[BLACK] = 256;
-            } else if (b_piece - w_piece <= 0 && b_major <= 2) {
-                md->scale[BLACK] = 512;
-            }
-        } else if (wr) {
-            if (b_piece == 1) {
-                md->scale[BLACK] = 256;
-            } else if (b_piece == 2 && bn == 2) {
-                md->scale[BLACK] = 256;
-            } else if (b_piece - w_piece + 1 <= 0 && b_major <= 2) {
-                md->scale[BLACK] = 512;
-            }
+        } else if (b_piece == 2 && bb == 2) {
+            md->scale[BLACK] = 768;
+        } else md->scale[BLACK] = 512;
+    } else if (bp == 1 && w_piece) {
+        if (b_piece == 1 || (b_piece == 2 && bn == 2)) {
+            md->scale[BLACK] = 256;
+        } else if (b_piece - w_piece + (w_major == 0) < 1 && b_major < 3) {
+            md->scale[BLACK] = 512;
         }
     }
-    */
 }
 
 /*
