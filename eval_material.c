@@ -127,6 +127,8 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     material_adjust -= bb * 2 * (bp - 4);
     material_adjust += wr * (-3) * (wp - 4);
     material_adjust -= br * (-3) * (bp - 4);
+    material_adjust += 10 * (b_minor - w_minor);
+    material_adjust += 10 * (b_major - w_major);
     md->score.midgame += material_adjust;
     md->score.endgame += material_adjust;
 
