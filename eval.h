@@ -7,13 +7,13 @@ extern "C" {
 
 #define MAX_PHASE           24
 
-#define PAWN_VAL         95
+#define PAWN_VAL         85
 #define KNIGHT_VAL       350
 #define BISHOP_VAL       350
 #define ROOK_VAL         500
-#define QUEEN_VAL        1025
+#define QUEEN_VAL        1000
 #define KING_VAL         20000
-#define EG_PAWN_VAL      125
+#define EG_PAWN_VAL      115
 #define EG_KNIGHT_VAL    400
 #define EG_BISHOP_VAL    400
 #define EG_ROOK_VAL      650
