@@ -8,16 +8,16 @@ extern "C" {
 #define MAX_PHASE           24
 
 #define PAWN_VAL         85
-#define KNIGHT_VAL       340
-#define BISHOP_VAL       340
-#define ROOK_VAL         490
-#define QUEEN_VAL        1010
+#define KNIGHT_VAL       350
+#define BISHOP_VAL       350
+#define ROOK_VAL         500
+#define QUEEN_VAL        1025
 #define KING_VAL         20000
 #define EG_PAWN_VAL      115
-#define EG_KNIGHT_VAL    390
-#define EG_BISHOP_VAL    390
-#define EG_ROOK_VAL      640
-#define EG_QUEEN_VAL     1210
+#define EG_KNIGHT_VAL    400
+#define EG_BISHOP_VAL    400
+#define EG_ROOK_VAL      650
+#define EG_QUEEN_VAL     1200
 #define EG_KING_VAL      20000
 #define WON_ENDGAME         (2*EG_QUEEN_VAL)
 
