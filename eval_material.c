@@ -127,6 +127,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     // Recognize specific material combinations where we want to do separate
     // scaling or scoring.
     md->eg_type = EG_NONE;
+    /*
     if (w_all + b_all == 0) {
         md->eg_type = EG_DRAW;
     } else if (w_all + b_all == 1) {
@@ -324,6 +325,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             }
         }
     }
+    */
 }
 
 /*
