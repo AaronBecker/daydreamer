@@ -60,6 +60,13 @@ material_data_t* get_material_data(const position_t* pos)
     return md;
 }
 
+/*
+ * Calculate static score adjustments and scaling factors that are based
+ * solely on the combination of pieces on the board. Each combination
+ * has an associated hash key so that this data can be cached in in the
+ * material table. There are relatively few possible material configurations
+ * reachable in a typical search, so the hit rate should be extremely high.
+ */
 static void compute_material_data(const position_t* pos, material_data_t* md)
 {
     md->phase = game_phase(pos);
@@ -85,7 +92,6 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     int b_minor = bn + bb;
     int b_piece = 2*b_major + b_minor;
     int b_all = bq + br + bb + bn + bp;
-    md->population = w_all + b_all + 2;
 
     // Pair bonuses
     if (wb > 1) {
@@ -181,7 +187,6 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
     // Endgame scaling factors
     if (md->eg_type == EG_WIN) {
         md->scale[md->strong_side^1] = 0;
-        return;
     } else if (md->eg_type == EG_DRAW) {
         md->scale[BLACK] = md->scale[WHITE] = 0;
         return;
@@ -199,7 +204,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             md->scale[WHITE] = 128;
         } else if (w_piece == 2 && wb == 2) {
             md->scale[WHITE] = 768;
-        } else md->scale[WHITE] = 512;
+        } else if (!w_major) md->scale[WHITE] = 512;
     } else if (wp == 1 && b_piece) {
         if (w_piece == 1 || (w_piece == 2 && wn == 2)) {
             md->scale[WHITE] = 256;
@@ -217,7 +222,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             md->scale[BLACK] = 128;
         } else if (b_piece == 2 && bb == 2) {
             md->scale[BLACK] = 768;
-        } else md->scale[BLACK] = 512;
+        } else if(!b_major) md->scale[BLACK] = 512;
     } else if (bp == 1 && w_piece) {
         if (b_piece == 1 || (b_piece == 2 && bn == 2)) {
             md->scale[BLACK] = 256;

@@ -30,9 +30,7 @@ extern "C" {
 #include "timer.h"
 #include "search.h"
 #include "trans_table.h"
-#include "pawn.h"
 #include "move_selection.h"
-#include "eval_material.h"
 #include "debug.h"
 
 /*
