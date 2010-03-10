@@ -177,78 +177,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             }
         }
     }
-    /*
-    } else if (w_all == 1 && b_all == 1) {
-        if (wq && bq) {
-            md->eg_type = EG_KQKQ;
-        } else if (wq && bp) {
-            md->eg_type = EG_KQKP;
-            md->strong_side = WHITE;
-        } else if (bq && wp) {
-            md->eg_type = EG_KQKP;
-            md->strong_side = BLACK;
-        } else if (wr && br) {
-            md->eg_type = EG_KRKR;
-        } else if (wr && bb) {
-            md->eg_type = EG_KRKB;
-            md->strong_side = WHITE;
-        } else if (br && wb) {
-            md->eg_type = EG_KRKB;
-            md->strong_side = BLACK;
-        } else if (wr && bn) {
-            md->eg_type = EG_KRKN;
-            md->strong_side = WHITE;
-        } else if (br && wn) {
-            md->eg_type = EG_KRKN;
-            md->strong_side = BLACK;
-        } else if (wr && bp) {
-            md->eg_type = EG_KRKP;
-            md->strong_side = WHITE;
-        } else if (br && wp) {
-            md->eg_type = EG_KRKP;
-            md->strong_side = BLACK;
-        } else if (wb && bp) {
-            md->eg_type = EG_KPKB;
-            md->strong_side = BLACK;
-        } else if (bb && wp) {
-            md->eg_type = EG_KPKB;
-            md->strong_side = WHITE;
-        } else if (wn && wp) {
-            md->eg_type = EG_KNPK;
-            md->strong_side = WHITE;
-        } else if (bn && bp) {
-            md->eg_type = EG_KNPK;
-            md->strong_side = BLACK;
-        } else if (wb && wp) {
-            md->eg_type = EG_KBPK;
-            md->strong_side = WHITE;
-        } else if (bb && bp) {
-            md->eg_type = EG_KBPK;
-            md->strong_side = BLACK;
-        }
-    } else if (w_all + b_all == 3) {
-        if (wr == 1 && br == 1 && wp == 1) {
-            md->eg_type = EG_KRPKR;
-            md->strong_side = WHITE;
-        } else if (wr == 1 && br == 1 && bp == 1) {
-            md->eg_type = EG_KRPKR;
-            md->strong_side = BLACK;
-        } else if (wb == 1 && wp == 1 && bb == 1) {
-            md->eg_type = EG_KBPKB;
-            md->strong_side = WHITE;
-        } else if (wb == 1 && bp == 1 && bb == 1) {
-            md->eg_type = EG_KBPKB;
-            md->strong_side = BLACK;
-        } else if (wb == 1 && wp == 1 && bn == 1) {
-            md->eg_type = EG_KBPKN;
-            md->strong_side = WHITE;
-        } else if (bb == 1 && bp == 1 && wn == 1) {
-            md->eg_type = EG_KBPKN;
-            md->strong_side = BLACK;
-        }
-    }
-    */
-
+    
     // Endgame scaling factors
     if (md->eg_type == EG_WIN) {
         md->scale[md->strong_side^1] = 0;
@@ -266,7 +195,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             md->scale[WHITE] = 0;
         } else if (w_piece == 2 && wn == 2) {
             md->scale[WHITE] = 32;
-        } else if (w_piece - b_piece + 1 <= 0 && w_major <= 2) {
+        } else if (w_piece - b_piece < 2 && w_major < 3) {
             md->scale[WHITE] = 128;
         } else if (w_piece == 2 && wb == 2) {
             md->scale[WHITE] = 768;
@@ -284,7 +213,7 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
             md->scale[BLACK] = 0;
         } else if (b_piece == 2 && bn == 2) {
             md->scale[BLACK] = 32;
-        } else if (b_piece - w_piece + 1 <= 0 && b_major <= 2) {
+        } else if (b_piece - w_piece < 2 && b_major < 3) {
             md->scale[BLACK] = 128;
         } else if (b_piece == 2 && bb == 2) {
             md->scale[BLACK] = 768;
