@@ -23,6 +23,8 @@ Interface
 Evaluation
     Try alternate king safety implementations
     rewrite eval to always work from white's perspective
+    static mate threats
+    pawn islands
 
 Bugs
     I'm concerned about a root fail-high bug for e7e4 in this position:
