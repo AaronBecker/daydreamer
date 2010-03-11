@@ -190,10 +190,9 @@ static bool should_deepen(search_data_t* data)
     // Go ahead and quit if we have a mate.
     int* scores = data->scores_by_iteration;
     int depth = depth_to_index(data->current_depth);
-    if (depth > 6 && is_mate_score(scores[depth--]) &&
-            is_mate_score(scores[depth--]) &&
-            is_mate_score(scores[depth--]) &&
-            is_mate_score(scores[depth--])) return false;
+    if (depth >= 4 && is_mate_score(abs(scores[depth--])) &&
+            is_mate_score(abs(scores[depth--])) &&
+            is_mate_score(abs(scores[depth--]))) return false;
 
     // We can stop early if our best move is obvious.
     if (obvious_move_enabled && data->obvious_move &&
