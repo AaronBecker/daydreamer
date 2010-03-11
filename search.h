@@ -92,7 +92,6 @@ typedef struct {
     root_move_t* current_root_move;
     int best_score;
     int scores_by_iteration[MAX_SEARCH_PLY + 1];
-    int consecutive_mate_scores;
     int root_indecisiveness;
     move_t pv[MAX_SEARCH_PLY + 1];
     search_node_t search_stack[MAX_SEARCH_PLY + 1];

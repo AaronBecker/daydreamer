@@ -173,11 +173,6 @@ static float extend(position_t* pos,
 static bool should_deepen(search_data_t* data)
 {
     if (should_stop_searching(data)) return false;
-    if (data->consecutive_mate_scores > 6) {
-        if (data->engine_status == ENGINE_PONDERING ||
-                data->infinite) uci_wait_for_command();
-        return false;
-    }
     if (data->infinite || data->engine_status == ENGINE_PONDERING) return true;
     int so_far = elapsed_time(&data->timer);
     int real_target = data->time_target + data->time_bonus;
@@ -195,9 +190,10 @@ static bool should_deepen(search_data_t* data)
     // Go ahead and quit if we have a mate.
     int* scores = data->scores_by_iteration;
     int depth = depth_to_index(data->current_depth);
-    if (depth >= 4 && is_mate_score(abs(scores[depth--])) &&
-            is_mate_score(abs(scores[depth--])) &&
-            is_mate_score(abs(scores[depth--]))) return false;
+    if (depth > 6 && is_mate_score(scores[depth--]) &&
+            is_mate_score(scores[depth--]) &&
+            is_mate_score(scores[depth--]) &&
+            is_mate_score(scores[depth--])) return false;
 
     // We can stop early if our best move is obvious.
     if (obvious_move_enabled && data->obvious_move &&
@@ -529,8 +525,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
             consecutive_fail_lows = 0;
             consecutive_fail_highs = 0;
         }
-        if (is_mate_score(id_score)) search_data->consecutive_mate_scores++;
-        else search_data->consecutive_mate_scores = 0;
 
         if (!should_deepen(search_data)) {
             search_data->current_depth += PLY;

@@ -12,9 +12,7 @@ Search
     Try multiple moves in TT, instead of PV cache
     Make pawn eval and king safety scores available inside search
     implement thread pools
-
-shrink trans table entry size
-evaluation hashing
+    shrink trans table entry size, reevaluate TT code structure
 
 Interface
     ECO classification
@@ -25,6 +23,7 @@ Evaluation
     rewrite eval to always work from white's perspective
     static mate threats
     pawn islands
+    evaluation hashing
 
 Bugs
     I'm concerned about a root fail-high bug for e7e4 in this position:
