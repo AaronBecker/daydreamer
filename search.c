@@ -173,6 +173,11 @@ static float extend(position_t* pos,
 static bool should_deepen(search_data_t* data)
 {
     if (should_stop_searching(data)) return false;
+    if (data->consecutive_mate_scores > 6) {
+        if (data->engine_status == ENGINE_PONDERING ||
+                data->infinite) uci_wait_for_command();
+        return false;
+    }
     if (data->infinite || data->engine_status == ENGINE_PONDERING) return true;
     int so_far = elapsed_time(&data->timer);
     int real_target = data->time_target + data->time_bonus;
@@ -524,6 +529,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
             consecutive_fail_lows = 0;
             consecutive_fail_highs = 0;
         }
+        if (is_mate_score(id_score)) search_data->consecutive_mate_scores++;
+        else search_data->consecutive_mate_scores = 0;
 
         if (!should_deepen(search_data)) {
             search_data->current_depth += PLY;
