@@ -1,35 +1,43 @@
-clean up endgame scaler and pst
+
+Release Checklist
+    test 5-man tbs, especially with probe_firm/threadpool
+    try some alternate aspiration window strategies, targeting the consecutive
+        fail high/low problems noted below.
+
 Search
     Better statistics gathering/reporting
     recognize singular replies
-    prefetching for trans table entries
-    TBB?
     Try multiple moves in TT, instead of PV cache
-    Test effects of reducing PV-specific decisions
-    Re-write the guts of the move selector, because they're awful now.
     Make pawn eval and king safety scores available inside search
-    less distinction (or no distinction) between search and qsearch
-
-shrink trans table entry size
-evaluation hashing, possibly material info hashing
+    implement thread pools
+    shrink trans table entry size, reevaluate TT code structure
 
 Interface
     ECO classification
     PGN parsing
 
 Evaluation
-    improved king safety and passed pawn evaluation
     Try alternate king safety implementations
     rewrite eval to always work from white's perspective
-    redo report_eval
-    more sophisticated pawn shelter scoring
+    static mate threats
+    pawn islands
+    evaluation hashing
 
 Bugs
     I'm concerned about a root fail-high bug for e7e4 in this position:
     1r1r2k1/2p1qp1p/6p1/ppQB1b2/5Pn1/2R1P1P1/PP5P/R1B3K1 b
+        This might be a case of poor mate threat detection. It takes a pretty
+        deep search before the eval for e7e4 spikes, and a really long search
+        to find the mate, even when only searching e7e4.
+        This hits two consecutive fail highs at depth 17 and 18; then the open
+        window search at depth 19 takes just about forever.
+        Better window size management might be a solution, or insisting on a
+        resolved search at each depth.
 
     Similar problem here: (bm b1h7)
     1qrrbbk1/1p1nnppp/p3p3/4P3/2P5/1PN1N3/PB2Q1PP/1B2RR1K w - - 0 21
 
     Doesn't understand this simple endgame at all:
     8/8/3k4/7p/R3K1bP/8/8/8 w - - 0 1
+        I think MCTS might be a good approach for positions like this
+

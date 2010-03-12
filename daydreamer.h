@@ -30,9 +30,7 @@ extern "C" {
 #include "timer.h"
 #include "search.h"
 #include "trans_table.h"
-#include "pawn.h"
 #include "move_selection.h"
-#include "eval_material.h"
 #include "debug.h"
 
 /*
@@ -83,11 +81,6 @@ void report_eval(const position_t* pos);
 bool insufficient_material(const position_t* pos);
 bool can_win(const position_t* pos, color_t side);
 bool is_draw(const position_t* pos);
-
-// eval_endgame.c
-void determine_endgame_scale(const position_t* pos,
-        eval_data_t* ed,
-        int endgame_scale[2]);
 
 // eval_king.c
 score_t evaluate_king_safety(const position_t* pos, eval_data_t* ed);
