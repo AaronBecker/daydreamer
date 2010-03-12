@@ -184,7 +184,8 @@ static bool should_deepen(search_data_t* data)
     else data->time_bonus = MAX(data->time_bonus,
             data->time_target * data->root_indecisiveness / 2);
     
-    // TODO: always deepen if we just failed high or low.
+    // Always deepen if we just failed high or low.
+    if (data->consecutive_fail_lows || data->consecutive_fail_highs) return true;
 
     // If we're much more than halfway through our time, we won't make it
     // through the first move of the next iteration anyway.
