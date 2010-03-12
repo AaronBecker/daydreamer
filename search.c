@@ -483,7 +483,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         int beta = mate_in(-1);
         int last_score = search_data->scores_by_iteration[depth_index-1];
         if (depth > 5*PLY && options.multi_pv == 1) {
-            static const int aspire_window[] =  { 35, 45 };
+            static const int aspire_window[] =  { 45, 60 };
             //alpha = search_data->consecutive_fail_lows > 1 ?
             //      mated_in(-1) : last_score - 45;
             //beta = search_data->consecutive_fail_highs > 1 ?
