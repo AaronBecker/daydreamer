@@ -183,6 +183,8 @@ static bool should_deepen(search_data_t* data)
     if (data->current_depth < 6*PLY) data->time_bonus = 0;
     else data->time_bonus = MAX(data->time_bonus,
             data->time_target * data->root_indecisiveness / 2);
+    
+    // TODO: always deepen if we just failed high or low.
 
     // If we're much more than halfway through our time, we won't make it
     // through the first move of the next iteration anyway.
@@ -463,20 +465,15 @@ void deepening_search(search_data_t* search_data, bool ponder)
     find_obvious_move(search_data);
 
     int id_score = root_data.best_score = mated_in(-1);
-    int consecutive_fail_highs = 0;
-    int consecutive_fail_lows = 0;
     if (!search_data->depth_limit) {
         search_data->depth_limit = MAX_SEARCH_PLY * PLY;
     }
-    for (search_data->current_depth=2*PLY;
-            search_data->current_depth <= search_data->depth_limit;
+    for (search_data->current_depth = 2*PLY;
+            search_data->current_depth <= search_data->depth_limit &&
+            should_deepen(search_data);
             search_data->current_depth += PLY) {
         float depth = search_data->current_depth;
         int depth_index = depth_to_index(depth);
-        if (should_output(search_data)) {
-            if (options.verbose) print_transposition_stats();
-            printf("info depth %d\n", depth_index);
-        }
 
         // Calculate aspiration search window.
         int alpha = mated_in(-1);
@@ -485,17 +482,29 @@ void deepening_search(search_data_t* search_data, bool ponder)
         static int aspire_low[] = { -35, -75, -300 };
         static int aspire_high[] = { 35, 75, 300 };
         if (depth > 5*PLY && options.multi_pv == 1) {
-            alpha = consecutive_fail_lows > 2 ? mated_in(-1) :
-                last_score + aspire_low[consecutive_fail_lows];
-            //alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 45;
-            //beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 45;
-            beta = consecutive_fail_highs > 2 ? mate_in(-1) :
-                last_score + aspire_high[consecutive_fail_highs];
+            //alpha = search_data->consecutive_fail_lows > 1 ?
+            //      mated_in(-1) : last_score - 45;
+            //beta = search_data->consecutive_fail_highs > 1 ?
+            //      mate_in(-1) : last_score + 45;
+            alpha = search_data->consecutive_fail_lows > 2 ? mated_in(-1) :
+                last_score + aspire_low[search_data->consecutive_fail_lows];
+            beta = search_data->consecutive_fail_highs > 2 ? mate_in(-1) :
+                last_score + aspire_high[search_data->consecutive_fail_highs];
+            if (search_data->consecutive_fail_highs > 2 ||
+                    search_data->consecutive_fail_lows > 2) {
+                search_data->current_depth -= PLY;
+                depth = search_data->current_depth;
+                depth_index = depth_to_index(depth);
+            }
             if (options.verbose) {
                 printf("info string root window is (%d, %d)\n", alpha, beta);
             }
         }
         search_data->root_indecisiveness = 0;
+        if (should_output(search_data)) {
+            if (options.verbose) print_transposition_stats();
+            printf("info depth %d\n", depth_index);
+        }
 
         search_result_t result = root_search(search_data, alpha, beta);
         if (result == SEARCH_ABORTED) break;
@@ -521,21 +530,16 @@ void deepening_search(search_data_t* search_data, bool ponder)
         id_score = search_data->best_score;
         search_data->scores_by_iteration[depth_index] = id_score;
         if (id_score <= alpha) {
-            consecutive_fail_lows++;
-            consecutive_fail_highs = 0;
+            search_data->consecutive_fail_lows++;
+            search_data->consecutive_fail_highs = 0;
             search_data->root_indecisiveness += 3;
         } else if (id_score >= beta) {
-            consecutive_fail_lows = 0;
-            consecutive_fail_highs++;
+            search_data->consecutive_fail_lows = 0;
+            search_data->consecutive_fail_highs++;
             search_data->root_indecisiveness += 3;
         } else {
-            consecutive_fail_lows = 0;
-            consecutive_fail_highs = 0;
-        }
-
-        if (!should_deepen(search_data)) {
-            search_data->current_depth += PLY;
-            break;
+            search_data->consecutive_fail_lows = 0;
+            search_data->consecutive_fail_highs = 0;
         }
     }
     stop_timer(&search_data->timer);
