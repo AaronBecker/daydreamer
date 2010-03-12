@@ -431,8 +431,12 @@ void deepening_search(search_data_t* search_data, bool ponder)
     start_timer(&search_data->timer);
 
     // Get a move out of the opening book if we can.
-    if (options.use_book && !options.out_of_book && !search_data->infinite &&
-            !search_data->depth_limit && !search_data->node_limit &&
+    if (options.use_book &&
+            options.book_loaded &&
+            !options.out_of_book &&
+            !search_data->infinite &&
+            !search_data->depth_limit &&
+            !search_data->node_limit &&
             search_data->engine_status != ENGINE_PONDERING) {
         move_t book_move = options.probe_book(&search_data->root_pos);
         if (book_move) {

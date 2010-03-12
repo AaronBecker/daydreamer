@@ -317,10 +317,10 @@ static void handle_book_file(void* opt, char* value)
     if (value[name_len-3] == 'c' &&
             value[name_len-2] == 't' &&
             value[name_len-1] == 'g') {
-        init_ctg_book(option->value);
+        options.book_loaded = init_ctg_book(option->value);
         options.probe_book = &get_ctg_book_move;
     } else {
-        init_poly_book(option->value);
+        options.book_loaded = init_poly_book(option->value);
         options.probe_book = &get_poly_book_move;
     }
     options.out_of_book = false;
@@ -366,5 +366,6 @@ void init_uci_options()
             0, 1000000, NULL, &options.output_delay, &default_handler);
     add_uci_option("Verbose output", OPTION_CHECK, "false",
             0, 0, NULL, &options.verbose, &default_handler);
+    options.book_loaded = false;
 }
 

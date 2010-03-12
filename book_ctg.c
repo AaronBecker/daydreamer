@@ -54,7 +54,7 @@ static bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move);
  * files in the same directory. Note that all these methods depend on global
  * state in the form of ctg and cto file pointers.
  */
-void init_ctg_book(char* filename)
+bool init_ctg_book(char* filename)
 {
     int name_len = strlen(filename);
     assert(filename[name_len-3] == 'c' &&
@@ -75,7 +75,7 @@ void init_ctg_book(char* filename)
     fbuf[name_len-1] = 'g';
     if (!ctg_file || !cto_file || !ctb_file) {
         printf("info string Couldn't load book %s\n", fbuf);
-        return;
+        return false;
     }
 
     // Read out upper and lower page limits.
@@ -84,6 +84,7 @@ void init_ctg_book(char* filename)
     page_bounds.high = ntohl(page_bounds.high);
     assert(page_bounds.low <= page_bounds.high);
     fclose(ctb_file);
+    return true;
 }
 
 /*
