@@ -1,8 +1,6 @@
 
 Release Checklist
-    clean up endgame scaler and pst
     test 5-man tbs, especially with probe_firm/threadpool
-    make search terminate early when mate is found
     try some alternate aspiration window strategies, targeting the consecutive
         fail high/low problems noted below.
 
