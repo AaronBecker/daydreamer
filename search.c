@@ -2,6 +2,8 @@
 #include <math.h>
 #include <string.h>
 
+static move_t last_best = NO_MOVE;
+
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
@@ -558,6 +560,11 @@ void deepening_search(search_data_t* search_data, bool ponder)
     assert(search_data->pv[0] != NO_MOVE);
     printf("bestmove %s", best_move);
     if (search_data->pv[1]) printf(" ponder %s", ponder_move);
+    // FIXME: remove this
+    if (search_data->pv[0] != last_best) {
+        printf("error: last best was "); print_coord_move(last_best); printf("\n");
+        abort();
+    }
     printf("\n");
     search_data->engine_status = ENGINE_IDLE;
 }
@@ -653,6 +660,7 @@ static search_result_t root_search(search_data_t* search_data,
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
             print_multipv(search_data);
+            last_best = search_data->pv[0];
         }
         search_data->resolving_fail_high = false;
     }
