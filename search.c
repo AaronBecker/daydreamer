@@ -184,8 +184,10 @@ static bool should_deepen(search_data_t* data)
     else data->time_bonus = MAX(data->time_bonus,
             data->time_target * data->root_indecisiveness / 2);
     
-    // Always deepen if we just failed high or low.
-    if (data->consecutive_fail_lows || data->consecutive_fail_highs) return true;
+    // Be more generous with time if we just failed high or low.
+    if (data->consecutive_fail_lows || data->consecutive_fail_highs) {
+        real_target = (real_target + data->time_limit) / 2;
+    }
 
     // If we're much more than halfway through our time, we won't make it
     // through the first move of the next iteration anyway.
@@ -480,19 +482,18 @@ void deepening_search(search_data_t* search_data, bool ponder)
         int alpha = mated_in(-1);
         int beta = mate_in(-1);
         int last_score = search_data->scores_by_iteration[depth_index-1];
-        static int aspire_low[] = { -35, -75, -300 };
-        static int aspire_high[] = { 35, 75, 300 };
+        static const int aspire_low[] =  {-30,-60,-150 };
+        static const int aspire_high[] = { 30, 60, 150 };
         if (depth > 5*PLY && options.multi_pv == 1) {
             //alpha = search_data->consecutive_fail_lows > 1 ?
             //      mated_in(-1) : last_score - 45;
             //beta = search_data->consecutive_fail_highs > 1 ?
             //      mate_in(-1) : last_score + 45;
-            alpha = search_data->consecutive_fail_lows > 2 ? mated_in(-1) :
-                last_score + aspire_low[search_data->consecutive_fail_lows];
-            beta = search_data->consecutive_fail_highs > 2 ? mate_in(-1) :
-                last_score + aspire_high[search_data->consecutive_fail_highs];
-            if (search_data->consecutive_fail_highs > 2 ||
-                    search_data->consecutive_fail_lows > 2) {
+            const int low = search_data->consecutive_fail_lows;
+            const int high = search_data->consecutive_fail_highs;
+            alpha = low > 2 ? mated_in(-1) : last_score + aspire_low[low];
+            beta = high > 2 ? mate_in(-1) : last_score + aspire_high[high];
+            if (high > 2 || low > 2) {
                 search_data->current_depth -= PLY;
                 depth = search_data->current_depth;
                 depth_index = depth_to_index(depth);
