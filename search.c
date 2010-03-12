@@ -567,7 +567,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
     // FIXME: remove this
     if (search_data->pv[0] != last_best) {
         printf("error: last best was "); print_coord_move(last_best); printf("\n");
-        abort();
+        int* x = NULL;
+        *x = 0;
     }
     printf("\n");
     search_data->engine_status = ENGINE_IDLE;
