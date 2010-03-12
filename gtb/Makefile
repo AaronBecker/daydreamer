@@ -1,5 +1,6 @@
 
 ARCHFLAGS = -m64
+#ARCHFLAGS = -m32
 OPTFLAGS = -fast -msse
 INCLUDE = -Isysport/ -Icompression/ -Icompression/liblzf/ \
 	   -Icompression/zlib/ -Icompression/lzma/ -Icompression/huffman/
