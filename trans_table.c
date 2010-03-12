@@ -172,7 +172,8 @@ void put_transposition_line(position_t* pos,
     put_transposition(pos, *moves, depth, score, score_type, false);
     undo_info_t undo;
     do_move(pos, *moves, &undo);
-    put_transposition_line(pos, moves+1, depth-1, score, score_type);
+    int x = is_mate_score(score) ? (score > 0 ? 1 : -1) : 0;
+    put_transposition_line(pos, moves+1, depth-1, score+x, score_type);
     undo_move(pos, *moves, &undo);
 }
 

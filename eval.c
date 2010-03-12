@@ -61,8 +61,7 @@ int simple_eval(const position_t* pos)
     ed.md = get_material_data(pos);
 
     int score = 0;
-    int endgame_scale[2];
-    determine_endgame_scale(pos, &ed, endgame_scale);
+    int endgame_scale[2] = { ed.md->scale[WHITE], ed.md->scale[BLACK] };
     if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
     
     score_t phase_score = ed.md->score;
@@ -98,8 +97,7 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     ed->md = get_material_data(pos);
 
     int score = 0;
-    int endgame_scale[2];
-    determine_endgame_scale(pos, ed, endgame_scale);
+    int endgame_scale[2] = { ed->md->scale[WHITE], ed->md->scale[BLACK] };
     if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
 
     phase_score = ed->md->score;
@@ -145,8 +143,7 @@ void report_eval(const position_t* pos)
     ed->md = get_material_data(pos);
 
     int score = 0;
-    int endgame_scale[2];
-    determine_endgame_scale(pos, ed, endgame_scale);
+    int endgame_scale[2] = { ed->md->scale[WHITE], ed->md->scale[BLACK] };
     printf("scale\t\t(%5d, %5d)\n", endgame_scale[WHITE], endgame_scale[BLACK]);
 
     phase_score = ed->md->score;
@@ -217,5 +214,4 @@ bool is_draw(const position_t* pos)
         insufficient_material(pos) ||
         is_repetition(pos);
 }
-
 

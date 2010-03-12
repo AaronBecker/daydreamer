@@ -2,6 +2,8 @@
 #include <math.h>
 #include <string.h>
 
+static move_t last_best = NO_MOVE;
+
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
@@ -484,9 +486,15 @@ void deepening_search(search_data_t* search_data, bool ponder)
         int alpha = mated_in(-1);
         int beta = mate_in(-1);
         int last_score = search_data->scores_by_iteration[depth_index-1];
+        static int aspire_low[] = { -35, -75, -300 };
+        static int aspire_high[] = { 35, 75, 300 };
         if (depth > 5*PLY && options.multi_pv == 1) {
-            alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 45;
-            beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 45;
+            alpha = consecutive_fail_lows > 2 ? mated_in(-1) :
+                last_score + aspire_low[consecutive_fail_lows];
+            //alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 45;
+            //beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 45;
+            beta = consecutive_fail_highs > 2 ? mate_in(-1) :
+                last_score + aspire_high[consecutive_fail_highs];
             if (options.verbose) {
                 printf("info string root window is (%d, %d)\n", alpha, beta);
             }
@@ -556,6 +564,11 @@ void deepening_search(search_data_t* search_data, bool ponder)
     assert(search_data->pv[0] != NO_MOVE);
     printf("bestmove %s", best_move);
     if (search_data->pv[1]) printf(" ponder %s", ponder_move);
+    // FIXME: remove this
+    if (search_data->pv[0] != last_best) {
+        printf("error: last best was "); print_coord_move(last_best); printf("\n");
+        abort();
+    }
     printf("\n");
     search_data->engine_status = ENGINE_IDLE;
 }
@@ -651,6 +664,7 @@ static search_result_t root_search(search_data_t* search_data,
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
             print_multipv(search_data);
+            last_best = search_data->pv[0];
         }
         search_data->resolving_fail_high = false;
     }
