@@ -33,7 +33,7 @@ static int num_entries;
 /*
  * Load the given book file, in Polyglot format.
  */
-void init_poly_book(char* filename)
+bool init_poly_book(char* filename)
 {
     assert(sizeof(book_entry_t) == 16);
     srandom(time(NULL));
@@ -44,10 +44,11 @@ void init_poly_book(char* filename)
     if (book) fclose(book);
     if (!(book = fopen(filename, "r"))) {
         num_entries = 0;
-        return;
+        return false;
     }
     fseek(book, 0, SEEK_END);
     num_entries = ftell(book) / 16;
+    return true;
 }
 
 /*
