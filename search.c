@@ -473,7 +473,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
     }
     for (search_data->current_depth = 2*PLY;
             search_data->current_depth <= search_data->depth_limit &&
-            should_deepen(search_data);
+            (should_deepen(search_data) || search_data->current_depth < 3*PLY);
             search_data->current_depth += PLY) {
         float depth = search_data->current_depth;
         int depth_index = depth_to_index(depth);
