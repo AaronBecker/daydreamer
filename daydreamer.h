@@ -31,6 +31,7 @@ extern "C" {
 #include "search.h"
 #include "trans_table.h"
 #include "move_selection.h"
+#include "thread_pool.h"
 #include "debug.h"
 
 /*
@@ -199,6 +200,16 @@ void deepening_search(search_data_t* search_data, bool ponder);
 // static_exchange_eval.c
 int static_exchange_eval(const position_t* pos, move_t move);
 int static_exchange_sign(const position_t* pos, move_t move);
+
+// thread_pool.c
+void init_thread_pool(thread_pool_t* pool,
+        void* arg_storage,
+        thread_info_t* info_storage,
+        int arg_size,
+        int max_threads);
+void destroy_thread_pool(thread_pool_t* pool);
+bool get_slot(thread_pool_t* pool, int* slot, void** arg_addr);
+bool run_thread(thread_pool_t* pool, task_fn_t task, int slot);
 
 // timer.c
 void init_timer(milli_timer_t* timer);
