@@ -35,6 +35,8 @@ static const int castle_to_gtb_table[] = {
     tb_BOOO | tb_WOOO | tb_BOO | tb_WOO,
 };
 
+// TODO: experiment with max pool size, make actual pool size variable with
+// a uci option.
 #define GTB_MAX_POOL_SIZE   8
 typedef struct {
     int stm, ep, castle;
@@ -51,6 +53,10 @@ static thread_info_t gtb_pool_info[GTB_MAX_POOL_SIZE];
 CACHE_ALIGN static gtb_pool_args_t gtb_pool_args[GTB_MAX_POOL_SIZE];
 void* gtb_probe_firm_worker(void* payload);
 
+/*
+ * Given a string identifying the location of Gaviota tb's, load those
+ * tb's for use during search.
+ */
 bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
 {
     if (tb_is_initialized()) unload_gtb();
@@ -78,6 +84,10 @@ bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
     return success;
 }
 
+/*
+ * Unload all tablebases and destroy the thread pool used for probing
+ * during search.
+ */
 void unload_gtb(void)
 {
     tbcache_done();
@@ -89,6 +99,9 @@ void unload_gtb(void)
     }
 }
 
+/*
+ * Fill arrays with the information needed by the gtb probing code.
+ */
 static void fill_gtb_arrays(const position_t* pos,
         unsigned int* ws,
         unsigned int* bs,
@@ -125,6 +138,9 @@ static void fill_gtb_arrays(const position_t* pos,
     bp[count] = tb_NOPIECE;
 }
 
+/*
+ * Probe the tb cache only, without considering what's available on disk.
+ */
 bool probe_gtb_soft(const position_t* pos, int* score)
 {
     int stm = stm_to_gtb(pos->side_to_move);
@@ -147,6 +163,10 @@ bool probe_gtb_soft(const position_t* pos, int* score)
     return success;
 }
 
+/*
+ * Probe all tbs, using the cache if available, but blocking and waiting for
+ * disk if we miss in cache.
+ */
 bool probe_gtb_hard(const position_t* pos, int* score)
 {
     int stm = stm_to_gtb(pos->side_to_move);
@@ -169,6 +189,13 @@ bool probe_gtb_hard(const position_t* pos, int* score)
     return success;
 }
 
+/*
+ * A compromise between probe_hard and probe_soft. Check the cache, and return
+ * if the position is found. If not, use a thread to load the position into
+ * cache in the background while we return to the main search. The background
+ * load uses a thread pool, and has minimal load implications because the
+ * worker threads are blocked nearly 100% of the time.
+ */
 bool probe_gtb_firm(const position_t* pos, int* score)
 {
     int pool_slot;
@@ -202,6 +229,9 @@ bool probe_gtb_firm(const position_t* pos, int* score)
     return false;
 }
 
+/*
+ * The worker function for background probing in probe_firm.
+ */
 void* gtb_probe_firm_worker(void* payload)
 {
     gtb_pool_args_t* gtb_args = (gtb_pool_args_t*)payload;
@@ -218,3 +248,4 @@ void* gtb_probe_firm_worker(void* payload)
     (void)success;
     return NULL;
 }
+
