@@ -41,6 +41,7 @@ typedef struct {
     bool use_egbb;
     bool use_gtb;
     int gtb_cache_size;
+    int eg_pool_threads;
     bool verbose;
     bool chess960;
     bool arena_castle;

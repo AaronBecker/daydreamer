@@ -24,10 +24,10 @@ int main(int argc, char* argv[])
     char* script_name = argc > 1 ? argv[1] : "daydreamer.rc";
     FILE* script;
     if ((script = fopen(script_name, "r"))) {
-        printf("Reading input script...");
+        printf("Reading input script...\n");
         uci_read_stream(script);
         fclose(script);
-        printf("done\n");
+        printf("done.\n");
     }
 
     // Main loop input processing.

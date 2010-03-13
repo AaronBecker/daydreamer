@@ -55,7 +55,7 @@ bool load_egbb(char* egbb_dir, int cache_size_bytes)
         lib = load_library(path);
     }
     if (!lib) {
-        printf("Attempt to load egbb from %s failed\n", egbb_dir);
+        printf("info string Failed to load egbb from %s.\n", egbb_dir);
         return false;
     }
 
