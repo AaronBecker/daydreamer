@@ -35,6 +35,22 @@ static const int castle_to_gtb_table[] = {
     tb_BOOO | tb_WOOO | tb_BOO | tb_WOO,
 };
 
+#define GTB_MAX_POOL_SIZE   8
+typedef struct {
+    int stm, ep, castle;
+    unsigned int ws[17], bs[17];
+    unsigned char wp[17], bp[17];
+    uint8_t _pad[CACHE_LINE_BYTES -
+        ((3*sizeof(int) +
+          2*17*sizeof(int) +
+          2*17*sizeof(char)) % CACHE_LINE_BYTES)];
+} gtb_pool_args_t;
+static thread_pool_t gtb_pool_storage;
+static thread_pool_t* gtb_pool = NULL;
+static thread_info_t gtb_pool_info[GTB_MAX_POOL_SIZE];
+CACHE_ALIGN static gtb_pool_args_t gtb_pool_args[GTB_MAX_POOL_SIZE];
+void* gtb_probe_firm_worker(void* payload);
+
 bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
 {
     if (tb_is_initialized()) unload_gtb();
@@ -54,6 +70,11 @@ bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
     tbcache_init(cache_size_bytes);
     tbstats_reset();
     bool success = tb_is_initialized() && tbcache_is_on();
+    if (success) {
+        gtb_pool = &gtb_pool_storage;
+        init_thread_pool(gtb_pool, gtb_pool_args, gtb_pool_info,
+            sizeof(gtb_pool_args_t), GTB_MAX_POOL_SIZE);
+    }
     return success;
 }
 
@@ -62,6 +83,10 @@ void unload_gtb(void)
     tbcache_done();
     tb_done();
     tb_paths = tbpaths_done(tb_paths);
+    if (gtb_pool) {
+        destroy_thread_pool(gtb_pool);
+        gtb_pool = NULL;
+    }
 }
 
 static void fill_gtb_arrays(const position_t* pos,
@@ -144,26 +169,26 @@ bool probe_gtb_hard(const position_t* pos, int* score)
     return success;
 }
 
-static bool gtb_worker_busy = false;
-struct {
-    int stm, ep, castle;
-    unsigned int ws[17], bs[17];
-    unsigned char wp[17], bp[17];
-} gtb_args;
-static void* gtb_probe_firm_worker(void* payload);
-
 bool probe_gtb_firm(const position_t* pos, int* score)
 {
-    int stm = stm_to_gtb(pos->side_to_move);
-    int ep = square_to_gtb(pos->ep_square);
-    int castle = castle_to_gtb(pos->castle_rights);
+    int pool_slot;
+    gtb_pool_args_t* gtb_args;
+    bool available_slot = get_slot(gtb_pool, &pool_slot, (void**)&gtb_args);
+    if (!available_slot) {
+        gtb_pool_args_t args_storage;
+        gtb_args = &args_storage;
+    }
 
-    unsigned int ws[17], bs[17];
-    unsigned char wp[17], bp[17];
-    fill_gtb_arrays(pos, ws, bs, wp, bp);
+    gtb_args->stm = stm_to_gtb(pos->side_to_move);
+    gtb_args->ep = square_to_gtb(pos->ep_square);
+    gtb_args->castle = castle_to_gtb(pos->castle_rights);
+
+    fill_gtb_arrays(pos, gtb_args->ws, gtb_args->bs,
+            gtb_args->wp, gtb_args->bp);
 
     unsigned res, val;
-    int success = tb_probe_soft(stm, ep, castle, ws, bs, wp, bp, &res, &val);
+    int success = tb_probe_soft(gtb_args->stm, gtb_args->ep, gtb_args->castle,
+            gtb_args->ws, gtb_args->bs, gtb_args->wp, gtb_args->bp, &res, &val);
     if (success) {
         if (res == tb_DRAW) *score = DRAW_VALUE;
         else if (res == tb_BMATE) *score = mated_in(val);
@@ -173,40 +198,23 @@ bool probe_gtb_firm(const position_t* pos, int* score)
         return true;
     }
 
-    // spawn probe_hard thread
-    if (gtb_worker_busy) return false;
-    gtb_worker_busy = true;
-
-    gtb_args.stm = stm;
-    gtb_args.ep = ep;
-    gtb_args.castle = castle;
-    int i;
-    for (i=0; ws[i] != tb_NOSQUARE; ++i) gtb_args.ws[i] = ws[i];
-    gtb_args.ws[i] = tb_NOSQUARE;
-    for (i=0; bs[i] != tb_NOSQUARE; ++i) gtb_args.bs[i] = bs[i];
-    gtb_args.bs[i] = tb_NOSQUARE;
-    for (i=0; wp[i] != tb_NOPIECE; ++i) gtb_args.wp[i] = wp[i];
-    gtb_args.wp[i] = tb_NOPIECE;
-    for (i=0; bp[i] != tb_NOPIECE; ++i) gtb_args.bp[i] = bp[i];
-    gtb_args.bp[i] = tb_NOPIECE;
-    pthread_t thread_id;
-    pthread_create(&thread_id, NULL, &gtb_probe_firm_worker, NULL);
+    if (available_slot) run_thread(gtb_pool, gtb_probe_firm_worker, pool_slot);
     return false;
 }
 
 void* gtb_probe_firm_worker(void* payload)
 {
+    gtb_pool_args_t* gtb_args = (gtb_pool_args_t*)payload;
     unsigned res, val;
-    int success = tb_probe_hard(gtb_args.stm,
-            gtb_args.ep,
-            gtb_args.castle,
-            gtb_args.ws,
-            gtb_args.bs,
-            gtb_args.wp,
-            gtb_args.bp,
+    int success = tb_probe_hard(gtb_args->stm,
+            gtb_args->ep,
+            gtb_args->castle,
+            gtb_args->ws,
+            gtb_args->bs,
+            gtb_args->wp,
+            gtb_args->bp,
             &res,
             &val);
-    gtb_worker_busy = false;
-    (void)success; (void)payload;
+    (void)success;
     return NULL;
 }

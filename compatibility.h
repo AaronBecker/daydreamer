@@ -53,6 +53,29 @@ typedef __int16 int16_t;
 #include <sys/time.h>
 #endif
 
+// Cache line size
+#define CACHE_LINE_BYTES    64
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#   define  CACHE_ALIGN __declspec(align(CACHE_LINE_BYTES))
+#else
+#   define  CACHE_ALIGN __attribute__ ((aligned(CACHE_LINE_BYTES)))
+#endif
+
+// Threading support
+#define	_REENTRANT
+#define _PTHREADS
+#define _POSIX_PTHREAD_SEMANTICS
+
+// 32 or 64 bit?
+#if defined(__x86_64) || \
+    defined(_WIN64) || \
+    (__SIZEOF_INT__ > 4) || \
+    defined(_M_X64)
+#   define ARCH_64_BIT
+#else
+#   define ARCH_32_BIT
+#endif
+
 #ifdef __cplusplus
 }
 #endif
