@@ -59,7 +59,7 @@ static void uci_print_help(void)
 void uci_read_stream(FILE* stream)
 {
     char command[4096] = { 0 };
-    while (fgets(command, 4096, stream)) uci_handle_command(&command[0]);
+    while (fgets(command, 4096, stream)) uci_handle_command(command);
 }
 
 /*
@@ -84,8 +84,9 @@ static void uci_handle_command(char* command)
     } else if (!strncasecmp(command, "isready", 7)) printf("readyok\n");
     else if (!strncasecmp(command, "quit", 4)) exit(0);
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
-    else if (!strncasecmp(command, "go", 2)) uci_go(command+3);
-    else if (!strncasecmp(command, "setoption name", 14)) {
+    else if (!strncasecmp(command, "go", 2)) {
+        uci_go(command+3);
+    } else if (!strncasecmp(command, "setoption name", 14)) {
         set_uci_option(command+15);
     } else if (!strncasecmp(command, "stop", 4)) {
         root_data.engine_status = ENGINE_ABORTED;
