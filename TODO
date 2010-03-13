@@ -1,8 +1,6 @@
 
 Release Checklist
     test 5-man tbs, especially with probe_firm/threadpool
-    try some alternate aspiration window strategies, targeting the consecutive
-        fail high/low problems noted below.
 
 Search
     Better statistics gathering/reporting
@@ -14,7 +12,7 @@ Search
 Interface
     ECO classification
     PGN parsing
-    Better uci options support, with more feedback
+    Better uci options support, with more feedback and fewer special handlers
 
 Evaluation
     Try alternate king safety implementations

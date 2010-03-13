@@ -6,6 +6,9 @@
 
 static position_t pgn_position;
 
+/*
+ * Read the given pgn file. This is just a stub for future development.
+ */
 void read_pgn(char* filename)
 {
     position_t* pos = &pgn_position;
