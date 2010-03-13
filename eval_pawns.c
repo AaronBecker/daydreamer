@@ -294,8 +294,8 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             } else on_island = false;
         }
         if (islands) --islands;
-        pd->score[color].midgame -= 3 * islands;
-        pd->score[color].endgame -= 6 * islands;
+        pd->score[color].midgame -= 2 * islands;
+        pd->score[color].endgame -= 4 * islands;
     }
     return pd;
 }
