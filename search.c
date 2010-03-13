@@ -2,6 +2,7 @@
 #include <math.h>
 #include <string.h>
 
+// TODO: get rid of this
 static move_t last_best = NO_MOVE;
 
 static const bool nullmove_enabled = true;
@@ -569,15 +570,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
     assert(search_data->pv[0] != NO_MOVE);
     printf("bestmove %s", best_move);
     if (search_data->pv[1]) printf(" ponder %s", ponder_move);
-    // FIXME: remove this
-    if (search_data->pv[0] != last_best) {
-        FILE* f = fopen("error.log", "a");
-        move_to_coord_str(last_best, best_move);
-        fprintf(f, "error: last best was %s\n", best_move);
-        int* x = NULL;
-        *x = 0;
-    }
     printf("\n");
+    assert(search_data->pv[0] == last_best);
     search_data->engine_status = ENGINE_IDLE;
 }
 
