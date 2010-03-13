@@ -202,14 +202,14 @@ static bool should_deepen(search_data_t* data)
             data->depth_limit == MAX_SEARCH_PLY &&
             !data->node_limit && data->current_depth >= 7*PLY &&
             get_root_node_count(data->obvious_move) >
-            data->nodes_searched * 10 / 9) return false;
+            data->nodes_searched * 9 / 10) return false;
 
     // Allocate some extra time when the root score drops.
     depth = depth_to_index(data->current_depth);
-    if (so_far < real_target / 3 || depth < 5) return true;
+    if (so_far < real_target / 5 || depth < 5) return true;
     int it_score = data->scores_by_iteration[depth];
     int last_it_score = data->scores_by_iteration[depth-1];
-    if (it_score >= last_it_score) return true;
+    if (it_score - 5 > last_it_score) return true;
     else if (it_score >= last_it_score - 25) {
         data->time_bonus = MAX(data->time_bonus, data->time_target);
     } else if (it_score >= last_it_score - 50) {

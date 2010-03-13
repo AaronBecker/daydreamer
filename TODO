@@ -18,7 +18,6 @@ Evaluation
     Try alternate king safety implementations
     rewrite eval to always work from white's perspective
     static mate threats
-    pawn islands
     evaluation hashing
 
 Bugs
