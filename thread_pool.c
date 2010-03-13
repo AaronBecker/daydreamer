@@ -4,6 +4,11 @@
 
 static void* worker_thread(void *arg);
 
+/*
+ * Initialize a new thread pool. Note that storage for the worker threads'
+ * per-thread info and argument data must be allocated by the caller, to
+ * facilitate thread launching without any memory allocation or copying.
+ */
 void init_thread_pool(thread_pool_t* pool,
         void* arg_storage,
         thread_info_t* info_storage,
@@ -33,15 +38,24 @@ void init_thread_pool(thread_pool_t* pool,
     }
 }
 
+/*
+ * Tell all the worker threads to quit.
+ */
 void destroy_thread_pool(thread_pool_t* pool)
 {
     pool->quit = true;
     while (pool->idle_threads != pool->num_threads) sched_yield();
 }
 
-// Note: this explicitly depends on having only one controlling thread.
+/*
+ * Find an open slot in the allocated arrays of argument and thread
+ * info. The caller then fills this slot on its own, and calls run_thread
+ * on the appropriate slot.
+ */
 bool get_slot(thread_pool_t* pool, int* slot, void** arg_addr)
 {
+    // FIXME: this explicitly depends on having only one controlling thread.
+    // This is ok for now, but once we have SMP search, it has to change.
     int i;
     if (!pool->idle_threads) return false;
     pthread_mutex_lock(&pool->pool_mutex);
@@ -53,8 +67,13 @@ bool get_slot(thread_pool_t* pool, int* slot, void** arg_addr)
     return true;
 }
 
+/*
+ * Launch a worker thread using the argument and thread info
+ * in the given slot.
+ */
 bool run_thread(thread_pool_t* pool, task_fn_t task, int slot)
 {
+    assert(pool->info[slot].idle);
     pool->info[slot].task = task;
     pthread_mutex_lock(&pool->pool_mutex);
     pthread_cond_signal(&pool->info[slot].cv);
@@ -62,6 +81,10 @@ bool run_thread(thread_pool_t* pool, task_fn_t task, int slot)
     return true;
 }
 
+/*
+ * The idle loop for all worker threads. We use condition variables
+ * to wait on work instead of polling to reduce overhead.
+ */
 static void* worker_thread(void *arg)
 {
     thread_pool_t* pool = (thread_pool_t*)arg;

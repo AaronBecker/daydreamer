@@ -219,6 +219,11 @@ static bool should_deepen(search_data_t* data)
     return true;
 }
 
+/*
+ * Look for this position in any loaded endgame databases. Currently this
+ * function provides a unified interface for calls to Scorpio bitbases and
+ * Gaviota tablebases.
+ */
 static bool check_eg_database(position_t* pos,
         float depth,
         int ply,
