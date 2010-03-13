@@ -9,12 +9,12 @@ Search
     recognize singular replies
     Try multiple moves in TT, instead of PV cache
     Make pawn eval and king safety scores available inside search
-    implement thread pools
     shrink trans table entry size, reevaluate TT code structure
 
 Interface
     ECO classification
     PGN parsing
+    Better uci options support, with more feedback
 
 Evaluation
     Try alternate king safety implementations

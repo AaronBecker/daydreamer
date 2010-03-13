@@ -123,7 +123,10 @@ void set_uci_option(char* command)
 {
     while (isspace(*command)) ++command;
     uci_option_t* option = get_uci_option(command);
-    if (!option) return;
+    if (!option) {
+        printf("info string Could not recognize option string %s\n", command);
+        return;
+    }
     command = strcasestr(command, "value ");
     if (command) {
         command += 6;
@@ -274,6 +277,23 @@ static void handle_gtb_cache(void* opt, char* value)
 }
 
 /*
+ * Sets the Gaviota tablebase thread pool size.
+ */
+static void handle_gtb_pool(void* opt, char* value)
+{
+    uci_option_t* option = opt;
+    if (!option->value) return;
+    strncpy(option->value, value, 128);
+    int size;
+    sscanf(value, "%d", &size);
+    memcpy(option->address, &size, sizeof(int));
+    if (options.use_gtb) {
+        load_gtb(get_option_string("gaviota tablebase path"),
+                options.gtb_cache_size*1024*1024);
+    }
+}
+
+/*
  * Turns Scorpio bitbase use on and off.
  */
 static void handle_egbb_use(void* opt, char* value)
@@ -354,6 +374,8 @@ void init_uci_options()
             0, 0, NULL, NULL, &handle_gtb_path);
     add_uci_option("Gaviota tablebase cache size", OPTION_SPIN, "32",
             0, 4096, NULL, &options.gtb_cache_size, &handle_gtb_cache);
+    add_uci_option("Endgame database thread pool size", OPTION_SPIN, "2",
+            0, 64, NULL, &options.eg_pool_threads, &handle_gtb_pool);
     add_uci_option("Use Scorpio bitbases", OPTION_CHECK, "false",
             0, 0, NULL, &options.use_egbb, &handle_egbb_use);
     add_uci_option("Scorpio bitbase path", OPTION_STRING, ".",

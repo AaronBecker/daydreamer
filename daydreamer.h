@@ -1,4 +1,8 @@
 
+/*
+ * Daydreamer, copyright 2009-2010, by Aaron Becker. All rights reserved.
+ */
+
 #ifndef DAYDREAMER_H
 #define DAYDREAMER_H
 

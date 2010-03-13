@@ -77,9 +77,15 @@ bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
     tbstats_reset();
     bool success = tb_is_initialized() && tbcache_is_on();
     if (success) {
+        if (options.verbose) {
+            printf("info string loaded Gaviota TBs with a pool of %d threads\n",
+                    options.eg_pool_threads);
+        }
         gtb_pool = &gtb_pool_storage;
         init_thread_pool(gtb_pool, gtb_pool_args, gtb_pool_info,
-            sizeof(gtb_pool_args_t), GTB_MAX_POOL_SIZE);
+            sizeof(gtb_pool_args_t), options.eg_pool_threads);
+    } else if (options.verbose) {
+        printf("info string failed to load Gaviota TBs\n");
     }
     return success;
 }
