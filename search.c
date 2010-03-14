@@ -31,7 +31,7 @@ static const float iid_non_pv_depth_cutoff = 8.0;
 static const int iid_pv_margin = 300;
 static const int iid_nonpv_margin = 150;
 
-static const bool obvious_move_enabled = true;
+static const bool obvious_move_enabled = false;
 static const int obvious_move_margin = 250;
 
 static const int qfutility_margin = 65;
