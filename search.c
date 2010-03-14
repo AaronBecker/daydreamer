@@ -206,7 +206,7 @@ static bool should_deepen(search_data_t* data)
 
     // Allocate some extra time when the root score drops.
     depth = depth_to_index(data->current_depth);
-    if (so_far < real_target / 5 || depth < 5) return true;
+    if (so_far < real_target / 3 || depth < 5) return true;
     int it_score = data->scores_by_iteration[depth];
     int last_it_score = data->scores_by_iteration[depth-1];
     if (it_score - 5 > last_it_score) return true;
