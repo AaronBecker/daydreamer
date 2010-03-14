@@ -31,7 +31,7 @@ static const float iid_non_pv_depth_cutoff = 8.0;
 static const int iid_pv_margin = 300;
 static const int iid_nonpv_margin = 150;
 
-static const bool obvious_move_enabled = false;
+static const bool obvious_move_enabled = true;
 static const int obvious_move_margin = 250;
 
 static const int qfutility_margin = 65;
@@ -202,7 +202,7 @@ static bool should_deepen(search_data_t* data)
             data->depth_limit == MAX_SEARCH_PLY &&
             !data->node_limit && data->current_depth >= 7*PLY &&
             get_root_node_count(data->obvious_move) >
-            data->nodes_searched * 9 / 10) return false;
+            data->nodes_searched * 10 / 9) return false;
 
     // Allocate some extra time when the root score drops.
     depth = depth_to_index(data->current_depth);
