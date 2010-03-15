@@ -39,6 +39,10 @@ static probe_egbb_fn probe_egbb_internal;
 static bool egbb_is_loaded = false;
 static lib_handle_t lib = NULL;
 
+/*
+ * Load Scorpio bitbases from |egbb_dir|, with the specified cache size.
+ * We also need to find a compatible shared library in the directory.
+ */
 bool load_egbb(char* egbb_dir, int cache_size_bytes)
 {
     if (!cache_size_bytes) cache_size_bytes = EGBB_DEFAULT_CACHE_SIZE;
@@ -66,6 +70,9 @@ bool load_egbb(char* egbb_dir, int cache_size_bytes)
     return true;
 }
 
+/*
+ * If we've loaded a library containing Scorpio bitbase code, unload it.
+ */
 void unload_egbb(void)
 {
     if (!lib) return;
@@ -74,6 +81,11 @@ void unload_egbb(void)
     egbb_is_loaded = false;
 }
 
+/*
+ * Get the bitbase value for the given position. The library attempts to use
+ * progress heuristics in the score, so we're not getting plain W/L/D
+ * information here, we're getting an actual numeric score.
+ */
 bool probe_egbb(position_t* pos, int* value, int ply)
 {
     if (!egbb_is_loaded) return false;

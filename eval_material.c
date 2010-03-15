@@ -237,6 +237,8 @@ static void compute_material_data(const position_t* pos, material_data_t* md)
 /*
  * Is this position an opening or an endgame? Scored on a scale of 0-24,
  * with 24 being a pure opening and 0 a pure endgame.
+ * Note: the maximum phase is given by MAX_PHASE, which needs to be updated
+ *       in conjunction with this function.
  */
 int game_phase(const position_t* pos)
 {

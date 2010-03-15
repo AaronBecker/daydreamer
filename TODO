@@ -1,8 +1,4 @@
 
-Release Checklist
-    resolve search.h differences from backtracking
-    luft pattern
-
 Search
     Better statistics gathering/reporting
     recognize singular replies

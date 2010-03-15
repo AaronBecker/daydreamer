@@ -35,8 +35,6 @@ static const int castle_to_gtb_table[] = {
     tb_BOOO | tb_WOOO | tb_BOO | tb_WOO,
 };
 
-// TODO: experiment with max pool size, make actual pool size variable with
-// a uci option.
 #define GTB_MAX_POOL_SIZE   8
 typedef struct {
     int stm, ep, castle;

@@ -55,7 +55,7 @@ void destroy_thread_pool(thread_pool_t* pool)
 bool get_slot(thread_pool_t* pool, int* slot, void** arg_addr)
 {
     // FIXME: this explicitly depends on having only one controlling thread.
-    // This is ok for now, but once we have SMP search, it has to change.
+    //        This is ok for now, but once we have SMP search it has to change.
     int i;
     if (!pool->idle_threads) return false;
     pthread_mutex_lock(&pool->pool_mutex);

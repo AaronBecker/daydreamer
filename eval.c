@@ -8,6 +8,8 @@
 #define pieces_scale 1024
 #define safety_scale 1024
 
+static const int tempo_bonus[2] = { 9, 2 };
+
 /*
  * Initialize all static evaluation data structures.
  */
@@ -75,8 +77,9 @@ int simple_eval(const position_t* pos)
         pos->piece_square_eval[side^1].endgame;
 
     // Tempo
-    phase_score.midgame += 9;
-    phase_score.endgame += 2;
+    // TODO: tune
+    phase_score.midgame += tempo_bonus[0];
+    phase_score.endgame += tempo_bonus[1];
 
     score = blend_score(&phase_score, ed.md->phase);
     score = (score * endgame_scale[score > 0 ? side : side^1]) / 1024;
@@ -120,8 +123,9 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     add_scaled_score(&phase_score, &component_score, safety_scale);
 
     // Tempo
-    phase_score.midgame += 9;
-    phase_score.endgame += 2;
+    // TODO: tune
+    phase_score.midgame += tempo_bonus[0];
+    phase_score.endgame += tempo_bonus[1];
 
     score = blend_score(&phase_score, ed->md->phase);
     score = (score * endgame_scale[score > 0 ? side : side^1]) / 1024;
@@ -172,8 +176,8 @@ void report_eval(const position_t* pos)
     printf("safety_score\t(%5d, %5d)\n", phase_score.midgame, phase_score.endgame);
 
     // Tempo
-    phase_score.midgame += 9;
-    phase_score.endgame += 2;
+    phase_score.midgame += tempo_bonus[0];
+    phase_score.endgame += tempo_bonus[1];
 
     score = blend_score(&phase_score, ed->md->phase);
     score = (score * endgame_scale[score > 0 ? side : side^1]) / 1024;

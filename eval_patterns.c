@@ -2,17 +2,16 @@
 #include "daydreamer.h"
 
 static const int trapped_bishop = 150;
-// Note the second value is an endgame score modifier,
-// so the overall bonus is [10, 20].
+// Note: the second luft value is an endgame score modifier,
+// so the overall penalty is [10, 20].
 static const int luft_penalty[2] = { 10, 10 };
 
 /*
  * Find simple bad patterns that won't show up within reasonable search
  * depths. This is mostly trapped and blocked pieces.
- * TODO: add some trapped knight/rook patterns here.
- * TODO: king luft?
+ * TODO: trapped knight/rook patterns.
  * TODO: maybe merge this with eval_pieces so we have access to piece
- * mobility information.
+ *       mobility information.
  */
 score_t pattern_score(const position_t*pos)
 {

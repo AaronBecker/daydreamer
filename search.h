@@ -94,8 +94,6 @@ typedef struct {
     root_move_t* current_root_move;
     int best_score;
     int scores_by_iteration[MAX_SEARCH_PLY + 1];
-    int consecutive_fail_highs;
-    int consecutive_fail_lows;
     int root_indecisiveness;
     move_t pv[MAX_SEARCH_PLY + 1];
     search_node_t search_stack[MAX_SEARCH_PLY + 1];
@@ -116,7 +114,7 @@ typedef struct {
     int time_limit;
     int time_target;
     int time_bonus;
-    int mate_search; // TODO:implement
+    int mate_search; // TODO: implement
     bool infinite;
 } search_data_t;
 
