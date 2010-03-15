@@ -232,12 +232,10 @@ static bool check_eg_database(position_t* pos,
         int beta,
         int* score)
 {
-    //TODO: evaluate 5 man bases
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 5) return false;
     if (options.use_gtb) {
         // For DTM tablebases, just look.
-        // TODO: experiment more with probe_firm
         if (probe_gtb_firm(pos, score)) {
             ++root_data.stats.egbb_hits;
             return true;
@@ -497,6 +495,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         if (depth > 5*PLY && options.multi_pv == 1) {
             alpha = consecutive_fail_lows > 2 ? mated_in(-1) :
                 last_score + aspire_low[consecutive_fail_lows];
+            // TODO:test
             //alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 45;
             //beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 45;
             beta = consecutive_fail_highs > 2 ? mate_in(-1) :
@@ -523,7 +522,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         // Check the obvious move, if any.
         if (search_data->pv[0] != search_data->obvious_move) {
             // TODO:test
-            //|| id_score <= alpha || id_score >= beta) {
+            //|| id_score <= alpha) {
             search_data->obvious_move = NO_MOVE;
         }
 
@@ -578,6 +577,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
 /*
  * Perform search at the root position. |search_data| contains all relevant
  * search information, which is set in |deepening_search|.
+ * TODO: For gtbs, consult DTM bases at the root, bitbases inside search.
+ *       This will require a newer version of gtbs.
  */
 static search_result_t root_search(search_data_t* search_data,
         int alpha,
@@ -823,7 +824,7 @@ static int search(position_t* pos,
                 // History pruning.
                 // TODO: try more stringent depth requirements
                 // TODO: try pruning based on pure move ordering, or work
-                // move order into the history count
+                //       move order into the history count
                 // TODO: experiment with pruning inside pv
                 if (history_prune_enabled && depth <= 3.0 &&
                         is_history_prune_allowed(&root_data.history,

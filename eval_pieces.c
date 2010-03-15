@@ -128,29 +128,6 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                         end_score[side] += bonus;
                     }
                     break;
-                case QUEEN:
-                    for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
-                    ps += mobile[pos->board[to]];
-                    for (to=from-15; pos->board[to]==EMPTY; to-=15, ++ps) {}
-                    ps += mobile[pos->board[to]];
-                    for (to=from+15; pos->board[to]==EMPTY; to+=15, ++ps) {}
-                    ps += mobile[pos->board[to]];
-                    for (to=from+17; pos->board[to]==EMPTY; to+=17, ++ps) {}
-                    ps += mobile[pos->board[to]];
-                    for (to=from-16; pos->board[to]==EMPTY; to-=16, ++ps) {}
-                    ps += mobile[pos->board[to]];
-                    for (to=from-1; pos->board[to]==EMPTY; to-=1, ++ps) {}
-                    ps += mobile[pos->board[to]];
-                    for (to=from+1; pos->board[to]==EMPTY; to+=1, ++ps) {}
-                    ps += mobile[pos->board[to]];
-                    for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
-                    ps += mobile[pos->board[to]];
-                    if (relative_rank[side][square_rank(from)] == RANK_7 &&
-                            king_rank[side^1] == RANK_8) {
-                        mid_score[side] += rook_on_7[0] / 2;
-                        end_score[side] += rook_on_7[1] / 2;
-                    }
-                    break;
                 case BISHOP:
                     for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
                     ps += mobile[pos->board[to]];
@@ -190,7 +167,30 @@ score_t pieces_score(const position_t* pos, pawn_data_t* pd)
                         }
                     }
                     break;
-                default: break;
+                case QUEEN:
+                    for (to=from-17; pos->board[to]==EMPTY; to-=17, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from-15; pos->board[to]==EMPTY; to-=15, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+15; pos->board[to]==EMPTY; to+=15, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+17; pos->board[to]==EMPTY; to+=17, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from-16; pos->board[to]==EMPTY; to-=16, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from-1; pos->board[to]==EMPTY; to-=1, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+1; pos->board[to]==EMPTY; to+=1, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    for (to=from+16; pos->board[to]==EMPTY; to+=16, ++ps) {}
+                    ps += mobile[pos->board[to]];
+                    if (relative_rank[side][square_rank(from)] == RANK_7 &&
+                            king_rank[side^1] == RANK_8) {
+                        mid_score[side] += rook_on_7[0] / 2;
+                        end_score[side] += rook_on_7[1] / 2;
+                    }
+                    break;
+                default: assert(false);
             }
             mid_score[side] += mobility_score_table[0][type][ps];
             end_score[side] += mobility_score_table[1][type][ps];

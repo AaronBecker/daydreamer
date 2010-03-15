@@ -2,8 +2,6 @@
 #include "daydreamer.h"
 #include <string.h>
 
-// TODO: Tune these values, in particular the endgame values.
-// TODO: bonus/penalty for occupying a lot of space.
 static const int isolation_penalty[2][8] = {
     { 6, 6, 6, 8, 8, 6, 6, 6 },
     { 8, 8, 8, 8, 8, 8, 8, 8 }
@@ -144,7 +142,7 @@ void print_pawn_stats(void)
 
 /*
  * Identify and record the position of all passed pawns. Analyze pawn structure
- * features such as isolated and doubled pawns and assign a pawn structure
+ * features, such as isolated and doubled pawns, and assign a pawn structure
  * score (which does not account for passers). This information is stored in
  * the pawn hash table, to prevent re-computation.
  */
@@ -248,9 +246,8 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             }
 
             // Space bonus for connected advanced central pawns.
-            if (connected) {
-                pd->score[color].midgame += central_space[sq ^ (0x70*color)];
-            }
+            if (connected) pd->score[color].midgame +=
+                central_space[sq ^ (0x70*color)];
 
             // Backward pawns (unsupportable by pawns, can't advance).
             // TODO: a simpler formulation would be nice.
@@ -283,6 +280,7 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             }
         }
 
+        // Penalty for multiple pawn islands.
         int islands = 0;
         bool on_island = false;
         for (file_t f = FILE_A; f <= FILE_H; ++f) {

@@ -142,7 +142,8 @@ char* set_position(position_t* pos, const char* fen)
     while (*fen && isspace(*(++fen))) {}
     pos->is_check = find_checks(pos);
 
-    // Read castling rights.
+    // Read castling rights. This is complicated by the need to support all
+    // formats for castling flags in Chess960.
     while (*fen && !isspace(*fen)) {
         square_t sq;
         switch (*fen) {
