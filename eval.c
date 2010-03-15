@@ -65,7 +65,7 @@ int simple_eval(const position_t* pos)
     int score = 0;
     int endgame_scale[2] = { ed.md->scale[WHITE], ed.md->scale[BLACK] };
     if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
-    
+
     score_t phase_score = ed.md->score;
     if (side == BLACK) {
         phase_score.midgame *= -1;
