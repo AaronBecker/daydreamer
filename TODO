@@ -1,6 +1,5 @@
 
 Release Checklist
-    test 5-man tbs, especially with probe_firm/threadpool
     resolve search.h differences from backtracking
     luft pattern
 
