@@ -2,6 +2,7 @@
 Release Checklist
     test 5-man tbs, especially with probe_firm/threadpool
     resolve search.h differences from backtracking
+    luft pattern
 
 Search
     Better statistics gathering/reporting
@@ -14,6 +15,8 @@ Interface
     ECO classification
     PGN parsing
     Better uci options support, with more feedback and fewer special handlers
+    Write an optimizer that will determine the best value of various options
+        (particularly threading options) for the current hardware.
 
 Evaluation
     Try alternate king safety implementations
