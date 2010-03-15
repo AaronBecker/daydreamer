@@ -209,7 +209,7 @@ static bool should_deepen(search_data_t* data)
     if (so_far < real_target / 3 || depth < 5) return true;
     int it_score = data->scores_by_iteration[depth];
     int last_it_score = data->scores_by_iteration[depth-1];
-    if (it_score >= last_it_score) return true;
+    if (it_score + 5 >= last_it_score) return true;
     else if (it_score >= last_it_score - 25) {
         data->time_bonus = MAX(data->time_bonus, data->time_target);
     } else if (it_score >= last_it_score - 50) {
