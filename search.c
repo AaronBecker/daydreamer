@@ -176,9 +176,9 @@ static float extend(position_t* pos,
 static bool should_deepen(search_data_t* data)
 {
     if (data->current_depth >= data->depth_limit) return false;
-    if (data->current_depth < 3*PLY || data->infinite ||
-            data->engine_status == ENGINE_PONDERING) return true;
+    if (data->current_depth < 3*PLY) return true;
     if (should_stop_searching(data)) return false;
+    if (data->infinite || data->engine_status == ENGINE_PONDERING) return true;
     int so_far = elapsed_time(&data->timer);
     int real_target = data->time_target + data->time_bonus;
     
