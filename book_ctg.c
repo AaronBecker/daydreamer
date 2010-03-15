@@ -6,6 +6,8 @@
  * Interface to ctg format books. The huffman codes and ctg move decoding are
  * based on Stephan Vermeire's ctg code for Brutus.
  * (http://www.xs4all.nl/~vermeire/brutus.html)
+ * TODO: handle book unloading properly, and do a more principled job with the
+ * console "ctg" command.
  */
 
 #define read_24(buf, pos)   \
