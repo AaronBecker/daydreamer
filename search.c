@@ -175,8 +175,10 @@ static float extend(position_t* pos,
  */
 static bool should_deepen(search_data_t* data)
 {
+    if (data->current_depth >= data->depth_limit) return false;
+    if (data->current_depth < 3*PLY || data->infinite ||
+            data->engine_status == ENGINE_PONDERING) return true;
     if (should_stop_searching(data)) return false;
-    if (data->infinite || data->engine_status == ENGINE_PONDERING) return true;
     int so_far = elapsed_time(&data->timer);
     int real_target = data->time_target + data->time_bonus;
     
@@ -478,8 +480,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
     if (!search_data->depth_limit) {
         search_data->depth_limit = MAX_SEARCH_PLY * PLY;
     }
-    for (search_data->current_depth=2*PLY;
-            search_data->current_depth <= search_data->depth_limit;
+    for (search_data->current_depth=2*PLY; should_deepen(search_data);
             search_data->current_depth += PLY) {
         float depth = search_data->current_depth;
         int depth_index = depth_to_index(depth);
@@ -541,11 +542,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
         } else {
             consecutive_fail_lows = 0;
             consecutive_fail_highs = 0;
-        }
-
-        if (!should_deepen(search_data)) {
-            search_data->current_depth += PLY;
-            break;
         }
     }
     stop_timer(&search_data->timer);
@@ -765,7 +761,7 @@ static int search(position_t* pos,
             hash_move == NO_MOVE &&
             !is_mate_score(beta) &&
             lazy_score + razor_margin[depth_index] < beta) {
-        // Razoring.
+        // Razoring. This two-level margin idea comes from Stockfish.
         if (depth <= PLY) return quiesce(pos, search_node, ply, alpha, beta, 0);
         int qbeta = beta - razor_qmargin[depth_index];
         int qscore = quiesce(pos, search_node, ply, qbeta-1, qbeta, 0);
