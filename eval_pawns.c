@@ -283,19 +283,19 @@ pawn_data_t* analyze_pawns(const position_t* pos)
             }
         }
 
-        //int islands = 0;
-        //bool on_island = false;
-        //for (file_t f = FILE_A; f <= FILE_H; ++f) {
-        //    if (!file_is_half_open(pd, f, color)) {
-        //        if (!on_island) {
-        //            on_island = true;
-        //            islands++;
-        //        }
-        //    } else on_island = false;
-        //}
-        //if (islands) --islands;
-        //pd->score[color].midgame -= 2 * islands;
-        //pd->score[color].endgame -= 4 * islands;
+        int islands = 0;
+        bool on_island = false;
+        for (file_t f = FILE_A; f <= FILE_H; ++f) {
+            if (!file_is_half_open(pd, f, color)) {
+                if (!on_island) {
+                    on_island = true;
+                    islands++;
+                }
+            } else on_island = false;
+        }
+        if (islands) --islands;
+        pd->score[color].midgame -= 2 * islands;
+        pd->score[color].endgame -= 4 * islands;
     }
     return pd;
 }
