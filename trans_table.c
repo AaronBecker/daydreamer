@@ -83,6 +83,26 @@ void increment_transposition_age(void)
 }
 
 /*
+ * Convert a search score for use in the transposition table. We need to
+ * correct mate scores for the ply we're currently at.
+ */
+int score_to_trans(int score, int ply)
+{
+    if (is_mate_score(score)) return score > 0 ? score + ply : score - ply;
+    return score;
+}
+
+/*
+ * Convert a transposition table score for use in the search. We need to
+ * correct mate scores for the ply we're currently at.
+ */
+int score_from_trans(int score, int ply)
+{
+    if (is_mate_score(score)) return score > 0 ? score - ply : score + ply;
+    return score;
+}
+
+/*
  * Get the entry for the given position, if it exists.
  */
 transposition_entry_t* get_transposition(position_t* pos)
@@ -172,8 +192,7 @@ void put_transposition_line(position_t* pos,
     put_transposition(pos, *moves, depth, score, score_type, false);
     undo_info_t undo;
     do_move(pos, *moves, &undo);
-    int x = is_mate_score(score) ? (score > 0 ? 1 : -1) : 0;
-    put_transposition_line(pos, moves+1, depth-1, score+x, score_type);
+    put_transposition_line(pos, moves+1, depth-1, score, score_type);
     undo_move(pos, *moves, &undo);
 }
 
