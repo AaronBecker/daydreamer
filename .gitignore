@@ -8,10 +8,11 @@ daydreamer_*
 daydreamer.*
 daydreamer.log
 book.*
-gtb/libgtb.a
 polyglot
 .DS_Store
 *.dylib
+*.so
+*.a
 *.gcda
 *.gcno
 daydreamer.rc
