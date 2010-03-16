@@ -204,10 +204,13 @@ bool probe_gtb_firm(const position_t* pos, int* score)
 {
     int pool_slot;
     gtb_pool_args_t* gtb_args;
-    bool available_slot = get_slot(gtb_pool, &pool_slot, (void**)&gtb_args);
+    void* slot_addr;
+    bool available_slot = get_slot(gtb_pool, &pool_slot, &slot_addr);
     if (!available_slot) {
         gtb_pool_args_t args_storage;
         gtb_args = &args_storage;
+    } else {
+        gtb_args = (gtb_pool_args_t*)slot_addr;
     }
 
     gtb_args->stm = stm_to_gtb(pos->side_to_move);

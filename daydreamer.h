@@ -227,6 +227,8 @@ int elapsed_time(milli_timer_t* timer);
 void init_transposition_table(const size_t max_bytes);
 void clear_transposition_table(void);
 void increment_transposition_age(void);
+int score_to_trans(int score, int ply);
+int score_from_trans(int score, int ply);
 transposition_entry_t* get_transposition(position_t* pos);
 void put_transposition(position_t* pos,
         move_t move,
