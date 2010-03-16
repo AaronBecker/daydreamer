@@ -43,20 +43,25 @@ analyze:
 	    CC="$(ANALYZER)" CFLAGS="$(ANALYZEFLAGS)"
 
 debug:
-	$(MAKE) daydreamer CFLAGS="$(DEBUGFLAGS) $(GITFLAGS) $(DBGCOMPILESTR)"
+	$(MAKE) daydreamer \
+	    CFLAGS="$(DEBUGFLAGS) $(GITFLAGS) $(DBGCOMPILESTR)"
 
 default:
-	$(MAKE) daydreamer CFLAGS="$(DEFAULTFLAGS) $(GITFLAGS) $(DFTCOMPILESTR)"
+	$(MAKE) daydreamer \
+	    CFLAGS="$(DEFAULTFLAGS) $(GITFLAGS) $(DFTCOMPILESTR)"
 
 opt:
-	$(MAKE) daydreamer CFLAGS="$(OPTFLAGS) $(GITFLAGS) $(OPTCOMPILESTR)"
+	$(MAKE) daydreamer \
+	    CFLAGS="$(OPTFLAGS) $(GITFLAGS) $(OPTCOMPILESTR)"
 
 pgo-start:
-	$(MAKE) daydreamer CFLAGS="$(PGO1FLAGS) $(GITFLAGS) $(OPTCOMPILESTR)" \
-	    LDFLAGS="$(LDFLAGS) -fprofile-generate"
+	$(MAKE) daydreamer \
+	    CFLAGS="$(PGO1FLAGS) $(GITFLAGS) $(OPTCOMPILESTR)" \
+	    LDFLAGS='$(LDFLAGS) -fprofile-generate'
 
 pgo-finish:
-	$(MAKE) daydreamer CFLAGS="$(PGO2FLAGS) $(GITFLAGS) $(PGOCOMPILESTR)"
+	$(MAKE) daydreamer \
+	    CFLAGS="$(PGO2FLAGS) $(GITFLAGS) $(PGOCOMPILESTR)"
 
 all: default
 
@@ -67,7 +72,7 @@ tags: $(SRCFILES)
 	$(CTAGS) $(HEADERS) $(SRCFILES)
 
 gtb:
-	(cd gtb && $(MAKE) ARCHFLAGS="$(ARCHFLAGS)" OPTFLAGS="$(OPTFLAGS)")
+	(cd gtb && $(MAKE) opt)
 
 clean:
 	rm -rf .depend daydreamer tags $(OBJFILES) && (cd gtb && $(MAKE) clean)
@@ -79,3 +84,5 @@ pgo-clean:
 	$(CC) -MM $(DEFAULTFLAGS) $(SRCFILES) > $@
 
 include .depend
+
+
