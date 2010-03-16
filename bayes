@@ -1,20 +1,28 @@
 #!/bin/bash
+for pgn in $@; do
+    readpgn="${readpgn}readpgn $pgn"$'\n'
+done
 bayeselo <<ELOSCRIPT
 prompt off
-readpgn $1
+$readpgn
 players >__players.txt
 elo
 mm
-cov
+covariance
 ratings >__ratings.txt
 los >__los.txt
 x
 x
 ELOSCRIPT
-out=${1%.pgn}.bayes
-echo -e "Players" > $out
-cat __players.txt >> $out
-echo -e "\nRatings" >> $out
+
+if [ $# -eq 1 ]; then
+    out=${1%.pgn}.bayes
+else
+    out=bayes.out
+fi
+rm $out
+
+echo -e "\nRating" >> $out
 cat __ratings.txt >> $out
 echo -e "\nLOS" >> $out
 cat __los.txt >> $out
