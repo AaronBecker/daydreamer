@@ -3,7 +3,7 @@
 
 static const int trapped_bishop = 150;
 // Note: the second luft value is an endgame score modifier,
-// so the overall penalty is [10, 15].
+// so the overall penalty is [10, 20].
 static const int luft_penalty[2] = { 10, 10 };
 
 /*
