@@ -35,7 +35,7 @@ static const int castle_to_gtb_table[] = {
     tb_BOOO | tb_WOOO | tb_BOO | tb_WOO,
 };
 
-#define GTB_MAX_POOL_SIZE   8
+#define GTB_MAX_POOL_SIZE   16
 typedef struct {
     int stm, ep, castle;
     unsigned int ws[17], bs[17];
@@ -50,6 +50,8 @@ static thread_pool_t gtb_pool_storage;
 static thread_pool_t* gtb_pool = NULL;
 CACHE_ALIGN static thread_info_t gtb_pool_info[GTB_MAX_POOL_SIZE];
 CACHE_ALIGN static gtb_pool_args_t gtb_pool_args[GTB_MAX_POOL_SIZE];
+
+void* gtb_probe_firm_worker(void* payload);
 
 /*
  * Given a string identifying the location of Gaviota tb's, load those
@@ -236,3 +238,22 @@ bool probe_gtb_firm(const position_t* pos, int* score)
     return false;
 }
 
+/*
+ * The worker function for background probing in probe_firm.
+ */
+void* gtb_probe_firm_worker(void* payload)
+{
+    gtb_pool_args_t* gtb_args = (gtb_pool_args_t*)payload;
+    unsigned res, val;
+    int success = tb_probe_hard(gtb_args->stm,
+            gtb_args->ep,
+            gtb_args->castle,
+            gtb_args->ws,
+            gtb_args->bs,
+            gtb_args->wp,
+            gtb_args->bp,
+            &res,
+            &val);
+    (void)success;
+    return NULL;
+}

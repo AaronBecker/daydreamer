@@ -8,7 +8,7 @@
 #define pieces_scale    1024
 #define safety_scale    1024
 
-static const int tempo_bonus[2] = { 8, 2 };
+static const int tempo_bonus[2] = { 9, 2 };
 
 /*
  * Initialize all static evaluation data structures.
