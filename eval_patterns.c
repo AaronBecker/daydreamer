@@ -4,7 +4,7 @@
 static const int trapped_bishop = 150;
 // Note: the second luft value is an endgame score modifier,
 // so the overall penalty is [10, 15].
-static const int luft_penalty[2] = { 10, 5 };
+static const int luft_penalty[2] = { 10, 10 };
 
 /*
  * Find simple bad patterns that won't show up within reasonable search
