@@ -232,10 +232,12 @@ static bool check_eg_database(position_t* pos,
         int beta,
         int* score)
 {
+    //TODO: evaluate 5 man bases
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 5) return false;
     if (options.use_gtb) {
         // For DTM tablebases, just look.
+        // TODO: experiment more with probe_firm
         if (probe_gtb_firm(pos, score)) {
             ++root_data.stats.egbb_hits;
             return true;
@@ -362,17 +364,16 @@ static bool is_iid_allowed(bool full_window, float depth, int margin)
  * Does the transposition table entry we found cause a cutoff?
  */
 static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
-        int trans_score,
         int depth,
         int* alpha,
         int* beta)
 {
-    if (depth > entry->depth && !is_mate_score(trans_score)) return false;
-    if (entry->flags & SCORE_LOWERBOUND && trans_score > *alpha) {
-        *alpha = trans_score;
+    if (depth > entry->depth && !is_mate_score(entry->score)) return false;
+    if (entry->flags & SCORE_LOWERBOUND && entry->score > *alpha) {
+        *alpha = entry->score;
     }
-    if (entry->flags & SCORE_UPPERBOUND && trans_score < *beta) {
-        *beta = trans_score;
+    if (entry->flags & SCORE_UPPERBOUND && entry->score < *beta) {
+        *beta = entry->score;
     }
     return *alpha >= *beta;
 }
@@ -496,6 +497,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
         if (depth > 5*PLY && options.multi_pv == 1) {
             alpha = consecutive_fail_lows > 2 ? mated_in(-1) :
                 last_score + aspire_low[consecutive_fail_lows];
+            //alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 45;
+            //beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 45;
             beta = consecutive_fail_highs > 2 ? mate_in(-1) :
                 last_score + aspire_high[consecutive_fail_highs];
             if (options.verbose) {
@@ -513,12 +516,13 @@ void deepening_search(search_data_t* search_data, bool ponder)
         else if (result == SEARCH_FAIL_HIGH) score_type = SCORE_LOWERBOUND;
         put_transposition_line(&search_data->root_pos,
                 search_data->pv,
-                depth,
-                score_to_trans(search_data->best_score, 0),
+                (int)depth,
+                search_data->best_score,
                 score_type);
 
         // Check the obvious move, if any.
-        if (search_data->pv[0] != search_data->obvious_move) {
+        if (search_data->pv[0] != search_data->obvious_move ||
+                id_score <= alpha) {
             search_data->obvious_move = NO_MOVE;
         }
 
@@ -573,8 +577,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
 /*
  * Perform search at the root position. |search_data| contains all relevant
  * search information, which is set in |deepening_search|.
- * TODO: For gtbs, consult DTM bases at the root, bitbases inside search.
- *       This will require a newer version of gtbs.
  */
 static search_result_t root_search(search_data_t* search_data,
         int alpha,
@@ -710,16 +712,13 @@ static int search(position_t* pos,
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
     bool mate_threat = trans_entry && trans_entry->flags & MATE_THREAT;
-    if (!full_window && trans_entry) {
-        int trans_score = score_from_trans(trans_entry->score, ply);
-        if (is_trans_cutoff_allowed(
-                trans_entry, trans_score, depth, &alpha, &beta)) {
-            search_node->pv[ply] = hash_move;
-            search_node->pv[ply+1] = NO_MOVE;
-            root_data.stats.transposition_cutoffs[
-                depth_to_index(root_data.current_depth)]++;
-            return MAX(alpha, trans_score);
-        }
+    if (!full_window && trans_entry &&
+            is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
+        search_node->pv[ply] = hash_move;
+        search_node->pv[ply+1] = NO_MOVE;
+        root_data.stats.transposition_cutoffs[
+            depth_to_index(root_data.current_depth)]++;
+        return MAX(alpha, trans_entry->score);
     }
 
     int score;
@@ -823,7 +822,7 @@ static int search(position_t* pos,
                 // History pruning.
                 // TODO: try more stringent depth requirements
                 // TODO: try pruning based on pure move ordering, or work
-                //       move order into the history count
+                // move order into the history count
                 // TODO: experiment with pruning inside pv
                 if (history_prune_enabled && depth <= 3.0 &&
                         is_history_prune_allowed(&root_data.history,
@@ -894,7 +893,7 @@ static int search(position_t* pos,
                 if (is_mate_score(score) && score > 0) {
                     search_node->mate_killer = move;
                 }
-                put_transposition(pos, move, depth, score_to_trans(beta, ply),
+                put_transposition(pos, move, (int)depth, beta,
                         SCORE_LOWERBOUND, mate_threat);
                 root_data.stats.move_selection[
                     MIN(num_legal_moves-1, HIST_BUCKETS)]++;
@@ -923,11 +922,11 @@ static int search(position_t* pos,
     if (full_window) root_data.stats.pv_move_selection[
         MIN(num_legal_moves-1, HIST_BUCKETS)]++;
     if (alpha == orig_alpha) {
-        put_transposition(pos, NO_MOVE, depth, score_to_trans(alpha, ply),
+        put_transposition(pos, NO_MOVE, (int)depth, alpha,
                 SCORE_UPPERBOUND, mate_threat);
     } else {
-        put_transposition(pos, search_node->pv[ply], depth,
-                score_to_trans(alpha, ply), SCORE_EXACT, mate_threat);
+        put_transposition(pos, search_node->pv[ply], (int)depth, alpha,
+                SCORE_EXACT, mate_threat);
     }
     return alpha;
 }
@@ -962,16 +961,13 @@ static int quiesce(position_t* pos,
     int orig_alpha = alpha;
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
-    if (trans_entry) {
-        int trans_score = score_from_trans(trans_entry->score, ply);
-        if (is_trans_cutoff_allowed(
-                    trans_entry, trans_score, depth, &alpha, &beta)) {
-            search_node->pv[ply] = hash_move;
-            search_node->pv[ply+1] = NO_MOVE;
-            root_data.stats.transposition_cutoffs[
-                depth_to_index(root_data.current_depth)]++;
-            return MAX(alpha, trans_score);
-        }
+    if (trans_entry && 
+            is_trans_cutoff_allowed(trans_entry, (int)depth, &alpha, &beta)) {
+        search_node->pv[ply] = hash_move;
+        search_node->pv[ply+1] = NO_MOVE;
+        root_data.stats.transposition_cutoffs[
+            depth_to_index(root_data.current_depth)]++;
+        return MAX(alpha, trans_entry->score);
     }
 
     int score;
@@ -984,14 +980,11 @@ static int quiesce(position_t* pos,
     if (!is_check(pos)) {
         eval = full_eval(pos, &ed);
         check_eval_symmetry(pos, eval);
-        if (trans_entry) {
-            int trans_score = score_from_trans(trans_entry->score, ply);
-            if ((eval > trans_score &&
-                        trans_entry->flags & SCORE_UPPERBOUND) ||
-                    (eval < trans_score &&
-                     trans_entry->flags & SCORE_LOWERBOUND)) {
-                eval = trans_score;
-            }
+        if (trans_entry && ((eval > trans_entry->score &&
+                    trans_entry->flags & SCORE_UPPERBOUND) ||
+                (eval < trans_entry->score &&
+                 trans_entry->flags & SCORE_LOWERBOUND))) {
+            eval = trans_entry->score;
         }
         if (alpha < eval) alpha = eval;
         if (alpha >= beta) return beta;
@@ -1026,7 +1019,7 @@ static int quiesce(position_t* pos,
             update_pv(search_node->pv, (search_node+1)->pv, ply, move);
             check_line(pos, search_node->pv+ply);
             if (score >= beta) {
-                put_transposition(pos, move, depth, score_to_trans(beta, ply),
+                put_transposition(pos, move, (int)depth, beta,
                         SCORE_LOWERBOUND, false);
                 return beta;
             }
@@ -1036,11 +1029,11 @@ static int quiesce(position_t* pos,
         return mated_in(ply);
     }
     if (alpha == orig_alpha) {
-        put_transposition(pos, NO_MOVE, depth, score_to_trans(alpha, ply),
+        put_transposition(pos, NO_MOVE, (int)depth, alpha,
                 SCORE_UPPERBOUND, false);
     } else {
-        put_transposition(pos, search_node->pv[ply], depth,
-                score_to_trans(alpha, ply), SCORE_EXACT, false);
+        put_transposition(pos, search_node->pv[ply], (int)depth, alpha,
+                SCORE_EXACT, false);
     }
     return alpha;
 }
