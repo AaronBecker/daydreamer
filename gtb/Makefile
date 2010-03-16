@@ -1,15 +1,20 @@
 
-ARCHFLAGS = -m64
-#ARCHFLAGS = -m32
-OPTFLAGS = -fast -msse
-INCLUDE = -Isysport/ -Icompression/ -Icompression/liblzf/ \
-	   -Icompression/zlib/ -Icompression/lzma/ -Icompression/huffman/
-override DEFINE = -DZ_PREFIX -DNDEBUG
-override CFLAGS = -Wall -Wextra $(INCLUDE) $(DEFINE) $(ARCHFLAGS) $(OPTFLAGS)
+INCLUDE = -Isysport/ \
+	  -Icompression/ \
+	  -Icompression/liblzf/ \
+	  -Icompression/zlib/ \
+	  -Icompression/lzma/ \
+	  -Icompression/huffman/
 
+DEFAULT_CC = /usr/bin/gcc
+DEFAULT_DEFINE = -DZ_PREFIX -DNDEBUG
+DEFAULT_ARCHFLAGS = -m64
+DEFAULT_CFLAGS = -Wall -Wextra $(INCLUDE) $(DEFAULT_DEFINE) \
+		 $(DEFAULT_ARCHFLAGS)
+OPTFLAGS = -fast -msse -DNDEBUG
+DEBUGFLAGS = -O0 -g
 PGO1FLAGS = $(OPTFLAGS) -fprofile-generate
 PGO2FLAGS = $(OPTFLAGS) -fprofile-use
-
 
 SRCFILES := gtb-probe.c decode.c possatt.c sysport/sysport.c \
 	   compression/wrap.c compression/huffman/hzip.c \
@@ -28,27 +33,57 @@ PROFFILES := $(SRCFILES:.c=.gcno) $(SRCFILES:.c=.gcda)
 LIBNAME := libgtb.a
 
 .PHONY: all clean
-.DEFAULT_GOAL := $(LIBNAME)
+.DEFAULT_GOAL := all
 
-all: $(LIBNAME)
+all: .depend
+	$(MAKE) $(LIBNAME) \
+	    CC='$(DEFAULT_CC)' \
+	    ARCHFLAGS='$(DEFAULT_ARCHFLAGS)' \
+	    DEFINE='$(DEFAULT_DEFINE)' \
+	    CFLAGS='$(OPPTFLAGS) $(DEFAULT_CFLAGS)'
 
 $(LIBNAME): $(OBJFILES)
 	$(AR) rcs $@ $(OBJFILES)
 
-obj/%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+opt:
+	$(MAKE) $(LIBNAME) \
+	    CC='$(DEFAULT_CC)' \
+	    ARCHFLAGS='$(DEFAULT_ARCHFLAGS)' \
+	    DEFINE='$(DEFAULT_DEFINE)' \
+	    CFLAGS='$(OPTFLAGS) $(DEFAULT_CFLAGS)' \
+	    LDFLAGS='$(LDFLAGS)'
+
+debug:
+	$(MAKE) $(LIBNAME) \
+	    CC='$(DEFAULT_CC)' \
+	    ARCHFLAGS='$(DEFAULT_ARCHFLAGS)' \
+	    DEFINE='$(DEFAULT_DEFINE)' \
+	    CFLAGS='$(DEBUGFLAGS) $(DEFAULT_CFLAGS)' \
+	    LDFLAGS='$(LDFLAGS)'
+
+pgo-start:
+	$(MAKE) $(LIBNAME) \
+	    CC='$(DEFAULT_CC)' \
+	    ARCHFLAGS='$(DEFAULT_ARCHFLAGS)' \
+	    DEFINE='$(DEFAULT_DEFINE)' \
+	    CFLAGS='$(PGO1FLAGS) $(DEFAULT_CFLAGS)' \
+	    LDFLAGS='$(LDFLAGS) -fprofile-generate'
+
+pgo-finish:
+	$(MAKE) $(LIBNAME) \
+	    CC='$(DEFAULT_CC)' \
+	    ARCHFLAGS='$(DEFAULT_ARCHFLAGS)' \
+	    DEFINE='$(DEFAULT_DEFINE)' \
+	    CFLAGS='$(PGO2FLAGS) $(DEFAULT_CFLAGS)' \
+	    LDFLAGS='$(LDFLAGS) -fprofile-generate'
 
 clean:
-	rm -f $(OBJFILES) $(LIBNAME)
+	rm -f $(OBJFILES) $(LIBNAME) .depend
 
 pgo-clean:
 	rm -f $(PROFFILES)
 
-pgo-start:
-	$(MAKE) $(LIBNAME) CFLAGS="$(PGO1FLAGS) $(CFLAGS)" \
-	    LDFLAGS="$(LDFLAGS) -fprofile-generate"
+.depend:
+	$(CC) -MM $(DEFAULT_CFLAGS) $(SRCFILES) > $@
 
-pgo-finish:
-	$(MAKE) $(LIBNAME) CFLAGS="$(PGO2FLAGS) $(CFLAGS)"
-
-
+include .depend
