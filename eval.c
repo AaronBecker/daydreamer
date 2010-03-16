@@ -3,10 +3,10 @@
 
 #include "pst.inc"
 
-#define pawn_scale 1024
-#define pattern_scale 1024
-#define pieces_scale 1024
-#define safety_scale 1024
+#define pawn_scale      1024
+#define pattern_scale   1024
+#define pieces_scale    1024
+#define safety_scale    1024
 
 static const int tempo_bonus[2] = { 8, 2 };
 
@@ -76,8 +76,6 @@ int simple_eval(const position_t* pos)
     phase_score.endgame += pos->piece_square_eval[side].endgame -
         pos->piece_square_eval[side^1].endgame;
 
-    // Tempo
-    // TODO: tune
     phase_score.midgame += tempo_bonus[0];
     phase_score.endgame += tempo_bonus[1];
 
@@ -122,8 +120,6 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     component_score = evaluate_king_safety(pos, ed);
     add_scaled_score(&phase_score, &component_score, safety_scale);
 
-    // Tempo
-    // TODO: tune
     phase_score.midgame += tempo_bonus[0];
     phase_score.endgame += tempo_bonus[1];
 
@@ -175,7 +171,6 @@ void report_eval(const position_t* pos)
     add_scaled_score(&phase_score, &component_score, safety_scale);
     printf("safety_score\t(%5d, %5d)\n", phase_score.midgame, phase_score.endgame);
 
-    // Tempo
     phase_score.midgame += tempo_bonus[0];
     phase_score.endgame += tempo_bonus[1];
 
