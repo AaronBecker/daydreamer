@@ -495,9 +495,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
         if (depth > 5*PLY && options.multi_pv == 1) {
             alpha = consecutive_fail_lows > 2 ? mated_in(-1) :
                 last_score + aspire_low[consecutive_fail_lows];
-            // TODO:test
-            //alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 45;
-            //beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 45;
             beta = consecutive_fail_highs > 2 ? mate_in(-1) :
                 last_score + aspire_high[consecutive_fail_highs];
             if (options.verbose) {
@@ -520,9 +517,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
                 score_type);
 
         // Check the obvious move, if any.
-        if (search_data->pv[0] != search_data->obvious_move) {
-            // TODO:test
-            //|| id_score <= alpha) {
+        if (search_data->pv[0] != search_data->obvious_move
+                || id_score <= alpha) {
             search_data->obvious_move = NO_MOVE;
         }
 
