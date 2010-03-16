@@ -375,7 +375,7 @@ void init_uci_options()
     add_uci_option("Gaviota tablebase cache size", OPTION_SPIN, "32",
             0, 4096, NULL, &options.gtb_cache_size, &handle_gtb_cache);
     add_uci_option("Endgame database thread pool size", OPTION_SPIN, "2",
-            0, 64, NULL, &options.eg_pool_threads, &handle_gtb_pool);
+            0, 16, NULL, &options.eg_pool_threads, &handle_gtb_pool);
     add_uci_option("Use Scorpio bitbases", OPTION_CHECK, "false",
             0, 0, NULL, &options.use_egbb, &handle_egbb_use);
     add_uci_option("Scorpio bitbase path", OPTION_STRING, ".",

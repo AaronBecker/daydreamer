@@ -1,9 +1,9 @@
 
-Daydreamer 1.6
+Daydreamer 1.7
 ==============
 
-Daydreamer is a chess-playing program I've been writing in my spare time. I'm
-hoping it will one day be a test bed for some ideas I have on parallel tree
+Daydreamer is a chess-playing program I have been writing in my spare time. I
+hope it will one day be a test bed for some ideas I have on parallel tree
 search with distributed memory, but first the serial code needs more work.
 I named it Daydreamer after a bug in an early version caused it to occasionally
 follow up very strong play with bizarre blunders, as though it had lost its
@@ -11,6 +11,117 @@ focus on the game and its mind was wandering aimlessly.
 
 Windows and Mac binaries are available on the
 [downloads page](http://github.com/AaronBecker/daydreamer/downloads).
+
+Changes from 1.6 to 1.7
+-----------------------
+
+The biggest new features in 1.7 are support for Gaviota endgame tablebases and
+support for opening books in Polyglot (.bin) or Chessbase (.ctg) format. To use
+the opening book support, turn on the 'OwnBook' option and set the path to the
+book using the 'Book File' option. The type of the book will be inferred from its
+file extension.
+
+Tablebase support uses a new approach in which background threads load relevant
+bases into cache, and the search only directly uses values that already exist
+in cache. This approach dramatically reduces the amount of time spent waiting
+for TBs to load, improving performance in many endgame positions. The number of
+background thread can be controlled using the 'Endgame database thread pool size'
+option. I recommend setting this value no higher than the number of available
+cores on your machine.
+
+In addition to the new features, Daydreamer 1.7 is significantly stronger than 1.6.
+This isn't due to any single big change; it's an accumulation of lots of small
+optimizations and tweaks. The biggest single improvement was probably deferring
+the expensive static exchange evaluation for captures in quiescence search until
+after the futility condition is applied, which is a trick I picked up from Stockfish.
+
+* Gaviota tablebase support
+* Polyglot book support (.bin)
+* Chessbase book support (.ctg)
+* Revamped material imbalance code, move ordering, and king safety
+* Endgame scaling for draw-ish endgames
+* Heavily retuned search, with new pruning and depth reduction/extension schemes
+* Lots of new evaluation terms
+* Numerous bugfixes and optimizations
+* New debugging and support routines
+
+Thanks
+------
+
+I'm the only person who actually writes the code of Daydreamer, but the ideas
+and structure of the code owe a lot to the chess programming community. I read
+through the source of a lot of open source engines before starting this
+project, and they've all influenced my design for Daydreamer. In particular,
+Fruit by Fabian Letouzey and the Viper/Glaurung/Stockfish series of engines
+by Tord Romstad (and Marco Costalba in the case of Stockfish) have strongly
+influenced the way I approached this project, and Daydreamer would be much
+worse without them.
+
+I also got ideas from lots of other engines and programmers, and use some
+libraries that others have graciously made available:
+
+* Komodo, by Don Dailey and Larry Kaufman (eval terms and values)
+* Brutus, by Stephan Vermeire (CTG support)
+* Bison, by Ivan Bonkin (floating point depth management)
+* Crafty, by Bob Hyatt (eval terms and testing methodology)
+* ZCT, by Zach Wegner (endgame bitbase handling)
+* Dann Corbit and Michael Sherwin (null move depth reduction strategy)
+* Gaviota endgame tablebases, by Miguel Ballicora
+* Scorpio endgame bitbases, by Danial Shawul
+
+I also had access to a lot of good writing about the design, implementation,
+and testing of chess engines. Bruce Moreland's site and the blogs of [Jonatan
+Pettersson (Mediocre)](http://mediocrechess.blogspot.com/) and [Matt Gingell
+(Chesley)](http://sourceforge.net/apps/wordpress/chesley/) have been
+particularly interesting.
+
+Thanks to Jim Ablett for supplying optimized Windows compiles.
+Thanks also  to everyone who has used or tested Daydreamer, to the authors of
+the many engines I've tested against, and to composers of EPD testing suites.
+
+I also owe thanks to the developers of several support programs that I use to
+develop Daydreamer. In addition to my basic toolkit of vim, git, and gcc, I rely
+on cutechess-cli by Ilari Pihlajisto and Arto Jonsson, bayeselo by Remi Coulom,
+and pgn-extract by David Barnes.
+
+Using Daydreamer
+----------------
+
+Daydreamer uses the universal chess interface (UCI) to communicate with
+graphical front-end programs. You can use it directly on the command-line, but
+that's not something most people will probably want to do. Daydreamer supports
+the UCI specification pretty faithfully, and supports ponder and MultiPV modes.
+At startup, it looks for a file named daydreamer.rc, and automatically executes
+any UCI commands that it finds inside. You can specifiy a different file to
+read from by passing a file name as an argument to the Daydreamer executable.
+You can use the rc file to automatically set options every time Daydreamer
+starts. For example, in my daydreamer.rc I have the following lines, which
+automatically register my Scorpio bitbases:
+
+    setoption name Endgame bitbase path value /Users/abecker/src/chess_engines/egbb/
+    setoption name Use endgame bitbases value true
+
+
+Compiling
+---------
+
+If you have a C compiler that can handle C99, this should be easy. Just edit
+the CC variable in the Makefile to point at your compiler, set the compile
+flags you want in CFLAGS, and you should be good to go. If you compile with
+-DCOMPILE_COMMAND, you can pass a string that will be reported when you start
+the engine up. I find this pretty helpful for remembering what version I'm
+working with. I've tested with gcc on Mac and Linux, clang on Mac, and the
+MinGW cross-compiler for Windows. As of version 1.7, Daydreamer requires the
+pthreads library.
+
+Installing
+----------
+
+The whole thing is a single executable, so there's nothing to install, really.
+Just put it wherever you want. I've included a polyglot.ini file for
+compatibility with Winboard interfaces. Daydreamer looks for a file named
+'daydreamer.rc' at startup and attempts to read UCI commands out of it, but
+aside from that there aren't any configuration files.
 
 Changes from 1.5 to 1.6
 -----------------------
@@ -43,61 +154,6 @@ Here's the list of changes:
 
 Thanks to Olivier Deville and Dann Corbit for their help identifying the time
 control and hash size bugs, and to everyone who tested version 1.5.
-
-Using Daydreamer
-----------------
-
-Daydreamer uses the universal chess interface (UCI) to communicate with
-graphical front-end programs. You can use it directly on the command-line, but
-that's not something most people will probably want to do. Daydreamer supports
-the UCI specification pretty faithfully, and supports ponder and MultiPV modes.
-At startup, it looks for a file named daydreamer.rc, and automatically executes
-any UCI commands that it finds inside. You can specifiy a different file to
-read from by passing a file name as an argument to the Daydreamer executable.
-You can use the rc file to automatically set options every time Daydreamer
-starts. For example, in my daydreamer.rc I have the following lines, which
-automatically register my Scorpio bitbases:
-
-    setoption name Endgame bitbase path value /Users/abecker/src/chess_engines/egbb/
-    setoption name Use endgame bitbases value true
-
-
-Compiling
----------
-
-If you have a C compiler that can handle C99, this should be easy. Just edit
-the CC variable in the Makefile to point at your compiler, set the compile
-flags you want in CFLAGS, and you should be good to go. If you compile with
--DCOMPILE_COMMAND, you can pass a string that will be reported when you start
-the engine up. I find this pretty helpful for remembering what version I'm
-working with. I've tested with gcc on Mac and Linux, clang on Mac, and the
-MinGW cross-compiler for Windows.
-
-Installing
-----------
-
-The whole thing is a single executable, so there's nothing to install, really.
-Just put it wherever you want. I've included a polyglot.ini file for
-compatibility with Winboard interfaces, but aside from that there aren't any
-configuration files.
-
-Thanks
-------
-
-I'm the only person who actually writes the code of Daydreamer, but the ideas
-and structure of the code owe a lot to the chess programming community. I read
-through the source of a lot of open source engines before starting this
-project, and they've all influenced my design for Daydreamer. In particular,
-Fruit by Fabian Letouzey and Glaurung and Viper by Tord Romstad have strongly
-influenced the way I approached this project, and Daydreamer would be much
-worse without them.
-
-I also had access to a lot of good writing about the design, implementation,
-and testing of chess engines. Bruce Moreland's site and the blogs of [Jonatan
-Pettersson (Mediocre)](http://mediocrechess.blogspot.com/) and [Matt Gingell
-(Chesley)](http://sourceforge.net/apps/wordpress/chesley/) have been
-particularly interesting. Thanks also to the authors of the many engines I've
-tested against, and to composers of EPD testing suites.
 
 Changes from 1.0 to 1.5
 -----------------------
@@ -133,65 +189,3 @@ at 10s per problem:
     WAC     293/300
     ECMGMP  120/182
 
-Design (1.0)
-------------
-
-To over-simplify, all chess engines have two parts: search and evaluation.
-Evaluation is the part that looks at the board and figures out who's winning
-and by how much.  Search is the part that looks ahead in the game guess how our
-opponent would repond to each of our moves, how we'd respond to each of their
-responses, and so on.
-
-Daydreamer is almost all search and no evaluation. To evalate a position it
-just adds up a value for each piece and a bonus based on which square each
-piece is on. The score is the difference between the scores for each player. In
-fact, I'm using [an evaluation function]
-(http://chessprogramming.wikispaces.com/Simplified+evaluation+function)
-specially designed to be as simple and straight-forward as possible. Daydreamer
-has no idea about keeping its king safe, or mobilizing its pieces, or keeping a
-good pawn structure. Maybe someday I'll teach it some of these things, but
-Daydreamer can beat me at chess, so what do I know.
-
-Daydreamer's search is more sophisticated. It uses [principal variation search]
-(http://en.wikipedia.org/wiki/Negascout), a variant of classical alpha-beta
-search.  A transposition table stores information about search nodes we've
-encountered previously. There are a number of extension, reduction, and pruning
-heuristics, and a quiescence search to avoid terminating the search in a
-position that has easy tactics on the board. It gets a lot of strength from the
-[null move heuristic] (http://en.wikipedia.org/wiki/Null-move_heuristic) and
-[late move reductions] (http://www.glaurungchess.com/lmr.html). I've also
-implemented razoring and futility pruning, although I haven't quite figured out
-how to make the most of them yet.
-
-Strength (1.0)
---------------
-
-So, how strong is Daydreamer? Strong enough to beat me, certainly. It's not
-terribly strong yet for a chess engine, but it's progressing pretty quickly. I
-run tests against a bunch of other chess engines whenever I make big changes to
-make sure that I'm not doing anything catastrophic, so I've found quite a few
-engines that are close to Daydreamer in strength. Here are the results from a
-series of 10 game matches with 30s per side that I did for the 1.0 release:
-
-    BigLion 2.23x   +8-1=1  8.5/10
-    BikJump 2.01    +3-6=1  3.5/10
-    Clarabit 1.00   +3-4=3  4.5/10
-    Greko 6.5       +1-5=4  3.0/10
-    Mediocre 0.34   +4-6=0  4.0/10
-    Plisk 0.0.9     +8-0=2  9.0/10
-    Sungorus 1.2    +2-7=1  2.5/10
-
-I'm pretty pleased with these results so far. Daydreamer plays pretty terribly
-in complicated endgames (and sometimes painfully badly even in simple endgames)
-and in imbalanced positions, so there's lots of room for improvement. I also
-like to test against suites of test positions with known solutions to see how
-many Daydreamer can find in a given amount of time. Here are the results from
-two popular tests: selected positions from Win at Chess (WAC), a pretty
-tactical suite that's generally easy for computers, and the Encyclopedia of
-Chess Middlegames (ECMGCP), a harder suite of middlegame problems. I ran
-Daydreamer through both sets of tests using
-[Polyglot's](http://wbec-ridderkerk.nl/html/details1/PolyGlot.html) testing
-function with a maximum time of 10s.
-
-    WAC    291/300
-    ECMGMP  93/173
