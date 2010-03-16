@@ -35,9 +35,7 @@ static const int castle_to_gtb_table[] = {
     tb_BOOO | tb_WOOO | tb_BOO | tb_WOO,
 };
 
-// TODO: experiment with max pool size, make actual pool size variable with
-// a uci option.
-#define GTB_MAX_POOL_SIZE   8
+#define GTB_MAX_POOL_SIZE   16
 typedef struct {
     int stm, ep, castle;
     unsigned int ws[17], bs[17];
@@ -47,10 +45,12 @@ typedef struct {
           2*17*sizeof(int) +
           2*17*sizeof(char)) % CACHE_LINE_BYTES)];
 } gtb_pool_args_t;
+
 static thread_pool_t gtb_pool_storage;
 static thread_pool_t* gtb_pool = NULL;
-static thread_info_t gtb_pool_info[GTB_MAX_POOL_SIZE];
+CACHE_ALIGN static thread_info_t gtb_pool_info[GTB_MAX_POOL_SIZE];
 CACHE_ALIGN static gtb_pool_args_t gtb_pool_args[GTB_MAX_POOL_SIZE];
+
 void* gtb_probe_firm_worker(void* payload);
 
 /*
@@ -206,10 +206,13 @@ bool probe_gtb_firm(const position_t* pos, int* score)
 {
     int pool_slot;
     gtb_pool_args_t* gtb_args;
-    bool available_slot = get_slot(gtb_pool, &pool_slot, (void**)&gtb_args);
+    void* slot_addr;
+    bool available_slot = get_slot(gtb_pool, &pool_slot, &slot_addr);
     if (!available_slot) {
         gtb_pool_args_t args_storage;
         gtb_args = &args_storage;
+    } else {
+        gtb_args = (gtb_pool_args_t*)slot_addr;
     }
 
     gtb_args->stm = stm_to_gtb(pos->side_to_move);
@@ -254,4 +257,3 @@ void* gtb_probe_firm_worker(void* payload)
     (void)success;
     return NULL;
 }
-

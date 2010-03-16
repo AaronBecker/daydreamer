@@ -2,7 +2,7 @@
 #include "daydreamer.h"
 #include <sched.h>
 
-static void* worker_thread(void *arg);
+static void* worker_loop(void *arg);
 
 /*
  * Initialize a new thread pool. Note that storage for the worker threads'
@@ -30,7 +30,7 @@ void init_thread_pool(thread_pool_t* pool,
         pthread_t pth;
 	if (pthread_create(&pth,
                     &pool->thread_attrs,
-                    worker_thread,
+                    worker_loop,
                     pool)) {
             perror("Thread pool creation failed.\n");
         }
@@ -55,7 +55,7 @@ void destroy_thread_pool(thread_pool_t* pool)
 bool get_slot(thread_pool_t* pool, int* slot, void** arg_addr)
 {
     // FIXME: this explicitly depends on having only one controlling thread.
-    // This is ok for now, but once we have SMP search, it has to change.
+    //        This is ok for now, but once we have SMP search it has to change.
     int i;
     if (!pool->idle_threads) return false;
     pthread_mutex_lock(&pool->pool_mutex);
@@ -85,23 +85,26 @@ bool run_thread(thread_pool_t* pool, task_fn_t task, int slot)
  * The idle loop for all worker threads. We use condition variables
  * to wait on work instead of polling to reduce overhead.
  */
-static void* worker_thread(void *arg)
+static void* worker_loop(void *arg)
 {
     thread_pool_t* pool = (thread_pool_t*)arg;
     int thread_index = pool->idle_threads;
     task_fn_t work_fn = NULL;
 
     while (true) {
+        // Update pool data and go to sleep.
         pthread_mutex_lock(&pool->pool_mutex);
         pool->idle_threads++;
         pool->info[thread_index].idle = true;
         pthread_cond_wait(&pool->info[thread_index].cv, &pool->pool_mutex);
 
+        // We've been woken back up, there must be something for us to do.
         pool->idle_threads--;
         pool->info[thread_index].idle = false;
+        pthread_mutex_unlock(&pool->pool_mutex);
         if (pool->quit) break;
 
-        pthread_mutex_unlock(&pool->pool_mutex);
+        // Execute the desired background task.
         work_fn = pool->info[thread_index].task;
         arg = pool->args + thread_index*pool->arg_size;
         work_fn(arg);

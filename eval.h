@@ -19,7 +19,7 @@ extern "C" {
 #define EG_ROOK_VAL      650
 #define EG_QUEEN_VAL     1200
 #define EG_KING_VAL      20000
-#define WON_ENDGAME         (2*EG_QUEEN_VAL)
+#define WON_ENDGAME     (2*EG_QUEEN_VAL)
 
 extern int piece_square_values[BK+1][0x80];
 extern int endgame_piece_square_values[BK+1][0x80];

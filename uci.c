@@ -45,9 +45,12 @@ static void uci_print_help(void)
 "   epd <filename> <time>\n"
 "             \tRead the given epd file, and search each position for <time>\n"
 "             \tseconds.\n"
-"   book <filename>\n"
+"   poly <filename>\n"
 "             \tPrint book information for the current position. If no book\n"
-"             \tfile is specified, use book.bin"
+"             \tfile is specified, use book.bin.\n"
+"             \tWorks only for Polyglot books.\n"
+"   ctg       \tPrint book information for the current position.\n"
+"             \tUses only the currently loaded CTG book.\n"
 "   help      \tPrint this help message."
 "\n\n");
 }
@@ -144,10 +147,6 @@ static void uci_handle_ext(char* command)
         sscanf(command+3, " %s %d", filename, &time_per_move);
         time_per_move *= 1000;
         epd_testsuite(filename, time_per_move);
-    } else if (!strncasecmp(command, "book", 4)) {
-        char filename[256] = "book.bin";
-        sscanf(command+4, " %s", filename);
-        test_book(filename, pos);
     } else if (!strncasecmp(command, "gtb", 3)) {
         if (options.use_gtb) {
             int score;
@@ -162,7 +161,13 @@ static void uci_handle_ext(char* command)
         } else {
             printf("Gaviota TBs not loaded\n");
         }
+    } else if (!strncasecmp(command, "poly", 4)) {
+        char filename[256] = "book.bin";
+        sscanf(command+4, " %s", filename);
+        test_book(filename, pos);
     } else if (!strncasecmp(command, "ctg", 3)) {
+        char filename[256] = "book.ctg";
+        init_ctg_book(filename);
         get_ctg_book_move(pos);
     } else if (!strncasecmp(command, "print", 5)) {
         print_board(pos, false);
@@ -318,8 +323,8 @@ static void calculate_search_time(int wtime,
         int binc,
         int movestogo)
 {
-    // TODO: cool heuristics for time mangement.
-    // For now, just use a simple static rule and look at our own time only
+    // TODO: Cool heuristics for time mangement.
+    // For now, just use a simple static rule and look at our own time only.
     color_t side = root_data.root_pos.side_to_move;
     int inc = side == WHITE ? winc : binc;
     int time = side == WHITE ? wtime : btime;
@@ -340,8 +345,8 @@ static void calculate_search_time(int wtime,
         root_data.time_target =
             MIN(root_data.time_limit, root_data.time_target * 5 / 4);
     }
-    // TODO: adjust polling interval based on time remaining?
-    // this might help for really low time-limit testing.
+    // TODO: Adjust polling interval based on time remaining?
+    //       This might help for really low time-limit testing.
 }
 
 /*
@@ -426,9 +431,7 @@ int input_available(void)
         }
     }
     if (pipe) {
-        if (!PeekNamedPipe(inh, NULL, 0, NULL, &dw, NULL)) {
-            return 1;
-        }
+        if (!PeekNamedPipe(inh, NULL, 0, NULL, &dw, NULL)) return 1;
         return dw;
     } else {
         GetNumberOfConsoleInputEvents(inh, &dw);

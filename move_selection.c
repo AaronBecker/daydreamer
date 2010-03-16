@@ -182,9 +182,7 @@ static void generate_moves(move_selector_t* sel)
 }
 
 /*
- * Return the next move to be searched. The first n moves are returned in order
- * of their score, and the rest in the order they were generated. n depends on
- * the type of node we're at.
+ * Return the next move to be searched.
  */
 move_t select_move(move_selector_t* sel)
 {
@@ -300,6 +298,7 @@ static void score_moves(move_selector_t* sel)
 /*
  * Quiescence-specific move scoring. This is simpler than normal scoring,
  * because SEE testing is deferred until after futility in the quiescent search.
+ * I got the deferred SEE testing idea from Stockfish.
  */
 static void score_qsearch_moves(move_selector_t* sel)
 {

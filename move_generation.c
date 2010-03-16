@@ -285,7 +285,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
     piece_t king = create_piece(side, KING);
     piece_t checker = pos->board[check_sq];
 
-    // Generate King moves.
+    // Generate king moves.
     // Don't let the king mask its possible destination squares in calls
     // to is_square_attacked.
     square_t from = king_sq, to = INVALID_SQUARE;
@@ -306,7 +306,7 @@ int generate_evasions(const position_t* pos, move_t* moves)
         return moves-moves_head;
     }
     
-    // First, the most common case: a check can be evaded via an
+    // First, the most common case: a check that can be evaded via an
     // en passant capture. Note that if we're in check and an en passant
     // capture is available, the only way the en passant capture would evade
     // the check is if it's the newly moved pawn that's checking us.
@@ -677,6 +677,9 @@ static void generate_piece_captures(const position_t* pos,
 {
     move_t* moves = *moves_head;
     square_t to;
+    // Note: I unrolled all these loops to handle each direction explicitly.
+    // The idea was to increase performance, but it's only about 1% faster
+    // for much more code, so it's possible I'll change this back later.
     switch (piece_type(piece)) {
         case KING:
             to = from - 17;

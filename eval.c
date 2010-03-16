@@ -3,10 +3,12 @@
 
 #include "pst.inc"
 
-#define pawn_scale 1024
-#define pattern_scale 1024
-#define pieces_scale 1024
-#define safety_scale 1024
+#define pawn_scale      1024
+#define pattern_scale   1024
+#define pieces_scale    1024
+#define safety_scale    1024
+
+static const int tempo_bonus[2] = { 9, 2 };
 
 /*
  * Initialize all static evaluation data structures.
@@ -63,7 +65,7 @@ int simple_eval(const position_t* pos)
     int score = 0;
     int endgame_scale[2] = { ed.md->scale[WHITE], ed.md->scale[BLACK] };
     if (endgame_scale[WHITE]==0 && endgame_scale[BLACK]==0) return DRAW_VALUE;
-    
+
     score_t phase_score = ed.md->score;
     if (side == BLACK) {
         phase_score.midgame *= -1;
@@ -74,9 +76,8 @@ int simple_eval(const position_t* pos)
     phase_score.endgame += pos->piece_square_eval[side].endgame -
         pos->piece_square_eval[side^1].endgame;
 
-    // Tempo
-    phase_score.midgame += 9;
-    phase_score.endgame += 2;
+    phase_score.midgame += tempo_bonus[0];
+    phase_score.endgame += tempo_bonus[1];
 
     score = blend_score(&phase_score, ed.md->phase);
     score = (score * endgame_scale[score > 0 ? side : side^1]) / 1024;
@@ -119,9 +120,8 @@ int full_eval(const position_t* pos, eval_data_t* ed)
     component_score = evaluate_king_safety(pos, ed);
     add_scaled_score(&phase_score, &component_score, safety_scale);
 
-    // Tempo
-    phase_score.midgame += 9;
-    phase_score.endgame += 2;
+    phase_score.midgame += tempo_bonus[0];
+    phase_score.endgame += tempo_bonus[1];
 
     score = blend_score(&phase_score, ed->md->phase);
     score = (score * endgame_scale[score > 0 ? side : side^1]) / 1024;
@@ -171,9 +171,8 @@ void report_eval(const position_t* pos)
     add_scaled_score(&phase_score, &component_score, safety_scale);
     printf("safety_score\t(%5d, %5d)\n", phase_score.midgame, phase_score.endgame);
 
-    // Tempo
-    phase_score.midgame += 9;
-    phase_score.endgame += 2;
+    phase_score.midgame += tempo_bonus[0];
+    phase_score.endgame += tempo_bonus[1];
 
     score = blend_score(&phase_score, ed->md->phase);
     score = (score * endgame_scale[score > 0 ? side : side^1]) / 1024;
