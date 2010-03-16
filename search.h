@@ -114,7 +114,7 @@ typedef struct {
     int time_limit;
     int time_target;
     int time_bonus;
-    int mate_search; // TODO: implement
+    int mate_search; // TODO: implement me
     bool infinite;
 } search_data_t;
 

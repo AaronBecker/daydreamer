@@ -73,7 +73,7 @@ I also had access to a lot of good writing about the design, implementation,
 and testing of chess engines. Bruce Moreland's site and the blogs of [Jonatan
 Pettersson (Mediocre)](http://mediocrechess.blogspot.com/) and [Matt Gingell
 (Chesley)](http://sourceforge.net/apps/wordpress/chesley/) have been
-particularly interesting. 
+particularly interesting.
 
 Thanks to Jim Ablett for supplying optimized Windows compiles.
 Thanks also  to everyone who has used or tested Daydreamer, to the authors of
