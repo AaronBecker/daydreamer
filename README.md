@@ -79,6 +79,11 @@ Thanks to Jim Ablett for supplying optimized Windows compiles.
 Thanks also  to everyone who has used or tested Daydreamer, to the authors of
 the many engines I've tested against, and to composers of EPD testing suites.
 
+I also owe thanks to the developers of several support programs that I use to
+develop Daydreamer. In addition to my basic toolkit of vim, git, and gcc, I rely
+on cutechess-cli by Ilari Pihlajisto and Arto Jonsson, bayeselo by Remi Coulom,
+and pgn-extract by David Barnes.
+
 Using Daydreamer
 ----------------
 
