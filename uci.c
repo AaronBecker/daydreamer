@@ -45,12 +45,8 @@ static void uci_print_help(void)
 "   epd <filename> <time>\n"
 "             \tRead the given epd file, and search each position for <time>\n"
 "             \tseconds.\n"
-"   poly <filename>\n"
-"             \tPrint book information for the current position. If no book\n"
-"             \tfile is specified, use book.bin.\n"
-"             \tWorks only for Polyglot books.\n"
-"   ctg       \tPrint book information for the current position.\n"
-"             \tUses only the currently loaded CTG book.\n"
+"   book      \tPrint book information for the current position.\n"
+"             \tUses the currently loaded book.\n"
 "   help      \tPrint this help message."
 "\n\n");
 }
@@ -161,14 +157,16 @@ static void uci_handle_ext(char* command)
         } else {
             printf("Gaviota TBs not loaded\n");
         }
-    } else if (!strncasecmp(command, "poly", 4)) {
-        char filename[256] = "book.bin";
-        sscanf(command+4, " %s", filename);
-        test_book(filename, pos);
-    } else if (!strncasecmp(command, "ctg", 3)) {
-        char filename[256] = "book.ctg";
-        init_ctg_book(filename);
-        get_ctg_book_move(pos);
+    } else if (!strncasecmp(command, "book", 4)) {
+        if (!options.book_loaded) printf("opening book not loaded\n");
+        else {
+            move_t book_move = options.probe_book(&root_data.root_pos);
+            if (book_move) {
+                char move_str[7];
+                move_to_coord_str(book_move, move_str);
+                printf("book move %s\n", move_str);
+            }
+        }
     } else if (!strncasecmp(command, "print", 5)) {
         print_board(pos, false);
         move_t moves[255];
