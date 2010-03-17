@@ -96,6 +96,7 @@ bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
  */
 void unload_gtb(void)
 {
+    if (!tb_is_initialized()) return;
     tbcache_done();
     tb_done();
     tb_paths = tbpaths_done(tb_paths);
