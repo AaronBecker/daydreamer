@@ -7,12 +7,12 @@ INCLUDE = -Isysport/ \
 	  -Icompression/huffman/
 
 DEFAULT_CC = /usr/bin/gcc
-DEFAULT_DEFINE = -DZ_PREFIX -DNDEBUG
+DEFAULT_DEFINE = -DZ_PREFIX
 DEFAULT_ARCHFLAGS = -m64
 DEFAULT_CFLAGS = -Wall -Wextra $(INCLUDE) $(DEFAULT_DEFINE) \
 		 $(DEFAULT_ARCHFLAGS)
 OPTFLAGS = -fast -msse -DNDEBUG
-DEBUGFLAGS = -O0 -g
+DEBUGFLAGS = -O0 -g -DDEBUG
 PGO1FLAGS = $(OPTFLAGS) -fprofile-generate
 PGO2FLAGS = $(OPTFLAGS) -fprofile-use
 
