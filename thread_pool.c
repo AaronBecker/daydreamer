@@ -45,6 +45,11 @@ void destroy_thread_pool(thread_pool_t* pool)
 {
     pool->quit = true;
     while (pool->idle_threads != pool->num_threads) sched_yield();
+    pthread_mutex_destroy(&pool->pool_mutex);
+    pthread_attr_destroy(&pool->thread_attrs);
+    for (int i = 0; i < pool->num_threads; ++i) {
+        pthread_cond_destroy(&pool->info[i].cv);
+    }
 }
 
 /*
@@ -56,14 +61,17 @@ bool get_slot(thread_pool_t* pool, int* slot, void** arg_addr)
 {
     // FIXME: this explicitly depends on having only one controlling thread.
     //        This is ok for now, but once we have SMP search it has to change.
-    int i;
-    if (!pool->idle_threads) return false;
+    if (!pool->idle_threads) {
+        return false;
+    }
     pthread_mutex_lock(&pool->pool_mutex);
+    int i;
     for (i=0; i < pool->num_threads && !pool->info[i].idle; ++i) {}
     assert(i != pool->num_threads && pool->info[i].idle);
     pthread_mutex_unlock(&pool->pool_mutex);
     *slot = i;
     *arg_addr = pool->args + i*pool->arg_size;
+    assert(i != pool->num_threads && pool->info[i].idle);
     return true;
 }
 
@@ -73,9 +81,11 @@ bool get_slot(thread_pool_t* pool, int* slot, void** arg_addr)
  */
 bool run_thread(thread_pool_t* pool, task_fn_t task, int slot)
 {
-    assert(pool->info[slot].idle);
-    pool->info[slot].task = task;
     pthread_mutex_lock(&pool->pool_mutex);
+    assert(pool->info[slot].idle);
+    pool->info[slot].idle = false;
+    pool->info[slot].task = task;
+    pool->idle_threads--;
     pthread_cond_signal(&pool->info[slot].cv);
     pthread_mutex_unlock(&pool->pool_mutex);
     return true;
@@ -96,12 +106,10 @@ static void* worker_loop(void *arg)
         pthread_mutex_lock(&pool->pool_mutex);
         pool->idle_threads++;
         pool->info[thread_index].idle = true;
-        pthread_cond_wait(&pool->info[thread_index].cv, &pool->pool_mutex);
+        if (pthread_cond_wait(&pool->info[thread_index].cv,
+                    &pool->pool_mutex)) perror("Error waiting on CV");
 
         // We've been woken back up, there must be something for us to do.
-        pool->idle_threads--;
-        pool->info[thread_index].idle = false;
-        pthread_mutex_unlock(&pool->pool_mutex);
         if (pool->quit) break;
 
         // Execute the desired background task.
