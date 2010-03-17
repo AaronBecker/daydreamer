@@ -151,7 +151,7 @@ static void fill_gtb_arrays(const position_t* pos,
 bool probe_gtb_soft(const position_t* pos, int* score)
 {
     int stm = stm_to_gtb(pos->side_to_move);
-    int ep = square_to_gtb(pos->ep_square);
+    int ep = ep_to_gtb(pos->ep_square);
     int castle = castle_to_gtb(pos->castle_rights);
 
     unsigned int ws[17], bs[17];
@@ -177,7 +177,7 @@ bool probe_gtb_soft(const position_t* pos, int* score)
 bool probe_gtb_hard(const position_t* pos, int* score)
 {
     int stm = stm_to_gtb(pos->side_to_move);
-    int ep = square_to_gtb(pos->ep_square);
+    int ep = ep_to_gtb(pos->ep_square);
     int castle = castle_to_gtb(pos->castle_rights);
 
     unsigned int ws[17], bs[17];
@@ -217,7 +217,7 @@ bool probe_gtb_firm(const position_t* pos, int* score)
     }
 
     gtb_args->stm = stm_to_gtb(pos->side_to_move);
-    gtb_args->ep = square_to_gtb(pos->ep_square);
+    gtb_args->ep = ep_to_gtb(pos->ep_square);
     gtb_args->castle = castle_to_gtb(pos->castle_rights);
 
     fill_gtb_arrays(pos, gtb_args->ws, gtb_args->bs,
