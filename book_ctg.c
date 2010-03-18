@@ -531,9 +531,9 @@ static int move_weight(position_t* pos, move_t move)
     int int_weight = (int)(weight * 100000);
     if (entry.recommendation == 64) int_weight = 0;
     if (entry.recommendation == 128) int_weight *= 128;
-    printf("info string book move: ");
+    printf("info string book move ");
     print_coord_move(move);
-    printf(" weight: %d\n", int_weight);
+    printf("weight %d\n", int_weight);
     return int_weight;
 }
 
@@ -559,7 +559,6 @@ static bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
     }
     uint32_t choice = random();
     choice = ((choice<<16) + random()) % total_weight;
-    printf("choice %d\n", choice);
     int i;
     for (i=0; choice >= (uint32_t)weights[i]; ++i) {}
     if (i >= entry->num_moves) {
@@ -568,9 +567,6 @@ static bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
         assert(false);
     }
     *move = moves[i];
-    printf("info string choice: ");
-    print_coord_move(moves[i]);
-    printf("\n");
     return true;
 }
 
