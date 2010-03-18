@@ -75,6 +75,9 @@ move_t get_poly_book_move(position_t* pos)
         if (entry.key != key) break;
         moves[index] = entry.move;
         weights[index++] = total_weight + entry.weight;
+        printf("info string book move: ");
+        print_coord_move(entry.move);
+        printf(" weight: %d\n", entry.weight);
         total_weight += entry.weight;
     }
     if (index == 0) return NO_MOVE;
