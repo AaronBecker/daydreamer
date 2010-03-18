@@ -62,7 +62,7 @@ move_t get_poly_book_move(position_t* pos)
     int offset = find_book_key(key);
     if (offset == -1) return NO_MOVE;
 
-    uint16_t moves[255];
+    move_t moves[255];
     uint16_t weights[255];
     uint16_t total_weight = 0;
     int index = 0;
@@ -73,7 +73,10 @@ move_t get_poly_book_move(position_t* pos)
         assert(offset+index < num_entries);
         read_book_entry(offset+index, &entry);
         if (entry.key != key) break;
-        moves[index] = entry.move;
+        moves[index] = book_move_to_move(pos, entry.move);
+        printf("info string book move: ");
+        print_coord_move(moves[index]);
+        printf(" weight: %d\n", entry.weight);
         weights[index++] = total_weight + entry.weight;
         total_weight += entry.weight;
     }
@@ -84,7 +87,7 @@ move_t get_poly_book_move(position_t* pos)
     int i;
     for (i=0; choice >= weights[i]; ++i) {}
     assert(i < index);
-    return book_move_to_move(pos, moves[i]);
+    return moves[i];
 }
 
 /*
