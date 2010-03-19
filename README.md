@@ -9,7 +9,7 @@ I named it Daydreamer after a bug in an early version caused it to occasionally
 follow up very strong play with bizarre blunders, as though it had lost its
 focus on the game and its mind was wandering aimlessly.
 
-Windows and Mac binaries are available on the
+Windows, Linux, and Mac binaries are available on the
 [downloads page](http://github.com/AaronBecker/daydreamer/downloads).
 
 Changes from 1.6 to 1.7
@@ -112,12 +112,14 @@ flags you want in CFLAGS, and you should be good to go. If you compile with
 the engine up. I find this pretty helpful for remembering what version I'm
 working with. I've tested with gcc on Mac and Linux, clang on Mac, and the
 MinGW cross-compiler for Windows. As of version 1.7, Daydreamer requires the
-pthreads library.
+pthreads library. This should already be installed on Mac and Linux machines,
+but on Windows it requires a separate install.
 
 Installing
 ----------
 
 The whole thing is a single executable, so there's nothing to install, really.
+Windows builds also require the file 'pthreadGC2.dll' in the same directory.
 Just put it wherever you want. I've included a polyglot.ini file for
 compatibility with Winboard interfaces. Daydreamer looks for a file named
 'daydreamer.rc' at startup and attempts to read UCI commands out of it, but
