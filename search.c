@@ -2,9 +2,6 @@
 #include <math.h>
 #include <string.h>
 
-// TODO: get rid of this
-static move_t last_best = NO_MOVE;
-
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
@@ -232,12 +229,10 @@ static bool check_eg_database(position_t* pos,
         int beta,
         int* score)
 {
-    //TODO: evaluate 5 man bases
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 5) return false;
     if (options.use_gtb) {
         // For DTM tablebases, just look.
-        // TODO: experiment more with probe_firm
         if (probe_gtb_firm(pos, score)) {
             ++root_data.stats.egbb_hits;
             return true;
@@ -518,8 +513,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
 
         // Check the obvious move, if any.
         if (search_data->pv[0] != search_data->obvious_move) {
-            // TODO:test
-            //|| id_score <= alpha || id_score >= beta) {
             search_data->obvious_move = NO_MOVE;
         }
 
@@ -567,7 +560,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
     printf("bestmove %s", best_move);
     if (search_data->pv[1]) printf(" ponder %s", ponder_move);
     printf("\n");
-    assert(search_data->pv[0] == last_best);
     search_data->engine_status = ENGINE_IDLE;
 }
 
@@ -662,7 +654,6 @@ static search_result_t root_search(search_data_t* search_data,
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
             print_multipv(search_data);
-            last_best = search_data->pv[0];
         }
         search_data->resolving_fail_high = false;
     }
