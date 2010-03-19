@@ -14,7 +14,8 @@ CC = /usr/bin/gcc $(GCCFLAGS)
 CTAGS = ctags
 
 COMMONFLAGS = -Wall -Wextra -Wno-unused-function $(ARCHFLAGS) -Igtb
-LDFLAGS = $(ARCHFLAGS) -ldl -Lgtb -lgtb -lpthread
+LDFLAGS = $(ARCHFLAGS) -ldl -Lgtb -lgtb -lpthread \
+	  -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0 -DEXPENSIVE_CHECKS -DASSERT2
 ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
 DEFAULTFLAGS = $(COMMONFLAGS) -g -O2
