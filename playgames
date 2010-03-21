@@ -9,8 +9,8 @@ engine_prefix = '/expand/home/abecker/mac/src/'
 cutechess_path = '/expand/home/abecker/mac/src/cutechess-cli/cutechess-cli.sh'
 daydreamer_path = '/expand/home/abecker/mac/src/daydreamer/'
 pgnin = '/expand/home/abecker/mac/src/daydreamer/tests/openings.pgn'
-resign_score = 500
-resign_moves = 3
+resign_score = 250
+resign_moves = 4
 
 programs = {
     'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
