@@ -4,7 +4,7 @@ from subprocess import Popen, PIPE
 import sys
 import optparse
 
-concurrency = 7
+concurrency = 3
 resign_moves = 4
 resign_score = 250
 chess_home = os.path.expanduser('~') + '/src/chess/'
@@ -15,19 +15,19 @@ pgnin = chess_home + 'daydreamer/tests/openings.pgn'
 
 programs = {
     'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
-    'diablo64' : 'cmd=' + engine_prefix + 'diablo/diablo64 proto=uci',
+    'diablo64' : 'cmd=' + engine_prefix + 'diablo/diablo64.sh proto=uci',
     'dirty' : 'cmd=' + engine_prefix + \
             'dirty_acca3/dirty.sh proto=xboard name=Dirty',
     'viper64' : 'cmd=' + engine_prefix + \
-            'viper/viper64 proto=uci option."Number of threads"=1',
+            'viper/viper64.sh proto=uci option."Number of threads"=1',
     'glaurung64' : 'cmd=' + engine_prefix + \
             'glaurung121/glaurung64.sh proto=uci option."Number of threads"=1',
-    'hamsters' : 'cmd=' + engine_prefix + 'hamsters/hamsters proto=uci',
+    'hamsters' : 'cmd=' + engine_prefix + 'hamsters/hamster.sh proto=uci',
     'cyrano' : 'cmd=' + engine_prefix + 'cyrano/cyrano.sh proto=uci',
     'alaric' : 'cmd=' + engine_prefix + 'alaric/alaric.sh proto=uci',
     'spike' : 'cmd=' + engine_prefix + 'spike/spike.sh proto=uci',
     'protector' : 'cmd=' + engine_prefix + 'protector/protector.sh proto=uci',
-    'spark' : 'cmd=' + engine_prefix + 'spark/spark-0.3a-osx64 proto=uci',
+    'spark' : 'cmd=' + engine_prefix + 'spark/spark.sh proto=uci',
     'komodo' : 'cmd=' + engine_prefix + 'komodo/komodo.sh proto=uci',
 }
 
@@ -63,9 +63,9 @@ def main(argv=None):
             sec_eng_str = programs[engine]
         cutechess_args = '-concurrency ' + str(concurrency) + \
                 ' -pgnin ' + pgnin + \
-                ' -resign ' + str(resign_moves) + ' ' + str(resign_score) + ' '\
+                ' -resign ' + str(resign_moves)+' '+str(resign_score) + ' ' \
                 ' -repeat ' + '-fcp ' + pr_eng_str + \
-                ' -scp ' + sec_eng_str +
+                ' -scp ' + sec_eng_str + \
                 ' -both tc=' + timecontrol + \
                 ' -games ' + gamecount + ' -pgnout ' + \
                 outfile_base + '.pgn'
