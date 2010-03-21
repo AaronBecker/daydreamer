@@ -10,8 +10,9 @@
 #define stm_to_gtb(s)       (s)
 #define castle_to_gtb(c)    castle_to_gtb_table[c]
 #define DEFAULT_GTB_CACHE_SIZE  (32*1024*1024)
+#define WDL_CACHE_FRACTION  0
 
-static char** tb_paths = NULL;
+static const char** tb_paths = NULL;
 static const int piece_to_gtb_table[] = {
     tb_NOPIECE, tb_PAWN, tb_KNIGHT, tb_BISHOP, tb_ROOK, tb_QUEEN, tb_KING, 0,
     tb_NOPIECE, tb_PAWN, tb_KNIGHT, tb_BISHOP, tb_ROOK, tb_QUEEN, tb_KING, 0
@@ -73,7 +74,7 @@ bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
     int verbosity = 0;
     tb_init(verbosity, scheme, tb_paths);
     if (!cache_size_bytes) cache_size_bytes = DEFAULT_GTB_CACHE_SIZE;
-    tbcache_init(cache_size_bytes);
+    tbcache_init(cache_size_bytes, WDL_CACHE_FRACTION);
     tbstats_reset();
     bool success = tb_is_initialized() && tbcache_is_on();
     if (success) {
