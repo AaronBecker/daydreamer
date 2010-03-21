@@ -1,10 +1,18 @@
 
 Search
+    Better time management when resolving root failures
+        We really shouldn't stop when resolving a fail low unless we have to
     Better statistics gathering/reporting
     recognize singular replies
     Try multiple moves in TT, instead of PV cache
     Make pawn eval and king safety scores available inside search
     shrink trans table entry size, reevaluate TT code structure
+
+Tablebases
+    Add WDL support for GTBs
+    try different strategies for different board populations
+    try different compression schemes
+    try SSD/Flash memory
 
 Interface
     ECO classification
