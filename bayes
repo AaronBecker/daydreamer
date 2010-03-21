@@ -1,8 +1,10 @@
 #!/bin/bash
+
+bayeselo = $HOME/src/chess/bayeselo/bayeselo
 for pgn in $@; do
     readpgn="${readpgn}readpgn $pgn"$'\n'
 done
-bayeselo <<ELOSCRIPT
+$bayeselo <<ELOSCRIPT
 prompt off
 $readpgn
 players >__players.txt

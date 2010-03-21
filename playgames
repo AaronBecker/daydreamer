@@ -5,24 +5,19 @@ import sys
 import optparse
 
 concurrency = 7
-engine_prefix = '/expand/home/abecker/mac/src/'
-cutechess_path = '/expand/home/abecker/mac/src/cutechess-cli/cutechess-cli.sh'
-daydreamer_path = '/expand/home/abecker/mac/src/daydreamer/'
-pgnin = '/expand/home/abecker/mac/src/daydreamer/tests/openings.pgn'
-resign_score = 250
 resign_moves = 4
+resign_score = 250
+chess_home = os.path.expanduser('~') + '/src/chess/'
+engine_prefix = chess_home
+cutechess_path = chess_home + 'cutechess-cli/cutechess-cli.sh'
+daydreamer_path = chess_home + 'daydreamer/'
+pgnin = chess_home + 'daydreamer/tests/openings.pgn'
 
 programs = {
     'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
-    'greko' : 'cmd=' + engine_prefix + \
-            'greko-6.5/bin/greko proto=uci name=greko',
-    'sungorus' : 'cmd=' + engine_prefix + 'sungorus-1.2/sungorus proto=uci',
-    'sungorus64' : 'cmd=' + engine_prefix + 'sungorus-1.2/sungorus64 proto=uci',
     'diablo64' : 'cmd=' + engine_prefix + 'diablo/diablo64 proto=uci',
     'dirty' : 'cmd=' + engine_prefix + \
             'dirty_acca3/dirty.sh proto=xboard name=Dirty',
-    'romichess' : 'cmd=' + engine_prefix + \
-            'romichess_P3k/romichess.sh proto=xboard name=Romichess',
     'viper64' : 'cmd=' + engine_prefix + \
             'viper/viper64 proto=uci option."Number of threads"=1',
     'glaurung64' : 'cmd=' + engine_prefix + \
