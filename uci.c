@@ -99,9 +99,9 @@ static void uci_handle_command(char* command)
         command += 5;
         while (isspace(*command)) ++command;
         if (!strncasecmp(command, "on", 2)) {
-            set_uci_option("Verbose output value true");
+            set_uci_option("Verbosity value high");
         } else if (!strncasecmp(command, "off", 3)) {
-            set_uci_option("Verbose output value false");
+            set_uci_option("Verbosity value low");
         }
     } else {
         uci_handle_ext(command);
@@ -302,7 +302,7 @@ static void uci_go(char* command)
     if (!movetime && !root_data.infinite) {
         calculate_search_time(wtime, btime, winc, binc, movestogo);
     }
-    if (!ponder && options.verbose) {
+    if (!ponder && options.verbosity > 1) {
         print_board(&root_data.root_pos, true);
     }
     root_data.time_bonus = 0;

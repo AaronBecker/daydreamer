@@ -2,9 +2,6 @@
 #include <math.h>
 #include <string.h>
 
-// TODO: get rid of this
-static move_t last_best = NO_MOVE;
-
 static const bool nullmove_enabled = true;
 static const bool verification_enabled = true;
 static const bool iid_enabled = true;
@@ -99,8 +96,8 @@ static void open_node(search_data_t* data, int ply)
             last_info = so_far;
             uint64_t nps = data->nodes_searched/so_far*1000;
             printf("info time %d nodes %"PRIu64, so_far, data->nodes_searched);
-            if (options.verbose) printf(" qnodes %"PRIu64" pvnodes %"PRIu64,
-                    data->qnodes_searched, data->pvnodes_searched);
+            if (options.verbosity > 1) printf(" qnodes %"PRIu64" pvnodes %"
+                    PRIu64, data->qnodes_searched, data->pvnodes_searched);
             printf(" nps %"PRIu64" hashfull %d\n", nps, get_hashfull());
         }
     }
@@ -232,12 +229,10 @@ static bool check_eg_database(position_t* pos,
         int beta,
         int* score)
 {
-    //TODO: evaluate 5 man bases
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 5) return false;
     if (options.use_gtb) {
         // For DTM tablebases, just look.
-        // TODO: experiment more with probe_firm
         if (probe_gtb_firm(pos, score)) {
             ++root_data.stats.egbb_hits;
             return true;
@@ -412,14 +407,14 @@ void find_obvious_move(search_data_t* data)
     for (int i=0; r[i].move; ++i) {
         if (r[i].move == data->obvious_move) continue;
         if (r[i].qsearch_score + obvious_move_margin > best_score) {
-            if (options.verbose && data->engine_status != ENGINE_PONDERING) {
+            if (options.verbosity && data->engine_status != ENGINE_PONDERING) {
                 printf("info string no obvious move\n");
             }
             data->obvious_move = NO_MOVE;
             return;
         }
     }
-    if (options.verbose && data->engine_status != ENGINE_PONDERING) {
+    if (options.verbosity && data->engine_status != ENGINE_PONDERING) {
         printf("info string candidate obvious move ");
         print_coord_move(data->obvious_move);
         printf("\n");
@@ -448,12 +443,9 @@ void deepening_search(search_data_t* search_data, bool ponder)
             search_data->engine_status != ENGINE_PONDERING) {
         move_t book_move = options.probe_book(&search_data->root_pos);
         if (book_move) {
-            if (options.verbose) {
-                printf("info string Found book move.\n");
-            }
             char move_str[7];
             move_to_coord_str(book_move, move_str);
-            printf("info depth 0 nodes 0 pv %s\n", move_str);
+            printf("info depth 0 nodes 0 score cp 0 pv %s\n", move_str);
             printf("bestmove %s\n", move_str);
             search_data->engine_status = ENGINE_IDLE;
             return;
@@ -484,7 +476,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         float depth = search_data->current_depth;
         int depth_index = depth_to_index(depth);
         if (should_output(search_data)) {
-            if (options.verbose) print_transposition_stats();
+            if (options.verbosity > 1) print_transposition_stats();
             printf("info depth %d\n", depth_index);
         }
 
@@ -497,12 +489,11 @@ void deepening_search(search_data_t* search_data, bool ponder)
         if (depth > 5*PLY && options.multi_pv == 1) {
             alpha = consecutive_fail_lows > 2 ? mated_in(-1) :
                 last_score + aspire_low[consecutive_fail_lows];
-            //alpha = consecutive_fail_lows > 1 ? mated_in(-1) : last_score - 45;
-            //beta = consecutive_fail_highs > 1 ? mate_in(-1) : last_score + 45;
             beta = consecutive_fail_highs > 2 ? mate_in(-1) :
                 last_score + aspire_high[consecutive_fail_highs];
-            if (options.verbose) {
-                printf("info string root window is (%d, %d)\n", alpha, beta);
+            if (options.verbosity) {
+                printf("info string aspiration window alpha %d beta %d\n",
+                        alpha, beta);
             }
         }
         search_data->root_indecisiveness = 0;
@@ -522,8 +513,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
 
         // Check the obvious move, if any.
         if (search_data->pv[0] != search_data->obvious_move) {
-            // TODO:test
-            //|| id_score <= alpha || id_score >= beta) {
             search_data->obvious_move = NO_MOVE;
         }
 
@@ -553,7 +542,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
 
     search_data->current_depth -= PLY;
     search_data->best_score = id_score;
-    if (options.verbose) {
+    if (options.verbosity > 1) {
         print_search_stats(search_data);
         printf("info string time target %d time limit %d elapsed time %d\n",
                 search_data->time_target,
@@ -571,7 +560,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
     printf("bestmove %s", best_move);
     if (search_data->pv[1]) printf(" ponder %s", ponder_move);
     printf("\n");
-    assert(search_data->pv[0] == last_best);
     search_data->engine_status = ENGINE_IDLE;
 }
 
@@ -637,7 +625,7 @@ static search_result_t root_search(search_data_t* search_data,
             }
             if (score > alpha) {
                 if (score > alpha) {
-                    if (options.verbose && should_output(search_data)) {
+                    if (options.verbosity && should_output(search_data)) {
                         char coord_move[7];
                         move_to_coord_str(move, coord_move);
                         printf("info string fail high, research %s\n",
@@ -666,20 +654,19 @@ static search_result_t root_search(search_data_t* search_data,
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
             print_multipv(search_data);
-            last_best = search_data->pv[0];
         }
         search_data->resolving_fail_high = false;
     }
     if (alpha == orig_alpha) {
-        if (options.verbose && should_output(search_data)) {
-            printf("info string Root search failed low, window was (%d, %d)\n",
+        if (options.verbosity > 1 && should_output(search_data)) {
+            printf("info string Root search failed low, alpha %d beta %d\n",
                     alpha, beta);
         }
         search_data->stats.root_fail_lows++;
         return SEARCH_FAIL_LOW;
     } else if (alpha >= beta) {
-        if (options.verbose && should_output(search_data)) {
-            printf("info string Root search failed high, window was (%d, %d)\n",
+        if (options.verbosity && should_output(search_data)) {
+            printf("info string Root search failed high, alpha %d beta %d\n",
                     orig_alpha, beta);
         }
         search_data->stats.root_fail_highs++;

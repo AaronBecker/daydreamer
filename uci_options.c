@@ -55,10 +55,10 @@ static void add_uci_option(char* name,
     option->vars[0][0] = '\0';
     option->address = address;
     int var_index=0;
-    while (vars && *vars) {
+    while (vars && vars[var_index]) {
         assert(var_index < 15);
-        strcpy(option->vars[var_index++], *vars);
-        ++*vars;
+        strcpy(option->vars[var_index], vars[var_index]);
+        var_index++;
     }
     option->vars[var_index][0] = '\0';
     char option_command[256];
@@ -80,8 +80,8 @@ static void print_uci_option(uci_option_t* option)
     printf(" default %s", option->default_value);
     if (option->type == OPTION_COMBO) {
         int var_index=0;
-        while (option->vars[var_index]) {
-            printf(" var %s", option->vars[var_index]);
+        while (option->vars[var_index][0]) {
+            printf(" var %s", option->vars[var_index++]);
         }
     } else if (option->type == OPTION_SPIN) {
         printf(" min %d max %d", option->min, option->max);
@@ -167,6 +167,17 @@ static void default_handler(void* opt, char* value)
             memcpy(option->address, &val, sizeof(int));
         } else assert(false);
     }
+}
+
+static void handle_verbosity(void* opt, char* value)
+{
+    if (!value) return;
+    uci_option_t* option = opt;
+    if (value) strncpy(option->value, value, 128);
+    options.verbosity = 0;
+    if (!strcasecmp(value, "low")) options.verbosity = 0;
+    else if (!strcasecmp(value, "medium")) options.verbosity = 1;
+    else if (!strcasecmp(value, "high")) options.verbosity = 2;
 }
 
 /*
@@ -386,8 +397,9 @@ void init_uci_options()
             1, 1024, NULL, NULL, &handle_pv_cache);
     add_uci_option("Output Delay", OPTION_SPIN, "2000",
             0, 1000000, NULL, &options.output_delay, &default_handler);
-    add_uci_option("Verbose output", OPTION_CHECK, "false",
-            0, 0, NULL, &options.verbose, &default_handler);
+    char* verbosities[4] = { "low", "medium", "high", NULL };
+    add_uci_option("Verbosity", OPTION_COMBO, "low",
+            0, 0, verbosities, &options.verbosity, &handle_verbosity);
     options.book_loaded = false;
 }
 

@@ -42,7 +42,7 @@ typedef struct {
     bool use_gtb;
     int gtb_cache_size;
     int eg_pool_threads;
-    bool verbose;
+    int verbosity;
     bool chess960;
     bool arena_castle;
     bool ponder;
