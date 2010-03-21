@@ -4,11 +4,13 @@ from subprocess import Popen, PIPE
 import sys
 import optparse
 
-concurrency = '7'
+concurrency = 7
 engine_prefix = '/expand/home/abecker/mac/src/'
 cutechess_path = '/expand/home/abecker/mac/src/cutechess-cli/cutechess-cli.sh'
 daydreamer_path = '/expand/home/abecker/mac/src/daydreamer/'
 pgnin = '/expand/home/abecker/mac/src/daydreamer/tests/openings.pgn'
+resign_score = 500
+resign_moves = 3
 
 programs = {
     'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
@@ -64,9 +66,12 @@ def main(argv=None):
             sec_eng_str = 'cmd=' + daydreamer_path + engine + ' proto=uci'
         else:
             sec_eng_str = programs[engine]
-        cutechess_args = '-concurrency ' + concurrency + ' -pgnin ' + pgnin + \
-                ' -repeat ' + '-fcp ' + pr_eng_str + ' -scp ' + \
-                sec_eng_str + ' -both tc=' + timecontrol + \
+        cutechess_args = '-concurrency ' + str(concurrency) + \
+                ' -pgnin ' + pgnin + \
+                ' -resign ' + str(resign_moves) + ' ' + str(resign_score) + ' '\
+                ' -repeat ' + '-fcp ' + pr_eng_str + \
+                ' -scp ' + sec_eng_str +
+                ' -both tc=' + timecontrol + \
                 ' -games ' + gamecount + ' -pgnout ' + \
                 outfile_base + '.pgn'
         if settings.debug:
