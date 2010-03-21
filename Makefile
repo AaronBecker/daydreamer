@@ -76,7 +76,7 @@ gtb:
 	(cd gtb && $(MAKE) opt)
 
 clean:
-	rm -rf .depend daydreamer tags $(OBJFILES) && (cd gtb && $(MAKE) clean)
+	rm -rf .depend daydreamer tags $(OBJFILES)
 
 pgo-clean:
 	rm -f $(PROFFILES)
