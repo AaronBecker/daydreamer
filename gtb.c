@@ -2,7 +2,6 @@
 #include "daydreamer.h"
 #include "gtb/gtb-probe.h"
 #include <string.h>
-#include <pthread.h>
 
 #define piece_to_gtb(p)     piece_to_gtb_table[p]
 #define square_to_gtb(s)    square_to_index(s)
@@ -197,6 +196,8 @@ bool probe_gtb_hard(const position_t* pos, int* score)
     return success;
 }
 
+#ifndef GTB_WINDOWS
+
 /*
  * A compromise between probe_hard and probe_soft. Check the cache, and return
  * if the position is found. If not, use a thread to load the position into
@@ -259,3 +260,13 @@ void* gtb_probe_firm_worker(void* payload)
     (void)success;
     return NULL;
 }
+
+#else
+
+bool probe_gtb_firm(const position_t* pos, int* value)
+{
+    return probe_gtb_soft(pos, value);
+}
+
+#endif
+

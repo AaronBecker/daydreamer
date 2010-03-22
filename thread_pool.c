@@ -1,5 +1,6 @@
 
 #include "daydreamer.h"
+#ifndef GTB_WINDOWS
 #include <sched.h>
 
 static void* worker_loop(void *arg);
@@ -121,3 +122,26 @@ static void* worker_loop(void *arg)
     return NULL;
 }
 
+#else
+void init_thread_pool(thread_pool_t* pool,
+        void* arg_storage,
+        thread_info_t* info_storage,
+        int arg_size,
+        int max_threads) {
+    (void)pool; (void)arg_storage; (void)info_storage;
+    (void)arg_size; (void)max_threads;
+}
+
+void destroy_thread_pool(thread_pool_t* pool) { (void)pool; }
+
+bool get_slot(thread_pool_t* pool, int* slot, void** arg_addr) {
+    (void)pool; (void)slot; (void)arg_addr;
+    return false;
+}
+
+bool run_thread(thread_pool_t* pool, task_fn_t task, int slot) {
+    (void)pool; (void)task; (void)slot;
+    return false;
+}
+
+#endif

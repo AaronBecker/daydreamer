@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#ifndef GTB_WINDOWS
 #include <pthread.h>
 
 typedef void*(*task_fn_t)(void*);
@@ -30,6 +31,20 @@ typedef struct {
     pthread_mutex_t pool_mutex;
     pthread_cond_t work_cv;
 } thread_pool_t;
+
+#else
+
+typedef void*(*task_fn_t)(void*);
+
+typedef struct {
+    int dummy;
+} thread_info_t;
+
+typedef struct {
+    int dummy;
+} thread_pool_t;
+
+#endif
 
 #ifdef __cplusplus
 } // extern "C"
