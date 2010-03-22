@@ -79,6 +79,41 @@ typedef __int16 int16_t;
 #   define ARCH_32_BIT
 #endif
 
+// Endian-ness fixers. I provide my own versions to give support for 64-bit
+// types and to avoid the need to link in the winsock library on Windows.
+extern bool big_endian;
+#define ntohll(x) \
+    (!big_endian ? \
+    ((((uint64_t)(x) & 0xff00000000000000ULL) >> 56) | \
+     (((uint64_t)(x) & 0x00ff000000000000ULL) >> 40) | \
+     (((uint64_t)(x) & 0x0000ff0000000000ULL) >> 24) | \
+     (((uint64_t)(x) & 0x000000ff00000000ULL) >>  8) | \
+     (((uint64_t)(x) & 0x00000000ff000000ULL) <<  8) | \
+     (((uint64_t)(x) & 0x0000000000ff0000ULL) << 24) | \
+     (((uint64_t)(x) & 0x000000000000ff00ULL) << 40) | \
+     (((uint64_t)(x) & 0x00000000000000ffULL) << 56)) : \
+     (x))
+#define htonll(x) ntohll(x)
+
+#define ntohl(x) \
+    (!big_endian ? \
+    ((((uint32_t)(x) & 0xff000000) >> 24) | \
+     (((uint32_t)(x) & 0x00ff0000) >>  8) | \
+     (((uint32_t)(x) & 0x0000ff00) <<  8) | \
+     (((uint32_t)(x) & 0x000000ff) << 24)) : \
+     (x))
+#define htonl(x) ntohl(x)
+
+#define ntohs(x) \
+    (!big_endian ? \
+    ((((uint16_t)(x) & 0xff00) >>  8) | \
+     (((uint16_t)(x) & 0x00ff) <<  8)) : \
+     (x))
+#define htons(x) ntohs(x)
+
+
+
+
 #ifdef __cplusplus
 }
 #endif

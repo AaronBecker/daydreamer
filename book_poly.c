@@ -1,18 +1,6 @@
 
 #include "daydreamer.h"
 
-// Endian-ness fixer for 64-bit types.
-#define ntohll(x) \
-    (!big_endian ? \
-    ((((x) & 0xff00000000000000ULL) >> 56) | \
-     (((x) & 0x00ff000000000000ULL) >> 40) | \
-     (((x) & 0x0000ff0000000000ULL) >> 24) | \
-     (((x) & 0x000000ff00000000ULL) >>  8) | \
-     (((x) & 0x00000000ff000000ULL) <<  8) | \
-     (((x) & 0x0000000000ff0000ULL) << 24) | \
-     (((x) & 0x000000000000ff00ULL) << 40) | \
-     (((x) & 0x00000000000000ffULL) << 56)) : \
-     (x))
 
 typedef struct {
     uint64_t key;
@@ -26,7 +14,6 @@ static void read_book_entry(int index, book_entry_t* entry);
 static int find_book_key(uint64_t target_key);
 static uint64_t book_hash(position_t* pos);
 
-static bool big_endian = true;
 static FILE* book = NULL;
 static int num_entries;
 
@@ -37,10 +24,6 @@ bool init_poly_book(char* filename)
 {
     assert(sizeof(book_entry_t) == 16);
     srandom(time(NULL));
-    // Figure out if we're on a big- or little-endian system. If we didn't
-    // have to roll our own htonll fuction this wouldn't be necessary.
-    uint32_t byte_order = 0x0A0B0C0D;
-    big_endian = byte_order == htonl(byte_order);
     if (book) fclose(book);
     if (!(book = fopen(filename, "r"))) {
         num_entries = 0;

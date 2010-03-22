@@ -5,12 +5,17 @@
 
 search_data_t root_data;
 options_t options;
+bool big_endian;
 
 /*
  * Set up the stuff that only needs to be done once, during initialization.
  */
 void init_daydreamer(void)
 {
+    // Figure out if we're on a big- or little-endian system.
+    const int i = 1;
+    big_endian = (*(char*)&i) == 0;
+
     init_hash();
     init_material_table(4*1024*1024);
     init_bitboards();
