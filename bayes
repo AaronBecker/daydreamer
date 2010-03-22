@@ -1,6 +1,6 @@
 #!/bin/bash
 
-bayeselo = $HOME/src/chess/bayeselo/bayeselo
+bayeselo=$HOME/src/chess/bayeselo/bayeselo
 for pgn in $@; do
     readpgn="${readpgn}readpgn $pgn"$'\n'
 done
