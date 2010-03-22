@@ -57,7 +57,7 @@ static void print_pv(search_data_t* data, int ordinal, int index)
     if (options.verbosity) {
         char sanpv[1024];
         line_to_san_str(&data->root_pos, (move_t*)pv, sanpv);
-        printf("info string sanpv %s\n", sanpv);
+        printf("info string %s\n", sanpv);
     }
     if (is_mate_score(score)) {
         printf("info multipv %d depth %d seldepth %d score mate %d time %d "
