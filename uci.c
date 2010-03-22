@@ -193,6 +193,8 @@ static void uci_handle_ext(char* command)
     } else if (!strncasecmp(command, "help", 4) ||
             !strncasecmp(command, "?", 1)) {
         uci_print_help();
+    } else if (!strncasecmp(command, "echo", 4)) {
+        printf("%s\n", command+5);
     } else {
         move_t m = coord_str_to_move(pos, command);
         if (!m) return;
