@@ -105,10 +105,10 @@ void read_book_entry(int index, book_entry_t* entry)
 {
     fseek(book, index * 16, SEEK_SET);
     fread(entry, 16, 1, book);
-    entry->key = ntohll(entry->key);
-    entry->move = ntohs(entry->move);
-    entry->weight = ntohs(entry->weight);
-    entry->learn = ntohl(entry->learn);
+    entry->key = my_ntohll(entry->key);
+    entry->move = my_ntohs(entry->move);
+    entry->weight = my_ntohs(entry->weight);
+    entry->learn = my_ntohl(entry->learn);
 }
 
 /*
@@ -137,9 +137,9 @@ move_t book_move_to_move(position_t* pos, uint16_t book_move)
             }
             continue;
         }
-        if (from == get_move_from(move) &&
-                to == get_move_to(move) &&
-                get_move_promote(move) == promote_type) return move;
+        if ((piece_type_t)get_move_promote(move) == promote_type &&
+                from == get_move_from(move) &&
+                to == get_move_to(move)) return move;
     }
     return NO_MOVE;
 }

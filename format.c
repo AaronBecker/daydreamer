@@ -125,9 +125,9 @@ move_t coord_str_to_move(position_t* pos, const char* coord_move)
             }
             continue;
         }
-        if (from == get_move_from(move) &&
-                to == get_move_to(move) &&
-                get_move_promote(move) == promote_type) return move;
+        if ((piece_type_t)get_move_promote(move) == promote_type &&
+                from == get_move_from(move) &&
+                to == get_move_to(move)) return move;
     }
     return NO_MOVE;
 }
@@ -279,7 +279,7 @@ move_t san_str_to_move(position_t* pos, char* san)
     for (move_t* move = moves; *move; ++move) {
         if (get_move_to(*move) != to_sq) continue;
         if (get_move_piece_type(*move) != piece_type) continue;
-        if (get_move_promote(*move) != promote_type) continue;
+        if ((piece_type_t)get_move_promote(*move) != promote_type) continue;
         square_t from = get_move_from(*move);
         if (from_file != FILE_NONE && square_file(from) != from_file) continue;
         if (from_rank != RANK_NONE && square_rank(from) != from_rank) continue;

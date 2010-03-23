@@ -82,8 +82,8 @@ bool init_ctg_book(char* filename)
 
     // Read out upper and lower page limits.
     fread(&page_bounds, 12, 1, ctb_file);
-    page_bounds.low = ntohl(page_bounds.low);
-    page_bounds.high = ntohl(page_bounds.high);
+    page_bounds.low = my_ntohl((uint32_t)page_bounds.low);
+    page_bounds.high = my_ntohl((uint32_t)page_bounds.high);
     assert(page_bounds.low <= page_bounds.high);
     fclose(ctb_file);
     return true;
@@ -290,7 +290,7 @@ static bool ctg_get_page_index(int hash, int* page_index)
             //printf("found entry with key=%d\n", key);
             fseek(cto_file, 16 + key*4, SEEK_SET);
             fread(page_index, 4, 1, cto_file);
-            *page_index = ntohl(*page_index);
+            *page_index = my_ntohl((uint32_t)*page_index);
             if (*page_index >= 0) return true;
         }
     }

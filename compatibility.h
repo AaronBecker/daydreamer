@@ -33,7 +33,9 @@ extern "C" {
 #define srandom         srand
 #define strcasecmp      _stricmp
 #define strncasecmp     _strnicmp
+#define sleep           Sleep
 int _strnicmp(const char *string1, const char *string2, size_t count);
+int _stricmp(const char *string1, const char *string2);
 char* strcasestr(register char *s, register char *find);
 char* strsep(char **stringp, const char *delim);
 #define DIR_SEP     "\\"
@@ -54,6 +56,7 @@ typedef __int16 int16_t;
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/time.h>
+#include <unistd.h>
 #endif
 
 // Cache line size
@@ -82,7 +85,7 @@ typedef __int16 int16_t;
 // Endian-ness fixers. I provide my own versions to give support for 64-bit
 // types and to avoid the need to link in the winsock library on Windows.
 extern bool big_endian;
-#define ntohll(x) \
+#define my_ntohll(x) \
     (!big_endian ? \
     ((((uint64_t)(x) & 0xff00000000000000ULL) >> 56) | \
      (((uint64_t)(x) & 0x00ff000000000000ULL) >> 40) | \
@@ -93,26 +96,23 @@ extern bool big_endian;
      (((uint64_t)(x) & 0x000000000000ff00ULL) << 40) | \
      (((uint64_t)(x) & 0x00000000000000ffULL) << 56)) : \
      (x))
-#define htonll(x) ntohll(x)
+#define my_htonll(x) my_ntohll(x)
 
-#define ntohl(x) \
+#define my_ntohl(x) \
     (!big_endian ? \
     ((((uint32_t)(x) & 0xff000000) >> 24) | \
      (((uint32_t)(x) & 0x00ff0000) >>  8) | \
      (((uint32_t)(x) & 0x0000ff00) <<  8) | \
      (((uint32_t)(x) & 0x000000ff) << 24)) : \
      (x))
-#define htonl(x) ntohl(x)
+#define my_htonl(x) my_ntohl(x)
 
-#define ntohs(x) \
+#define my_ntohs(x) \
     (!big_endian ? \
     ((((uint16_t)(x) & 0xff00) >>  8) | \
      (((uint16_t)(x) & 0x00ff) <<  8)) : \
      (x))
-#define htons(x) ntohs(x)
-
-
-
+#define my_htons(x) my_ntohs(x)
 
 #ifdef __cplusplus
 }
