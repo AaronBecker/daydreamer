@@ -457,7 +457,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
 
     position_t* pos = &search_data->root_pos;
     options.use_gtb_dtm = (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
-            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] >
+            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] <=
             options.max_egtb_pieces && options.use_gtb);
 
     // If |search_data| already has a list of root moves, we search only

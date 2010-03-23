@@ -125,10 +125,10 @@ extern search_data_t root_data;
 #define POLL_INTERVAL   0x3fff
 #define MATE_VALUE      32000
 #define DRAW_VALUE      0
+#define MIN_MATE_VALUE (MATE_VALUE-1024)
 
 #define is_mate_score(score)    \
-    (((score)+MAX_SEARCH_PLY+1>MATE_VALUE) || \
-     ((score)-MAX_SEARCH_PLY-1<-MATE_VALUE))
+    (((score)>MIN_MATE_VALUE) || ((score)<-MIN_MATE_VALUE))
 #define mate_in(ply)                (MATE_VALUE-(ply))
 #define mated_in(ply)               (-MATE_VALUE+(ply))
 #define should_output(s)    \

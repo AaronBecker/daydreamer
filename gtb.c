@@ -206,8 +206,8 @@ bool probe_gtb_soft(const position_t* pos, int* score)
     int success = tb_probe_WDL_soft(stm, ep, castle, ws, bs, wp, bp, &res);
     if (success) {
         if (res == tb_DRAW) *score = DRAW_VALUE;
-        else if (res == tb_BMATE) *score = -MATE_VALUE + MAX_SEARCH_PLY;
-        else if (res == tb_WMATE) *score = MATE_VALUE - MAX_SEARCH_PLY;
+        else if (res == tb_BMATE) *score = -MATE_VALUE + 1024;
+        else if (res == tb_WMATE) *score = MATE_VALUE - 1024;
         else assert(false);
         if (pos->side_to_move == BLACK) *score *= -1;
     }
@@ -259,8 +259,8 @@ bool probe_gtb_hard(const position_t* pos, int* score)
     int success = tb_probe_WDL_hard(stm, ep, castle, ws, bs, wp, bp, &res);
     if (success) {
         if (res == tb_DRAW) *score = DRAW_VALUE;
-        else if (res == tb_BMATE) *score = -MATE_VALUE + MAX_SEARCH_PLY;
-        else if (res == tb_WMATE) *score = MATE_VALUE - MAX_SEARCH_PLY;
+        else if (res == tb_BMATE) *score = -MIN_MATE_VALUE;
+        else if (res == tb_WMATE) *score = MIN_MATE_VALUE;
         else assert(false);
         if (pos->side_to_move == BLACK) *score *= -1;
     }
@@ -292,8 +292,8 @@ bool probe_gtb_firm_dtm(const position_t* pos, int* score)
             gtb_args->ws, gtb_args->bs, gtb_args->wp, gtb_args->bp, &res, &val);
     if (success) {
         if (res == tb_DRAW) *score = DRAW_VALUE;
-        else if (res == tb_BMATE) *score = -MATE_VALUE + MAX_SEARCH_PLY;
-        else if (res == tb_WMATE) *score = MATE_VALUE - MAX_SEARCH_PLY;
+        else if (res == tb_BMATE) *score = -MIN_MATE_VALUE;
+        else if (res == tb_WMATE) *score = MIN_MATE_VALUE;
         else assert(false);
         if (pos->side_to_move == BLACK) *score *= -1;
         return true;
@@ -330,12 +330,13 @@ bool probe_gtb_firm(const position_t* pos, int* score)
             gtb_args->wp, gtb_args->bp);
 
     unsigned res;
-    int success = tb_probe_WDL_soft(gtb_args->stm, gtb_args->ep, gtb_args->castle,
-            gtb_args->ws, gtb_args->bs, gtb_args->wp, gtb_args->bp, &res);
+    int success = tb_probe_WDL_soft(gtb_args->stm, gtb_args->ep,
+            gtb_args->castle, gtb_args->ws, gtb_args->bs,
+            gtb_args->wp, gtb_args->bp, &res);
     if (success) {
         if (res == tb_DRAW) *score = DRAW_VALUE;
-        else if (res == tb_BMATE) *score = -MATE_VALUE + MAX_SEARCH_PLY;
-        else if (res == tb_WMATE) *score = MATE_VALUE - MAX_SEARCH_PLY;
+        else if (res == tb_BMATE) *score = -MIN_MATE_VALUE;
+        else if (res == tb_WMATE) *score = MIN_MATE_VALUE;
         else assert(false);
         if (pos->side_to_move == BLACK) *score *= -1;
         return true;
