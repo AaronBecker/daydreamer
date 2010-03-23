@@ -230,10 +230,13 @@ static bool check_eg_database(position_t* pos,
         int* score)
 {
     if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
-            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] > 5) return false;
+            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] >
+            options.max_egtb_pieces) return false;
     if (options.use_gtb) {
-        // For DTM tablebases, just look.
-        if (probe_gtb_firm(pos, score)) {
+        bool success;
+        if (options.use_gtb_dtm) success = probe_gtb_firm_dtm(pos, score);
+        else success = probe_gtb_firm(pos, score);
+        if (success) {
             ++root_data.stats.egbb_hits;
             return true;
         }
@@ -452,12 +455,17 @@ void deepening_search(search_data_t* search_data, bool ponder)
         } else options.out_of_book = true;
     }
 
+    position_t* pos = &search_data->root_pos;
+    options.use_gtb_dtm = (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
+            pos->num_pawns[WHITE] + pos->num_pawns[BLACK] >
+            options.max_egtb_pieces && options.use_gtb);
+
     // If |search_data| already has a list of root moves, we search only
     // those moves. Otherwise, search everything. This allows support for the
     // uci searchmoves command.
     if (search_data->root_moves[0].move == NO_MOVE) {
         move_t moves[256];
-        generate_legal_moves(&search_data->root_pos, moves);
+        generate_legal_moves(pos, moves);
         for (int i=0; moves[i]; ++i) {
             init_root_move(&search_data->root_moves[i], moves[i]);
         }
@@ -505,7 +513,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         score_type_t score_type = SCORE_EXACT;
         if (result == SEARCH_FAIL_LOW) score_type = SCORE_UPPERBOUND;
         else if (result == SEARCH_FAIL_HIGH) score_type = SCORE_LOWERBOUND;
-        put_transposition_line(&search_data->root_pos,
+        put_transposition_line(pos,
                 search_data->pv,
                 (int)depth,
                 search_data->best_score,
@@ -960,7 +968,7 @@ static int quiesce(position_t* pos,
 
     int score;
     // Check endgame bitbases/tablebases if appropriate
-    if (check_eg_database(pos, depth, ply, alpha, beta, &score)) return score;
+    //if (check_eg_database(pos, depth, ply, alpha, beta, &score)) return score;
 
     eval_data_t ed;
     if (ply >= MAX_SEARCH_PLY-1) return full_eval(pos, &ed);

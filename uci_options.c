@@ -1,7 +1,9 @@
 
 #include "daydreamer.h"
+#include "gtb/gtb-probe.h"
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef enum {
@@ -288,16 +290,20 @@ static void handle_gtb_cache(void* opt, char* value)
 }
 
 /*
- * Sets the Gaviota tablebase thread pool size.
+ * Sets the Gaviota tablebase compression scheme.
  */
-static void handle_gtb_pool(void* opt, char* value)
+static void handle_gtb_scheme(void* opt, char* value)
 {
+    if (!value) return;
     uci_option_t* option = opt;
-    if (!option->value) return;
-    strncpy(option->value, value, 128);
-    int size;
-    sscanf(value, "%d", &size);
-    memcpy(option->address, &size, sizeof(int));
+    if (value) strncpy(option->value, value, 128);
+    options.gtb_scheme = tb_CP4;
+    if (!strcasecmp(value, "uncompressed")) {
+        options.gtb_scheme = tb_UNCOMPRESSED;
+    } else if (!strcasecmp(value, "cp1")) options.gtb_scheme = tb_CP1;
+    else if (!strcasecmp(value, "cp2")) options.gtb_scheme = tb_CP2;
+    else if (!strcasecmp(value, "cp3")) options.gtb_scheme = tb_CP3;
+    else if (!strcasecmp(value, "cp4")) options.gtb_scheme = tb_CP4;
     if (options.use_gtb) {
         load_gtb(get_option_string("gaviota tablebase path"),
                 options.gtb_cache_size*1024*1024);
@@ -383,10 +389,13 @@ void init_uci_options()
             0, 0, NULL, &options.use_gtb, &handle_gtb_use);
     add_uci_option("Gaviota tablebase path", OPTION_STRING, ".",
             0, 0, NULL, NULL, &handle_gtb_path);
+    char* schemes[6] = { "uncompressed", "cp1", "cp2", "cp3", "cp4", NULL };
+    add_uci_option("Gaviota compression scheme", OPTION_COMBO, "cp4",
+            0, 0, schemes, &options.gtb_scheme, &handle_gtb_scheme);
     add_uci_option("Gaviota tablebase cache size", OPTION_SPIN, "32",
             0, 4096, NULL, &options.gtb_cache_size, &handle_gtb_cache);
-    add_uci_option("Endgame database thread pool size", OPTION_SPIN, "2",
-            0, 16, NULL, &options.eg_pool_threads, &handle_gtb_pool);
+    add_uci_option("Tablebase pieces", OPTION_SPIN, "5",
+            3, 6, NULL, &options.max_egtb_pieces, &default_handler);
     add_uci_option("Use Scorpio bitbases", OPTION_CHECK, "false",
             0, 0, NULL, &options.use_egbb, &handle_egbb_use);
     add_uci_option("Scorpio bitbase path", OPTION_STRING, ".",

@@ -9,7 +9,7 @@
 #define stm_to_gtb(s)       (s)
 #define castle_to_gtb(c)    castle_to_gtb_table[c]
 #define DEFAULT_GTB_CACHE_SIZE  (32*1024*1024)
-#define WDL_CACHE_FRACTION  0
+#define WDL_CACHE_FRACTION  112
 
 static const char** tb_paths = NULL;
 static const int piece_to_gtb_table[] = {
@@ -35,23 +35,25 @@ static const int castle_to_gtb_table[] = {
     tb_BOOO | tb_WOOO | tb_BOO | tb_WOO,
 };
 
-#define GTB_MAX_POOL_SIZE   16
 typedef struct {
     int stm, ep, castle;
     unsigned int ws[17], bs[17];
     unsigned char wp[17], bp[17];
-    uint8_t _pad[CACHE_LINE_BYTES -
-        ((3*sizeof(int) +
-          2*17*sizeof(int) +
-          2*17*sizeof(char)) % CACHE_LINE_BYTES)];
-} gtb_pool_args_t;
+} gtb_args_t;
 
-static thread_pool_t gtb_pool_storage;
-static thread_pool_t* gtb_pool = NULL;
-CACHE_ALIGN static thread_info_t gtb_pool_info[GTB_MAX_POOL_SIZE];
-CACHE_ALIGN static gtb_pool_args_t gtb_pool_args[GTB_MAX_POOL_SIZE];
-
-void* gtb_probe_firm_worker(void* payload);
+static gtb_args_t worker_args;
+#ifdef WINDOWS_THREADS
+HANDLE worker_mutex;
+HANDLE worker_thread;
+static DWORD WINAPI gtb_probe_firm_worker(LPVOID payload);
+#else
+#include <pthread.h>
+pthread_mutex_t worker_mutex;
+pthread_t worker_thread;
+static void* gtb_probe_firm_worker(void* payload);
+#endif
+bool worker_task_ready;
+bool worker_quit;
 
 /*
  * Given a string identifying the location of Gaviota tb's, load those
@@ -69,21 +71,32 @@ bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
         if (!*path) continue;
         tb_paths = tbpaths_add(tb_paths, path);
     }
-    int scheme = tb_CP4;
     int verbosity = 0;
-    tb_init(verbosity, scheme, tb_paths);
+    tb_init(verbosity, options.gtb_scheme, tb_paths);
     if (!cache_size_bytes) cache_size_bytes = DEFAULT_GTB_CACHE_SIZE;
     tbcache_init(cache_size_bytes, WDL_CACHE_FRACTION);
     tbstats_reset();
     bool success = tb_is_initialized() && tbcache_is_on();
     if (success) {
         if (options.verbosity) {
-            printf("info string loaded Gaviota TBs with a pool of %d threads\n",
-                    options.eg_pool_threads);
+            printf("info string loaded Gaviota TBs\n");
         }
-        gtb_pool = &gtb_pool_storage;
-        init_thread_pool(gtb_pool, gtb_pool_args, gtb_pool_info,
-            sizeof(gtb_pool_args_t), options.eg_pool_threads);
+        worker_task_ready = false;
+        worker_quit = false;
+#ifdef WINDOWS_THREADS
+        worker_mutex = CreateMutex(NULL, FALSE, NULL);
+        worker_thread = CreateThread(
+                NULL, 0, gtb_probe_firm_worker, NULL, 0, NULL);
+        if (!worker_thread) {
+            printf("Thread creation failed\n");
+        }
+#else
+        pthread_mutex_init(&worker_mutex, NULL);
+	if (pthread_create(&worker_thread,
+                    NULL,
+                    gtb_probe_firm_worker,
+                    NULL)) perror("Worker thread creation failed.\n");
+#endif
     } else if (options.verbosity) {
         printf("info string failed to load Gaviota TBs\n");
     }
@@ -91,7 +104,7 @@ bool load_gtb(char* gtb_pathlist, int cache_size_bytes)
 }
 
 /*
- * Unload all tablebases and destroy the thread pool used for probing
+ * Unload all tablebases and destroy the thread used for probing
  * during search.
  */
 void unload_gtb(void)
@@ -100,10 +113,15 @@ void unload_gtb(void)
     tbcache_done();
     tb_done();
     tb_paths = tbpaths_done(tb_paths);
-    if (gtb_pool) {
-        destroy_thread_pool(gtb_pool);
-        gtb_pool = NULL;
-    }
+    worker_quit = true;
+    worker_task_ready = true;
+    while (worker_quit) sleep(0);
+#ifdef WINDOWS_THREADS
+    CloseHandle(worker_mutex);
+    CloseHandle(worker_thread);
+#else
+    pthread_mutex_destroy(&worker_mutex);
+#endif
 }
 
 /*
@@ -147,8 +165,9 @@ static void fill_gtb_arrays(const position_t* pos,
 
 /*
  * Probe the tb cache only, without considering what's available on disk.
+ * Get DTM information instead of just WDL.
  */
-bool probe_gtb_soft(const position_t* pos, int* score)
+bool probe_gtb_soft_dtm(const position_t* pos, int* score)
 {
     int stm = stm_to_gtb(pos->side_to_move);
     int ep = ep_to_gtb(pos->ep_square);
@@ -160,6 +179,58 @@ bool probe_gtb_soft(const position_t* pos, int* score)
 
     unsigned res, val;
     int success = tb_probe_soft(stm, ep, castle, ws, bs, wp, bp, &res, &val);
+    if (success) {
+        if (res == tb_DRAW) *score = DRAW_VALUE;
+        else if (res == tb_BMATE) *score = mated_in(val);
+        else if (res == tb_WMATE) *score = mate_in(val);
+        else assert(false);
+        if (pos->side_to_move == BLACK) *score *= -1;
+    }
+    return success;
+}
+
+/*
+ * Probe the tb cache only, without considering what's available on disk.
+ */
+bool probe_gtb_soft(const position_t* pos, int* score)
+{
+    int stm = stm_to_gtb(pos->side_to_move);
+    int ep = ep_to_gtb(pos->ep_square);
+    int castle = castle_to_gtb(pos->castle_rights);
+
+    unsigned int ws[17], bs[17];
+    unsigned char wp[17], bp[17];
+    fill_gtb_arrays(pos, ws, bs, wp, bp);
+
+    unsigned res;
+    int success = tb_probe_WDL_soft(stm, ep, castle, ws, bs, wp, bp, &res);
+    if (success) {
+        if (res == tb_DRAW) *score = DRAW_VALUE;
+        else if (res == tb_BMATE) *score = -MATE_VALUE + MAX_SEARCH_PLY;
+        else if (res == tb_WMATE) *score = MATE_VALUE - MAX_SEARCH_PLY;
+        else assert(false);
+        if (pos->side_to_move == BLACK) *score *= -1;
+    }
+    return success;
+}
+
+/*
+ * Probe all tbs, using the cache if available, but blocking and waiting for
+ * disk if we miss in cache.
+ * Get DTM information instead of just WDL.
+ */
+bool probe_gtb_hard_dtm(const position_t* pos, int* score)
+{
+    int stm = stm_to_gtb(pos->side_to_move);
+    int ep = ep_to_gtb(pos->ep_square);
+    int castle = castle_to_gtb(pos->castle_rights);
+
+    unsigned int ws[17], bs[17];
+    unsigned char wp[17], bp[17];
+    fill_gtb_arrays(pos, ws, bs, wp, bp);
+
+    unsigned res, val;
+    int success = tb_probe_hard(stm, ep, castle, ws, bs, wp, bp, &res, &val);
     if (success) {
         if (res == tb_DRAW) *score = DRAW_VALUE;
         else if (res == tb_BMATE) *score = mated_in(val);
@@ -184,39 +255,30 @@ bool probe_gtb_hard(const position_t* pos, int* score)
     unsigned char wp[17], bp[17];
     fill_gtb_arrays(pos, ws, bs, wp, bp);
 
-    unsigned res, val;
-    int success = tb_probe_hard(stm, ep, castle, ws, bs, wp, bp, &res, &val);
+    unsigned res;
+    int success = tb_probe_WDL_hard(stm, ep, castle, ws, bs, wp, bp, &res);
     if (success) {
         if (res == tb_DRAW) *score = DRAW_VALUE;
-        else if (res == tb_BMATE) *score = mated_in(val);
-        else if (res == tb_WMATE) *score = mate_in(val);
+        else if (res == tb_BMATE) *score = -MATE_VALUE + MAX_SEARCH_PLY;
+        else if (res == tb_WMATE) *score = MATE_VALUE - MAX_SEARCH_PLY;
         else assert(false);
         if (pos->side_to_move == BLACK) *score *= -1;
     }
     return success;
 }
 
-#ifndef GTB_WINDOWS
-
 /*
  * A compromise between probe_hard and probe_soft. Check the cache, and return
  * if the position is found. If not, use a thread to load the position into
  * cache in the background while we return to the main search. The background
- * load uses a thread pool, and has minimal load implications because the
- * worker threads are blocked nearly 100% of the time.
+ * load uses a worker thread, and has minimal load implications because the
+ * thread is blocked nearly 100% of the time.
+ * Get DTM information instead of just WDL.
  */
-bool probe_gtb_firm(const position_t* pos, int* score)
+bool probe_gtb_firm_dtm(const position_t* pos, int* score)
 {
-    int pool_slot;
-    gtb_pool_args_t* gtb_args;
-    void* slot_addr;
-    bool available_slot = get_slot(gtb_pool, &pool_slot, &slot_addr);
-    if (!available_slot) {
-        gtb_pool_args_t args_storage;
-        gtb_args = &args_storage;
-    } else {
-        gtb_args = (gtb_pool_args_t*)slot_addr;
-    }
+    gtb_args_t args_storage;
+    gtb_args_t* gtb_args = &args_storage;
 
     gtb_args->stm = stm_to_gtb(pos->side_to_move);
     gtb_args->ep = ep_to_gtb(pos->ep_square);
@@ -230,43 +292,114 @@ bool probe_gtb_firm(const position_t* pos, int* score)
             gtb_args->ws, gtb_args->bs, gtb_args->wp, gtb_args->bp, &res, &val);
     if (success) {
         if (res == tb_DRAW) *score = DRAW_VALUE;
-        else if (res == tb_BMATE) *score = mated_in(val);
-        else if (res == tb_WMATE) *score = mate_in(val);
+        else if (res == tb_BMATE) *score = -MATE_VALUE + MAX_SEARCH_PLY;
+        else if (res == tb_WMATE) *score = MATE_VALUE - MAX_SEARCH_PLY;
         else assert(false);
         if (pos->side_to_move == BLACK) *score *= -1;
         return true;
     }
 
-    if (available_slot) run_thread(gtb_pool, gtb_probe_firm_worker, pool_slot);
+    if (worker_task_ready) return false;
+#ifdef WINDOWS_THREADS
+    if (WaitForSingleObject(worker_mutex, 0) != WAIT_OBJECT_0) return false;
+#else
+    if (pthread_mutex_trylock(&worker_mutex)) return false;
+#endif
+    memcpy(&worker_args, gtb_args, sizeof(gtb_args_t));
+    worker_task_ready = true;
+    return false;
+}
+
+/*
+ * A compromise between probe_hard and probe_soft. Check the cache, and return
+ * if the position is found. If not, use a thread to load the position into
+ * cache in the background while we return to the main search. The background
+ * load uses a worker thread, and has minimal load implications because the
+ * thread is blocked nearly 100% of the time.
+ */
+bool probe_gtb_firm(const position_t* pos, int* score)
+{
+    gtb_args_t args_storage;
+    gtb_args_t* gtb_args = &args_storage;
+
+    gtb_args->stm = stm_to_gtb(pos->side_to_move);
+    gtb_args->ep = ep_to_gtb(pos->ep_square);
+    gtb_args->castle = castle_to_gtb(pos->castle_rights);
+
+    fill_gtb_arrays(pos, gtb_args->ws, gtb_args->bs,
+            gtb_args->wp, gtb_args->bp);
+
+    unsigned res;
+    int success = tb_probe_WDL_soft(gtb_args->stm, gtb_args->ep, gtb_args->castle,
+            gtb_args->ws, gtb_args->bs, gtb_args->wp, gtb_args->bp, &res);
+    if (success) {
+        if (res == tb_DRAW) *score = DRAW_VALUE;
+        else if (res == tb_BMATE) *score = -MATE_VALUE + MAX_SEARCH_PLY;
+        else if (res == tb_WMATE) *score = MATE_VALUE - MAX_SEARCH_PLY;
+        else assert(false);
+        if (pos->side_to_move == BLACK) *score *= -1;
+        return true;
+    }
+
+    if (worker_task_ready) return false;
+#ifdef WINDOWS_THREADS
+    if (WaitForSingleObject(worker_mutex, 0) != WAIT_OBJECT_0) return false;
+#else
+    if (pthread_mutex_trylock(&worker_mutex)) return false;
+#endif
+    memcpy(&worker_args, gtb_args, sizeof(gtb_args_t));
+    worker_task_ready = true;
     return false;
 }
 
 /*
  * The worker function for background probing in probe_firm.
  */
-void* gtb_probe_firm_worker(void* payload)
-{
-    gtb_pool_args_t* gtb_args = (gtb_pool_args_t*)payload;
-    unsigned res, val;
-    int success = tb_probe_hard(gtb_args->stm,
-            gtb_args->ep,
-            gtb_args->castle,
-            gtb_args->ws,
-            gtb_args->bs,
-            gtb_args->wp,
-            gtb_args->bp,
-            &res,
-            &val);
-    (void)success;
-    return NULL;
-}
-
+#ifdef WINDOWS_THREADS
+DWORD WINAPI gtb_probe_firm_worker(LPVOID payload)
 #else
-
-bool probe_gtb_firm(const position_t* pos, int* value)
-{
-    return probe_gtb_soft(pos, value);
-}
-
+void* gtb_probe_firm_worker(void* payload)
 #endif
+{
+    (void)payload;
+    while (true) {
+        // Wait for a readied task.
+        int counter = 0;
+        while (++counter < 5000 && !worker_task_ready) {}
+        if (!worker_task_ready) {
+            while (!worker_task_ready) sleep(0);
+        }
+
+        // We've been woken back up, there must be something for us to do.
+        if (worker_quit) break;
+
+        unsigned res;
+        int success = tb_probe_WDL_hard(worker_args.stm,
+                worker_args.ep,
+                worker_args.castle,
+                worker_args.ws,
+                worker_args.bs,
+                worker_args.wp,
+                worker_args.bp,
+                &res);
+        (void)success;
+        if (worker_quit) break;
+
+        worker_task_ready = false;
+#ifdef WINDOWS_THREADS
+        if (!ReleaseMutex(worker_mutex)) assert(false);
+#else
+        pthread_mutex_unlock(&worker_mutex);
+#endif
+    }
+
+    worker_task_ready = false;
+    worker_quit = false;
+#ifdef WINDOWS_THREADS
+    if (!ReleaseMutex(worker_mutex)) assert(false);
+#else
+    pthread_mutex_unlock(&worker_mutex);
+#endif
+    return 0;
+}
 

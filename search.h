@@ -40,8 +40,10 @@ typedef struct {
     bool out_of_book;
     bool use_egbb;
     bool use_gtb;
+    bool use_gtb_dtm;
     int gtb_cache_size;
-    int eg_pool_threads;
+    int gtb_scheme;
+    int max_egtb_pieces;
     int verbosity;
     bool chess960;
     bool arena_castle;
