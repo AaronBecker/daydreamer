@@ -146,7 +146,7 @@ static void uci_handle_ext(char* command)
     } else if (!strncasecmp(command, "gtb", 3)) {
         if (options.use_gtb) {
             int score;
-            bool success = probe_gtb_hard(pos, &score);
+            bool success = probe_gtb_hard_dtm(pos, &score);
             if (success) {
                 printf("score: %d\n", score == 0 ? 0 :
                         (MATE_VALUE-abs(score)) *

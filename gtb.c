@@ -292,8 +292,8 @@ bool probe_gtb_firm_dtm(const position_t* pos, int* score)
             gtb_args->ws, gtb_args->bs, gtb_args->wp, gtb_args->bp, &res, &val);
     if (success) {
         if (res == tb_DRAW) *score = DRAW_VALUE;
-        else if (res == tb_BMATE) *score = -MIN_MATE_VALUE;
-        else if (res == tb_WMATE) *score = MIN_MATE_VALUE;
+        else if (res == tb_BMATE) *score = mated_in(val);
+        else if (res == tb_WMATE) *score = mate_in(val);
         else assert(false);
         if (pos->side_to_move == BLACK) *score *= -1;
         return true;
