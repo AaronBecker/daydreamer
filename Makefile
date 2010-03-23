@@ -2,7 +2,6 @@
 CLANGFLAGS =
 GCCFLAGS = --std=c99
 ARCHFLAGS = -m64
-#ARCHFLAGS = -m32
 
 CLANGHOME = $(HOME)/local/clang
 SCANVIEW = $(CLANGHOME)/scan-build
@@ -10,7 +9,6 @@ ANALYZER = $(CLANGHOME)/libexec/ccc-analyzer
 #CC = /opt/local/bin/gcc $(GCCFLAGS)
 CC = /usr/bin/gcc $(GCCFLAGS)
 #CC = $(CLANGHOME)/bin/clang $(CLANGFLAGS)
-#CC = i386-mingw32-gcc $(GCCFLAGS)
 CTAGS = ctags
 
 COMMONFLAGS = -Wall -Wextra -Wno-unused-function $(ARCHFLAGS) -Igtb
