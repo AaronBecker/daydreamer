@@ -11,7 +11,7 @@ bitboard_t file_mask[8] = {
 };
 bitboard_t neighbor_file_mask[8] = {
     FILE_B_BB, FILE_A_BB|FILE_C_BB, FILE_B_BB|FILE_D_BB, FILE_C_BB|FILE_E_BB,
-    FILE_D_BB|FILE_F_BB, FILE_E_BB|FILE_G_BB, FILE_F_BB|FILE_H_BB, FILE_B_BB
+    FILE_D_BB|FILE_F_BB, FILE_E_BB|FILE_G_BB, FILE_F_BB|FILE_H_BB, FILE_G_BB
 };
 bitboard_t set_mask[64];
 bitboard_t clear_mask[64];
