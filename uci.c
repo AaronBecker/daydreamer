@@ -324,6 +324,7 @@ static void calculate_search_time(int wtime,
         int movestogo)
 {
     // TODO: Cool heuristics for time mangement.
+    // TODO: formula for expected number of remaining moves.
     // For now, just use a simple static rule and look at our own time only.
     color_t side = root_data.root_pos.side_to_move;
     int inc = side == WHITE ? winc : binc;
@@ -334,11 +335,9 @@ static void calculate_search_time(int wtime,
         root_data.time_limit = MAX(time/5, inc-250);
     } else {
         // x/y time control
-        root_data.time_target = movestogo == 1 ?
-            time/2 :
-            time/MIN(movestogo, 20);
+        root_data.time_target = time/CLAMP(movestogo, 2, 20);
         root_data.time_limit = movestogo == 1 ?
-            MAX(time-250, time*3/4) :
+            MAX(time-250, time/2) :
             MIN(time/4, time*4/movestogo);
     }
     if (options.ponder) {
