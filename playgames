@@ -53,7 +53,8 @@ def main(argv=None):
     gamecount = args[2]
     outfile_base = args[3]
     if not programs.has_key(primary_engine):
-        pr_eng_str = 'cmd=' + daydreamer_path + primary_engine + ' proto=uci'
+        pr_eng_str = 'dir=' + daydreamer_path + \
+                ' cmd=./' + primary_engine + ' proto=uci'
     else:
         pr_eng_str = programs[primary_engine]
     for engine in engines:
