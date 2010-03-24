@@ -300,11 +300,6 @@ bool probe_gtb_firm_dtm(const position_t* pos, int* score)
     }
 
     if (worker_task_ready) return false;
-#ifdef WINDOWS_THREADS
-    if (WaitForSingleObject(worker_mutex, 0) != WAIT_OBJECT_0) return false;
-#else
-    if (pthread_mutex_trylock(&worker_mutex)) return false;
-#endif
     memcpy(&worker_args, gtb_args, sizeof(gtb_args_t));
     worker_task_ready = true;
     return false;
@@ -343,11 +338,6 @@ bool probe_gtb_firm(const position_t* pos, int* score)
     }
 
     if (worker_task_ready) return false;
-#ifdef WINDOWS_THREADS
-    if (WaitForSingleObject(worker_mutex, 0) != WAIT_OBJECT_0) return false;
-#else
-    if (pthread_mutex_trylock(&worker_mutex)) return false;
-#endif
     memcpy(&worker_args, gtb_args, sizeof(gtb_args_t));
     worker_task_ready = true;
     return false;
@@ -387,20 +377,10 @@ void* gtb_probe_firm_worker(void* payload)
         if (worker_quit) break;
 
         worker_task_ready = false;
-#ifdef WINDOWS_THREADS
-        if (!ReleaseMutex(worker_mutex)) assert(false);
-#else
-        pthread_mutex_unlock(&worker_mutex);
-#endif
     }
 
     worker_task_ready = false;
     worker_quit = false;
-#ifdef WINDOWS_THREADS
-    if (!ReleaseMutex(worker_mutex)) assert(false);
-#else
-    pthread_mutex_unlock(&worker_mutex);
-#endif
     return 0;
 }
 
