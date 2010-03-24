@@ -30,24 +30,27 @@ static void uci_print_help(void)
 "at http://wbec-ridderkerk.nl/html/UCIProtocol.html. In addition to the  \n"
 "standard UCI commands, Daydreamer understands some non-standard commands:\n"
 "\n"
-"    print    \tPrint the current position, along with some evaluation info.\n"
-"    perft <n>\tPrint the number of positions that could be reached from the "
-"             \tcurrent position in exactly <n> moves.\n"
-"    divide <n>\tThe same as perft, but break numbers down by root move.\n"
-"    see <move>\tPrint the static exchange evaluation score of the given "
+"    print     \tPrint the current position, along with some evaluation info.\n"
+"    perft <n>  \tPrint the number of positions that could be reached from the "
+"               \tcurrent position in exactly <n> moves.\n"
+"    divide <n> \tThe same as perft, but break numbers down by root move.\n"
+"    see <move> \tPrint the static exchange evaluation score of the given "
 "move.\n"
 "    bench <depth>\n"
-"             \tSearch a fixed set of positions to the given depth, and\n"
-"             \treport the total nodes searched and time taken.\n"
+"               \tSearch a fixed set of positions to the given depth, and\n"
+"               \treport the total nodes searched and time taken.\n"
 "    perftsuite <filename>\n"
-"             \tRun a suite of perft tests from a file in the format\n"
-"             \tdescribed at www.rocechess.ch/rocee.html\n"
+"               \tRun a suite of perft tests from a file in the format\n"
+"               \tdescribed at www.rocechess.ch/rocee.html\n"
 "   epd <filename> <time>\n"
-"             \tRead the given epd file, and search each position for <time>\n"
-"             \tseconds.\n"
-"   book      \tPrint book information for the current position.\n"
-"             \tUses the currently loaded book.\n"
-"   help      \tPrint this help message."
+"              \tRead the given epd file, and search each position for <time>\n"
+"               \tseconds.\n"
+"   book        \tPrint book information for the current position.\n"
+"               \tUses the currently loaded book.\n"
+"   <move>      \tMake the given move (eg e2e4) on the internal board.\n"
+"   gtb         \tLook up the current position in the Gaviota Tablebases.\n"
+"   echo <text> \tEcho the given string to standard output.\n"
+"   help        \tPrint this help message."
 "\n\n");
 }
 
@@ -85,8 +88,9 @@ static void uci_handle_command(char* command)
     else if (!strncasecmp(command, "position", 8)) uci_position(command+9);
     else if (!strncasecmp(command, "go", 2)) {
         uci_go(command+3);
-    } else if (!strncasecmp(command, "setoption name", 14)) {
-        set_uci_option(command+15);
+    } else if (!strncasecmp(command, "setoption", 9)) {
+        command = strcasestr(command, "name") + 5;
+        set_uci_option(command);
     } else if (!strncasecmp(command, "stop", 4)) {
         root_data.engine_status = ENGINE_ABORTED;
     } else if (!strncasecmp(command, "ponderhit", 9)) {
