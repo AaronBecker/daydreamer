@@ -24,6 +24,8 @@ else
 fi
 rm $out
 
+echo -e "Players" >> $out
+cat __players.txt >> $out
 echo -e "\nRating" >> $out
 cat __ratings.txt >> $out
 echo -e "\nLOS" >> $out
