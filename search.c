@@ -540,7 +540,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         } else if (id_score >= beta) {
             consecutive_fail_lows = 0;
             consecutive_fail_highs++;
-            search_data->root_indecisiveness += 6;
+            search_data->root_indecisiveness += 3;
         } else {
             consecutive_fail_lows = 0;
             consecutive_fail_highs = 0;
