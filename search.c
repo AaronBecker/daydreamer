@@ -173,19 +173,6 @@ static float extend(position_t* pos,
 static bool should_deepen(search_data_t* data)
 {
     if (should_stop_searching(data)) return false;
-    if (data->infinite || data->engine_status == ENGINE_PONDERING) return true;
-    int so_far = elapsed_time(&data->timer);
-    int real_target = data->time_target + data->time_bonus;
-    
-    // Allocate more search time when the root position is unclear.
-    if (data->current_depth < 6*PLY) data->time_bonus = 0;
-    else data->time_bonus = MAX(data->time_bonus,
-            data->time_target * data->root_indecisiveness / 2);
-
-    // If we're much more than halfway through our time, we won't make it
-    // through the first move of the next iteration anyway.
-    if (data->time_target && real_target - so_far <
-            real_target * 60 / 100) return false;
 
     // Go ahead and quit if we have a mate.
     int* scores = data->scores_by_iteration;
@@ -194,12 +181,24 @@ static bool should_deepen(search_data_t* data)
             is_mate_score(abs(scores[depth--])) &&
             is_mate_score(abs(scores[depth--]))) return false;
 
+    // If we're not on the clock, just keep going.
+    if (data->engine_status == ENGINE_PONDERING || data->infinite) return true;
+
     // We can stop early if our best move is obvious.
     if (obvious_move_enabled && data->obvious_move &&
             data->depth_limit == MAX_SEARCH_PLY &&
             !data->node_limit && data->current_depth >= 7*PLY &&
             get_root_node_count(data->obvious_move) >
             data->nodes_searched * 10 / 9) return false;
+
+    // Allocate more search time when the root position is unclear.
+    if (data->current_depth < 6*PLY) data->time_bonus = 0;
+    else data->time_bonus = MIN(data->time_limit - data->time_target,
+            MAX(data->time_bonus,
+                data->time_target * data->root_indecisiveness / 2));
+
+    int so_far = elapsed_time(&data->timer);
+    int real_target = data->time_target + data->time_bonus;
 
     // Allocate some extra time when the root score drops.
     depth = depth_to_index(data->current_depth);
@@ -214,6 +213,13 @@ static bool should_deepen(search_data_t* data)
     } else {
         data->time_bonus = MAX(data->time_bonus, data->time_target * 7);
     }
+    real_target = data->time_target + data->time_bonus;
+
+    // If we're much more than halfway through our time, we won't make it
+    // through the first move of the next iteration anyway.
+    if (!data->infinite && data->time_target && real_target - so_far <
+            real_target * 60 / 100) return false;
+
     return true;
 }
 
@@ -499,7 +505,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
                 last_score + aspire_low[consecutive_fail_lows];
             beta = consecutive_fail_highs > 2 ? mate_in(-1) :
                 last_score + aspire_high[consecutive_fail_highs];
-            if (options.verbosity) {
+            if (options.verbosity > 1) {
                 printf("info string aspiration window alpha %d beta %d\n",
                         alpha, beta);
             }
@@ -534,7 +540,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
         } else if (id_score >= beta) {
             consecutive_fail_lows = 0;
             consecutive_fail_highs++;
-            search_data->root_indecisiveness += 3;
+            search_data->root_indecisiveness += 6;
         } else {
             consecutive_fail_lows = 0;
             consecutive_fail_highs = 0;
@@ -546,7 +552,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
         }
     }
     stop_timer(&search_data->timer);
-    if (search_data->engine_status == ENGINE_PONDERING) uci_wait_for_command();
+    if (search_data->engine_status == ENGINE_PONDERING ||
+            search_data->infinite) uci_wait_for_command();
 
     search_data->current_depth -= PLY;
     search_data->best_score = id_score;
@@ -646,19 +653,19 @@ static search_result_t root_search(search_data_t* search_data,
                 }
             }
         }
-        if (score <= alpha) {
-            score = mated_in(-1);
-        } else if (search_data->current_move_index >= options.multi_pv) {
-            search_data->root_indecisiveness++;
-        }
-        store_root_data(search_data, move, score, nodes_before);
         undo_move(pos, move, &undo);
         if (search_data->engine_status == ENGINE_ABORTED) return SEARCH_ABORTED;
-        if (score > alpha) {
-            alpha = score;
+        store_root_data(search_data, move, score, nodes_before);
+        if (score <= alpha) {
+            score = mated_in(-1);
+        } else {
+            if (search_data->current_move_index >= options.multi_pv) {
+                search_data->root_indecisiveness++;
+            }
             if (score > search_data->best_score) {
                 search_data->best_score = score;
             }
+            alpha = score;
             update_pv(search_data->pv, search_data->search_stack->pv, 0, move);
             check_line(pos, search_data->pv);
             print_multipv(search_data);
@@ -666,15 +673,15 @@ static search_result_t root_search(search_data_t* search_data,
         search_data->resolving_fail_high = false;
     }
     if (alpha == orig_alpha) {
-        if (options.verbosity > 1 && should_output(search_data)) {
-            printf("info string Root search failed low, alpha %d beta %d\n",
+        if (options.verbosity) {
+            printf("info string root search failed low alpha %d beta %d\n",
                     alpha, beta);
         }
         search_data->stats.root_fail_lows++;
         return SEARCH_FAIL_LOW;
     } else if (alpha >= beta) {
-        if (options.verbosity && should_output(search_data)) {
-            printf("info string Root search failed high, alpha %d beta %d\n",
+        if (options.verbosity) {
+            printf("info string root search failed high alpha %d beta %d\n",
                     orig_alpha, beta);
         }
         search_data->stats.root_fail_highs++;
