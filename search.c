@@ -968,7 +968,7 @@ static int quiesce(position_t* pos,
 
     int score;
     // Check endgame bitbases/tablebases if appropriate
-    //if (check_eg_database(pos, depth, ply, alpha, beta, &score)) return score;
+    if (check_eg_database(pos, depth, ply, alpha, beta, &score)) return score;
 
     eval_data_t ed;
     if (ply >= MAX_SEARCH_PLY-1) return full_eval(pos, &ed);
