@@ -41,7 +41,7 @@ void init_move_selector(move_selector_t* sel,
         generation_t gen_type,
         search_node_t* search_node,
         move_t hash_move,
-        int depth,
+        float depth,
         int ply)
 {
     sel->pos = pos;

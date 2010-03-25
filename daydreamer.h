@@ -162,7 +162,7 @@ void init_move_selector(move_selector_t* sel,
         generation_t gen_type,
         search_node_t* search_node,
         move_t hash_move,
-        int depth,
+        float depth,
         int ply);
 bool has_single_reply(move_selector_t* sel);
 bool should_try_prune(move_selector_t* sel, move_t move);
@@ -221,13 +221,13 @@ void increment_transposition_age(void);
 transposition_entry_t* get_transposition(position_t* pos);
 void put_transposition(position_t* pos,
         move_t move,
-        int depth,
+        float depth,
         int score,
         score_type_t score_type,
         bool mate_threat);
 void put_transposition_line(position_t* pos,
         move_t* moves,
-        int depth,
+        float depth,
         int score,
         score_type_t score_type);
 void print_transposition_stats(void);

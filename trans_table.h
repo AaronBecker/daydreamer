@@ -10,7 +10,7 @@ extern "C" {
 typedef struct {
     hashkey_t key;
     move_t move;
-    int16_t depth;
+    float depth;
     int16_t score;
     uint8_t age;
     uint8_t flags;

@@ -105,11 +105,12 @@ transposition_entry_t* get_transposition(position_t* pos)
  */
 void put_transposition(position_t* pos,
         move_t move,
-        int depth,
+        float depth,
         int score,
         score_type_t score_type,
         bool mate_threat)
 {
+    if (depth < 0) depth = 0;
     transposition_entry_t* entry, *best_entry = NULL;
     int replace_score, best_replace_score = INT_MIN;
     entry = &transposition_table[(pos->hash % num_buckets) * bucket_size];
@@ -164,7 +165,7 @@ void put_transposition(position_t* pos,
  */
 void put_transposition_line(position_t* pos,
         move_t* moves,
-        int depth,
+        float depth,
         int score,
         score_type_t score_type)
 {
