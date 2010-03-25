@@ -229,7 +229,10 @@ static bool check_eg_database(position_t* pos,
         int beta,
         int* score)
 {
-    if (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
+    // Bail out if there are too many pieces on the board or if time
+    // constraints are an issue.
+    if ((root_data.time_limit && root_data.time_limit < 500) ||
+            pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] >
             options.max_egtb_pieces) return false;
     if (options.use_gtb) {
