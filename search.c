@@ -612,7 +612,8 @@ static search_result_t root_search(search_data_t* search_data,
             const bool try_lmr = lmr_enabled &&
                 ext != 0 &&
                 !is_check(pos);
-            int lmr_red = try_lmr ? lmr_reduction(&selector, move) : 0;
+            int lmr_red = try_lmr ? lmr_reduction(&selector,
+                    move, false) : 0;
             if (lmr_red) {
                 score = -search(pos, search_data->search_stack,
                         1, -alpha-1, -alpha, depth-lmr_red-PLY);
@@ -837,7 +838,7 @@ static int search(position_t* pos,
                 !mate_threat &&
                 depth > lmr_depth_limit;
             float lmr_red = 0;
-            if (try_lmr) lmr_red = lmr_reduction(&selector, move);
+            if (try_lmr) lmr_red = lmr_reduction(&selector, move, full_window);
             if (lmr_red) score = -search(pos, search_node+1, ply+1,
                     -alpha-1, -alpha, depth-lmr_red-PLY);
             else score = alpha+1;
