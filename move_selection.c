@@ -113,8 +113,8 @@ float lmr_reduction(move_selector_t* sel, move_t move, bool full_window)
         move != sel->killers[0] &&
         move != sel->killers[1];
     if (!do_lmr) return 0;
-    // TODO: extra fractional reduction for closed window per quiet move
-    return sel->scores[sel->current_move_index-1] < 0 ? 2*PLY : PLY;
+    return sel->scores[sel->current_move_index-1] < 0 ? 2*PLY :
+        PLY + MIN(0.5, 0.05*(sel->quiet_moves_so_far-3));
 }
 
 /*
