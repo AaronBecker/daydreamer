@@ -102,16 +102,18 @@ bool should_try_prune(move_selector_t* sel, move_t move)
 /*
  * How much should we reduce the given move in LMR?
  */
-float lmr_reduction(move_selector_t* sel, move_t move)
+float lmr_reduction(move_selector_t* sel, move_t move, bool full_window)
 {
     assert(sel->moves[sel->current_move_index-1] == move);
     bool do_lmr = sel->quiet_moves_so_far > 2 &&
+        (!full_window || sel->quiet_moves_so_far > 5) &&
         !get_move_capture(move) &&
         get_move_promote(move) != QUEEN &&
         !is_move_castle(move) &&
         move != sel->killers[0] &&
         move != sel->killers[1];
     if (!do_lmr) return 0;
+    // TODO: extra fractional reduction for closed window per quiet move
     return sel->scores[sel->current_move_index-1] < 0 ? 2*PLY : PLY;
 }
 
