@@ -3,7 +3,7 @@
 #include <string.h>
 
 static const bool nullmove_enabled = true;
-static const bool verification_enabled = true;
+static const bool verification_enabled = false;
 static const bool iid_enabled = true;
 static const bool razoring_enabled = true;
 static const bool futility_enabled = true;
