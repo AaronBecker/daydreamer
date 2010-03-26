@@ -258,18 +258,6 @@ static bool check_eg_database(position_t* pos,
 }
 
 /*
- * In the given position, is the nullmove heuristic valid? We avoid nullmoves
- * in cases where we're down to king and pawns because of zugzwang.
- */
-static bool is_nullmove_allowed(position_t* pos)
-{
-    // don't allow nullmove if either side is in check
-    if (is_check(pos)) return false;
-    // allow nullmove if we're not down to king/pawns
-    return !(pos->num_pieces[WHITE] == 1 && pos->num_pieces[BLACK] == 1);
-}
-
-/*
  * Point |data->current_root_move| at the structure representing |move|.
  */
 static void set_current_root_move(search_data_t* data, move_t move)
@@ -734,7 +722,8 @@ static int search(position_t* pos,
             pos->prev_move != NULL_MOVE &&
             lazy_score + null_eval_margin > beta &&
             !is_mate_score(beta) &&
-            is_nullmove_allowed(pos)) {
+            !is_check(pos) &&
+            pos->num_pieces[pos->side_to_move] != 1) {
         // Nullmove search.
         undo_info_t undo;
         do_nullmove(pos, &undo);
