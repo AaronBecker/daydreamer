@@ -600,7 +600,6 @@ static search_result_t root_search(search_data_t* search_data,
         do_move(pos, move, &undo);
         float ext = extend(pos, move, false, true);
         float depth = search_data->current_depth;
-        int num_moves = search_data->current_move_index;
         int score;
 
         if (search_data->current_move_index < options.multi_pv) {
