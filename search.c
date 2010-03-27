@@ -724,8 +724,7 @@ static int search(position_t* pos,
             lazy_score + null_eval_margin > beta &&
             !is_mate_score(beta) &&
             !is_check(pos) &&
-            pos->num_pieces[WHITE] != 1 &&
-            pos->num_pieces[BLACK] != 1) {
+            pos->num_pieces[pos->side_to_move] != 1) {
         // Nullmove search.
         undo_info_t undo;
         do_nullmove(pos, &undo);
