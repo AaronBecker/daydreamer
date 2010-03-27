@@ -94,7 +94,8 @@ bool has_single_reply(move_selector_t* sel)
 bool should_try_prune(move_selector_t* sel, move_t move)
 {
     (void)sel;
-    return !get_move_capture(move) &&
+    return sel->quiet_moves_so_far > 2 && 
+        !get_move_capture(move) &&
         !get_move_promote(move);
 }
 
