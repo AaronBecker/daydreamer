@@ -23,7 +23,7 @@ static int num_entries;
 bool init_poly_book(char* filename)
 {
     assert(sizeof(book_entry_t) == 16);
-    srandom(time(NULL));
+    srandom_32(time(NULL));
     if (book) fclose(book);
     if (!(book = fopen(filename, "r"))) {
         num_entries = 0;
@@ -66,7 +66,7 @@ move_t get_poly_book_move(position_t* pos)
     if (index == 0) return NO_MOVE;
 
     // Choose randomly amonst the weighted options.
-    uint16_t choice = random() % total_weight;
+    uint16_t choice = random_32() % total_weight;
     int i;
     for (i=0; choice >= weights[i]; ++i) {}
     assert(i < index);
@@ -475,7 +475,7 @@ void test_book(char* filename, position_t* pos)
     }
     printf("\n\nSample move selections\n");
     for (int x=0; x<10; ++x) {
-        int i, choice = random() % total_weight;
+        int i, choice = random_32() % total_weight;
         for (i=0; choice >= weights[i]; ++i) {}
         assert(i < index);
         print_coord_move(book_move_to_move(pos, moves[i]));

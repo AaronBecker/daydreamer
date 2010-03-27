@@ -557,8 +557,7 @@ static bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
         *move = NO_MOVE;
         return false;
     }
-    uint32_t choice = random();
-    choice = ((choice<<16) + random()) % total_weight;
+    uint32_t choice = random_32() % total_weight;
     int i;
     for (i=0; choice >= (uint32_t)weights[i]; ++i) {}
     if (i >= entry->num_moves) {

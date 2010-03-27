@@ -68,6 +68,10 @@ void test_book(char* filename, position_t* pos);
 bool init_ctg_book(char* filename);
 move_t get_ctg_book_move(position_t* pos);
 
+// compatibility.c
+void srandom_32(unsigned seed);
+int32_t random_32(void);
+
 // daydreamer.c
 void init_daydreamer(void);
 
