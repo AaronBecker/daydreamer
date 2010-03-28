@@ -107,7 +107,8 @@ float lmr_reduction(move_selector_t* sel, move_t move, bool full_window)
     assert(sel->moves[sel->current_move_index-1] == move);
     bool do_lmr = sel->quiet_moves_so_far > 2 &&
         !get_move_capture(move) &&
-        get_move_promote(move) != QUEEN;
+        get_move_promote(move) != QUEEN &&
+        !is_move_castle(move);
     if (!do_lmr) return 0;
     return sel->scores[sel->current_move_index-1] < 0 ? 2*PLY : PLY;
 }
