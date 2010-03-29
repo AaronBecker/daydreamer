@@ -94,9 +94,10 @@ bool has_single_reply(move_selector_t* sel)
 bool should_try_prune(move_selector_t* sel, move_t move)
 {
     (void)sel;
-    return sel->quiet_moves_so_far > 1 && 
+    return sel->quiet_moves_so_far > 0 &&
         !get_move_capture(move) &&
-        !get_move_promote(move) != QUEEN;
+        !get_move_promote(move) != QUEEN &&
+        !is_move_castle(move);
 }
 
 /*
@@ -105,7 +106,7 @@ bool should_try_prune(move_selector_t* sel, move_t move)
 float lmr_reduction(move_selector_t* sel, move_t move, bool full_window)
 {
     assert(sel->moves[sel->current_move_index-1] == move);
-    bool do_lmr = sel->quiet_moves_so_far > 1 &&
+    bool do_lmr = sel->quiet_moves_so_far > 2 &&
         !get_move_capture(move) &&
         get_move_promote(move) != QUEEN &&
         !is_move_castle(move);
