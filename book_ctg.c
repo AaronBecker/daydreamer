@@ -6,8 +6,6 @@
  * Interface to ctg format books. The huffman codes and ctg move decoding are
  * based on Stephan Vermeire's ctg code for Brutus.
  * (http://www.xs4all.nl/~vermeire/brutus.html)
- * TODO: handle book unloading properly, and do a more principled job with the
- * console "ctg" command.
  */
 
 #define read_24(buf, pos)   \
@@ -516,7 +514,7 @@ static move_t squares_to_move(position_t* pos, square_t from, square_t to)
  * Assign a weight to the given move, which indicates its relative
  * probability of being selected.
  */
-static int move_weight(position_t* pos, move_t move)
+static int64_t move_weight(position_t* pos, move_t move)
 {
     undo_info_t undo;
     do_move(pos, move, &undo);
@@ -525,16 +523,17 @@ static int move_weight(position_t* pos, move_t move)
     undo_move(pos, move, &undo);
     if (!success) return 0;
 
-    float half_points = (2*entry.wins + entry.draws);
-    float games = (entry.wins + entry.draws + entry.losses);
-    float weight = (games < 3 || half_points < 3) ? 0.0 : half_points / games;
-    int int_weight = (int)(weight * 100000);
-    if (entry.recommendation == 64) int_weight = 0;
-    if (entry.recommendation == 128) int_weight *= 128;
+    int64_t half_points = 2*entry.wins + entry.draws;
+    int64_t games = entry.wins + entry.draws + entry.losses;
+    int64_t weight = (games < 1) ? 0 : (half_points * 10000) / games;
+    if (entry.recommendation == 64) weight = 0;
+    if (entry.recommendation == 128) weight *= 128;
     printf("info string book move ");
     print_coord_move(move);
-    printf("weight %d\n", int_weight);
-    return int_weight;
+    printf("weight %10"PRIu64"\n", weight);
+    //printf("info string rec %3d games %6"PRIu64" points %6"PRIu64"\n",
+    //        weight, entry.recommendation, games, half_points);
+    return weight;
 }
 
 /*
@@ -543,8 +542,8 @@ static int move_weight(position_t* pos, move_t move)
 static bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
 {
     move_t moves[50];
-    int weights[50];
-    int total_weight = 0;
+    int64_t weights[50];
+    int64_t total_weight = 0;
     for (int i=0; i<2*entry->num_moves; i += 2) {
         uint8_t byte = entry->moves[i];
         move_t m = byte_to_move(pos, byte);
@@ -557,12 +556,13 @@ static bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
         *move = NO_MOVE;
         return false;
     }
-    uint32_t choice = random();
+    int64_t choice = random() << 32 | random();
     choice = ((choice<<16) + random()) % total_weight;
-    int i;
-    for (i=0; choice >= (uint32_t)weights[i]; ++i) {}
+    int64_t i;
+    for (i=0; choice >= weights[i]; ++i) {}
     if (i >= entry->num_moves) {
-        printf("i: %d\nchoice: %d\ntotal_weight: %d\nnum_moves: %d\n",
+        printf("i: %"PRIu64"\nchoice: %"PRIu64"\ntotal_weight: %"
+                PRIu64"\nnum_moves: %d\n",
                 i, choice, total_weight, entry->num_moves);
         assert(false);
     }
