@@ -609,7 +609,9 @@ static search_result_t root_search(search_data_t* search_data,
             score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-PLY);
         } else {
-            const bool try_lmr = false;
+            const bool try_lmr = lmr_enabled &&
+                ext != 0 &&
+                !is_check(pos);
             int lmr_red = try_lmr ? lmr_reduction(&selector,
                     move, false) : 0;
             if (lmr_red) {
