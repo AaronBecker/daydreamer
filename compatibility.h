@@ -24,12 +24,6 @@ extern "C" {
 // Rename windows functions to the posix equivalent where possible,
 // provide an implementation where there is no equivalent.
 #include <windows.h>
-// FIXME
-// Ugh, Windows doesn't have proper posix random(), and rand() only gives
-// 16 bits of entropy. This is a quick fix, but calling random() 4 times
-// to get 64 random bits is confusing, so eventually this needs to be fixed
-// in a more principled way.
-#define random          rand
 #define srandom         srand
 #define strcasecmp      _stricmp
 #define strncasecmp     _strnicmp

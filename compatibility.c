@@ -2,12 +2,34 @@
 #include "daydreamer.h"
 
 /*
- * BSD implementations of functions that don't exist on all platforms.
+ * Implementations of functions that don't exist on all platforms.
  * Right now this is just adding some string handling functions for
- * the Windows build.
+ * the Windows build and a standard 32-bit PRNG.
  */
 
+
 #ifdef _WIN32
+
+void srandom_32(unsigned seed)
+{
+    srand(seed);
+}
+
+int32_t random_32(void)
+{
+    int r = rand();
+    r <<= 16;
+    r |= rand();
+    return r;
+}
+
+int64_t random_64(void)
+{
+    int64_t r = random_32();
+    r <<= 32;
+    r |= random_32();
+    return r;
+}
 
 /*-
  * Copyright (c) 1990 The Regents of the University of California.
@@ -98,5 +120,24 @@ strsep(char **stringp, const char *delim) {
 	/* NOTREACHED */
 }
 
+#else
+
+void srandom_32(unsigned seed)
+{
+    srandom(seed);
+}
+
+int32_t random_32(void)
+{
+    return random();
+}
+
+int64_t random_64(void)
+{
+    int64_t r = random_32();
+    r <<= 32;
+    r |= random_32();
+    return r;
+}
 
 #endif

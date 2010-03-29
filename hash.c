@@ -15,13 +15,9 @@ static hashkey_t random_hashkey(void)
     // Sadly we only get 16 usable bits on Windows, so lots of stitching
     // is needed. This isn't performance-sensitive or cryptographical
     // though, so this should be fine.
-    hashkey_t hash = random();
-    hash <<= 16;
-    hash |= random();
-    hash <<= 16;
-    hash |= random();
-    hash <<= 16;
-    hash |= random();
+    hashkey_t hash = random_32();
+    hash <<= 32;
+    hash |= random_32();
     return hash;
 }
 
@@ -31,7 +27,7 @@ static hashkey_t random_hashkey(void)
 void init_hash(void)
 {
     int i;
-    srandom(1);
+    srandom_32(1);
     hashkey_t* _piece_random = (hashkey_t*)&piece_random[0][0][0];
     hashkey_t* _castle_random = (hashkey_t*)&castle_random[0][0][0];
     hashkey_t* _enpassant_random = (hashkey_t*)&enpassant_random[0];
