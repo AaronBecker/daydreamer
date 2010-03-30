@@ -393,6 +393,8 @@ void init_uci_options()
             0, 0, schemes, &options.gtb_scheme, &handle_gtb_scheme);
     add_uci_option("Gaviota tablebase cache size", OPTION_SPIN, "32",
             0, 4096, NULL, &options.gtb_cache_size, &handle_gtb_cache);
+    add_uci_option("Load tablebases in a separate thread", OPTION_CHECK, "true",
+            0, 0, NULL, &options.nonblocking_gtb, &default_handler);
     add_uci_option("Tablebase pieces", OPTION_SPIN, "5",
             3, 6, NULL, &options.max_egtb_pieces, &default_handler);
     add_uci_option("Use Scorpio bitbases", OPTION_CHECK, "false",

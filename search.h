@@ -41,6 +41,7 @@ typedef struct {
     bool use_gtb;
     bool use_gtb_dtm;
     bool root_in_gtb;
+    bool nonblocking_gtb;
     int gtb_cache_size;
     int gtb_scheme;
     int max_egtb_pieces;

@@ -237,12 +237,22 @@ static bool check_eg_database(position_t* pos,
             options.max_egtb_pieces) return false;
     if (options.use_gtb) {
         // TODO: figure out when to use dtm instead of wdl.
-        bool success;
+        bool success = false;
         if (options.root_in_gtb) {
             success = probe_gtb_hard_dtm(pos, score);
         } else if (options.use_gtb_dtm) {
-            success = probe_gtb_firm_dtm(pos, score);
-        } else success = probe_gtb_firm(pos, score);
+            if (options.nonblocking_gtb) {
+                success = probe_gtb_firm_dtm(pos, score);
+            } else {
+                success = probe_gtb_hard_dtm(pos, score);
+            }
+        } else {
+            if (options.nonblocking_gtb) {
+                success = probe_gtb_firm(pos, score);
+            } else {
+                success = probe_gtb_hard(pos, score);
+            }
+        }
         if (success) {
             ++root_data.stats.egbb_hits;
             return true;
@@ -611,9 +621,7 @@ static search_result_t root_search(search_data_t* search_data,
             score = -search(pos, search_data->search_stack,
                     1, -beta, -alpha, search_data->current_depth+ext-PLY);
         } else {
-            const bool try_lmr = lmr_enabled &&
-                ext != 0 &&
-                !is_check(pos);
+            const bool try_lmr = lmr_enabled && ext != 0 && !is_check(pos);
             int lmr_red = try_lmr ? lmr_reduction(&selector,
                     move, false) : 0;
             if (lmr_red) {
