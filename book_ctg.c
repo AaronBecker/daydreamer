@@ -537,7 +537,10 @@ static move_t squares_to_move(position_t* pos, square_t from, square_t to)
  * Assign a weight to the given move, which indicates its relative
  * probability of being selected.
  */
-static int64_t move_weight(position_t* pos, move_t move, uint8_t annotation)
+static int64_t move_weight(position_t* pos,
+        move_t move,
+        uint8_t annotation,
+        bool* recommended)
 {
     undo_info_t undo;
     do_move(pos, move, &undo);
@@ -546,25 +549,37 @@ static int64_t move_weight(position_t* pos, move_t move, uint8_t annotation)
     undo_move(pos, move, &undo);
     if (!success) return 0;
 
+    *recommended = false;
     int64_t half_points = 2*entry.wins + entry.draws;
     int64_t games = entry.wins + entry.draws + entry.losses;
     int64_t weight = (games < 1) ? 0 : (half_points * 10000) / games;
     if (entry.recommendation == 64) weight = 0;
-    if (entry.recommendation == 128) weight *= 1024;
+    if (entry.recommendation == 128) *recommended = true;
+
+    // Adjust weights based on move annotations. Note that moves can be both
+    // marked as recommended and annotated with a '?'. Since moves like this
+    // are not marked green in GUI tools, the recommendation is turned off in
+    // order to give results consistent with expectations.
     switch (annotation) {
-        case 0x01: weight *=  8; break;  //  !
-        case 0x02: weight  =  0; break;  //  ?
-        case 0x03: weight *= 32; break;  // !!
-        case 0x04: weight  =  0; break;  // ??
-        case 0x05: weight /=  2; break;  // !?
-        case 0x06: weight /=  8; break;  // ?!
-        case 0x08: weight = INT64_MAX; break;   // Only move
-        case 0x16: break;                       // Zugzwang
+        case 0x01: weight *=  8; break;                         //  !
+        case 0x02: weight  =  0; *recommended = false; break;   //  ?
+        case 0x03: weight *= 32; break;                         // !!
+        case 0x04: weight  =  0; *recommended = false; break;   // ??
+        case 0x05: weight /=  2; *recommended = false; break;   // !?
+        case 0x06: weight /=  8; *recommended = false; break;   // ?!
+        case 0x08: weight = INT32_MAX; break;                   // Only move
+        case 0x16: break;                                       // Zugzwang
         default: break;
     }
     printf("info string book move ");
     print_coord_move(move);
-    printf("weight %10"PRIu64"\n", weight);
+    //printf("weight %6"PRIu64"\n", weight);
+    printf("weight %6"PRIu64" wins %6d draws %6d losses %6d rec %3d "
+            "note %2d avg_games %6d avg_score %9d "
+            "perf_games %6d perf_score %9d\n",
+            weight, entry.wins, entry.draws, entry.losses, entry.recommendation,
+            annotation, entry.avg_rating_games, entry.avg_rating_score,
+            entry.perf_rating_games, entry.perf_rating_score);
     return weight;
 }
 
@@ -575,14 +590,24 @@ static bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
 {
     move_t moves[50];
     int64_t weights[50];
+    bool recommended[50];
     int64_t total_weight = 0;
+    bool have_recommendations = false;
     for (int i=0; i<2*entry->num_moves; i += 2) {
         uint8_t byte = entry->moves[i];
         move_t m = byte_to_move(pos, byte);
-        total_weight += move_weight(pos, m, entry->moves[i+1]);
         moves[i/2] = m;
-        weights[i/2] = total_weight;
+        weights[i/2] = move_weight(pos, m, entry->moves[i+1], &recommended[i/2]);
+        if (recommended[i/2]) have_recommendations = true;
         if (move == NO_MOVE) break;
+    }
+
+    // Do a prefix sum on the weights to facilitate a random choice. If there are recommended
+    // moves, ensure that we don't pick a move that wasn't recommended.
+    for (int i=0; i<entry->num_moves; ++i) {
+        if (have_recommendations && !recommended[i]) weights[i] = 0;
+        total_weight += weights[i];
+        weights[i] = total_weight;
     }
     if (total_weight == 0) {
         *move = NO_MOVE;
