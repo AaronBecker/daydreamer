@@ -360,7 +360,6 @@ static void handle_book_file(void* opt, char* value)
         options.book_loaded = init_poly_book(option->value);
         options.probe_book = &get_poly_book_move;
     }
-    options.out_of_book = false;
 }
 
 /*

@@ -37,7 +37,6 @@ typedef struct {
     bool use_book;
     bool book_loaded;
     book_fn probe_book;
-    bool out_of_book;
     bool use_egbb;
     bool use_gtb;
     bool use_gtb_dtm;

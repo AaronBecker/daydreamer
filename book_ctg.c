@@ -10,6 +10,8 @@
 
 #define read_24(buf, pos)   \
     ((buf[pos]<<16) + (buf[(pos)+1]<<8) + (buf[(pos)+2]))
+#define read_32(buf, pos)   \
+    ((buf[pos]<<24) + (buf[pos+1]<<16) + (buf[(pos)+2]<<8) + (buf[(pos+3)+2]))
 
 FILE* ctg_file = NULL;
 FILE* cto_file = NULL;
@@ -34,7 +36,14 @@ typedef struct {
     int wins;
     int losses;
     int draws;
+    int unknown1;
+    int avg_rating_games;
+    int avg_rating_score;
+    int perf_rating_games;
+    int perf_rating_score;
     int recommendation;
+    int unknown2;
+    int comment;
 } ctg_entry_t;
 
 typedef struct {
@@ -338,8 +347,22 @@ static bool ctg_lookup_entry(int page_index,
         entry->wins = read_24(buf, pos);
         pos += 3;
         entry->draws = read_24(buf, pos);
-        pos += 21;
+        pos += 3;
+        entry->unknown1 = read_32(buf, pos);
+        pos += 4;
+        entry->avg_rating_games = read_24(buf, pos);
+        pos += 3;
+        entry->avg_rating_score = read_32(buf, pos);
+        pos += 4;
+        entry->perf_rating_games = read_24(buf, pos);
+        pos += 3;
+        entry->perf_rating_score = read_32(buf, pos);
+        pos += 4;
         entry->recommendation = buf[pos];
+        pos += 1;
+        entry->unknown2 = buf[pos];
+        pos += 1;
+        entry->comment = buf[pos];
         return true;
     }
     return false;
@@ -514,7 +537,7 @@ static move_t squares_to_move(position_t* pos, square_t from, square_t to)
  * Assign a weight to the given move, which indicates its relative
  * probability of being selected.
  */
-static int64_t move_weight(position_t* pos, move_t move)
+static int64_t move_weight(position_t* pos, move_t move, uint8_t annotation)
 {
     undo_info_t undo;
     do_move(pos, move, &undo);
@@ -527,12 +550,21 @@ static int64_t move_weight(position_t* pos, move_t move)
     int64_t games = entry.wins + entry.draws + entry.losses;
     int64_t weight = (games < 1) ? 0 : (half_points * 10000) / games;
     if (entry.recommendation == 64) weight = 0;
-    if (entry.recommendation == 128) weight *= 128;
+    if (entry.recommendation == 128) weight *= 1024;
+    switch (annotation) {
+        case 0x01: weight *=  8; break;  //  !
+        case 0x02: weight  =  0; break;  //  ?
+        case 0x03: weight *= 32; break;  // !!
+        case 0x04: weight  =  0; break;  // ??
+        case 0x05: weight /=  2; break;  // !?
+        case 0x06: weight /=  8; break;  // ?!
+        case 0x08: weight = INT64_MAX; break;   // Only move
+        case 0x16: break;                       // Zugzwang
+        default: break;
+    }
     printf("info string book move ");
     print_coord_move(move);
     printf("weight %10"PRIu64"\n", weight);
-    //printf("info string rec %3d games %6"PRIu64" points %6"PRIu64"\n",
-    //        weight, entry.recommendation, games, half_points);
     return weight;
 }
 
@@ -547,7 +579,7 @@ static bool ctg_pick_move(position_t* pos, ctg_entry_t* entry, move_t* move)
     for (int i=0; i<2*entry->num_moves; i += 2) {
         uint8_t byte = entry->moves[i];
         move_t m = byte_to_move(pos, byte);
-        total_weight += move_weight(pos, m);
+        total_weight += move_weight(pos, m, entry->moves[i+1]);
         moves[i/2] = m;
         weights[i/2] = total_weight;
         if (move == NO_MOVE) break;

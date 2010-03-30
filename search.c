@@ -430,7 +430,6 @@ void deepening_search(search_data_t* search_data, bool ponder)
     // Get a move out of the opening book if we can.
     if (options.use_book &&
             options.book_loaded &&
-            !options.out_of_book &&
             !search_data->infinite &&
             !search_data->depth_limit &&
             !search_data->node_limit &&
@@ -443,7 +442,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
             printf("bestmove %s\n", move_str);
             search_data->engine_status = ENGINE_IDLE;
             return;
-        } else options.out_of_book = true;
+        }
     }
 
     position_t* pos = &search_data->root_pos;

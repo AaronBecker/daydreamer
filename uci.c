@@ -77,7 +77,6 @@ static void uci_handle_command(char* command)
     while (c > command && *--c == '\n') *c = '\0';
 
     if (!strncasecmp(command, "ucinewgame", 10)) {
-        options.out_of_book = false;
     } else if (!strncasecmp(command, "uci", 3)) {
         printf("id name %s %s\n", ENGINE_NAME, ENGINE_VERSION);
         printf("id author %s\n", ENGINE_AUTHOR);
