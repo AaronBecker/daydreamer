@@ -24,7 +24,6 @@ extern "C" {
 // Rename windows functions to the posix equivalent where possible,
 // provide an implementation where there is no equivalent.
 #include <windows.h>
-#define srandom         srand
 #define strcasecmp      _stricmp
 #define strncasecmp     _strnicmp
 #define sleep           Sleep
