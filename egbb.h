@@ -7,8 +7,10 @@ extern "C" {
 
 #ifdef __APPLE__
 #include <dlfcn.h>
-#define EGBB_NAME       "egbbdylib.dylib"
-#define EGBB64_NAME     "egbbdylib64.dylib"
+#define EGBB_NAME       "egbb.dylib"
+#define EGBB_NAME2      "egbbdylib.dylib"
+#define EGBB64_NAME     "egbb64.dylib"
+#define EGBB64_NAME2    "egbbdylib64.dylib"
 #define load_library(x) dlopen((x), RTLD_LAZY)
 #define load_function   dlsym
 #define unload_library  dlclose
@@ -18,8 +20,10 @@ extern "C" {
 
 #ifdef __linux__
 #include <dlfcn.h>
-#define EGBB_NAME       "egbbso.so"
-#define EGBB64_NAME     "egbbso64.so"
+#define EGBB_NAME       "egbb.so"
+#define EGBB_NAME2      "egbbso.so"
+#define EGBB64_NAME     "egbb64.so"
+#define EGBB64_NAME2    "egbbso64.so"
 #define load_library(x) dlopen((x), RTLD_LAZY)
 #define load_function   dlsym
 #define unload_library  dlclose
@@ -28,8 +32,10 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-#define EGBB_NAME       "egbbdll.dll"
-#define EGBB64_NAME     "egbbdll64.dll"
+#define EGBB_NAME       "egbb.dll"
+#define EGBB_NAME2      "egbbdll.dll"
+#define EGBB64_NAME     "egbb64.dll"
+#define EGBB64_NAME2    "egbbdll64.dll"
 #define load_library    LoadLibrary
 #define load_function   GetProcAddress
 #define unload_library  FreeLibrary

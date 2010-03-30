@@ -47,15 +47,25 @@ bool load_egbb(char* egbb_dir, int cache_size_bytes)
 {
     if (!cache_size_bytes) cache_size_bytes = EGBB_DEFAULT_CACHE_SIZE;
     char path[1024];
-    strncpy(path, egbb_dir, 1000);
-    strcat(path, EGBB_NAME);
-
     egbb_is_loaded = false;
     if (lib) unload_library(lib);
+
+    strncpy(path, egbb_dir, 1000);
+    strcat(path, EGBB_NAME);
     lib = load_library(path);
     if (!lib) {
         strncpy(path, egbb_dir, 1000);
+        strcat(path, EGBB_NAME2);
+        lib = load_library(path);
+    }
+    if (!lib) {
+        strncpy(path, egbb_dir, 1000);
         strcat(path, EGBB64_NAME);
+        lib = load_library(path);
+    }
+    if (!lib) {
+        strncpy(path, egbb_dir, 1000);
+        strcat(path, EGBB64_NAME2);
         lib = load_library(path);
     }
     if (!lib) {
