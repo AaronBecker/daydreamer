@@ -338,7 +338,7 @@ static void handle_egbb_path(void* opt, char* value)
         strcat(option->value, DIR_SEP);
     }
     if (options.use_egbb) {
-        load_egbb(value, 0);
+        load_egbb(option->value, 0);
     }
 }
 

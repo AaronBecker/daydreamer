@@ -74,7 +74,7 @@ static void uci_handle_command(char* command)
     // strip trailing newline.
     char* c = command;
     while (*c) ++c;
-    while (c > command && *--c == '\n') *c = '\0';
+    while (c > command && (*--c == '\n' || *c == ' ')) *c = '\0';
 
     if (!strncasecmp(command, "ucinewgame", 10)) {
     } else if (!strncasecmp(command, "uci", 3)) {
