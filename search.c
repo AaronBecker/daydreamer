@@ -175,7 +175,7 @@ static bool should_deepen(search_data_t* data)
     // Go ahead and quit if we have a mate.
     int* scores = data->scores_by_iteration;
     int depth = depth_to_index(data->current_depth);
-    if (depth >= 4 && is_mate_score(abs(scores[depth--])) &&
+    if (depth >= 10 && is_mate_score(abs(scores[depth--])) &&
             is_mate_score(abs(scores[depth--])) &&
             is_mate_score(abs(scores[depth--]))) return false;
 
@@ -236,9 +236,13 @@ static bool check_eg_database(position_t* pos,
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] >
             options.max_egtb_pieces) return false;
     if (options.use_gtb) {
+        // TODO: figure out when to use dtm instead of wdl.
         bool success;
-        if (options.use_gtb_dtm) success = probe_gtb_firm_dtm(pos, score);
-        else success = probe_gtb_firm(pos, score);
+        if (options.root_in_gtb) {
+            success = probe_gtb_hard_dtm(pos, score);
+        } else if (options.use_gtb_dtm) {
+            success = probe_gtb_firm_dtm(pos, score);
+        } else success = probe_gtb_firm(pos, score);
         if (success) {
             ++root_data.stats.egbb_hits;
             return true;
@@ -446,7 +450,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
     }
 
     position_t* pos = &search_data->root_pos;
-    options.use_gtb_dtm = (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
+    options.root_in_gtb = (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] <=
             options.max_egtb_pieces && options.use_gtb);
 
