@@ -77,6 +77,7 @@ int64_t random_64(void);
 void init_daydreamer(void);
 
 // egbb.c
+// TODO: rename egbb* to scorpio_bb*
 bool load_egbb(char* egbb_dir, int cache_size_bytes);
 void unload_egbb(void);
 bool probe_egbb(position_t* pos, int* value, int ply);
