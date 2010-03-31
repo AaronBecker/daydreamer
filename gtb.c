@@ -115,11 +115,12 @@ void unload_gtb(void)
     tb_paths = tbpaths_done(tb_paths);
     worker_quit = true;
     worker_task_ready = true;
-    while (worker_quit) sleep(0);
 #ifdef WINDOWS_THREADS
+    while (worker_quit) Sleep(1);
     CloseHandle(worker_mutex);
     CloseHandle(worker_thread);
 #else
+    while (worker_quit) usleep(100);
     pthread_mutex_destroy(&worker_mutex);
 #endif
 }
@@ -358,7 +359,11 @@ void* gtb_probe_firm_worker(void* payload)
         int counter = 0;
         while (++counter < 5000 && !worker_task_ready) {}
         if (!worker_task_ready) {
-            while (!worker_task_ready) sleep(0);
+#ifdef WINDOWS_THREADS
+            while (!worker_task_ready) Sleep(1);
+#else
+            while (!worker_task_ready) usleep(100);
+#endif
         }
 
         // We've been woken back up, there must be something for us to do.
