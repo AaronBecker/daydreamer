@@ -10,11 +10,14 @@ extern "C" {
 typedef struct {
     hashkey_t key;
     move_t move;
-    float depth;
     int16_t score;
-    uint8_t age;
-    uint8_t flags;
+    uint8_t depth;
+    uint8_t info;
 } transposition_entry_t;
+
+#define get_entry_flags(entry)      ((entry)->info & 0xf)
+#define set_entry_flags(entry,flags)    \
+    ((entry)->info = (get_entry_age(entry) << 4) + (flags))
 
 #ifdef __cplusplus
 } // extern "C"

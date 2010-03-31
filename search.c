@@ -372,10 +372,11 @@ static bool is_trans_cutoff_allowed(transposition_entry_t* entry,
         int* beta)
 {
     if (depth > entry->depth && !is_mate_score(entry->score)) return false;
-    if (entry->flags & SCORE_LOWERBOUND && entry->score > *alpha) {
+    uint8_t trans_flags = get_entry_flags(entry);
+    if (trans_flags & SCORE_LOWERBOUND && entry->score > *alpha) {
         *alpha = entry->score;
     }
-    if (entry->flags & SCORE_UPPERBOUND && entry->score < *beta) {
+    if (trans_flags & SCORE_UPPERBOUND && entry->score < *beta) {
         *beta = entry->score;
     }
     return *alpha >= *beta;
@@ -712,7 +713,7 @@ static int search(position_t* pos,
     // Get move from transposition table if possible.
     transposition_entry_t* trans_entry = get_transposition(pos);
     move_t hash_move = trans_entry ? trans_entry->move : NO_MOVE;
-    bool mate_threat = trans_entry && trans_entry->flags & MATE_THREAT;
+    bool mate_threat = trans_entry && get_entry_flags(trans_entry)&MATE_THREAT;
     if (!full_window && trans_entry &&
             is_trans_cutoff_allowed(trans_entry, depth, &alpha, &beta)) {
         search_node->pv[ply] = hash_move;
@@ -975,9 +976,9 @@ static int quiesce(position_t* pos,
         eval = full_eval(pos, &ed);
         check_eval_symmetry(pos, eval);
         if (trans_entry && ((eval > trans_entry->score &&
-                    trans_entry->flags & SCORE_UPPERBOUND) ||
+                    get_entry_flags(trans_entry) & SCORE_UPPERBOUND) ||
                 (eval < trans_entry->score &&
-                 trans_entry->flags & SCORE_LOWERBOUND))) {
+                 get_entry_flags(trans_entry) & SCORE_LOWERBOUND))) {
             eval = trans_entry->score;
         }
         if (alpha < eval) alpha = eval;
