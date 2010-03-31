@@ -7,6 +7,24 @@
  * the Windows build and a standard 32-bit PRNG.
  */
 
+void* aligned_malloc(int size, int alignment)
+{
+    uint8_t *align_buf = NULL;
+    uint8_t *buf = malloc(size + alignment - 1 + sizeof(void**) + sizeof(int));
+    if (buf) {
+        align_buf = buf + alignment - 1 + sizeof(void**) + sizeof(int);
+        align_buf -= (intptr_t) align_buf & (alignment - 1);
+        *((void**)(align_buf - sizeof(void**))) = buf;
+        *((int*)(align_buf - sizeof(void**) - sizeof(int))) = size;
+    }
+    if (!align_buf) warn("aligned_malloc failed\n");
+    return align_buf;
+}
+
+void aligned_free(void* p)
+{
+    if (p) free(*(((void**)p) - 1));
+}
 
 #ifdef _WIN32
 

@@ -93,8 +93,8 @@ void init_pawn_table(const int max_bytes)
         size <<= 1;
         num_buckets <<= 1;
     }
-    if (pawn_table != NULL) free(pawn_table);
-    pawn_table = malloc(size);
+    if (pawn_table != NULL) aligned_free(pawn_table);
+    pawn_table = aligned_malloc(size, CACHE_LINE_BYTES);
     assert(pawn_table);
     clear_pawn_table();
 }

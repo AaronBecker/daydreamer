@@ -449,8 +449,8 @@ void init_pv_cache(const int max_bytes)
         size <<= 1;
         num_buckets <<= 1;
     }
-    if (pv_cache != NULL) free(pv_cache);
-    pv_cache = malloc(size);
+    if (pv_cache != NULL) aligned_free(pv_cache);
+    pv_cache = aligned_malloc(size, CACHE_LINE_BYTES);
     assert(pv_cache);
     clear_pv_cache();
 }
