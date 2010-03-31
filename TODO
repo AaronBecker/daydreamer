@@ -19,7 +19,6 @@ Interface
     PGN parsing
     Better uci options support, with more feedback and fewer special handlers
     Way better logging support
-    Figure out why .rc file isn't read in some circumstances
     Write an optimizer that will determine the best value of various options
         (particularly threading options) for the current hardware.
 
