@@ -22,6 +22,7 @@ static struct {
     uint64_t collisions;
 } hash_stats;
 
+// TODO: look into "equidistributed draft" method
 #define entry_replace_score(entry) \
     (age_score_table[(entry)->age] - (entry)->depth)
 
