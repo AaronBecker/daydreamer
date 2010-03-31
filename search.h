@@ -37,7 +37,7 @@ typedef struct {
     bool use_book;
     bool book_loaded;
     book_fn probe_book;
-    bool use_egbb;
+    bool use_scorpio_bb;
     bool use_gtb;
     bool use_gtb_dtm;
     bool root_in_gtb;

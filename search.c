@@ -257,13 +257,13 @@ static bool check_eg_database(position_t* pos,
             ++root_data.stats.egbb_hits;
             return true;
         }
-    } else if (options.use_egbb) {
+    } else if (options.use_scorpio_bb) {
         // For bitbases, ensure some progress constraints first.
         if ((is_mate_score(alpha) && alpha > 0) ||
                 (is_mate_score(beta) && beta < 0)) return false;
         if (pos->fifty_move_counter != 0 &&
                 (ply <= 2*(depth_to_index(depth) + ply)/3)) return false;
-        if (probe_egbb(pos, score, ply)) {
+        if (probe_scorpio_bb(pos, score, ply)) {
             ++root_data.stats.egbb_hits;
             return true;
         }

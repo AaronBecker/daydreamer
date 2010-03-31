@@ -76,11 +76,10 @@ int64_t random_64(void);
 // daydreamer.c
 void init_daydreamer(void);
 
-// egbb.c
-// TODO: rename egbb* to scorpio_bb*
-bool load_egbb(char* egbb_dir, int cache_size_bytes);
-void unload_egbb(void);
-bool probe_egbb(position_t* pos, int* value, int ply);
+// scorpio_bb.c
+bool load_scorpio_bb(char* egbb_dir, int cache_size_bytes);
+void unload_scorpio_bb(void);
+bool probe_scorpio_bb(position_t* pos, int* value, int ply);
 
 // epd.c
 void epd_testsuite(char* filename, int time_per_problem);
