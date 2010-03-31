@@ -268,7 +268,7 @@ static void handle_gtb_path(void* opt, char* value)
         strcat(option->value, DIR_SEP);
     }
     if (options.use_gtb) {
-        load_gtb(value, options.gtb_cache_size*1024*1024);
+        load_gtb(option->value, options.gtb_cache_size*1024*1024);
     }
 }
 
