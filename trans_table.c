@@ -22,12 +22,9 @@ static struct {
     uint64_t collisions;
 } hash_stats;
 
-#define get_entry_age(entry)        ((entry)->info >> 4)
-#define set_entry_age(entry,age)    \
-    ((entry)->info = get_entry_flags(entry) + ((age) << 4))
 // TODO: look into "equidistributed draft" method
 #define entry_replace_score(entry) \
-    (age_score_table[get_entry_age(entry)] - (entry)->depth)
+    (age_score_table[(entry)->age] - (entry)->depth)
 
 static void set_transposition_age(int age);
 
@@ -96,7 +93,7 @@ transposition_entry_t* get_transposition(position_t* pos)
     for (int i=0; i<bucket_size; ++i, ++entry) {
         if (!entry->key || entry->key != pos->hash) continue;
         hash_stats.hits++;
-        set_entry_age(entry, generation);
+        entry->age = generation;
         return entry;
     }
     hash_stats.misses++;
@@ -121,17 +118,17 @@ void put_transposition(position_t* pos,
     for (int i=0; i<bucket_size; ++i, ++entry) {
         if (entry->key == pos->hash) {
             // Update an existing entry
-            set_entry_age(entry, generation);
+            entry->age = generation;
             entry->depth = depth;
             entry->move = move;
             entry->score = score;
-            set_entry_flags(entry, score_type | mate_threat);
+            entry->flags = score_type | mate_threat;
             switch (score_type) {
                 case SCORE_LOWERBOUND: hash_stats.beta++; break;
                 case SCORE_UPPERBOUND: hash_stats.alpha++; break;
                 case SCORE_EXACT: hash_stats.exact++;
             }
-            switch (get_entry_flags(entry) & SCORE_MASK) {
+            switch (entry->flags & SCORE_MASK) {
                 case SCORE_LOWERBOUND: hash_stats.beta--; break;
                 case SCORE_UPPERBOUND: hash_stats.alpha--; break;
                 case SCORE_EXACT: hash_stats.exact--;
@@ -147,19 +144,19 @@ void put_transposition(position_t* pos,
     // Replace the entry with the highest replace score.
     assert(best_entry != NULL);
     entry = best_entry;
-    if (!entry->key || get_entry_age(entry)!=generation) hash_stats.occupied++;
+    if (!entry->key || entry->age != generation) hash_stats.occupied++;
     else ++hash_stats.evictions;
     switch (score_type) {
         case SCORE_LOWERBOUND: hash_stats.beta++; break;
         case SCORE_UPPERBOUND: hash_stats.alpha++; break;
         case SCORE_EXACT: hash_stats.exact++;
     }
-    set_entry_age(entry, generation);
+    entry->age = generation;
     entry->key = pos->hash;
     entry->move = move;
-    entry->depth = (uint8_t)depth;
+    entry->depth = depth;
     entry->score = score;
-    set_entry_flags(entry, score_type | mate_threat);
+    entry->flags = score_type | mate_threat;
 }
 
 /*
