@@ -468,7 +468,7 @@ void clear_pv_cache(void)
  */
 static move_cache_t* get_pv_move_list(const position_t* pos)
 {
-    move_cache_t* m = &pv_cache[pos->hash & (num_buckets-1)];
+    move_cache_t* m = &pv_cache[pos->hash % num_buckets];
     if (m->key == pos->hash) pv_cache_stats.hits++;
     else if (m->key != 0) pv_cache_stats.evictions++;
     else {
