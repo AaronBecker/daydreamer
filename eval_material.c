@@ -45,7 +45,7 @@ void clear_material_table(void)
  */
 material_data_t* get_material_data(const position_t* pos)
 {
-    material_data_t* md = &material_table[pos->material_hash % num_buckets];
+    material_data_t* md = &material_table[pos->material_hash & (num_buckets-1)];
     if (md->key == pos->material_hash) {
         material_hash_stats.hits++;
         return md;

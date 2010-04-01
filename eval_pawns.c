@@ -113,7 +113,7 @@ void clear_pawn_table(void)
  */
 static pawn_data_t* get_pawn_data(const position_t* pos)
 {
-    pawn_data_t* pd = &pawn_table[pos->pawn_hash % num_buckets];
+    pawn_data_t* pd = &pawn_table[pos->pawn_hash & (num_buckets-1)];
     if (pd->key == pos->pawn_hash) pawn_hash_stats.hits++;
     else if (pd->key != 0) pawn_hash_stats.evictions++;
     else {

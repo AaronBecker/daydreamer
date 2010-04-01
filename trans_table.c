@@ -89,7 +89,7 @@ void increment_transposition_age(void)
 transposition_entry_t* get_transposition(position_t* pos)
 {
     transposition_entry_t* entry;
-    entry = &transposition_table[(pos->hash % num_buckets) * bucket_size];
+    entry = &transposition_table[(pos->hash & (num_buckets-1)) * bucket_size];
     for (int i=0; i<bucket_size; ++i, ++entry) {
         if (!entry->key || entry->key != pos->hash) continue;
         hash_stats.hits++;
