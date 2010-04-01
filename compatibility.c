@@ -9,6 +9,9 @@
 
 void* aligned_malloc(int size, int alignment)
 {
+    (void)alignment;
+    return malloc(size);
+    /*
     uint8_t *align_buf = NULL;
     uint8_t *buf = malloc(size + alignment - 1 + sizeof(void**) + sizeof(int));
     if (buf) {
@@ -19,11 +22,15 @@ void* aligned_malloc(int size, int alignment)
     }
     if (!align_buf) warn("aligned_malloc failed\n");
     return align_buf;
+    */
 }
 
 void aligned_free(void* p)
 {
+    free(p);
+    /*
     if (p) free(*(((void**)p) - 1));
+    */
 }
 
 #ifdef _WIN32
