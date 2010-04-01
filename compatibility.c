@@ -7,7 +7,6 @@
  * the Windows build and a standard 32-bit PRNG.
  */
 
-
 #ifdef _WIN32
 
 void srandom_32(unsigned seed)

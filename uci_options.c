@@ -268,7 +268,7 @@ static void handle_gtb_path(void* opt, char* value)
         strcat(option->value, DIR_SEP);
     }
     if (options.use_gtb) {
-        load_gtb(value, options.gtb_cache_size*1024*1024);
+        load_gtb(option->value, options.gtb_cache_size*1024*1024);
     }
 }
 
@@ -313,15 +313,15 @@ static void handle_gtb_scheme(void* opt, char* value)
 /*
  * Turns Scorpio bitbase use on and off.
  */
-static void handle_egbb_use(void* opt, char* value)
+static void handle_scorpio_bb_use(void* opt, char* value)
 {
     uci_option_t* option = opt;
     if (!option->value) return;
     strncpy(option->value, value, 128);
     bool val = !strcasecmp(value, "true");
     if (val) {
-        load_egbb(get_option_string("Scorpio bitbase path"), 0);
-    } else unload_egbb();
+        load_scorpio_bb(get_option_string("Scorpio bitbase path"), 0);
+    } else unload_scorpio_bb();
     memcpy(option->address, &val, sizeof(bool));
 }
 
@@ -329,7 +329,7 @@ static void handle_egbb_use(void* opt, char* value)
  * Sets the path used to look for Scorpio bitbases, reloading them if the
  * appropriate option is set.
  */
-static void handle_egbb_path(void* opt, char* value)
+static void handle_scorpio_bb_path(void* opt, char* value)
 {
     uci_option_t* option = opt;
     strncpy(option->value, value, 128);
@@ -337,8 +337,8 @@ static void handle_egbb_path(void* opt, char* value)
     if (strrchr(option->value, DIR_SEP[0]) - option->value + 1 != len) {
         strcat(option->value, DIR_SEP);
     }
-    if (options.use_egbb) {
-        load_egbb(option->value, 0);
+    if (options.use_scorpio_bb) {
+        load_scorpio_bb(option->value, 0);
     }
 }
 
@@ -398,9 +398,9 @@ void init_uci_options()
     add_uci_option("Tablebase pieces", OPTION_SPIN, "5",
             3, 6, NULL, &options.max_egtb_pieces, &default_handler);
     add_uci_option("Use Scorpio bitbases", OPTION_CHECK, "false",
-            0, 0, NULL, &options.use_egbb, &handle_egbb_use);
+            0, 0, NULL, &options.use_scorpio_bb, &handle_scorpio_bb_use);
     add_uci_option("Scorpio bitbase path", OPTION_STRING, ".",
-            0, 0, NULL, NULL, &handle_egbb_path);
+            0, 0, NULL, NULL, &handle_scorpio_bb_path);
     add_uci_option("Pawn cache size", OPTION_SPIN, "1",
             1, 128, NULL, NULL, &handle_pawn_cache);
     add_uci_option("PV cache size", OPTION_SPIN, "32",

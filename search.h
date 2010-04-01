@@ -37,7 +37,7 @@ typedef struct {
     bool use_book;
     bool book_loaded;
     book_fn probe_book;
-    bool use_egbb;
+    bool use_scorpio_bb;
     bool use_gtb;
     bool use_gtb_dtm;
     bool root_in_gtb;
@@ -129,7 +129,8 @@ extern search_data_t root_data;
 #define MIN_MATE_VALUE (MATE_VALUE-1024)
 
 #define is_mate_score(score)    \
-    (((score)>MIN_MATE_VALUE) || ((score)<-MIN_MATE_VALUE))
+    (((score)>(MATE_VALUE-MAX_SEARCH_PLY)) || \
+     ((score)<(-MATE_VALUE+MAX_SEARCH_PLY)))
 #define mate_in(ply)                (MATE_VALUE-(ply))
 #define mated_in(ply)               (-MATE_VALUE+(ply))
 #define should_output(s)    \

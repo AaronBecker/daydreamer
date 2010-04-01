@@ -42,7 +42,7 @@ extern "C" {
 #define lib_handle_t    HMODULE
 #endif
 
-#define EGBB_WIN_SCORE  5000
+#define SCORPIO_BB_WIN_SCORE  5000
 
 #ifdef __cplusplus
 } // extern "C"

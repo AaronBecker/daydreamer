@@ -257,13 +257,13 @@ static bool check_eg_database(position_t* pos,
             ++root_data.stats.egbb_hits;
             return true;
         }
-    } else if (options.use_egbb) {
+    } else if (options.use_scorpio_bb) {
         // For bitbases, ensure some progress constraints first.
         if ((is_mate_score(alpha) && alpha > 0) ||
                 (is_mate_score(beta) && beta < 0)) return false;
         if (pos->fifty_move_counter != 0 &&
                 (ply <= 2*(depth_to_index(depth) + ply)/3)) return false;
-        if (probe_egbb(pos, score, ply)) {
+        if (probe_scorpio_bb(pos, score, ply)) {
             ++root_data.stats.egbb_hits;
             return true;
         }
@@ -463,6 +463,7 @@ void deepening_search(search_data_t* search_data, bool ponder)
     options.root_in_gtb = (pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
             pos->num_pawns[WHITE] + pos->num_pawns[BLACK] <=
             options.max_egtb_pieces && options.use_gtb);
+    options.use_gtb_dtm = false;
 
     // If |search_data| already has a list of root moves, we search only
     // those moves. Otherwise, search everything. This allows support for the
@@ -499,9 +500,11 @@ void deepening_search(search_data_t* search_data, bool ponder)
         static int aspire_low[] = { -35, -75, -300 };
         static int aspire_high[] = { 35, 75, 300 };
         if (depth > 5*PLY && options.multi_pv == 1) {
-            alpha = consecutive_fail_lows > 2 ? mated_in(-1) :
+            alpha = consecutive_fail_lows > 2 ||
+                last_score < -MIN_MATE_VALUE+MAX_SEARCH_PLY ? mated_in(-1) :
                 last_score + aspire_low[consecutive_fail_lows];
-            beta = consecutive_fail_highs > 2 ? mate_in(-1) :
+            beta = consecutive_fail_highs > 2 ||
+                last_score > MIN_MATE_VALUE - MAX_SEARCH_PLY ?  mate_in(-1) :
                 last_score + aspire_high[consecutive_fail_highs];
             if (options.verbosity) {
                 printf("info string aspiration window alpha %d beta %d\n",
@@ -543,6 +546,8 @@ void deepening_search(search_data_t* search_data, bool ponder)
             consecutive_fail_lows = 0;
             consecutive_fail_highs = 0;
         }
+        options.use_gtb_dtm = (id_score < -MIN_MATE_VALUE + MAX_SEARCH_PLY ||
+                id_score > MIN_MATE_VALUE - MAX_SEARCH_PLY);
 
         if (!should_deepen(search_data)) {
             search_data->current_depth += PLY;

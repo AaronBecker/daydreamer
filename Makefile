@@ -1,23 +1,14 @@
 
-CLANGFLAGS =
 GCCFLAGS = --std=c99
-ARCHFLAGS = -m64
+CC = gcc $(GCCFLAGS)
 
-CLANGHOME = $(HOME)/local/clang
-SCANVIEW = $(CLANGHOME)/scan-build
-ANALYZER = $(CLANGHOME)/libexec/ccc-analyzer
-#CC = /opt/local/bin/gcc $(GCCFLAGS)
-CC = /usr/bin/gcc $(GCCFLAGS)
-#CC = $(CLANGHOME)/bin/clang $(CLANGFLAGS)
-CTAGS = ctags
-
+ARCHFLAGS = -m32
 COMMONFLAGS = -Wall -Wextra -Wno-unused-function $(ARCHFLAGS) -Igtb
-LDFLAGS = $(ARCHFLAGS) -ldl -Lgtb -lgtb -lpthread \
-	  -isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5
+LDFLAGS = $(ARCHFLAGS) -ldl -Lgtb -lgtb -lpthread
 DEBUGFLAGS = $(COMMONFLAGS) -g -O0 -DEXPENSIVE_CHECKS -DASSERT2
 ANALYZEFLAGS = $(COMMONFLAGS) $(GCCFLAGS) -g -O0
 DEFAULTFLAGS = $(COMMONFLAGS) -g -O2
-OPTFLAGS = $(COMMONFLAGS) -fast -msse -DNDEBUG
+OPTFLAGS = $(COMMONFLAGS) -O3 -DNDEBUG
 PGO1FLAGS = $(OPTFLAGS) -fprofile-generate
 PGO2FLAGS = $(OPTFLAGS) -fprofile-use
 CFLAGS = $(DEFAULTFLAGS)
@@ -36,10 +27,6 @@ PROFFILES := $(SRCFILES:.c=.gcno) $(SRCFILES:.c=.gcda)
 
 .PHONY: all clean gtb tags debug opt pgo-start pgo-finish pgo-clean
 .DEFAULT_GOAL := default
-
-analyze:
-	$(SCANVIEW) -k -v $(MAKE) clean daydreamer \
-	    CC="$(ANALYZER)" CFLAGS="$(ANALYZEFLAGS)"
 
 debug:
 	$(MAKE) daydreamer \
@@ -66,9 +53,6 @@ all: default
 
 daydreamer: gtb $(OBJFILES)
 	$(CC) $(LDFLAGS) $(OBJFILES) -o daydreamer
-
-tags: $(SRCFILES)
-	$(CTAGS) $(HEADERS) $(SRCFILES)
 
 gtb:
 	(cd gtb && $(MAKE) opt)

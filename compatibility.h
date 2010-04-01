@@ -26,12 +26,12 @@ extern "C" {
 #include <windows.h>
 #define strcasecmp      _stricmp
 #define strncasecmp     _strnicmp
-#define sleep           Sleep
 int _strnicmp(const char *string1, const char *string2, size_t count);
 int _stricmp(const char *string1, const char *string2);
 char* strcasestr(register char *s, register char *find);
 char* strsep(char **stringp, const char *delim);
 #define DIR_SEP     "\\"
+#else
 #endif
 
 #ifdef _MSC_VER

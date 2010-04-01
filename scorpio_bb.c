@@ -1,6 +1,6 @@
 
 #include "daydreamer.h"
-#include "egbb.h"
+#include "scorpio_bb.h"
 #include <string.h>
 
 
@@ -43,7 +43,7 @@ static lib_handle_t lib = NULL;
  * Load Scorpio bitbases from |egbb_dir|, with the specified cache size.
  * We also need to find a compatible shared library in the directory.
  */
-bool load_egbb(char* egbb_dir, int cache_size_bytes)
+bool load_scorpio_bb(char* egbb_dir, int cache_size_bytes)
 {
     if (!cache_size_bytes) cache_size_bytes = EGBB_DEFAULT_CACHE_SIZE;
     char path[1024];
@@ -83,7 +83,7 @@ bool load_egbb(char* egbb_dir, int cache_size_bytes)
 /*
  * If we've loaded a library containing Scorpio bitbase code, unload it.
  */
-void unload_egbb(void)
+void unload_scorpio_bb(void)
 {
     if (!lib) return;
     unload_library(lib);
@@ -96,7 +96,7 @@ void unload_egbb(void)
  * progress heuristics in the score, so we're not getting plain W/L/D
  * information here, we're getting an actual numeric score.
  */
-bool probe_egbb(position_t* pos, int* value, int ply)
+bool probe_scorpio_bb(position_t* pos, int* value, int ply)
 {
     if (!egbb_is_loaded) return false;
     assert(pos->num_pieces[WHITE] + pos->num_pieces[BLACK] +
@@ -134,8 +134,8 @@ bool probe_egbb(position_t* pos, int* value, int ply)
             wk, bk, p[0], s[0], p[1], s[1], p[2], s[2]);
 
     if (*value == EGBB_NOTFOUND) return false;
-    if (*value > 0) *value += EGBB_WIN_SCORE - ply;
-    else if (*value < 0) *value -= EGBB_WIN_SCORE - ply;
+    if (*value > 0) *value += SCORPIO_BB_WIN_SCORE - ply;
+    else if (*value < 0) *value -= SCORPIO_BB_WIN_SCORE - ply;
     return true;
 }
 
