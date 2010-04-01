@@ -25,8 +25,8 @@ void init_material_table(const int max_bytes)
         size <<= 1;
         num_buckets <<= 1;
     }
-    if (material_table != NULL) aligned_free(material_table);
-    material_table = aligned_malloc(size, CACHE_LINE_BYTES);
+    if (material_table != NULL) free(material_table);
+    material_table = malloc(size);
     assert(material_table);
     clear_material_table();
 }

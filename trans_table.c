@@ -40,8 +40,8 @@ void init_transposition_table(const size_t max_bytes)
         size <<= 1;
         num_buckets <<= 1;
     }
-    if (transposition_table) aligned_free(transposition_table);
-    transposition_table = aligned_malloc(size, CACHE_LINE_BYTES);
+    if (transposition_table) free(transposition_table);
+    transposition_table = malloc(size);
     assert(transposition_table);
     clear_transposition_table();
     set_transposition_age(0);

@@ -69,8 +69,6 @@ bool init_ctg_book(char* filename);
 move_t get_ctg_book_move(position_t* pos);
 
 // compatibility.c
-void* aligned_malloc(int size, int alignment);
-void aligned_free(void* p);
 void srandom_32(unsigned seed);
 int32_t random_32(void);
 int64_t random_64(void);
