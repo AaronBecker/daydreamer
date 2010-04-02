@@ -1,6 +1,6 @@
 
-Daydreamer 1.7
-==============
+Daydreamer 1.75
+===============
 
 Daydreamer is a chess-playing program I have been writing in my spare time. I
 hope it will one day be a test bed for some ideas I have on parallel tree
@@ -11,6 +11,25 @@ focus on the game and its mind was wandering aimlessly.
 
 Windows, Linux, and Mac binaries are available on the
 [downloads page](http://github.com/AaronBecker/daydreamer/downloads).
+
+Changes from 1.7 to 1.75
+------------------------
+
+* Several bug fixes for ctg book support. Move selection should now behave
+  much more intuitively.
+* Support for version 0.2 of Gaviota tablebases, which allows on-the-fly
+  bitbase construction.
+* Overall better behavior for threaded tablebase loading. The background thread
+  will no longer consume resources when not in use, and background thread
+  loading can be disabled. Background loading has been significantly
+  simplified, and now uses only one thread, rather than a pool.
+* Windows threading support no longer requires a pthreads dll.
+* Fixed a bug in pawn analysis.
+* Small tweaks to search parameters.
+* Changed verbose output format to prevent incorrect score reports in Arena.
+
+Special thanks to Werner Schüle and Carlos Pesce for their help in identifying
+and fixing bugs in my tablebase and opening book implementations, respectively.
 
 Changes from 1.6 to 1.7
 -----------------------
