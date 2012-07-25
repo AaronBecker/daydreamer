@@ -80,8 +80,8 @@ static void update_pv(move_t* dst, move_t* src, int ply, move_t move)
 }
 
 /*
- * Every time a node is expanded, this function increments the node counter.
- * Every POLL_INTERVAL nodes, user input, is checked.
+ * Every time a node is expanded, increment the node counter. Every
+ * POLL_INTERVAL nodes, check for user input.
  */
 static void open_node(search_data_t* data, int ply)
 {
