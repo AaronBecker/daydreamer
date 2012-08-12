@@ -94,6 +94,7 @@ bool has_single_reply(move_selector_t* sel)
 bool should_try_prune(move_selector_t* sel, move_t move)
 {
     (void)sel;
+    // TODO: evaluate vs get_move_promote != QUEEN
     return !get_move_capture(move) &&
         !get_move_promote(move) &&
         !is_move_castle(move);
