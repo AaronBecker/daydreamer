@@ -88,8 +88,7 @@ int simple_eval(const position_t* pos)
 }
 
 /*
- * Do full, more expensive evaluation of the position. Not implemented yet,
- * so just return the simple evaluation.
+ * Do full, more expensive evaluation of the position.
  */
 int full_eval(const position_t* pos, eval_data_t* ed)
 {
