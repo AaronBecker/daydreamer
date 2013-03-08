@@ -7,9 +7,9 @@ extern "C" {
 
 typedef uint64_t hashkey_t;
 
-extern const hashkey_t piece_random[2][7][64];
-extern const hashkey_t castle_random[2][2][2];
-extern const hashkey_t enpassant_random[64];
+extern hashkey_t piece_random[2][7][64];
+extern hashkey_t castle_random[2][2][2];
+extern hashkey_t enpassant_random[64];
 
 #define piece_hash(p,sq) \
     piece_random[piece_color(p)][piece_type(p)][square_to_index(sq)]

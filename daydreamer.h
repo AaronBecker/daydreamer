@@ -244,7 +244,7 @@ void uci_wait_for_command(void);
 
 // uci_option.c
 void init_uci_options(void);
-void set_uci_option(char* command);
+void set_uci_option(const char* command);
 int get_option_int(const char* name);
 bool get_option_bool(const char* name);
 char* get_option_string(const char* name);

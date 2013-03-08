@@ -23,15 +23,16 @@ typedef enum {
     NONE=0, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
 } piece_type_t;
 
-#define piece_type(piece)               ((piece) & 0x07)
+#define piece_type(piece)               ((piece_type_t)((piece) & 0x07))
 #define piece_is_type(piece, type)      (piece_type((piece)) == (type))
-#define piece_color(piece)              ((piece) >> 3)
+#define piece_color(piece)              ((color_t)((piece) >> 3))
 #define piece_is_color(piece, color)    (piece_color((piece)) == (color))
-#define create_piece(color, type)       (((color) << 3) | (type))
+#define create_piece(color, type)       ((piece_t)(((color) << 3) | (type)))
 #define piece_colors_match(p1, p2)      (((p1) >> 3) == ((p2) >> 3))
 #define piece_colors_differ(p1, p2)     (((p1) >> 3) != ((p2) >> 3))
 #define can_capture(p1, p2)             ((((p1) >> 3)^1) == ((p2) >> 3))
 #define flip_piece(p)                   (flip_piece[p])
+#define flip_color(c)                   ((color_t)((c)^1))
 
 typedef enum {
     FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NONE

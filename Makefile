@@ -1,6 +1,6 @@
 
-GCCFLAGS = --std=c99
-CC = gcc $(GCCFLAGS)
+GCCFLAGS = --std=c++11
+CXX = clang++ $(GCCFLAGS)
 
 ARCHFLAGS = -m32
 COMMONFLAGS = -Wall -Wextra -Wno-unused-function $(ARCHFLAGS) -Igtb
@@ -11,48 +11,48 @@ DEFAULTFLAGS = $(COMMONFLAGS) -g -O2
 OPTFLAGS = $(COMMONFLAGS) -O3 -DNDEBUG
 PGO1FLAGS = $(OPTFLAGS) -fprofile-generate
 PGO2FLAGS = $(OPTFLAGS) -fprofile-use
-CFLAGS = $(DEFAULTFLAGS)
+CXXFLAGS = $(DEFAULTFLAGS)
 
-DBGCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEBUGFLAGS)\\\"\"
-OPTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(OPTFLAGS)\\\"\"
-PGOCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(PGO2FLAGS)\\\"\"
-DFTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CC)` $(DEFAULTFLAGS)\\\"\"
+DBGCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CXX)` $(DEBUGFLAGS)\\\"\"
+OPTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CXX)` $(OPTFLAGS)\\\"\"
+PGOCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CXX)` $(PGO2FLAGS)\\\"\"
+DFTCOMPILESTR = -DCOMPILE_COMMAND=\"\\\"`basename $(CXX)` $(DEFAULTFLAGS)\\\"\"
 
 GITFLAGS = -DGIT_VERSION=\"\\\"`git rev-parse --short HEAD`\\\"\"
 
-SRCFILES := $(wildcard *.c)
+SRCFILES := $(wildcard *.cc)
 HEADERS  := $(wildcard *.h)
-OBJFILES := $(SRCFILES:.c=.o)
-PROFFILES := $(SRCFILES:.c=.gcno) $(SRCFILES:.c=.gcda)
+OBJFILES := $(SRCFILES:.cc=.o)
+PROFFILES := $(SRCFILES:.cc=.gcno) $(SRCFILES:.cc=.gcda)
 
 .PHONY: all clean gtb tags debug opt pgo-start pgo-finish pgo-clean
 .DEFAULT_GOAL := default
 
 debug:
 	$(MAKE) daydreamer \
-	    CFLAGS="$(DEBUGFLAGS) $(GITFLAGS) $(DBGCOMPILESTR)"
+	    CXXFLAGS="$(DEBUGFLAGS) $(GITFLAGS) $(DBGCOMPILESTR)"
 
 default:
 	$(MAKE) daydreamer \
-	    CFLAGS="$(DEFAULTFLAGS) $(GITFLAGS) $(DFTCOMPILESTR)"
+	    CXXFLAGS="$(DEFAULTFLAGS) $(GITFLAGS) $(DFTCOMPILESTR)"
 
 opt:
 	$(MAKE) daydreamer \
-	    CFLAGS="$(OPTFLAGS) $(GITFLAGS) $(OPTCOMPILESTR)"
+	    CXXFLAGS="$(OPTFLAGS) $(GITFLAGS) $(OPTCOMPILESTR)"
 
 pgo-start:
 	$(MAKE) daydreamer \
-	    CFLAGS="$(PGO1FLAGS) $(GITFLAGS) $(OPTCOMPILESTR)" \
+	    CXXFLAGS="$(PGO1FLAGS) $(GITFLAGS) $(OPTCOMPILESTR)" \
 	    LDFLAGS='$(LDFLAGS) -fprofile-generate'
 
 pgo-finish:
 	$(MAKE) daydreamer \
-	    CFLAGS="$(PGO2FLAGS) $(GITFLAGS) $(PGOCOMPILESTR)"
+	    CXXFLAGS="$(PGO2FLAGS) $(GITFLAGS) $(PGOCOMPILESTR)"
 
 all: default
 
 daydreamer: gtb $(OBJFILES)
-	$(CC) $(LDFLAGS) $(OBJFILES) -o daydreamer
+	$(CXX) $(LDFLAGS) $(OBJFILES) -o daydreamer
 
 gtb:
 	(cd gtb && $(MAKE) opt)
@@ -64,7 +64,7 @@ pgo-clean:
 	rm -f $(PROFFILES)
 
 .depend:
-	$(CC) -MM $(DEFAULTFLAGS) $(SRCFILES) > $@
+	$(CXX) -MM $(DEFAULTFLAGS) $(SRCFILES) > $@
 
 include .depend
 

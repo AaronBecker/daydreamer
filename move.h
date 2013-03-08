@@ -22,13 +22,13 @@ typedef int32_t move_t;
 #define CASTLE_FLAG                 1<<30
 #define get_move_from(move)         ((move) & 0xff)
 #define get_move_to(move)           (((move) >> 8) & 0xff)
-#define get_move_piece(move)        (((move) >> 16) & 0x0f)
+#define get_move_piece(move)        ((piece_t)(((move) >> 16) & 0x0f))
 #define get_move_piece_type(move) \
     ((piece_type_t)piece_type(get_move_piece(move)))
 #define get_move_piece_color(move)  ((color_t)piece_color(get_move_piece(move)))
-#define get_move_capture(move)      (((move) >> 20) & 0x0f)
+#define get_move_capture(move)      ((piece_t)(((move) >> 20) & 0x0f))
 #define get_move_capture_type(move) piece_type(get_move_capture(move))
-#define get_move_promote(move)      (((move) >> 24) & 0x0f)
+#define get_move_promote(move)      ((piece_type_t)(((move) >> 24) & 0x0f))
 #define is_move_enpassant(move)     (((move) & ENPASSANT_FLAG) != 0)
 #define is_move_castle(move)        (((move) & CASTLE_FLAG) != 0)
 #define is_move_castle_long(move) \
