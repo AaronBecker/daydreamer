@@ -52,7 +52,7 @@ pgo-finish:
 all: default
 
 daydreamer: gtb $(OBJFILES)
-	$(CC) $(LDFLAGS) $(OBJFILES) -o daydreamer
+	$(CC) $(OBJFILES) $(LDFLAGS) -o daydreamer
 
 gtb:
 	(cd gtb && $(MAKE) opt)
