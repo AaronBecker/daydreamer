@@ -1,7 +1,4 @@
-use std::cmp;
 use std::mem;
-use std::fmt;
-use std::str;
 
 // Iterator implementation for board enums. This allows us to iterator over
 // files, ranks, squares, etc easily while keeping the definitions clean and
@@ -37,6 +34,7 @@ impl<T> DoubleEndedIterator for EachElement<T> {
         }
     }
 }
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Color {
@@ -174,8 +172,8 @@ pub fn file(sq: Square) -> File {
     unsafe { mem::transmute(sq as u8 & 7) }
 }
 
-impl fmt::Display for Square {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl ::std::fmt::Display for Square {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         write!(f,
                "{}{}",
                (file(*self) as u8 + 97) as char,
@@ -183,294 +181,49 @@ impl fmt::Display for Square {
     }
 }
 
-// TODO: look into performance implications of unchecked indexing
-pub type Bitboard = u64;
-
-static mut square_bb: [Bitboard; 64] = [0; 64];
-static mut rank_bb: [Bitboard; 8] = [0; 8];
-static mut file_bb: [Bitboard; 8] = [0; 8];
-static mut distance: [[u8; 64]; 2] = [[0; 64]; 2];
-// inline string String(Bitboard bb) {
-// string str = "\n";
-// for (Rank r = Rank8; r >= Rank1; r = Prev(r)) {
-// for (File f = FileA; f <= FileH; f = Next(f)) {
-// if (bb & BB(NewSquare(f, r))) {
-// str += "x";
-// } else {
-// str += ".";
-// }
-// }
-// str += "\n";
-// }
-// return str;
-// }
-
-pub trait IntoBitboard {
-    fn into_bitboard(self) -> Bitboard;
-}
-
-impl IntoBitboard for Rank {
-    fn into_bitboard(self) -> Bitboard {
-        debug_assert!(self != Rank::NoRank);
-        unsafe { rank_bb[self as usize] }
+impl ::std::str::FromStr for Square {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "-" {
+            return Ok(Square::NoSquare);
+        }
+        let s = s.to_lowercase();
+        if s.as_bytes().len() != 2 {
+            return Err(format!("couldn't parse string as square: {}", s));
+        }
+        let fb: u8 = s.as_bytes()[0] - 97;
+        let rb: u8 = s.as_bytes()[1] - 49;
+        if fb >= File::NoFile as u8 || rb >= Rank::NoRank as u8 {
+            return Err(format!("couldn't parse string as square: {}", s));
+        }
+        unsafe{ Ok(sq(mem::transmute(fb), mem::transmute(rb))) }
     }
 }
 
-impl IntoBitboard for File {
-    fn into_bitboard(self) -> Bitboard {
-        debug_assert!(self != File::NoFile);
-        unsafe { file_bb[self as usize] }
-    }
-}
+pub type Delta = i8;
+pub const NORTH: Delta = 8;
+pub const SOUTH: Delta = -8;
+pub const EAST: Delta = 1;
+pub const WEST: Delta = -1;
+pub const NORTHWEST: Delta = NORTH + WEST;
+pub const NORTHEAST: Delta = NORTH + EAST;
+pub const SOUTHWEST: Delta = SOUTH + WEST;
+pub const SOUTHEAST: Delta = SOUTH + EAST;
 
-impl IntoBitboard for Square {
-    fn into_bitboard(self) -> Bitboard {
-        unsafe { square_bb[self as usize] }
-    }
-}
-
-// inline Bitboard BitboardFromString(string str) {
-// Bitboard bb = 0;
-// vector<string> lines = strings::Split(str, "\n", strings::SkipEmpty());
-// for (Square sq = A1; sq <= H8; sq = Next(sq)) {
-// if (lines[7 - RankOf(sq)][FileOf(sq)] == 'x') {
-// bb |= BB(sq);
-// }
-// }
-// return bb;
-// }
-pub fn bb<T: IntoBitboard>(x: T) -> Bitboard {
-    x.into_bitboard()
-}
-
-pub fn relative_rank_bb(c: Color, r: Rank) -> Bitboard {
-    debug_assert!(r != Rank::NoRank);
+pub fn pawn_push(c: Color) -> Delta {
     debug_assert!(c != Color::NoColor);
     if c == Color::White {
-        unsafe { rank_bb[r as usize] }
+        NORTH
     } else {
-        unsafe { rank_bb[(Rank::_8 as u8 - r as u8) as usize] }
+        SOUTH
     }
 }
 
-fn fill_simple_bitboards() {
-    for i in 0..9 {
-        unsafe {
-            rank_bb[i] = 0xff << (8 * i);
-            file_bb[i] = 0x0101010101010101 << i;
-        }
-    }
-    for sq1 in each_square() {
-        let i = sq1 as usize;
-        unsafe {
-            square_bb[i] = 1 << i;
-        }
-        for sq2 in each_square() {
-            let j = sq2 as usize;
-            let rd = rank(sq1) as i8 - rank(sq2) as i8;
-            let fd = file(sq1) as i8 - file(sq2) as i8;
-            unsafe {
-                distance[i][j] = cmp::max(rd.abs(), fd.abs()) as u8;
-            }
-        }
+pub fn shift_sq(sq: Square, d: Delta) -> Square {
+    let sq2: u8 = (sq as i8 + d) as u8;
+    if sq2 >= Square::NoSquare as u8 {
+        Square::NoSquare
+    } else {
+        unsafe { mem::transmute(sq2) }
     }
 }
-
-// typedef uint64_t Bitboard;
-//
-// extern int distance[64][64];
-// extern Bitboard betweenBB[64][64];
-// extern Bitboard raysBB[64][64];
-// extern Bitboard KingAttacks[64];
-// extern Bitboard WhitePawnAttacks[64];
-// extern Bitboard BlackPawnAttacks[64];
-// extern Bitboard KnightAttacks[64];
-// extern Bitboard RookPseudoAttacks[64];
-// extern Bitboard BishopPseudoAttacks[64];
-// extern Bitboard QueenPseudoAttacks[64];
-// extern Bitboard RookAttacks[64][4096];
-// extern Bitboard BishopAttacks[64][512];
-// extern Bitboard RookMasks[64];
-// extern Bitboard BishopMasks[64];
-// extern Bitboard RookMagic[64];
-// extern Bitboard BishopMagic[64];
-//
-
-// inline Bitboard Shift(Bitboard bb, Delta d) {
-// switch (d) {
-// case North:
-// return bb << 8;
-// case North + North:
-// return bb << 16;
-// case South:
-// return bb >> 8;
-// case South + South:
-// return bb >> 16;
-// case Northeast:
-// return (bb & ~BB(FileH)) << 9;
-// case Southeast:
-// return (bb & ~BB(FileH)) >> 7;
-// case Northwest:
-// return (bb & ~BB(FileA)) << 7;
-// case Southwest:
-// return (bb & ~BB(FileA)) >> 9;
-// }
-// assert(false);
-// return 0;
-// }
-//
-// LSB returns the square corresponding to the least significant bit of bb.
-// inline Square LSB(Bitboard bb) {
-// assert(bb);
-// return Square(__builtin_ffsll(bb) - 1);
-// }
-//
-// MSB returns the square corresponding to the most significant bit of bb.
-// inline Square MSB(Bitboard bb) {
-// assert(bb);
-// return Square(63 - __builtin_clzll(bb));
-// }
-//
-// PopSquare clears the least significant bit of bb and returns the
-// corresponding square.
-// inline Square PopSquare(Bitboard* bb) {
-// Square sq = LSB(*bb);
-// bb &= (*bb - 1);
-// return sq;
-// }
-//
-// Popcount returns the number of 1 bits in x.
-// inline int Popcount(Bitboard x) {
-// return __builtin_popcountll(x);
-// }
-//
-// inline int MagicBishopIndex(Square sq, Bitboard occ) {
-// assert(Valid(sq));
-// occ &= BishopMasks[sq];
-// occ *= BishopMagic[sq];
-// return int(occ >> 55);
-// }
-//
-// inline int MagicRookIndex(Square sq, Bitboard occ) {
-// assert(Valid(sq));
-// occ &= RookMasks[sq];
-// occ *= RookMagic[sq];
-// return int(occ >> 52);
-// }
-//
-// template <PieceType pt>
-// inline Bitboard Attacks(Square sq) {
-// assert(Valid(sq));
-// switch (pt) {
-// case Bishop:
-// return BishopPseudoAttacks[sq];
-// case Rook:
-// return RookPseudoAttacks[sq];
-// case Queen:
-// return QueenPseudoAttacks[sq];
-// case Knight:
-// return KnightAttacks[sq];
-// case King:
-// return KingAttacks[sq];
-// default:
-// assert(false);
-// }
-// return 0;
-// }
-//
-// template <PieceType pt>
-// inline Bitboard Attacks(Square sq, Bitboard occ) {
-// assert(Valid(sq));
-// switch (pt) {
-// case Bishop:
-// return BishopAttacks[sq][MagicBishopIndex(sq, occ)];
-// case Rook:
-// return RookAttacks[sq][MagicRookIndex(sq, occ)];
-// case Queen:
-// return BishopAttacks[sq][MagicBishopIndex(sq, occ)] |
-// RookAttacks[sq][MagicRookIndex(sq, occ)];
-// case Knight:
-// return KnightAttacks[sq];
-// case King:
-// return KingAttacks[sq];
-// default:
-// assert(false);
-// }
-// return 0;
-// }
-//
-// template <PieceType pt>
-// inline Bitboard Attacks(Color c, Square sq);
-//
-// template <>
-// inline Bitboard Attacks<Pawn>(Color c, Square sq) {
-// assert(Valid(sq));
-// if (c == Color::White) {
-// return WhitePawnAttacks[sq];
-// } else {
-// return BlackPawnAttacks[sq];
-// }
-// }
-//
-// template <Piece p>
-// inline Bitboard Attacks(Square sq) {
-// assert(Valid(sq));
-// switch (p) {
-// case Piece::WP:
-// return WhitePawnAttacks[sq];
-// case Piece::BP:
-// return BlackPawnAttacks[sq];
-// case Piece::WB:
-// case Piece::BB:
-// return BishopPseudoAttacks[sq];
-// case Piece::WR:
-// case Piece::BR:
-// return RookPseudoAttacks[sq];
-// case Piece::WQ:
-// case Piece::BQ:
-// return QueenPseudoAttacks[sq];
-// case Piece::WN:
-// case Piece::BN:
-// return KnightAttacks[sq];
-// case Piece::WK:
-// case Piece::BK:
-// return KingAttacks[sq];
-// default:
-// assert(false);
-// }
-// return 0;
-// }
-//
-// template <Piece p>
-// inline Bitboard Attacks(Square sq, Bitboard occ) {
-// assert(Valid(sq));
-// switch (p) {
-// case Piece::WP:
-// return WhitePawnAttacks[sq];
-// case Piece::BP:
-// return BlackPawnAttacks[sq];
-// default:
-// return Attacks<TypeOf(p)>(sq, occ);
-// }
-// }
-//
-// inline Bitboard Attacks(PieceType pt, Square sq, Bitboard occ) {
-// assert(Valid(sq));
-// switch (pt) {
-// case Bishop:
-// return BishopAttacks[sq][MagicBishopIndex(sq, occ)];
-// case Rook:
-// return RookAttacks[sq][MagicRookIndex(sq, occ)];
-// case Queen:
-// return BishopAttacks[sq][MagicBishopIndex(sq, occ)] |
-// RookAttacks[sq][MagicRookIndex(sq, occ)];
-// case Knight:
-// return KnightAttacks[sq];
-// case King:
-// return KingAttacks[sq];
-// default:
-// assert(false);
-// }
-// return 0;
-// }
-//
