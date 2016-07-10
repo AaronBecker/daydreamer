@@ -198,11 +198,11 @@ fn init_mundane_attacks() {
 
 static mut bishop_masks: [Bitboard; 64] = [0; 64];
 static mut bishop_magic: [Bitboard; 64] = [0; 64];
-static mut bishop_attacks_bb: [[Bitboard; 64]; 512] = [[0; 64]; 512];
+static mut bishop_attacks_bb: [[Bitboard; 512]; 64] = [[0; 512]; 64];
 
 static mut rook_masks: [Bitboard; 64] = [0; 64];
 static mut rook_magic: [Bitboard; 64] = [0; 64];
-static mut rook_attacks_bb: [[Bitboard; 64]; 4096] = [[0; 64]; 4096];
+static mut rook_attacks_bb: [[Bitboard; 4096]; 64] = [[0; 4096]; 64];
 
 fn magic_bishop_index(sq: Square, mut occ: Bitboard) -> usize {
     debug_assert!(sq != Square::NoSquare);
@@ -252,12 +252,10 @@ unsafe fn init_bishop_attacks(sq: Square,
                               occ: &[Bitboard; 4096],
                               gold: &[Bitboard; 4096])
                               -> bool {
-    for i in 0..512 {
-        bishop_attacks_bb[i][sq.index()] = 0;
-    }
+    ::std::intrinsics::write_bytes(&mut bishop_attacks_bb[sq.index()][0], 0, 512);
     for i in 0..size {
         let att: *mut Bitboard =
-            &mut bishop_attacks_bb[magic_bishop_index(sq, occ[i as usize])][sq.index()];
+            &mut bishop_attacks_bb[sq.index()][magic_bishop_index(sq, occ[i as usize])];
         if *att != 0 && *att != gold[i as usize] {
             return false;
         }
@@ -271,12 +269,10 @@ unsafe fn init_rook_attacks(sq: Square,
                             occ: &[Bitboard; 4096],
                             gold: &[Bitboard; 4096])
                             -> bool {
-    for i in 0..4096 {
-        rook_attacks_bb[i][sq.index()] = 0;
-    }
+    ::std::intrinsics::write_bytes(&mut rook_attacks_bb[sq.index()][0], 0, 4096);
     for i in 0..size {
         let att: *mut Bitboard =
-            &mut rook_attacks_bb[magic_rook_index(sq, occ[i as usize])][sq.index()];
+            &mut rook_attacks_bb[sq.index()][magic_rook_index(sq, occ[i as usize])];
         if *att != 0 && *att != gold[i as usize] {
             return false;
         }
@@ -286,15 +282,10 @@ unsafe fn init_rook_attacks(sq: Square,
 }
 
 pub fn optimize_rook_seed() {
-    // 8452 <- probably best, close
-    // 27915
-    // 37669 (308 ms)
-    // 129536, 302ms
-    // last tested: 145000
     init_simple_bitboards();
     init_mundane_attacks();
     let mut seed = 35000;
-    let mut best_time: u64 = u64::max_value();
+    let mut best_time: u64;
     unsafe {
         best_time = init_magic_opt(PieceType::Rook, 8452, u64::max_value());
     }
@@ -315,9 +306,6 @@ pub fn optimize_rook_seed() {
 }
 
 pub fn optimize_bishop_seed() {
-    // 361
-    // 17337
-    // tested to 100k
     init_simple_bitboards();
     init_mundane_attacks();
     let mut seed = 0;
@@ -339,9 +327,14 @@ pub fn optimize_bishop_seed() {
 }
 
 fn init_magic() {
+    // We cheat on initialization time by choosing rng seeds that are known to
+    // find conforming magic numbers quickly. This doesn't matter much for real
+    // applications, but it makes the edit/compile/test cycle much faster--it's
+    // mostly a feature for my own convenience in development, so the fact that
+    // the benefits don't necessarily translate across systems doesn't matter.
+    // I tested Seed values up to 100k.
     unsafe { init_magic_opt(PieceType::Bishop, 17337, u64::max_value()); }
     unsafe { init_magic_opt(PieceType::Rook, 8452, u64::max_value()); }
-    ()
 }
 
 unsafe fn init_magic_opt(pt: PieceType, xseed: usize, best_time: u64) -> u64{
@@ -374,7 +367,6 @@ unsafe fn init_magic_opt(pt: PieceType, xseed: usize, best_time: u64) -> u64{
         }
 
         // Find a magic number that works by trial and error.
-        //
         loop {
             let t2 = ::time::precise_time_ns();
             if t2 - t1 > best_time {
@@ -475,11 +467,11 @@ pub fn black_pawn_attacks(sq: Square) -> Bitboard {
 }
 
 pub fn bishop_attacks(sq: Square, occ: Bitboard) -> Bitboard {
-    unsafe { bishop_attacks_bb[magic_bishop_index(sq, occ)][sq.index()] }
+    unsafe { bishop_attacks_bb[sq.index()][magic_bishop_index(sq, occ)] }
 }
 
 pub fn rook_attacks(sq: Square, occ: Bitboard) -> Bitboard {
-    unsafe { rook_attacks_bb[magic_rook_index(sq, occ)][sq.index()] }
+    unsafe { rook_attacks_bb[sq.index()][magic_rook_index(sq, occ)] }
 }
 
 pub fn queen_attacks(sq: Square, occ: Bitboard) -> Bitboard {
