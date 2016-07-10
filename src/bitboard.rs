@@ -288,7 +288,9 @@ unsafe fn init_rook_attacks(sq: Square,
 pub fn optimize_rook_seed() {
     // 8452 <- probably best, close
     // 27915
-    // last tested: 35000
+    // 37669 (308 ms)
+    // 129536, 302ms
+    // last tested: 145000
     init_simple_bitboards();
     init_mundane_attacks();
     let mut seed = 35000;
