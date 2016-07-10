@@ -501,23 +501,23 @@ mod tests {
         s: &'static str,
     }
 
-    fn test_bb_str(t: BBStrTest) {
+    fn test_one_bb_str(t: BBStrTest) {
         initialize();
         assert_eq!(t.x, bb_from_str(t.s));
         assert_eq!(t.s, bb_to_str(t.x));
     }
 
     #[test]
-    fn run_bb_str_tests() {
-        test_bb_str(BBStrTest {
+    fn test_bb_str_tests() {
+        test_one_bb_str(BBStrTest {
             x: 0,
             s: "\n........\n........\n........\n........\n........\n........\n........\n........\n",
         });
-        test_bb_str(BBStrTest {
+        test_one_bb_str(BBStrTest {
             x: all_bb!(E4, E5, D4, D5),
             s: "\n........\n........\n........\n...xx...\n...xx...\n........\n........\n........\n",
         });
-        test_bb_str(BBStrTest {
+        test_one_bb_str(BBStrTest {
             x: all_bb!(A1, B2, A8, B7),
             s: "\nx.......\n.x......\n........\n........\n........\n........\n.x......\nx.......\n",
         });
@@ -530,7 +530,7 @@ mod tests {
         popped: Bitboard,
     }
 
-    fn test_pop_square(t: PopSquareTest) {
+    fn test_one_pop_square(t: PopSquareTest) {
         assert_eq!(t.want, lsb(t.x));
         let mut x = t.x;
         let got = pop_square(&mut x);
@@ -539,34 +539,34 @@ mod tests {
     }
 
     #[test]
-    fn run_pop_square_tests() {
+    fn test_pop_square() {
         initialize();
-        test_pop_square(PopSquareTest {
+        test_one_pop_square(PopSquareTest {
             x: 1,
             want: A1,
             popped: 0,
         });
-        test_pop_square(PopSquareTest {
+        test_one_pop_square(PopSquareTest {
             x: 2,
             want: B1,
             popped: 0,
         });
-        test_pop_square(PopSquareTest {
+        test_one_pop_square(PopSquareTest {
             x: 0xff,
             want: A1,
             popped: 0xfe,
         });
-        test_pop_square(PopSquareTest {
+        test_one_pop_square(PopSquareTest {
             x: bb(H8),
             want: H8,
             popped: 0,
         });
-        test_pop_square(PopSquareTest {
+        test_one_pop_square(PopSquareTest {
             x: bb(A1),
             want: A1,
             popped: 0,
         });
-        test_pop_square(PopSquareTest {
+        test_one_pop_square(PopSquareTest {
             x: all_bb!(E4, E5, D4, D5),
             want: D4,
             popped: all_bb!(E4, E5, D5),
