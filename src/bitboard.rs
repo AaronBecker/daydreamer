@@ -286,10 +286,16 @@ unsafe fn init_rook_attacks(sq: Square,
 }
 
 pub fn optimize_rook_seed() {
+    // 8452 <- probably best, close
+    // 27915
+    // last tested: 35000
     init_simple_bitboards();
     init_mundane_attacks();
-    let mut seed = 8452;
+    let mut seed = 35000;
     let mut best_time: u64 = u64::max_value();
+    unsafe {
+        best_time = init_magic_opt(PieceType::Rook, 8452, u64::max_value());
+    }
     println!("starting optimization...");
     loop {
         unsafe {
@@ -306,9 +312,33 @@ pub fn optimize_rook_seed() {
     }
 }
 
+pub fn optimize_bishop_seed() {
+    // 361
+    // 17337
+    // tested to 100k
+    init_simple_bitboards();
+    init_mundane_attacks();
+    let mut seed = 0;
+    let mut best_time: u64 = u64::max_value();
+    println!("starting optimization...");
+    loop {
+        unsafe {
+            let t = init_magic_opt(PieceType::Bishop, seed, best_time);
+            if t < best_time {
+                best_time = t;
+                println!("\nnew best seed: {}, {}ms", seed, best_time / 1000 / 1000);
+            }
+        }
+        seed += 1;
+        if seed % 500 == 0 {
+            println!("{}", seed);
+        }
+    }
+}
+
 fn init_magic() {
-    unsafe { init_magic_opt(PieceType::Bishop, 13795, u64::max_value()); }
-    unsafe { init_magic_opt(PieceType::Rook, 13795, u64::max_value()); }
+    unsafe { init_magic_opt(PieceType::Bishop, 17337, u64::max_value()); }
+    unsafe { init_magic_opt(PieceType::Rook, 8452, u64::max_value()); }
     ()
 }
 

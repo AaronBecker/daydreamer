@@ -7,5 +7,5 @@ pub mod board;
 pub mod bitboard;
 
 fn main() {
-    bitboard::optimize_rook_seed();
+    bitboard::initialize();
 }
