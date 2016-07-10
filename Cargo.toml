@@ -4,3 +4,10 @@ version = "0.1.0"
 authors = ["akb <aaron@falsesharing.com>"]
 
 [dependencies]
+rand = "*"
+time = "*"
+
+[profile.release]
+opt-level = 3
+debug = false
+debug-assertions = false

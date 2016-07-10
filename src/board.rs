@@ -104,6 +104,17 @@ pub enum Rank {
     NoRank,
 }
 
+impl Rank {
+    pub fn index(self) -> usize {
+        self as usize
+    }
+
+    pub fn from_index(x: u8) -> Rank {
+        debug_assert!(x <= Rank::NoRank as u8);
+        unsafe { mem::transmute(x) }
+    }
+}
+
 pub fn each_rank() -> EachElement<Rank> {
     EachElement::<Rank> {
         front: 0,
@@ -124,6 +135,17 @@ pub enum File {
     G,
     H,
     NoFile,
+}
+
+impl File {
+    pub fn index(self) -> usize {
+        self as usize
+    }
+
+    pub fn from_index(x: u8) -> File {
+        debug_assert!(x <= File::NoFile as u8);
+        unsafe { mem::transmute(x) }
+    }
 }
 
 pub fn each_file() -> EachElement<File> {
@@ -149,35 +171,33 @@ pub enum Square {
     NoSquare,
 }
 
-pub fn each_square() -> EachElement<Square> {
-    EachElement::<Square> {
-        front: 0,
-        back: Square::NoSquare as u8,
-        phantom: ::std::marker::PhantomData,
+impl Square {
+    pub fn rank(self) -> Rank {
+        debug_assert!(self != Square::NoSquare);
+        unsafe { mem::transmute(self as u8 >> 3) }
     }
-}
 
-pub fn sq(f: File, r: Rank) -> Square {
-    debug_assert!(f != File::NoFile);
-    debug_assert!(r != Rank::NoRank);
-    unsafe { mem::transmute(((r as u8) << 3) | (f as u8)) }
-}
+    pub fn file(self) -> File {
+        debug_assert!(self != Square::NoSquare);
+        unsafe { mem::transmute(self as u8 & 7) }
+    }
 
-pub fn rank(sq: Square) -> Rank {
-    debug_assert!(sq != Square::NoSquare);
-    unsafe { mem::transmute(sq as u8 >> 3) }
-}
+    pub fn index(self) -> usize {
+        self as usize
+    }
 
-pub fn file(sq: Square) -> File {
-    unsafe { mem::transmute(sq as u8 & 7) }
+    pub fn from_index(x: u8) -> Square {
+        debug_assert!(x <= Square::NoSquare as u8);
+        unsafe { mem::transmute(x) }
+    }
 }
 
 impl ::std::fmt::Display for Square {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         write!(f,
                "{}{}",
-               (file(*self) as u8 + 97) as char,
-               rank(*self) as u8 + 1)
+               (self.file() as u8 + 97) as char,
+               self.rank() as u8 + 1)
     }
 }
 
@@ -198,6 +218,20 @@ impl ::std::str::FromStr for Square {
         }
         unsafe{ Ok(sq(mem::transmute(fb), mem::transmute(rb))) }
     }
+}
+
+pub fn each_square() -> EachElement<Square> {
+    EachElement::<Square> {
+        front: 0,
+        back: Square::NoSquare as u8,
+        phantom: ::std::marker::PhantomData,
+    }
+}
+
+pub fn sq(f: File, r: Rank) -> Square {
+    debug_assert!(f != File::NoFile);
+    debug_assert!(r != Rank::NoRank);
+    Square::from_index(((r as u8) << 3) | (f as u8))
 }
 
 pub type Delta = i8;
@@ -224,6 +258,6 @@ pub fn shift_sq(sq: Square, d: Delta) -> Square {
     if sq2 >= Square::NoSquare as u8 {
         Square::NoSquare
     } else {
-        unsafe { mem::transmute(sq2) }
+        Square::from_index(sq2)
     }
 }
