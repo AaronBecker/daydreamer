@@ -4,12 +4,11 @@ pub fn initialize() {
     static INIT: ::std::sync::Once = ::std::sync::ONCE_INIT;
     INIT.call_once(|| {
         let t1 = ::time::precise_time_ns();
-        fill_simple_bitboards();
-        fill_mundane_attacks();
-        unsafe {
-            fill_magic(PieceType::Bishop);
-            fill_magic(PieceType::Rook);
-        }
+        init_simple_bitboards();
+        init_mundane_attacks();
+        init_magic();
+        init_pseudo_attacks();
+        init_post_attack_bitboards();
         let t2 = ::time::precise_time_ns();
         println!("initialized in {} ms", (t2 -t1) / 1_000_000);
     })
@@ -133,7 +132,7 @@ static mut rank_bb: [Bitboard; 8] = [0; 8];
 static mut file_bb: [Bitboard; 8] = [0; 8];
 static mut distance: [[u8; 64]; 64] = [[0; 64]; 64];
 
-fn fill_simple_bitboards() {
+fn init_simple_bitboards() {
     for i in 0..8 {
         unsafe {
             rank_bb[i] = 0xff << (8 * i);
@@ -166,7 +165,7 @@ static mut black_pawn_attacks_bb: [Bitboard; 64] = [0; 64];
 static mut knight_attacks_bb: [Bitboard; 64] = [0; 64];
 static mut king_attacks_bb: [Bitboard; 64] = [0; 64];
 
-fn fill_mundane(attacks_bb: &mut [Bitboard; 64], deltas: &[Delta]) {
+fn init_mundane(attacks_bb: &mut [Bitboard; 64], deltas: &[Delta]) {
     for sq1 in each_square() {
         for d in deltas.iter() {
             let sq2: Square = shift_sq(sq1, *d);
@@ -179,11 +178,11 @@ fn fill_mundane(attacks_bb: &mut [Bitboard; 64], deltas: &[Delta]) {
     }
 }
 
-fn fill_mundane_attacks() {
+fn init_mundane_attacks() {
     unsafe {
-        fill_mundane(&mut white_pawn_attacks_bb, &[NORTHWEST, NORTHEAST]);
-        fill_mundane(&mut black_pawn_attacks_bb, &[SOUTHWEST, SOUTHEAST]);
-        fill_mundane(&mut knight_attacks_bb,
+        init_mundane(&mut white_pawn_attacks_bb, &[NORTHWEST, NORTHEAST]);
+        init_mundane(&mut black_pawn_attacks_bb, &[SOUTHWEST, SOUTHEAST]);
+        init_mundane(&mut knight_attacks_bb,
                      &[NORTH + NORTHWEST,
                        NORTH + NORTHEAST,
                        WEST + NORTHWEST,
@@ -192,7 +191,7 @@ fn fill_mundane_attacks() {
                        EAST + SOUTHEAST,
                        SOUTH + SOUTHEAST,
                        SOUTH + SOUTHWEST]);
-        fill_mundane(&mut king_attacks_bb,
+        init_mundane(&mut king_attacks_bb,
                      &[NORTHWEST, NORTH, NORTHEAST, WEST, EAST, SOUTHWEST, SOUTH, SOUTHEAST]);
     }
 }
@@ -248,7 +247,7 @@ fn rook_slide_mask(sq: Square, occ: Bitboard) -> Bitboard {
     slide_mask(sq, occ, &[NORTH, SOUTH, EAST, WEST])
 }
 
-unsafe fn fill_bishop_attacks(sq: Square,
+unsafe fn init_bishop_attacks(sq: Square,
                               size: usize,
                               occ: &[Bitboard; 4096],
                               gold: &[Bitboard; 4096])
@@ -267,7 +266,7 @@ unsafe fn fill_bishop_attacks(sq: Square,
     true
 }
 
-unsafe fn fill_rook_attacks(sq: Square,
+unsafe fn init_rook_attacks(sq: Square,
                             size: usize,
                             occ: &[Bitboard; 4096],
                             gold: &[Bitboard; 4096])
@@ -286,17 +285,45 @@ unsafe fn fill_rook_attacks(sq: Square,
     true
 }
 
-unsafe fn fill_magic(pt: PieceType) {
-    use rand::Rng;
+pub fn optimize_rook_seed() {
+    init_simple_bitboards();
+    init_mundane_attacks();
+    let mut seed = 8452;
+    let mut best_time: u64 = u64::max_value();
+    println!("starting optimization...");
+    loop {
+        unsafe {
+            let t = init_magic_opt(PieceType::Rook, seed, best_time);
+            if t < best_time {
+                best_time = t;
+                println!("\nnew best seed: {}, {}ms", seed, best_time / 1000 / 1000);
+            }
+        }
+        seed += 1;
+        if seed % 500 == 0 {
+            println!("{}", seed);
+        }
+    }
+}
 
+fn init_magic() {
+    unsafe { init_magic_opt(PieceType::Bishop, 13795, u64::max_value()); }
+    unsafe { init_magic_opt(PieceType::Rook, 13795, u64::max_value()); }
+    ()
+}
+
+unsafe fn init_magic_opt(pt: PieceType, xseed: usize, best_time: u64) -> u64{
+    let t1 = ::time::precise_time_ns();
     let mut occ: [Bitboard; 4096] = [0; 4096];
     let mut gold: [Bitboard; 4096] = [0; 4096];
     let mut masks = if pt == PieceType::Bishop { &mut bishop_masks } else { &mut rook_masks };
     let mut magic = if pt == PieceType::Bishop { &mut bishop_magic } else { &mut rook_magic };
     let mask_fn = if pt == PieceType::Bishop { bishop_slide_mask } else { rook_slide_mask };
-    let attack_fn = if pt == PieceType::Bishop { fill_bishop_attacks } else { fill_rook_attacks };
+    let attack_fn = if pt == PieceType::Bishop { init_bishop_attacks } else { init_rook_attacks };
 
-    let mut prng = ::rand::thread_rng();
+    use rand::{Rng, SeedableRng, StdRng};
+    let seed: &[_] = &[xseed];
+    let mut prng: StdRng = SeedableRng::from_seed(seed);
     for sq in each_square() {
         let rank_mask = (bb(Rank::_1) | bb(Rank::_8)) & !bb(sq.rank());
         let file_mask = (bb(File::A) | bb(File::H)) & !bb(sq.file());
@@ -315,7 +342,12 @@ unsafe fn fill_magic(pt: PieceType) {
         }
 
         // Find a magic number that works by trial and error.
+        //
         loop {
+            let t2 = ::time::precise_time_ns();
+            if t2 - t1 > best_time {
+                return u64::max_value();
+            }
             magic[sq.index()] = prng.gen::<u64>() & prng.gen::<u64>() & prng.gen::<u64>();
             if (magic[sq.index()].wrapping_mul(masks[sq.index()]) >> 56).count_ones() < 6 {
                 continue;
@@ -325,79 +357,74 @@ unsafe fn fill_magic(pt: PieceType) {
             }
         }
     }
+    ::time::precise_time_ns() - t1
 }
-// bool FillBishopAttacks(Square sq, int size, Bitboard (*occ)[4096],
-// Bitboard (*ref)[4096]) {
-// for (int i = 0; i < 512; ++i) {
-// BishopAttacks[sq][i] = 0;
-// }
-// for (int i = 0; i < size; ++i) {
-// Bitboard* att = &BishopAttacks[sq][MagicBishopIndex(sq, (*occ)[i])];
-// if (*att && *att != (*ref)[i]) {
-// return false;
-// }
-// att = (*ref)[i];
-// }
-// return true;
-// }
-//
-// bool FillRookAttacks(Square sq, int size, Bitboard (*occ)[4096],
-// Bitboard (*ref)[4096]) {
-// for (int i = 0; i < 4096; ++i) {
-// RookAttacks[sq][i] = 0;
-// }
-// for (int i = 0; i < size; ++i) {
-// Bitboard* att = &RookAttacks[sq][MagicRookIndex(sq, (*occ)[i])];
-// if (*att && *att != (*ref)[i]) {
-// return false;
-// }
-// att = (*ref)[i];
-// }
-// return true;
-// }
-//
-// void FillMagicForType(PieceType pt) {
-// Bitboard occ[4096];
-// Bitboard ref[4096];
-// Bitboard(*masks)[64] = pt == Bishop ? &BishopMasks : &RookMasks;
-// Bitboard(*magic)[64] = pt == Bishop ? &BishopMagic : &RookMagic;
-// std::function<Bitboard(Square, Bitboard)> mask_fn =
-// pt == Bishop ? BishopSlideMask : RookSlideMask;
-// std::function<bool(Square, int, Bitboard(*)[4096], Bitboard(*)[4096])>
-// attack_fn = pt == Bishop ? FillBishopAttacks : FillRookAttacks;
-// We "cheat" by picking a seed known to work with relatively few
-// iterations.
-// bishop, offset = 39024, 8337 iterations
-// rook, offset = 3044, 207739 iterations (tested to 35k)
-// int seed = pt == Bishop ? 39024 : 3044;
-// std::mt19937_64 prng(seed);
-//
-// for (Square sq = A1; sq <= H8; sq = Next(sq)) {
-// auto rankMask = (BB(Rank1) | BB(Rank8)) & ~BB(RankOf(sq));
-// auto fileMask = (BB(FileA) | BB(FileH)) & ~BB(FileOf(sq));
-// (*masks)[sq] = mask_fn(sq, 0) & ~(rankMask | fileMask);
-//
-// Each subset of masks[sq] is a possible occupancy mask that we must
-// handle. Enumerate them and store both the occupancy and the reference
-// attack set that we want to generate for that occupancy.
-// See
-// http://chessprogramming.wikispaces.com/Traversing+Subsets+of+a+Set
-// int size = 0;
-// for (Bitboard subset = 0; subset != 0 || size == 0; ++size) {
-// occ[size] = subset;
-// ref[size] = mask_fn(sq, subset);
-// subset = (subset - (*masks)[sq]) & (*masks)[sq];
-// }
-//
-// Find a magic number that works by trial and error.
-// while (true) {
-// (*magic)[sq] = prng() & prng() & prng();
-// if (Popcount((((*magic)[sq] * (*masks)[sq]) >> 56)) < 6) continue;
-// if (attack_fn(sq, size, &occ, &ref)) break;
-// }
-// }
-// }
-//
+
+static mut bishop_pseudo_attacks_bb: [Bitboard; 64] = [0; 64];
+static mut rook_pseudo_attacks_bb: [Bitboard; 64] = [0; 64];
+static mut queen_pseudo_attacks_bb: [Bitboard; 64] = [0; 64];
+
+fn init_pseudo_attacks() {
+    for sq in each_square() {
+        unsafe {
+            bishop_pseudo_attacks_bb[sq.index()] = bishop_attacks(sq, 0);
+            rook_pseudo_attacks_bb[sq.index()] = rook_attacks(sq, 0);
+            queen_pseudo_attacks_bb[sq.index()] = queen_attacks(sq, 0);
+        }
+    }
+}
+
+pub fn bishop_pseudo_attacks(sq: Square) -> Bitboard {
+    unsafe { bishop_pseudo_attacks_bb[sq.index()] }
+}
+
+pub fn rook_pseudo_attacks(sq: Square) -> Bitboard {
+    unsafe { rook_pseudo_attacks_bb[sq.index()] }
+}
+
+pub fn queen_pseudo_attacks(sq: Square) -> Bitboard {
+    unsafe { queen_pseudo_attacks_bb[sq.index()] }
+}
+
+static mut rays_bb: [[Bitboard; 64]; 64] = [[0; 64]; 64];
+static mut between_bb: [[Bitboard; 64]; 64] = [[0; 64]; 64];
+
+fn init_post_attack_bitboards() {
+    for sq1 in each_square() {
+        for sq2 in each_square() {
+            if queen_pseudo_attacks(sq1) & bb(sq2) == 0 {
+                continue;
+            }
+            if bishop_pseudo_attacks(sq1) & bb(sq2) != 0 {
+                unsafe {
+                    rays_bb[sq2.index()][sq1.index()] =
+                        bishop_pseudo_attacks(sq1) & bishop_pseudo_attacks(sq2) | bb(sq1) | bb(sq2);
+                }
+            } else {
+                unsafe {
+                    rays_bb[sq2.index()][sq1.index()] =
+                        rook_pseudo_attacks(sq1) & rook_pseudo_attacks(sq2) | bb(sq1) | bb(sq2);
+                }
+            }
+            let d = direction(sq1, sq2);
+            let mut sq3 = shift_sq(sq1, d);
+            while sq3 != sq2 {
+                unsafe { between_bb[sq1.index()][sq2.index()] |= bb(sq3); }
+                sq3 = shift_sq(sq3, d);
+            }
+        }
+    }
+}
+
+pub fn between(sq1: Square, sq2: Square) -> Bitboard {
+    debug_assert!(sq1 != Square::NoSquare && sq2 != Square::NoSquare);
+    unsafe { between_bb[sq1.index()][sq2.index()] }
+}
+
+pub fn ray(sq1: Square, sq2: Square) -> Bitboard {
+    debug_assert!(sq1 != Square::NoSquare && sq2 != Square::NoSquare);
+    unsafe { rays_bb[sq1.index()][sq2.index()] }
+}
 
 pub fn king_attacks(sq: Square) -> Bitboard {
     unsafe { king_attacks_bb[sq.index()] }
@@ -570,5 +597,22 @@ mod tests {
                    bb_from_str(".......x\n......x.\nx....x..\nx...x...\nx..x....\nx.x.....\nxx......\n.xxxxxxx\n"));
         assert_eq!(queen_attacks(F6, bb_from_str("........\n...x....\n..x..x..\n...x....\n........\n.xx.....\n..x.....\n........\n")),
                    bb_from_str("...x.x.x\n....xxx.\n..xxx.xx\n....xxx.\n...x.x.x\n..x..x..\n.....x..\n.....x..\n"));
+    }
+
+    #[test]
+    fn test_directional_bitboards() {
+        initialize();
+        assert_eq!(between(C3, E3), bb(D3));
+        assert_eq!(between(E3, C3), bb(D3));
+        assert_eq!(ray(C3, E3), bb(Rank::_3));
+        assert_eq!(ray(E3, C3), bb(Rank::_3));
+        assert_eq!(between(D2, G5), all_bb!(E3, F4));
+        assert_eq!(between(G5, D2), all_bb!(E3, F4));
+        assert_eq!(ray(D2, G5), all_bb!(C1, D2, E3, F4, G5, H6));
+        assert_eq!(ray(G5, D2), all_bb!(C1, D2, E3, F4, G5, H6));
+        assert_eq!(between(A1, B3), 0);
+        assert_eq!(between(B3, A1), 0);
+        assert_eq!(ray(A1, B3), 0);
+        assert_eq!(ray(B3, A1), 0);
     }
 }
