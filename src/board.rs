@@ -150,6 +150,24 @@ impl Piece {
         unsafe { mem::transmute(x as u8) }
     }
 
+    pub fn from_glyph(ch: char) -> Piece {
+        match ch {
+            'P' => Piece::WP,
+            'N' => Piece::WN,
+            'B' => Piece::WB,
+            'R' => Piece::WR,
+            'Q' => Piece::WQ,
+            'K' => Piece::WK,
+            'p' => Piece::BP,
+            'n' => Piece::BN,
+            'b' => Piece::BB,
+            'r' => Piece::BR,
+            'q' => Piece::BQ,
+            'k' => Piece::BK,
+            _ => Piece::NoPiece,
+        }
+    }
+
     pub fn color(self) -> Color {
         unsafe { mem::transmute(self as u8 >> 3) }
     }

@@ -223,6 +223,80 @@ impl Position {
         self.state.last_move
     }
 
+    // TODO: clean up the unwraps in here.
+    pub fn load_fen(&mut self, fen: &str) -> Result<(), String> {
+        self.clear();
+        let pieces: Vec<&str> = fen.split_whitespace().collect();
+
+        if pieces.len() < 4 {
+            return Err(format!("error parsing fen position {}: expected at least 4 tokens, got {}",
+                               fen, pieces.len()));
+        }
+
+        {
+            let mut sq = Square::A8;
+            for ch in pieces[0].chars() {
+                if ch.is_numeric() {
+                    sq = Square::from_u8(sq as u8 + ch as u8 - '0' as u8);
+                } else if ch == '/' {
+                    sq = Square::from_u8(sq as u8 - '0' as u8);
+                } else {
+                    self.place_piece(Piece::from_glyph(ch), sq);
+                    sq = sq.next();
+                }
+            }
+        }
+
+        {
+            let ch = pieces[1].chars().next().unwrap();
+            if ch == 'w' {
+                self.state.us = Color::White;
+            } else if ch == 'b' {
+                self.state.us = Color::Black;
+            } else {
+                return Err(format!("error parsing fen position {}: couldn't parse side to move ({})",
+                                   fen, pieces[1]));
+            }
+        }
+
+        self.state.castle_rights = read_castle_rights(pieces[2], self);
+        self.state.ep_square = pieces[3].parse().unwrap();
+        if self.ep_square() != Square::NoSquare {
+            // Don't believe the ep square unless there's a pawn that could
+            // actually do the capture.
+            if (self.us() == Color::White &&
+                bitboard::black_pawn_attacks(self.ep_square()) & self.pieces(Piece::WP) == 0) ||
+               (self.us() == Color::Black &&
+                bitboard::white_pawn_attacks(self.ep_square()) & self.pieces(Piece::BP) == 0) {
+                self.state.ep_square = Square::NoSquare;
+            }
+        }
+
+        self.state.fifty_move_counter = 0;
+        self.state.ply = 0;
+
+        if pieces.len() <= 4 {
+            return Ok(());
+        }
+        self.state.fifty_move_counter = pieces[4].parse().unwrap();
+        if pieces.len() <= 5 {
+            return Ok(());
+        }
+        self.state.ply = pieces[5].parse().unwrap();
+        self.state.ply = ::std::cmp::max(2 * (self.state.ply - 1), 0);
+        if self.us() == Color::Black {
+            self.state.ply += 1;
+        }
+        Ok(())
+    }
+
+    fn place_piece(&mut self, p: Piece, sq: Square) {
+        self.board[sq.index()] = p;
+        let b = bb(sq);
+        self.pieces_of_type[p.piece_type().index()] |= b;
+        self.pieces_of_color[p.color().index()] |= b;
+        self.pieces_of_type[PieceType::AllPieces.index()] |= b;
+    }
     //Bitboard Attackers(Square sq) const;
     //Bitboard Attackers(Square sq, Bitboard occ) const;
     //Bitboard Pinned() const;
@@ -339,6 +413,8 @@ pub fn read_castle_rights(s: &str, pos: &Position) -> CastleRights {
     }
     return c;
 }
+
+
 
 #[cfg(test)]
 mod tests {
