@@ -117,7 +117,7 @@ pub fn shift(b: Bitboard, d: Delta) -> Bitboard {
 
 pub fn lsb(b: Bitboard) -> Square {
     debug_assert!(b != 0);
-    Square::from_index(b.trailing_zeros() as u8)
+    Square::from_u8(b.trailing_zeros() as u8)
 }
 
 pub fn pop_square(b: &mut Bitboard) -> Square {
@@ -483,18 +483,6 @@ mod tests {
     use super::*;
     use board::*;
     use board::Square::*;
-
-    macro_rules! all_bb {
-        ( $( $x:expr ),* ) => {
-            {
-                let mut ret: Bitboard = 0;
-                $(
-                    ret |= bb($x);
-                )*
-                ret
-            }
-        };
-    }
 
     struct BBStrTest {
         x: Bitboard,

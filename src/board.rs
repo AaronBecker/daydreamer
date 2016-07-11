@@ -43,6 +43,27 @@ pub enum Color {
     NoColor,
 }
 
+impl Color {
+    pub fn index(self) -> usize {
+        self as usize
+    }
+
+    pub fn flip(self) -> Color {
+        // TODO: consider self ^ 1
+        // The performance difference probably can't be measured, though.
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+            Color::NoColor => Color::NoColor,
+        }
+    }
+
+    pub fn glyph(self) -> char {
+        const GLYPHS: [char; 3] = ['w', 'b', 'x'];
+        GLYPHS[self as usize]
+    }
+}
+
 pub fn each_color() -> EachElement<Color> {
     EachElement::<Color> {
         front: 0,
@@ -62,6 +83,28 @@ pub enum PieceType {
     Queen,
     King,
     AllPieces,
+}
+
+impl PieceType {
+    pub fn index(self) -> usize {
+        self as usize
+    }
+
+    pub fn from_u8(x: u8) -> PieceType {
+        debug_assert!(x <= PieceType::AllPieces as u8);
+        unsafe { mem::transmute(x) }
+    }
+
+    pub fn from_u32(x: u32) -> PieceType {
+        debug_assert!(x <= PieceType::AllPieces as u32);
+        unsafe { mem::transmute(x as u8) }
+    }
+
+    pub fn glyph(self) -> char {
+        debug_assert!(self != PieceType::NoPieceType && self != PieceType::AllPieces);
+        const GLYPHS: [char; 8] = ['0', 'p', 'n', 'b', 'r', 'q', 'k', 'a'];
+        GLYPHS[self as usize]
+    }
 }
 
 pub fn each_piece_type() -> EachElement<Color> {
@@ -90,6 +133,38 @@ pub enum Piece {
     BK,
 }
 
+impl Piece {
+    pub fn index(self) -> usize {
+        self as usize
+    }
+
+    pub fn from_u8(x: u8) -> Piece {
+        debug_assert!(x <= Piece::BK as u8);
+        debug_assert!(x <= Piece::WK as u8 || x >= Piece::BP as u8);
+        unsafe { mem::transmute(x) }
+    }
+
+    pub fn from_u32(x: u32) -> Piece {
+        debug_assert!(x <= Piece::BK as u32);
+        debug_assert!(x <= Piece::WK as u32 || x >= Piece::BP as u32);
+        unsafe { mem::transmute(x as u8) }
+    }
+
+    pub fn color(self) -> Color {
+        unsafe { mem::transmute(self as u8 >> 3) }
+    }
+
+    pub fn piece_type(self) -> PieceType {
+        unsafe { mem::transmute(self as u8 & 0x07) }
+    }
+
+    pub fn glyph(self) -> char {
+        const GLYPHS: [char; 15] = ['.', 'P', 'N', 'B', 'R', 'Q', 'K', 'x',
+                                    'x', 'p', 'n', 'b', 'r', 'q', 'k'];
+        GLYPHS[self as usize]
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Rank {
@@ -109,7 +184,7 @@ impl Rank {
         self as usize
     }
 
-    pub fn from_index(x: u8) -> Rank {
+    pub fn from_u8(x: u8) -> Rank {
         debug_assert!(x <= Rank::NoRank as u8);
         unsafe { mem::transmute(x) }
     }
@@ -142,7 +217,7 @@ impl File {
         self as usize
     }
 
-    pub fn from_index(x: u8) -> File {
+    pub fn from_u8(x: u8) -> File {
         debug_assert!(x <= File::NoFile as u8);
         unsafe { mem::transmute(x) }
     }
@@ -157,7 +232,7 @@ pub fn each_file() -> EachElement<File> {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum Square {
     A1, B1, C1, D1, E1, F1, G1, H1,
@@ -186,9 +261,50 @@ impl Square {
         self as usize
     }
 
-    pub fn from_index(x: u8) -> Square {
+    pub fn from_u8(x: u8) -> Square {
         debug_assert!(x <= Square::NoSquare as u8);
         unsafe { mem::transmute(x) }
+    }
+
+    pub fn from_u32(x: u32) -> Square {
+        debug_assert!(x <= Square::NoSquare as u32);
+        unsafe { mem::transmute(x as u8) }
+    }
+
+    pub fn from_index(x: usize) -> Square {
+        debug_assert!(x <= Square::NoSquare as usize);
+        unsafe { mem::transmute(x as u8) }
+    }
+
+    pub fn next(self) -> Square {
+        Square::from_index(self.index() + 1)
+    }
+    
+    pub fn prev(self) -> Square {
+        Square::from_index(self.index() - 1)
+    }
+
+    pub fn new(f: File, r: Rank) -> Square {
+        debug_assert!(f != File::NoFile);
+        debug_assert!(r != Rank::NoRank);
+        Square::from_u8(((r as u8) << 3) | (f as u8))
+    }
+
+    // Flip the square for black, or leave it for white.
+    pub fn relative_to(self, c: Color) -> Square {
+        match c {
+            Color::White => self,
+            Color::Black => unsafe { mem::transmute((self as u8) ^ (Square::A8 as u8)) },
+            _ => self,
+        }
+    }
+
+    pub fn inclusive_range(sq1: Square, sq2: Square) -> EachElement<Square> {
+        EachElement::<Square> {
+            front: sq1 as u8,
+            back: sq2 as u8 + 1,
+            phantom: ::std::marker::PhantomData,
+        }
     }
 }
 
@@ -228,10 +344,11 @@ pub fn each_square() -> EachElement<Square> {
     }
 }
 
+// FIXME: delete this in favor of Square::new
 pub fn sq(f: File, r: Rank) -> Square {
     debug_assert!(f != File::NoFile);
     debug_assert!(r != Rank::NoRank);
-    Square::from_index(((r as u8) << 3) | (f as u8))
+    Square::from_u8(((r as u8) << 3) | (f as u8))
 }
 
 pub type Delta = i8;
@@ -258,6 +375,6 @@ pub fn shift_sq(sq: Square, d: Delta) -> Square {
     if sq2 >= Square::NoSquare as u8 {
         Square::NoSquare
     } else {
-        Square::from_index(sq2)
+        Square::from_u8(sq2)
     }
 }
