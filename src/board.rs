@@ -328,6 +328,9 @@ impl Square {
 
 impl ::std::fmt::Display for Square {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        if *self == Square::NoSquare {
+            return write!(f, "-");
+        }
         write!(f,
                "{}{}",
                (self.file() as u8 + 97) as char,

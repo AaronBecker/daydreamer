@@ -478,6 +478,7 @@ pub fn queen_attacks(sq: Square, occ: Bitboard) -> Bitboard {
     rook_attacks(sq, occ) | bishop_attacks(sq, occ)
 }
 
+// FIXME: switch to chess_test!
 #[cfg(test)]
 mod tests {
     use super::*;

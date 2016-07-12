@@ -1,6 +1,7 @@
 use board::*;
 use bitboard;
 use bitboard::{bb, Bitboard};
+use movement;
 use movement::Move;
 use options;
 
@@ -129,6 +130,8 @@ pub fn rights_string(c: CastleRights) -> String {
     return castle;
 }
 
+const MISSING: Bitboard = 0xffffffffffffffff;
+
 // State stores core position state information that would otherwise be lost
 // when making a move.
 pub struct State {
@@ -146,6 +149,18 @@ pub struct State {
 }
 
 impl State {
+    pub fn new() -> State {
+        State {
+            checkers: MISSING,
+            last_move: movement::NO_MOVE,
+            ply: 0,
+            fifty_move_counter: 0,
+            ep_square: Square::NoSquare,
+            castle_rights: CASTLE_NONE,
+            us: Color::NoColor,
+        }
+    }
+
     pub fn clear(&mut self) {
         unsafe { ::std::intrinsics::write_bytes(self, 0, 1); }
         self.ep_square = Square::NoSquare;
@@ -162,13 +177,31 @@ pub struct Position {
 }
 
 impl Position {
+    pub fn new() -> Position {
+        Position {
+            state: State::new(),
+            board: [Piece::NoPiece; 64],
+            pieces_of_type: [0; 8],
+            pieces_of_color: [0; 2],
+        }
+    }
+
     // clear resets the position and removes all pieces from the board.
     pub fn clear(&mut self) {
         unsafe { ::std::intrinsics::write_bytes(self, 0, 1) }
     }
 
     pub fn debug_string(&self) -> String {
-        unimplemented!();
+        let mut s = String::new();
+
+        for rank in each_rank().rev() {
+            for file in each_file() {
+                s.push(self.piece_at(Square::new(file, rank)).glyph());
+            }
+            s.push('\n');
+        }
+        s.push_str(self.to_string().as_str());
+        s
     }
 
     pub fn all_pieces(&self) -> Bitboard {
@@ -184,11 +217,11 @@ impl Position {
     }
 
     pub fn pieces_of_color_and_type(&self, c: Color, pt: PieceType) -> Bitboard {
-        self.pieces_of_color[c.index()] | self.pieces_of_type[pt.index()]
+        self.pieces_of_color[c.index()] & self.pieces_of_type[pt.index()]
     }
 
     pub fn pieces(&self, p: Piece) -> Bitboard {
-        self.pieces_of_color[p.color().index()] | self.pieces_of_type[p.piece_type().index()]
+        self.pieces_of_color[p.color().index()] & self.pieces_of_type[p.piece_type().index()]
     }
     
     pub fn king_sq(&self, c: Color) -> Square {
@@ -239,7 +272,7 @@ impl Position {
                 if ch.is_numeric() {
                     sq = Square::from_u8(sq as u8 + ch as u8 - '0' as u8);
                 } else if ch == '/' {
-                    sq = Square::from_u8(sq as u8 - '0' as u8);
+                    sq = Square::from_u8(sq as u8 - 16);
                 } else {
                     self.place_piece(Piece::from_glyph(ch), sq);
                     sq = sq.next();
@@ -293,9 +326,31 @@ impl Position {
     fn place_piece(&mut self, p: Piece, sq: Square) {
         self.board[sq.index()] = p;
         let b = bb(sq);
-        self.pieces_of_type[p.piece_type().index()] |= b;
         self.pieces_of_color[p.color().index()] |= b;
+        self.pieces_of_type[p.piece_type().index()] |= b;
         self.pieces_of_type[PieceType::AllPieces.index()] |= b;
+    }
+
+    fn remove_piece(&mut self, sq: Square) {
+        let p = self.board[sq.index()];
+        self.board[sq.index()] = Piece::NoPiece;
+        let b = !bb(sq);
+        self.pieces_of_color[p.color().index()] ^= b;
+        self.pieces_of_type[p.piece_type().index()] ^= b;
+        self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
+    }
+
+    fn transfer_piece(&mut self, from: Square, to: Square) {
+        let p = self.board[from.index()];
+        if self.board[to.index()] != Piece::NoPiece {
+            self.remove_piece(to);
+        }
+        self.board[from.index()] = Piece::NoPiece;
+        self.board[to.index()] = p;
+        let b = bb(from) | bb(to);
+        self.pieces_of_color[p.color().index()] ^= b;
+        self.pieces_of_type[p.piece_type().index()] ^= b;
+        self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
     }
     //Bitboard Attackers(Square sq) const;
     //Bitboard Attackers(Square sq, Bitboard occ) const;
@@ -309,11 +364,6 @@ impl Position {
     //void DoNullMove(UndoState* undo);
     //void UndoMove(Move move);
     //void UndoNullMove();
-
-    //  private:
-    //    void PlacePiece(Piece p, Square sq);
-    //    void RemovePiece(Square sq);
-    //    void TransferPiece(Square from, Square to);
 }
 
 impl ::std::fmt::Display for Position {
@@ -418,4 +468,47 @@ pub fn read_castle_rights(s: &str, pos: &Position) -> CastleRights {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use bitboard;
+
+    chess_test!(test_fen, {
+        let load_store = |fen| {
+            let mut pos = Position::new();
+            pos.load_fen(fen).unwrap();
+            assert_eq!(pos.to_string(), fen);
+        };
+        load_store("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        load_store("3k4/3p4/8/K1P4r/8/8/8/8 b - - 0 1");
+        load_store("8/8/8/8/k1p4R/8/3P4/3K4 w - - 0 2");
+        load_store("8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 3");
+        load_store("8/8/1k6/8/2pP4/8/5BK1/8 b - d3 0 4");
+        load_store("8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 5");
+        load_store("8/5k2/8/2Pp4/2B5/1K6/8/8 w - d6 0 6");
+        load_store("5k2/8/8/8/8/8/8/4K2R w K - 0 7");
+        load_store("4k2r/8/8/8/8/8/8/5K2 b k - 0 8");
+        load_store("3k4/8/8/8/8/8/8/R3K3 w Q - 0 9");
+        load_store("r3k3/8/8/8/8/8/8/3K4 b q - 0 10");
+        load_store("r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 1 1");
+        load_store("r3k2r/7b/8/8/8/8/1B4BQ/R3K2R b KQkq - 2 1");
+        load_store("r3k2r/8/3Q4/8/8/5q2/8/R3K2R b KQkq - 3 1");
+        load_store("r3k2r/8/5Q2/8/8/3q4/8/R3K2R w KQkq - 4 1");
+        load_store("2K2r2/4P3/8/8/8/8/8/3k4 w - - 5 1");
+        load_store("3K4/8/8/8/8/8/4p3/2k2R2 b - - 6 1");
+        load_store("8/8/1P2K3/8/2n5/1q6/8/5k2 b - - 7 1");
+        load_store("5K2/8/1Q6/2N5/8/1p2k3/8/8 w - - 8 1");
+        load_store("4k3/1P6/8/8/8/8/K7/8 w - - 9 1");
+        load_store("8/k7/8/8/8/8/1p6/4K3 b - - 10 1");
+        load_store("8/P1k5/K7/8/8/8/8/8 w - - 0 1");
+        load_store("8/8/8/8/8/k7/p1K5/8 b - - 0 1");
+        load_store("K1k5/8/P7/8/8/8/8/8 w - - 0 1");
+        load_store("8/8/8/8/8/p7/8/k1K5 b - - 0 1");
+        load_store("8/k1P5/8/1K6/8/8/8/8 w - - 0 1");
+        load_store("8/8/8/8/1k6/8/K1p5/8 b - - 0 1");
+        load_store("8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1");
+        load_store("8/5k2/8/5N2/5Q2/2K5/8/8 w - - 0 1");
+        load_store("1k6/1b6/8/8/7R/8/8/4K2R b K - 0 1");
+        load_store("4k2r/8/8/7r/8/8/1B6/1K6 w k - 0 1");
+        load_store("1k6/8/8/8/R7/1n6/8/R3K3 b Q - 0 1");
+        load_store("r3k3/8/1N6/r7/8/8/8/1K6 w q - 0 1");
+    });
 }

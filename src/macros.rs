@@ -1,19 +1,5 @@
 #[macro_use]
 
-// The bitboard you get from OR'ing together any number of elements tat are
-// convertable to a bitboard.
-macro_rules! all_bb {
-    ( $( $x:expr ),* ) => {
-        {
-            let mut ret: Bitboard = 0;
-            $(
-                ret |= $x.into_bitboard();
-            )*
-            ret
-        }
-    };
-}
-
 // The max of any number of comparable elements.
 macro_rules! max {
     ($x:expr) => ( $x );
@@ -32,6 +18,31 @@ macro_rules! min {
         {
             use std::cmp::min;
             min($x, min!( $($xs),+ ))
+        }
+    };
+}
+
+// The bitboard you get from OR'ing together any number of elements tat are
+// convertable to a bitboard.
+macro_rules! all_bb {
+    ( $( $x:expr ),* ) => {
+        {
+            let mut ret: Bitboard = 0;
+            $(
+                ret |= $x.into_bitboard();
+            )*
+            ret
+        }
+    };
+}
+
+
+macro_rules! chess_test {
+    ($id:ident, $b:block) => {
+        #[test]
+        fn $id() {
+            bitboard::initialize();
+            $b
         }
     };
 }

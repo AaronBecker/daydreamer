@@ -15,8 +15,8 @@ pub struct Move(u32);
 const EN_PASSANT_FLAG: u32 = 1 << 29;
 const CASTLE_FLAG: u32 = 1 << 30;
 
-const NO_MOVE: Move = Move(0);
-const NULL_MOVE: Move = Move(0xffff);
+pub const NO_MOVE: Move = Move(0);
+pub const NULL_MOVE: Move = Move(0xffff);
 
 impl Move {
     // The source square. For castling moves, this is the King's square.
