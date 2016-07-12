@@ -1,6 +1,8 @@
+use std::cell::Cell;
+
 use board::*;
 use bitboard;
-use bitboard::{bb, Bitboard};
+use bitboard::Bitboard;
 use movement;
 use movement::Move;
 use options;
@@ -81,7 +83,7 @@ fn add_castle(k: Square, r: Square) {
     let max_sq = max!(k, r, kdest, rdest);
     for sq in Square::inclusive_range(min_sq, max_sq) {
         if sq != k && sq != r {
-            path |= bb(sq)
+            path |= bitboard::bb(sq)
         }
     }
     unsafe {
@@ -135,7 +137,7 @@ const MISSING: Bitboard = 0xffffffffffffffff;
 // State stores core position state information that would otherwise be lost
 // when making a move.
 pub struct State {
-    checkers: Bitboard,
+    checkers: Cell<Bitboard>,
     last_move: Move,
     ply: u16,
     fifty_move_counter: u8,
@@ -151,7 +153,7 @@ pub struct State {
 impl State {
     pub fn new() -> State {
         State {
-            checkers: MISSING,
+            checkers: Cell::new(MISSING),
             last_move: movement::NO_MOVE,
             ply: 0,
             fifty_move_counter: 0,
@@ -162,7 +164,10 @@ impl State {
     }
 
     pub fn clear(&mut self) {
+        // It's not clear that this is guaranteed to work correctly, but looking at the
+        // implementation of std::cell::Cell makes me think it should be no problem.
         unsafe { ::std::intrinsics::write_bytes(self, 0, 1); }
+        self.checkers.set(MISSING);
         self.ep_square = Square::NoSquare;
     }
 }
@@ -189,19 +194,8 @@ impl Position {
     // clear resets the position and removes all pieces from the board.
     pub fn clear(&mut self) {
         unsafe { ::std::intrinsics::write_bytes(self, 0, 1) }
-    }
-
-    pub fn debug_string(&self) -> String {
-        let mut s = String::new();
-
-        for rank in each_rank().rev() {
-            for file in each_file() {
-                s.push(self.piece_at(Square::new(file, rank)).glyph());
-            }
-            s.push('\n');
-        }
-        s.push_str(self.to_string().as_str());
-        s
+        self.state.checkers.set(MISSING);
+        self.state.ep_square = Square::NoSquare;
     }
 
     pub fn all_pieces(&self) -> Bitboard {
@@ -248,12 +242,99 @@ impl Position {
         self.state.castle_rights
     }
 
+    // attackers gives the set of pieces attacking sq, regardless of color.
+    pub fn attackers(&self, sq: Square) -> Bitboard {
+        let mut b: Bitboard = 0;
+        let occ = self.all_pieces();
+        b |= bitboard::white_pawn_attacks(sq) & self.pieces(Piece::BP);
+        b |= bitboard::black_pawn_attacks(sq) & self.pieces(Piece::WP);
+        b |= bitboard::knight_attacks(sq) & self.pieces_of_type(PieceType::Knight);
+        let queens = self.pieces_of_type(PieceType::Queen);
+        b |= bitboard::bishop_attacks(sq, occ) & (self.pieces_of_type(PieceType::Bishop) | queens);
+        b |= bitboard::rook_attacks(sq, occ) & (self.pieces_of_type(PieceType::Rook) | queens);
+        b |= bitboard::king_attacks(sq) & self.pieces_of_type(PieceType::King);
+        b
+    }
+
+    fn find_checkers(&self) -> Bitboard {
+        self.attackers(self.king_sq(self.us())) & self.pieces_of_color(self.them())
+    }
+
     pub fn checkers(&self) -> Bitboard {
-        self.state.checkers
+        if self.state.checkers.get() == MISSING {
+            self.state.checkers.set(self.find_checkers());
+        }
+        self.state.checkers.get()
     }
 
     pub fn last_move(&self) -> Move {
         self.state.last_move
+    }
+
+    // attack_occluders returns the set of pieces of color c that are blocking
+    // an attack to sq from a piece of color attacker. That is, if an attack
+    // occluder were removed from the board, a piece of color attacker would
+    // attack sq. This can find pinned pieces or pieces that could discover check
+    // depending on the arguments passed.
+    fn attack_occluders(&self, sq: Square, c: Color, attacker: Color) -> Bitboard {
+        let rpinners = (self.pieces_of_type(PieceType::Rook) |
+                        self.pieces_of_type(PieceType::Queen)) & bitboard::rook_pseudo_attacks(sq);
+        let bpinners = (self.pieces_of_type(PieceType::Bishop) |
+                        self.pieces_of_type(PieceType::Queen)) & bitboard::bishop_pseudo_attacks(sq);
+
+        let mut potential_pinners = (rpinners | bpinners) & self.pieces_of_color(attacker);
+        let mut occluders: Bitboard = 0;
+        while potential_pinners != 0 {
+            let between = bitboard::between(sq, bitboard::pop_square(&mut potential_pinners)) &self.all_pieces();
+            if (between & (between - 1)) == 0 {  // exactly one piece in between
+                occluders |= between & self.pieces_of_color(c);
+            }
+        }
+        occluders
+    }
+
+    // pinned returns all pinned pieces of color c.
+    pub fn pinned(&self, c: Color) -> Bitboard {
+        self.attack_occluders(self.king_sq(c), c, c.flip())
+    }
+
+    // check_discoverers returns all pieces of color c that could create a
+    // discovered check if moved.
+    pub fn check_discoverers(&self, c: Color) -> Bitboard {
+        self.attack_occluders(self.king_sq(c.flip()), c, c)
+    }
+
+    // obvious_check determines whether or not a move is 'obviously' a check.
+    // Non-obvious checks are those caused by castling, en passant captures,
+    // and promoting moves. Obvious checks are everything else. This is a
+    // useful distinction because non-obvious checks are both rare and
+    // expensive to check for, so we can handle them separately when testing
+    // move legality without sacrificing efficiency.
+    pub fn obvious_check(&self, m: Move, ad: &AttackData) -> bool {
+        let to = m.to();
+        // If we're moving to a checking square for our piece type, it's a
+        // check.
+        if ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(to) != 0 {
+            return true;
+        }
+        let from = m.from();
+        // If this piece can discover check and we're not moving along the path
+        // to the enemy king, this move discovers check.
+        ad.check_discoverers & bitboard::bb(from) != 0 &&
+            (bitboard::ray(from, to) & bitboard::bb(ad.their_king)) == 0
+    }
+
+    pub fn debug_string(&self) -> String {
+        let mut s = String::new();
+
+        for rank in each_rank().rev() {
+            for file in each_file() {
+                s.push(self.piece_at(Square::new(file, rank)).glyph());
+            }
+            s.push('\n');
+        }
+        s.push_str(self.to_string().as_str());
+        s
     }
 
     // TODO: clean up the unwraps in here.
@@ -325,7 +406,7 @@ impl Position {
 
     fn place_piece(&mut self, p: Piece, sq: Square) {
         self.board[sq.index()] = p;
-        let b = bb(sq);
+        let b = bitboard::bb(sq);
         self.pieces_of_color[p.color().index()] |= b;
         self.pieces_of_type[p.piece_type().index()] |= b;
         self.pieces_of_type[PieceType::AllPieces.index()] |= b;
@@ -334,7 +415,7 @@ impl Position {
     fn remove_piece(&mut self, sq: Square) {
         let p = self.board[sq.index()];
         self.board[sq.index()] = Piece::NoPiece;
-        let b = !bb(sq);
+        let b = !bitboard::bb(sq);
         self.pieces_of_color[p.color().index()] ^= b;
         self.pieces_of_type[p.piece_type().index()] ^= b;
         self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
@@ -347,16 +428,11 @@ impl Position {
         }
         self.board[from.index()] = Piece::NoPiece;
         self.board[to.index()] = p;
-        let b = bb(from) | bb(to);
+        let b = bitboard::bb(from) | bitboard::bb(to);
         self.pieces_of_color[p.color().index()] ^= b;
         self.pieces_of_type[p.piece_type().index()] ^= b;
         self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
     }
-    //Bitboard Attackers(Square sq) const;
-    //Bitboard Attackers(Square sq, Bitboard occ) const;
-    //Bitboard Pinned() const;
-    //Bitboard Pinned(Color c) const;
-    //Bitboard CheckDiscoverers(Color c) const;
 
     //bool PseudoMoveIsLegal(Move move, const AttackData& ad) const;
     //void DoMove(Move move, UndoState* undo, const AttackData& ad);
@@ -464,7 +540,40 @@ pub fn read_castle_rights(s: &str, pos: &Position) -> CastleRights {
     return c;
 }
 
+// AttackData holds information about king attacks, used during move
+// generation. We store it in a separate struct to ensure that we only
+// calculate it once per position during search. I borrowed the idea for
+// this clever setup from Stockfish.
+pub struct AttackData {
+    potential_checks: [Bitboard; 8], // per piece type
+    check_discoverers: Bitboard,
+    pinned: Bitboard,
+    their_king: Square,
+}
 
+impl AttackData {
+    pub fn new(pos: &Position) -> AttackData {
+        let their_king = pos.king_sq(pos.them());
+        let occ = pos.all_pieces();
+        let ba = bitboard::bishop_attacks(their_king, occ);
+        let ra = bitboard::rook_attacks(their_king, occ);
+        AttackData {
+            potential_checks: [
+                0, // PieceType::NoPieceType
+                bitboard::pawn_attacks(pos.us(), their_king),
+                bitboard::knight_attacks(their_king),
+                ba,
+                ra,
+                ba | ra,
+                0,
+                0,
+            ],
+            check_discoverers: pos.check_discoverers(pos.us()),
+            pinned: pos.pinned(pos.us()),
+            their_king: their_king,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {

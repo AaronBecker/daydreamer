@@ -466,6 +466,15 @@ pub fn black_pawn_attacks(sq: Square) -> Bitboard {
     unsafe { black_pawn_attacks_bb[sq.index()] }
 }
 
+pub fn pawn_attacks(c: Color, sq: Square) -> Bitboard {
+    debug_assert!(c != Color::NoColor);
+    if c == Color::White {
+        white_pawn_attacks(sq)
+    } else {
+        black_pawn_attacks(sq)
+    }
+}
+
 pub fn bishop_attacks(sq: Square, occ: Bitboard) -> Bitboard {
     unsafe { bishop_attacks_bb[sq.index()][magic_bishop_index(sq, occ)] }
 }
