@@ -191,6 +191,12 @@ impl Position {
         }
     }
 
+    pub fn from_fen(fen: &str) -> Position {
+        let mut p = Position::new();
+        p.load_fen(fen).unwrap();
+        p
+    }
+
     // clear resets the position and removes all pieces from the board.
     pub fn clear(&mut self) {
         unsafe { ::std::intrinsics::write_bytes(self, 0, 1) }
@@ -578,12 +584,14 @@ impl AttackData {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use board::*;
+    use board::Square::*;
     use bitboard;
+    use movement::*;
 
     chess_test!(test_fen, {
         let load_store = |fen| {
-            let mut pos = Position::new();
-            pos.load_fen(fen).unwrap();
+            let pos = Position::from_fen(fen);
             assert_eq!(pos.to_string(), fen);
         };
         load_store("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -619,5 +627,68 @@ mod tests {
         load_store("4k2r/8/8/7r/8/8/1B6/1K6 w k - 0 1");
         load_store("1k6/8/8/8/R7/1n6/8/R3K3 b Q - 0 1");
         load_store("r3k3/8/1N6/r7/8/8/8/1K6 w q - 0 1");
+    });
+
+    chess_test!(test_attackers, {
+        let test_case = |fen, sq, want| {
+            let pos = Position::from_fen(fen);
+            assert_eq!(pos.attackers(sq), want);
+        };
+        test_case("q2rk3/8/3np3/2KPp3/4p3/2N1P3/8/7Q w - - 0 1", D5, all_bb!(A8, C3, C5, E6));
+        test_case("k7/8/8/8/8/B7/2PP4/q1r3RK w - - 0 1", C1, all_bb!(A1, A3, G1));
+    });
+
+    chess_test!(test_obvious_check, {
+        let test_case = |fen, m, want| {
+            let pos = Position::from_fen(fen);
+            let ad = AttackData::new(&pos);
+            assert_eq!(pos.obvious_check(m, &ad), want);
+        };
+        test_case("8/4k3/4r3/4n3/1N6/8/4K3/8 w - - 0 1",
+                  Move::new(B4, C6, Piece::WN, Piece::NoPiece),
+                  true);
+        test_case("8/4k3/4r3/4n3/1N6/8/4K3/8 w - - 0 1",
+                  Move::new(B4, A6, Piece::WN, Piece::NoPiece),
+                  false);
+        test_case("8/4k3/4r3/4n3/1N6/8/4K3/8 b - - 0 1",
+                  Move::new(E5, C4, Piece::BN, Piece::NoPiece),
+                  true);
+    });
+
+    chess_test!(checkers_test, {
+        let test_case = |fen, want| {
+            let pos = Position::from_fen(fen);
+            assert_eq!(pos.checkers(), want);
+        };
+        test_case("8/4k3/2N1r3/4n3/8/8/4K3/8 b - - 0 1", all_bb!(C6));
+        test_case("8/4k3/2N1r3/4n3/8/B7/4K3/8 b - - 0 1", all_bb!(A3, C6));
+    });
+
+    chess_test!(occlusion_test, {
+        let test_case = |fen, c, pin, discover| {
+            let pos = Position::from_fen(fen);
+            assert_eq!(pos.pinned(c), pin);
+            assert_eq!(pos.check_discoverers(c), discover);
+        };
+        test_case("8/8/RB2kqPR/4N3/1b2b3/4R3/3PP3/4K3 w - - 0 1",
+                  Color::White,
+                  all_bb!(D2),
+                  all_bb!(B6));
+        test_case("8/8/RB2kqPR/4N3/1b2b3/4R3/3PP3/4K3 w - - 0 1",
+                  Color::Black,
+                  0,
+                  0);
+        test_case("kN5Q/NN6/Q1Q5/8/7b/2r1r1P1/3QBP2/bq1NKN1n w - - 0 1",
+                  Color::White,
+                  all_bb!(D1, E2),
+                  all_bb!(A7, B7, B8));
+        test_case("kN5Q/NN6/Q1Q5/8/7b/2r1r1P1/3QBP2/bq1NKN1n w - - 0 1",
+                  Color::Black,
+                  0,
+                  0);
+        test_case("3k4/K2p3r/8/2P5/8/8/8/8 b - - 0 1",
+                  Color::Black,
+                  0,
+                  all_bb!(D7));
     });
 }

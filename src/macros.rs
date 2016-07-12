@@ -27,7 +27,8 @@ macro_rules! min {
 macro_rules! all_bb {
     ( $( $x:expr ),* ) => {
         {
-            let mut ret: Bitboard = 0;
+            use bitboard::{IntoBitboard};
+            let mut ret = 0;
             $(
                 ret |= $x.into_bitboard();
             )*
