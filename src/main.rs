@@ -7,6 +7,7 @@ extern crate time;
 pub mod board;
 pub mod bitboard;
 pub mod movement;
+pub mod movegen;
 pub mod options;
 pub mod position;
 

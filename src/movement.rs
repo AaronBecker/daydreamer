@@ -95,6 +95,10 @@ impl Move {
              ((capture.index() as u32) << 20) |
              EN_PASSANT_FLAG)
     }
+
+    pub fn as_u32(self) -> u32 {
+        self.0
+    }
 }
 
 impl ::std::fmt::Display for Move {
