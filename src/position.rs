@@ -1,5 +1,3 @@
-use std::cell::Cell;
-
 use board::*;
 use bitboard;
 use bitboard::Bitboard;
@@ -19,16 +17,6 @@ const WHITE_OOO: CastleRights = 0x01 << 2;
 const BLACK_OOO: CastleRights = 0x01 << 3;
 const CASTLE_ALL: CastleRights = WHITE_OO | WHITE_OOO | BLACK_OO | BLACK_OOO;
 const CASTLE_NONE: CastleRights = 0;
-
-// cr &= castle_mask[to] & castle_mask[from] will remove the appropriate rights
-// from cr for a move between from and to.
-static mut castle_mask: [CastleRights; 64] = [0; 64];
-
-// remove_rights takes a CastleRights and the source and destination of a move,
-// and returns an updated CastleRights with the appropriate rights removed.
-pub fn remove_rights(c: CastleRights, from: Square, to: Square) -> CastleRights {
-    unsafe { c & castle_mask[from.index()] & castle_mask[to.index()] }
-}
 
 // CastleInfo stores useful information for generating castling moves
 // efficiently. It supports both traditional chess and Chess960, which
@@ -58,86 +46,11 @@ const EMPTY_CASTLE_INFO: CastleInfo = CastleInfo {
         d: 0,
         may_discover_check: false,
     };
-static mut possible_castles: [[CastleInfo; 2]; 2] =
-    [[EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO], [EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO]];
-
-// add_castle adjusts castle_mask and possible_castles to allow castling between
-// a king and rook on the given squares. Valid for both traditional chess and
-// Chess960. This affects castle legality globally, but we only handle one game
-// at a time and castling legality isn't updated during search, so the data is
-// effectively const over the lifetime of any search.
-fn add_castle(k: Square, r: Square) {
-    let color = if k.index() > Square::H1.index() { Color::Black } else { Color::White };
-    let kside = k.index() < r.index();
-
-    let rights = (if kside { WHITE_OO } else { WHITE_OOO }) << color.index();
-    unsafe {
-        castle_mask[k.index()] &= !rights;
-        castle_mask[r.index()] &= !rights;
-    }
-
-    let kdest = if kside { Square::G1.relative_to(color) } else { Square::C1.relative_to(color) };
-    let rdest = if kside { Square::F1.relative_to(color) } else { Square::D1.relative_to(color) };
-    let mut path: Bitboard = 0;
-    let min_sq = min!(k, r, kdest, rdest);
-    let max_sq = max!(k, r, kdest, rdest);
-    for sq in Square::inclusive_range(min_sq, max_sq) {
-        if sq != k && sq != r {
-            path |= bitboard::bb(sq)
-        }
-    }
-    unsafe {
-        possible_castles[color.index()][if kside { 0 } else { 1 }] =
-            CastleInfo {
-                path: path,
-                king: k,
-                rook: r,
-                kdest: kdest,
-                d: if kdest > k { WEST } else { EAST },
-                may_discover_check: r.file() != File::A && r.file() != File::H,
-            }
-    }
-}
-
-// rights_string returns a string representation of the given castling rights,
-// compatible with FEN representation (or Shredder-FEN when in Chess960 mode).
-pub fn rights_string(c: CastleRights) -> String {
-    if c == CASTLE_NONE {
-        return String::from("-");
-    }
-    let mut castle = String::new();
-    let c960 = options::c960();
-    {
-        let file_idx = |x: usize, y: usize| -> u8 {
-            unsafe { possible_castles[x][y].rook.file().index() as u8 }
-        };
-        let mut add_glyph = |x: usize, y: usize, ch: char| {
-            let base = if ch.is_uppercase() { 'A' } else { 'a' };
-            let glyph = if !c960 { ch } else { (file_idx(x, y) + base as u8) as char };
-            castle.push(glyph);
-        };
-        if c & WHITE_OO != 0 {
-            add_glyph(0, 0, 'K'); 
-        }
-        if c & WHITE_OOO != 0 {
-            add_glyph(0, 1, 'Q'); 
-        }
-        if c & BLACK_OO != 0 {
-            add_glyph(1, 0, 'k'); 
-        }
-        if c & BLACK_OOO != 0 {
-            add_glyph(1, 1, 'q'); 
-        }
-    }
-    return castle;
-}
-
-const MISSING: Bitboard = 0xffffffffffffffff;
 
 // State stores core position state information that would otherwise be lost
 // when making a move.
 pub struct State {
-    checkers: Cell<Bitboard>,
+    checkers: Bitboard,
     last_move: Move,
     ply: u16,
     fifty_move_counter: u8,
@@ -145,15 +58,15 @@ pub struct State {
     castle_rights: CastleRights,
     us: Color,
     // TODO:
-    // position hash
-    // material score
-    // phase info?
+    //      position hash
+    //      material score
+    //      phase info?
 }
 
 impl State {
     pub fn new() -> State {
         State {
-            checkers: Cell::new(MISSING),
+            checkers: 0,
             last_move: movement::NO_MOVE,
             ply: 0,
             fifty_move_counter: 0,
@@ -167,8 +80,16 @@ impl State {
         // It's not clear that this is guaranteed to work correctly, but looking at the
         // implementation of std::cell::Cell makes me think it should be no problem.
         unsafe { ::std::intrinsics::write_bytes(self, 0, 1); }
-        self.checkers.set(MISSING);
+        self.checkers = 0;
         self.ep_square = Square::NoSquare;
+    }
+
+    pub fn undo_state(p: &Position) -> State {
+        unsafe {
+            let mut undo: State = ::std::mem::uninitialized();
+            ::std::ptr::copy_nonoverlapping(&p.state, &mut undo, 1);
+            undo
+        }
     }
 }
 
@@ -179,6 +100,19 @@ pub struct Position {
     board: [Piece; 64],
     pieces_of_type: [Bitboard; 8],
     pieces_of_color: [Bitboard; 2],
+
+    // We store information about possible castles in Position, even though
+    // they don't change over the course of a game so they could be global
+    // in principle. This lets us run tests over lots of positions concurrently
+    // and should have minimal overhead since we rarely copy positions.
+    //
+    // If you're wondering why the castle info is so complicated, it's to keep
+    // move generation simple and fast in the presence of weird Chess960
+    // setups.
+    possible_castles: [[CastleInfo; 2]; 2],
+    // cr &= castle_mask[to] & castle_mask[from] will remove the appropriate rights
+    // from cr for a move between from and to.
+    castle_mask: [CastleRights; 64],
 }
 
 impl Position {
@@ -188,6 +122,8 @@ impl Position {
             board: [Piece::NoPiece; 64],
             pieces_of_type: [0; 8],
             pieces_of_color: [0; 2],
+            castle_mask: [CASTLE_NONE; 64],
+            possible_castles: [[EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO], [EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO]],
         }
     }
 
@@ -197,10 +133,14 @@ impl Position {
         p
     }
 
+    pub fn copy_state(&mut self, state: &State) {
+        unsafe { ::std::ptr::copy_nonoverlapping(state, &mut self.state, 1); }
+    }
+
     // clear resets the position and removes all pieces from the board.
     pub fn clear(&mut self) {
         unsafe { ::std::intrinsics::write_bytes(self, 0, 1) }
-        self.state.checkers.set(MISSING);
+        self.state.checkers = 0;
         self.state.ep_square = Square::NoSquare;
     }
 
@@ -267,10 +207,7 @@ impl Position {
     }
 
     pub fn checkers(&self) -> Bitboard {
-        if self.state.checkers.get() == MISSING {
-            self.state.checkers.set(self.find_checkers());
-        }
-        self.state.checkers.get()
+        self.state.checkers
     }
 
     pub fn last_move(&self) -> Move {
@@ -378,8 +315,9 @@ impl Position {
                                    fen, pieces[1]));
             }
         }
+        self.state.checkers = self.find_checkers();
 
-        self.state.castle_rights = read_castle_rights(pieces[2], self);
+        self.state.castle_rights = self.read_castle_rights(pieces[2]);
         self.state.ep_square = pieces[3].parse().unwrap();
         if self.ep_square() != Square::NoSquare {
             // Don't believe the ep square unless there's a pawn that could
@@ -408,6 +346,67 @@ impl Position {
             self.state.ply += 1;
         }
         Ok(())
+    }
+
+    // read_castle_rights takes a castling rights string in FEN, X-FEN or
+    // Shredder-FEN format, returns the associated castling rights, and
+    // adjusts the castling data structures appropriately. It's slightly
+    // overcomplicated due to the desire to support all three formats.
+    fn read_castle_rights(&mut self, s: &str) -> CastleRights {
+        let mut c: CastleRights = 0;
+        for sq in each_square() {
+            self.castle_mask[sq.index()] = !0;
+        }
+        for ch in s.chars() {
+            let mut ksq = Square::NoSquare;
+            let mut rsq = Square::NoSquare;
+            if ch == '-' {
+                return c;
+            }
+            if ch >= 'a' && ch <= 'z' {
+                ksq = self.king_sq(Color::Black);
+                if ch == 'k' {
+                    rsq = ksq.next();
+                    while self.piece_at(rsq).piece_type() != PieceType::Rook {
+                        rsq = rsq.next()
+                    }
+                } else if ch == 'q' {
+                    rsq = ksq.prev();
+                    while self.piece_at(rsq).piece_type() != PieceType::Rook {
+                        rsq = rsq.prev();
+                    }
+                } else {
+                    rsq = Square::new(File::from_u8(ch as u8 - 'a' as u8), Rank::_8);
+                }
+                if ksq < rsq {
+                    c |= BLACK_OO;
+                } else {
+                    c |= BLACK_OOO;
+                }
+            } else if ch >= 'A' && ch <= 'Z' {
+                ksq = self.king_sq(Color::White);
+                if ch == 'K' {
+                    rsq = ksq.next();
+                    while self.piece_at(rsq).piece_type() != PieceType::Rook {
+                        rsq = rsq.next();
+                    }
+                } else if ch == 'Q' {
+                    rsq = ksq.prev();
+                    while self.piece_at(rsq).piece_type() != PieceType::Rook {
+                        rsq = rsq.prev();
+                    }
+                } else {
+                    rsq = Square::new(File::from_u8(ch as u8 - 'A' as u8), Rank::_1);
+                }
+                if ksq < rsq {
+                    c |= WHITE_OO;
+                } else {
+                    c |= WHITE_OOO;
+                }
+            }
+            self.add_castle(ksq, rsq);
+        }
+        c
     }
 
     fn place_piece(&mut self, p: Piece, sq: Square) {
@@ -440,12 +439,188 @@ impl Position {
         self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
     }
 
-    //bool PseudoMoveIsLegal(Move move, const AttackData& ad) const;
-    //void DoMove(Move move, UndoState* undo, const AttackData& ad);
-    //void DoMove(Move move, UndoState* undo, const AttackData& ad, bool gives_check);
-    //void DoNullMove(UndoState* undo);
-    //void UndoMove(Move move);
-    //void UndoNullMove();
+    pub fn do_move(&mut self, m: Move, ad: &AttackData) {
+        let (us, them) = (self.us(), self.them());
+        let (from, mut to) = (m.from(), m.to()); // note: we update 'to' for castling moves
+        let (capture, piece_type) = (m.capture(), m.piece().piece_type());
+
+        self.state.ep_square = Square::NoSquare;
+        self.state.ply += 1;
+        self.state.checkers = 0;
+
+        if piece_type == PieceType::Pawn {
+            self.state.fifty_move_counter = 0;
+            if from.index() ^ to.index() == 16 && // double pawn push
+                (bitboard::pawn_attacks(us, from.pawn_push(us)) &
+                 self.pieces_of_color_and_type(them, PieceType::Pawn) != 0) {
+                self.state.ep_square = from.pawn_push(us);
+            }
+        } else {
+            self.state.fifty_move_counter += 1;
+        }
+
+        if capture != Piece::NoPiece {
+            self.state.fifty_move_counter = 0;
+        }
+        self.state.castle_rights = self.remove_rights(self.state.castle_rights, from, to);
+
+        if m.is_castle() {
+            let (rdest, kdest) = if from.index() < to.index() {
+                (Square::F1.relative_to(us), Square::F1.relative_to(us))
+            } else {
+                (Square::D1.relative_to(us), Square::C1.relative_to(us))
+            };
+            self.remove_piece(from);
+            self.transfer_piece(to, rdest);
+            self.place_piece(Piece::new(us, PieceType::King), kdest);
+            to = kdest;
+        } else {
+            self.transfer_piece(from, to);
+            let promote = m.promote();
+            if m.is_en_passant() {
+                self.remove_piece(to.pawn_push(them));
+                self.state.checkers = self.attackers(ad.their_king) & self.pieces_of_color(us);
+            } else if promote != PieceType::NoPieceType {
+                self.remove_piece(to);
+                self.place_piece(Piece::new(us, promote), to);
+                self.state.checkers = self.attackers(ad.their_king) & self.pieces_of_color(us);
+            }
+        }
+
+        if self.obvious_check(m, ad) {
+            let (bb_from, bb_to) = (bitboard::bb(from), bitboard::bb(to));
+            if ad.potential_checks[piece_type.index()] & bb_to != 0 {
+                self.state.checkers |= bb_to;
+            }
+            if ad.check_discoverers & bb_from != 0 {
+                if piece_type != PieceType::Bishop {
+                    self.state.checkers |=
+                        bitboard::bishop_attacks(ad.their_king, self.all_pieces()) &
+                        (self.pieces_of_type(PieceType::Bishop) | self.pieces_of_type(PieceType::Queen)) &
+                        self.pieces_of_color(us);
+                }
+                if piece_type != PieceType::Rook {
+                    self.state.checkers |=
+                        bitboard::rook_attacks(ad.their_king, self.all_pieces()) &
+                        (self.pieces_of_type(PieceType::Rook) | self.pieces_of_type(PieceType::Queen)) &
+                        self.pieces_of_color(us);
+                }
+            }
+        }
+        self.state.us = self.state.us.flip();
+    }
+
+    pub fn undo_move(&mut self, mv: Move, undo: &UndoState) {
+        self.copy_state(undo);
+        let (us, them) = (self.us(), self.them());
+        let (from, to) = (mv.from(), mv.to());
+        if mv.is_castle() {
+            let (rdest, kdest) = if from.index() < to.index() {
+                (Square::F1.relative_to(us), Square::F1.relative_to(us))
+            } else {
+                (Square::D1.relative_to(us), Square::C1.relative_to(us))
+            };
+            self.remove_piece(kdest);
+            self.transfer_piece(rdest, to);
+            self.place_piece(Piece::new(us, PieceType::King), from);
+        } else {
+            self.transfer_piece(to, from);
+            let cap = mv.capture();
+            if cap != Piece::NoPiece {
+                if mv.is_en_passant() {
+                    self.place_piece(cap, to.pawn_push(them));
+                } else {
+                    self.place_piece(cap, to);
+                }
+            }
+        }
+        if mv.is_promote() {
+            self.remove_piece(from);
+            self.place_piece(Piece::new(us, PieceType::Pawn), from);
+        }
+        self.state.last_move = mv;
+    }
+
+    pub fn pseudo_move_is_legal(&self, mv: Move, ad: &AttackData) -> bool {
+        unimplemented!();
+    }
+
+    // TODO: nullmove handling
+
+    // remove_rights takes a CastleRights and the source and destination of a move,
+    // and returns an updated CastleRights with the appropriate rights removed.
+    pub fn remove_rights(&self, c: CastleRights, from: Square, to: Square) -> CastleRights {
+        c & self.castle_mask[from.index()] & self.castle_mask[to.index()]
+    }
+
+    // add_castle adjusts castle_mask and possible_castles to allow castling between
+    // a king and rook on the given squares. Valid for both traditional chess and
+    // Chess960. This affects castle legality globally, but we only handle one game
+    // at a time and castling legality isn't updated during search, so the data is
+    // effectively const over the lifetime of any search.
+    fn add_castle(&mut self, k: Square, r: Square) {
+        let color = if k.index() > Square::H1.index() { Color::Black } else { Color::White };
+        let kside = k.index() < r.index();
+
+        let rights = (if kside { WHITE_OO } else { WHITE_OOO }) << color.index();
+        self.castle_mask[k.index()] &= !rights;
+        self.castle_mask[r.index()] &= !rights;
+
+        let kdest = if kside { Square::G1.relative_to(color) } else { Square::C1.relative_to(color) };
+        let rdest = if kside { Square::F1.relative_to(color) } else { Square::D1.relative_to(color) };
+        let mut path: Bitboard = 0;
+        let min_sq = min!(k, r, kdest, rdest);
+        let max_sq = max!(k, r, kdest, rdest);
+        for sq in Square::inclusive_range(min_sq, max_sq) {
+            if sq != k && sq != r {
+                path |= bitboard::bb(sq)
+            }
+        }
+        self.possible_castles[color.index()][if kside { 0 } else { 1 }] =
+            CastleInfo {
+                path: path,
+                king: k,
+                rook: r,
+                kdest: kdest,
+                d: if kdest > k { WEST } else { EAST },
+                may_discover_check: r.file() != File::A && r.file() != File::H,
+            };
+    }
+
+    // rights_string returns a string representation of the given castling rights,
+    // compatible with FEN representation (or Shredder-FEN when in Chess960 mode).
+    pub fn rights_string(&self) -> String {
+        let c = self.state.castle_rights;
+        if c == CASTLE_NONE {
+            return String::from("-");
+        }
+        let mut castle = String::new();
+        let c960 = options::c960();
+        {
+            let file_idx = |x: usize, y: usize| -> u8 {
+                self.possible_castles[x][y].rook.file().index() as u8
+            };
+            let mut add_glyph = |x: usize, y: usize, ch: char| {
+                let base = if ch.is_uppercase() { 'A' } else { 'a' };
+                let glyph = if !c960 { ch } else { (file_idx(x, y) + base as u8) as char };
+                castle.push(glyph);
+            };
+            if c & WHITE_OO != 0 {
+                add_glyph(0, 0, 'K'); 
+            }
+            if c & WHITE_OOO != 0 {
+                add_glyph(0, 1, 'Q'); 
+            }
+            if c & BLACK_OO != 0 {
+                add_glyph(1, 0, 'k'); 
+            }
+            if c & BLACK_OOO != 0 {
+                add_glyph(1, 1, 'q'); 
+            }
+        }
+        return castle;
+    }
+
 }
 
 impl ::std::fmt::Display for Position {
@@ -478,72 +653,11 @@ impl ::std::fmt::Display for Position {
                 
         write!(f, " {} {} {} {} {}",
                self.us().glyph(),
-               rights_string(self.castle_rights()),
+               self.rights_string(),
                self.ep_square(),
                self.state.fifty_move_counter,
                (self.state.ply - self.us().index() as u16) / 2 + 1)
     }
-}
-
-// read_castle_rights takes a castling rights string in FEN, X-FEN or
-// Shredder-FEN format, returns the associated castling rights, and
-// adjusts the castling data structures appropriately. It's slightly
-// overcomplicated due to the desire to support all three formats.
-pub fn read_castle_rights(s: &str, pos: &Position) -> CastleRights {
-    let mut c: CastleRights = 0;
-    for sq in each_square() {
-        unsafe { castle_mask[sq.index()] = !0; }
-    }
-    for ch in s.chars() {
-        let mut ksq = Square::NoSquare;
-        let mut rsq = Square::NoSquare;
-        if ch == '-' {
-            return c;
-        }
-        if ch >= 'a' && ch <= 'z' {
-            ksq = pos.king_sq(Color::Black);
-            if ch == 'k' {
-                rsq = ksq.next();
-                while pos.piece_at(rsq).piece_type() != PieceType::Rook {
-                    rsq = rsq.next()
-                }
-            } else if ch == 'q' {
-                rsq = ksq.prev();
-                while pos.piece_at(rsq).piece_type() != PieceType::Rook {
-                    rsq = rsq.prev();
-                }
-            } else {
-                rsq = Square::new(File::from_u8(ch as u8 - 'a' as u8), Rank::_8);
-            }
-            if ksq < rsq {
-                c |= BLACK_OO;
-            } else {
-                c |= BLACK_OOO;
-            }
-        } else if ch >= 'A' && ch <= 'Z' {
-            ksq = pos.king_sq(Color::White);
-            if ch == 'K' {
-                rsq = ksq.next();
-                while pos.piece_at(rsq).piece_type() != PieceType::Rook {
-                    rsq = rsq.next();
-                }
-            } else if ch == 'Q' {
-                rsq = ksq.prev();
-                while pos.piece_at(rsq).piece_type() != PieceType::Rook {
-                    rsq = rsq.prev();
-                }
-            } else {
-                rsq = Square::new(File::from_u8(ch as u8 - 'A' as u8), Rank::_1);
-            }
-            if ksq < rsq {
-                c |= WHITE_OO;
-            } else {
-                c |= WHITE_OOO;
-            }
-        }
-        add_castle(ksq, rsq);
-    }
-    return c;
 }
 
 // AttackData holds information about king attacks, used during move
@@ -690,5 +804,38 @@ mod tests {
                   Color::Black,
                   0,
                   all_bb!(D7));
+    });
+
+    chess_test!(test_do_move, {
+        let test_case = |before, after, mv| {
+            let mut pos = Position::from_fen(before);
+            let ad = AttackData::new(&pos);
+            let undo = UndoState::undo_state(&pos);
+            pos.do_move(mv, &ad);
+            assert_eq!(pos.to_string(), after);
+            pos.undo_move(mv, &undo);
+            assert_eq!(pos.to_string(), before);
+        };
+        test_case("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                  "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+                  Move::new(E2, E4, Piece::WP, Piece::NoPiece));
+        test_case("3k4/3p4/8/K1P4r/8/8/8/8 b - - 0 1",
+                  "3k4/8/8/K1Pp3r/8/8/8/8 w - d6 0 2",
+                  Move::new(D7, D5, Piece::BP, Piece::NoPiece));
+        test_case("3k4/8/8/8/8/8/8/R3K3 w Q - 0 1",
+                  "3k4/8/8/8/8/8/8/2KR4 b - - 1 1",
+                  Move::new_castle(E1, A1, Piece::WK));
+        test_case("r3k2r/8/8/8/4b3/8/8/R3K2R w KQkq - 0 1",
+                  "r3k2r/8/8/8/8/8/8/R3K2b b Qkq - 0 1",
+                  Move::new(E4, H1, Piece::BB, Piece::WR));
+        test_case("r3k3/2p5/8/8/8/8/8/4K2R w Kq - 0 1",
+                  "r3k3/2p5/8/8/8/8/3K4/7R b q - 1 1",
+                  Move::new(E1, D2, Piece::WK, Piece::NoPiece));
+        test_case("4k3/8/8/1Pp5/8/8/8/4K3 w - c6 0 2",
+                  "4k3/8/2P5/8/8/8/8/4K3 b - - 0 2",
+                  Move::new_en_passant(B5, C6, Piece::WP, Piece::BP));
+        test_case("n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1",
+                  "n1n5/PPPk4/8/8/8/8/4Kp1p/5NqN w - - 0 2",
+                  Move::new_promotion(G2, G1, Piece::BP, Piece::NoPiece, PieceType::Queen));
     });
 }

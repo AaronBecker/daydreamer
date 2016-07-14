@@ -134,6 +134,10 @@ pub enum Piece {
 }
 
 impl Piece {
+    pub fn new(c: Color, pt: PieceType) -> Piece {
+        Piece::from_index(c.index() << 3 | pt.index())
+    }
+
     pub fn index(self) -> usize {
         self as usize
     }
@@ -147,6 +151,12 @@ impl Piece {
     pub fn from_u32(x: u32) -> Piece {
         debug_assert!(x <= Piece::BK as u32);
         debug_assert!(x <= Piece::WK as u32 || x >= Piece::BP as u32);
+        unsafe { mem::transmute(x as u8) }
+    }
+
+    pub fn from_index(x: usize) -> Piece {
+        debug_assert!(x <= Piece::BK as usize);
+        debug_assert!(x <= Piece::WK as usize || x >= Piece::BP as usize);
         unsafe { mem::transmute(x as u8) }
     }
 
@@ -306,6 +316,15 @@ impl Square {
         debug_assert!(f != File::NoFile);
         debug_assert!(r != Rank::NoRank);
         Square::from_u8(((r as u8) << 3) | (f as u8))
+    }
+
+    pub fn pawn_push(self, c: Color) -> Square {
+        debug_assert!(c != Color::NoColor);
+        if c == Color::White {
+            Square::from_index(self.index() + 8)
+        } else {
+            Square::from_index(self.index() - 8)
+        }
     }
 
     // Flip the square for black, or leave it for white.
