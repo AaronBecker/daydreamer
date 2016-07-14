@@ -11,31 +11,31 @@ use options;
 // possible eventually. Each color/direction combination corresponds to one bit
 // of a CastleRights.
 pub type CastleRights = u8;
-const WHITE_OO: CastleRights = 0x01;
-const BLACK_OO: CastleRights = 0x01 << 1;
-const WHITE_OOO: CastleRights = 0x01 << 2;
-const BLACK_OOO: CastleRights = 0x01 << 3;
-const CASTLE_ALL: CastleRights = WHITE_OO | WHITE_OOO | BLACK_OO | BLACK_OOO;
-const CASTLE_NONE: CastleRights = 0;
+pub const WHITE_OO: CastleRights = 0x01;
+pub const BLACK_OO: CastleRights = 0x01 << 1;
+pub const WHITE_OOO: CastleRights = 0x01 << 2;
+pub const BLACK_OOO: CastleRights = 0x01 << 3;
+pub const CASTLE_ALL: CastleRights = WHITE_OO | WHITE_OOO | BLACK_OO | BLACK_OOO;
+pub const CASTLE_NONE: CastleRights = 0;
 
 // CastleInfo stores useful information for generating castling moves
 // efficiently. It supports both traditional chess and Chess960, which
 // is why it seems unreasonably complicated.
 pub struct CastleInfo {
     // The set of squares that must be unoccupied.
-    path: Bitboard,
+    pub path: Bitboard,
     // The king's initial square.
-    king: Square,
+    pub king: Square,
     // The rook's initial square.
-    rook: Square,
+    pub rook: Square,
     // The king's final square.
-    kdest: Square,
+    pub kdest: Square,
     // The direction from the king's initial square to its final square.
-    d: Delta,
+    pub d: Delta,
     // In some Chess960 positions, the rook may be pinned to the king,
     // making an otherwise legal castle illegal due to discovered check.
     // This flags such positions for extra checking during move generation.
-    may_discover_check: bool,
+    pub may_discover_check: bool,
 }
 
 const EMPTY_CASTLE_INFO: CastleInfo = CastleInfo {
@@ -186,6 +186,10 @@ impl Position {
 
     pub fn castle_rights(&self) -> CastleRights {
         self.state.castle_rights
+    }
+
+    pub fn possible_castles(&self, c: Color, side: usize) -> &CastleInfo {
+        &self.possible_castles[c.index()][side]
     }
 
     // attackers gives the set of pieces attacking sq, regardless of color.
