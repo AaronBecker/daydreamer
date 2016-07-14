@@ -1,3 +1,4 @@
+use board;
 use board::*;
 use position;
 use position::Position;
@@ -104,6 +105,36 @@ pub fn add_castles(pos: &Position, moves: &mut Vec<Move>) {
         }
     }
 }
+
+pub fn add_pawn_promotions(pos: &Position,
+                           pawns: Bitboard,
+                           mut mask: Bitboard,
+                           d: Delta,
+                           moves: &mut Vec<Move>) {
+    mask &= bitboard::shift(pawns, d);
+    while mask != 0 {
+        let to = bitboard::pop_square(&mut mask);
+        let from = board::shift_sq(to, -d);
+        moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Knight));
+        moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Bishop));
+        moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Rook));
+        moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Queen));
+    }
+}
+
+fn add_pawn_non_promotions(pos: &Position,
+                           pawns: Bitboard,
+                           mut mask: Bitboard,
+                           d: Delta,
+                           moves: &mut Vec<Move>) {
+    mask &= bitboard::shift(pawns, d);
+    while mask != 0 {
+        let to = bitboard::pop_square(&mut mask);
+        let from = board::shift_sq(to, -d);
+        moves.push(Move::new(from, to, pos.piece_at(from), pos.piece_at(to)));
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
