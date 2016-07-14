@@ -548,7 +548,7 @@ impl Position {
         if mv.is_en_passant() {
             let mut after = self.all_pieces();
             after |= bitboard::bb(mv.to());
-            after ^= all_bb!(mv.from(), mv.to().pawn_push(them));
+            after ^= bb!(mv.from(), mv.to().pawn_push(them));
             let ksq = self.king_sq(us);
             if bitboard::bishop_attacks(ksq, after) &
                 (self.pieces_of_type(PieceType::Bishop) |
@@ -575,7 +575,7 @@ impl Position {
         }
 
         // If the piece that moved wasn't pinned, we're fine.
-        if ad.pinned == 0 || ad.pinned & all_bb!(mv.from()) == 0 {
+        if ad.pinned == 0 || ad.pinned & bb!(mv.from()) == 0 {
             return true;
         }
 
@@ -787,8 +787,8 @@ mod tests {
             let pos = Position::from_fen(fen);
             assert_eq!(pos.attackers(sq), want);
         };
-        test_case("q2rk3/8/3np3/2KPp3/4p3/2N1P3/8/7Q w - - 0 1", D5, all_bb!(A8, C3, C5, E6));
-        test_case("k7/8/8/8/8/B7/2PP4/q1r3RK w - - 0 1", C1, all_bb!(A1, A3, G1));
+        test_case("q2rk3/8/3np3/2KPp3/4p3/2N1P3/8/7Q w - - 0 1", D5, bb!(A8, C3, C5, E6));
+        test_case("k7/8/8/8/8/B7/2PP4/q1r3RK w - - 0 1", C1, bb!(A1, A3, G1));
     });
 
     chess_test!(test_obvious_check, {
@@ -813,8 +813,8 @@ mod tests {
             let pos = Position::from_fen(fen);
             assert_eq!(pos.checkers(), want);
         };
-        test_case("8/4k3/2N1r3/4n3/8/8/4K3/8 b - - 0 1", all_bb!(C6));
-        test_case("8/4k3/2N1r3/4n3/8/B7/4K3/8 b - - 0 1", all_bb!(A3, C6));
+        test_case("8/4k3/2N1r3/4n3/8/8/4K3/8 b - - 0 1", bb!(C6));
+        test_case("8/4k3/2N1r3/4n3/8/B7/4K3/8 b - - 0 1", bb!(A3, C6));
     });
 
     chess_test!(occlusion_test, {
@@ -825,16 +825,16 @@ mod tests {
         };
         test_case("8/8/RB2kqPR/4N3/1b2b3/4R3/3PP3/4K3 w - - 0 1",
                   Color::White,
-                  all_bb!(D2),
-                  all_bb!(B6));
+                  bb!(D2),
+                  bb!(B6));
         test_case("8/8/RB2kqPR/4N3/1b2b3/4R3/3PP3/4K3 w - - 0 1",
                   Color::Black,
                   0,
                   0);
         test_case("kN5Q/NN6/Q1Q5/8/7b/2r1r1P1/3QBP2/bq1NKN1n w - - 0 1",
                   Color::White,
-                  all_bb!(D1, E2),
-                  all_bb!(A7, B7, B8));
+                  bb!(D1, E2),
+                  bb!(A7, B7, B8));
         test_case("kN5Q/NN6/Q1Q5/8/7b/2r1r1P1/3QBP2/bq1NKN1n w - - 0 1",
                   Color::Black,
                   0,
@@ -842,7 +842,7 @@ mod tests {
         test_case("3k4/K2p3r/8/2P5/8/8/8/8 b - - 0 1",
                   Color::Black,
                   0,
-                  all_bb!(D7));
+                  bb!(D7));
     });
 
     chess_test!(test_do_move, {

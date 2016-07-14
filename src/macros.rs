@@ -24,7 +24,7 @@ macro_rules! min {
 
 // The bitboard you get from OR'ing together any number of elements tat are
 // convertable to a bitboard.
-macro_rules! all_bb {
+macro_rules! bb {
     ( $( $x:expr ),* ) => {
         {
             use bitboard::{IntoBitboard};

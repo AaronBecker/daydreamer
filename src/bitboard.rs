@@ -512,11 +512,11 @@ mod tests {
             s: "\n........\n........\n........\n........\n........\n........\n........\n........\n",
         });
         test_one_bb_str(BBStrTest {
-            x: all_bb!(E4, E5, D4, D5),
+            x: bb!(E4, E5, D4, D5),
             s: "\n........\n........\n........\n...xx...\n...xx...\n........\n........\n........\n",
         });
         test_one_bb_str(BBStrTest {
-            x: all_bb!(A1, B2, A8, B7),
+            x: bb!(A1, B2, A8, B7),
             s: "\nx.......\n.x......\n........\n........\n........\n........\n.x......\nx.......\n",
         });
 
@@ -565,31 +565,31 @@ mod tests {
             popped: 0,
         });
         test_one_pop_square(PopSquareTest {
-            x: all_bb!(E4, E5, D4, D5),
+            x: bb!(E4, E5, D4, D5),
             want: D4,
-            popped: all_bb!(E4, E5, D5),
+            popped: bb!(E4, E5, D5),
         });
     }
 
     #[test]
     fn test_king_attacks() {
         initialize();
-        assert_eq!(king_attacks(A1), all_bb!(B1, A2, B2));
-        assert_eq!(king_attacks(F6), all_bb!(E5, E6, E7, F5, F7, G5, G6, G7));
+        assert_eq!(king_attacks(A1), bb!(B1, A2, B2));
+        assert_eq!(king_attacks(F6), bb!(E5, E6, E7, F5, F7, G5, G6, G7));
     }
 
     #[test]
     fn test_knight_attacks() {
         initialize();
-        assert_eq!(knight_attacks(A1), all_bb!(B3, C2));
-        assert_eq!(knight_attacks(F6), all_bb!(D5, D7, E4, E8, G4, G8, H5, H7));
+        assert_eq!(knight_attacks(A1), bb!(B3, C2));
+        assert_eq!(knight_attacks(F6), bb!(D5, D7, E4, E8, G4, G8, H5, H7));
     }
 
     #[test]
     fn test_pawn_attacks() {
         initialize();
-        assert_eq!(white_pawn_attacks(B2), all_bb!(A3, C3));
-        assert_eq!(black_pawn_attacks(B2), all_bb!(A1, C1));
+        assert_eq!(white_pawn_attacks(B2), bb!(A3, C3));
+        assert_eq!(black_pawn_attacks(B2), bb!(A1, C1));
         assert_eq!(white_pawn_attacks(H4), bb(G5));
         assert_eq!(black_pawn_attacks(H4), bb(G3));
     }
@@ -597,19 +597,19 @@ mod tests {
     #[test]
     fn test_bishop_attacks() {
         initialize();
-        assert_eq!(bishop_attacks(A1, all_bb!(A1, A8, B3, B6, C6, G3, H1)),
-                   all_bb!(B2, C3, D4, E5, F6, G7, H8));
-        assert_eq!(bishop_attacks(F6, all_bb!(B3, C2, C3, C6, D5, D7, F5)),
-                   all_bb!(C3, D4, D8, E5, E7, G5, G7, H4, H8));
+        assert_eq!(bishop_attacks(A1, bb!(A1, A8, B3, B6, C6, G3, H1)),
+                   bb!(B2, C3, D4, E5, F6, G7, H8));
+        assert_eq!(bishop_attacks(F6, bb!(B3, C2, C3, C6, D5, D7, F5)),
+                   bb!(C3, D4, D8, E5, E7, G5, G7, H4, H8));
     }
 
     #[test]
     fn test_rook_attacks() {
         initialize();
-        assert_eq!(rook_attacks(A1, all_bb!(A1, A6, A8, B3, B6, C6, G3, H1)),
-                   all_bb!(A2, A3, A4, A5, A6, B1, C1, D1, E1, F1, G1, H1));
-        assert_eq!(rook_attacks(F6, all_bb!(B3, C2, C3, C6, D5, D7, F6)),
-                   all_bb!(C6, D6, E6, G6, H6, F1, F2, F3, F4, F5, F7, F8));
+        assert_eq!(rook_attacks(A1, bb!(A1, A6, A8, B3, B6, C6, G3, H1)),
+                   bb!(A2, A3, A4, A5, A6, B1, C1, D1, E1, F1, G1, H1));
+        assert_eq!(rook_attacks(F6, bb!(B3, C2, C3, C6, D5, D7, F6)),
+                   bb!(C6, D6, E6, G6, H6, F1, F2, F3, F4, F5, F7, F8));
     }
     
     #[test]
@@ -628,10 +628,10 @@ mod tests {
         assert_eq!(between(E3, C3), bb(D3));
         assert_eq!(ray(C3, E3), bb(Rank::_3));
         assert_eq!(ray(E3, C3), bb(Rank::_3));
-        assert_eq!(between(D2, G5), all_bb!(E3, F4));
-        assert_eq!(between(G5, D2), all_bb!(E3, F4));
-        assert_eq!(ray(D2, G5), all_bb!(C1, D2, E3, F4, G5, H6));
-        assert_eq!(ray(G5, D2), all_bb!(C1, D2, E3, F4, G5, H6));
+        assert_eq!(between(D2, G5), bb!(E3, F4));
+        assert_eq!(between(G5, D2), bb!(E3, F4));
+        assert_eq!(ray(D2, G5), bb!(C1, D2, E3, F4, G5, H6));
+        assert_eq!(ray(G5, D2), bb!(C1, D2, E3, F4, G5, H6));
         assert_eq!(between(A1, B3), 0);
         assert_eq!(between(B3, A1), 0);
         assert_eq!(ray(A1, B3), 0);
