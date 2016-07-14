@@ -228,8 +228,8 @@ impl Position {
         let mut potential_pinners = (rpinners | bpinners) & self.pieces_of_color(attacker);
         let mut occluders: Bitboard = 0;
         while potential_pinners != 0 {
-            let between = bitboard::between(sq, bitboard::pop_square(&mut potential_pinners)) &self.all_pieces();
-            if (between & (between - 1)) == 0 {  // exactly one piece in between
+            let between = bitboard::between(sq, bitboard::pop_square(&mut potential_pinners)) & self.all_pieces();
+            if (between & (between.wrapping_sub(1))) == 0 {  // exactly one piece in between
                 occluders |= between & self.pieces_of_color(c);
             }
         }
@@ -542,7 +542,46 @@ impl Position {
     }
 
     pub fn pseudo_move_is_legal(&self, mv: Move, ad: &AttackData) -> bool {
-        unimplemented!();
+        let (us, them) = (self.us(), self.them());
+        // Discovered check from en passant captures is gross and incredibly
+        // infrequent; just handle it inefficiently.
+        if mv.is_en_passant() {
+            let mut after = self.all_pieces();
+            after |= bitboard::bb(mv.to());
+            after ^= all_bb!(mv.from(), mv.to().pawn_push(them));
+            let ksq = self.king_sq(us);
+            if bitboard::bishop_attacks(ksq, after) &
+                (self.pieces_of_type(PieceType::Bishop) |
+                 self.pieces_of_type(PieceType::Queen)) &
+                    self.pieces_of_color(them) != 0 {
+                return false;
+            }
+            if bitboard::rook_attacks(ksq, after) &
+                (self.pieces_of_type(PieceType::Rook) |
+                 self.pieces_of_type(PieceType::Queen)) &
+                    self.pieces_of_color(them) != 0 {
+                return false;
+            }
+        }
+
+        if mv.piece().piece_type() == PieceType::King {
+            if mv.is_castle() {
+                return true;
+            }
+            // Note: the king can't screen attacks to its destination,
+            // because that would mean we're currently in check, and
+            // we don't generate those moves in GenEvasions.
+            return self.attackers(mv.to()) & self.pieces_of_color(them) == 0;
+        }
+
+        // If the piece that moved wasn't pinned, we're fine.
+        if ad.pinned == 0 || ad.pinned & all_bb!(mv.from()) == 0 {
+            return true;
+        }
+
+        // Otherwise, it's legal iff the move travels along the path of the pin.
+        bitboard::ray(mv.from(), mv.to()) &
+            self.pieces_of_color_and_type(us, PieceType::King) != 0
     }
 
     // TODO: nullmove handling
@@ -837,5 +876,33 @@ mod tests {
         test_case("n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1",
                   "n1n5/PPPk4/8/8/8/8/4Kp1p/5NqN w - - 0 2",
                   Move::new_promotion(G2, G1, Piece::BP, Piece::NoPiece, PieceType::Queen));
+    });
+
+    chess_test!(test_pseudo_move_is_legal, {
+        let test_case = |fen, mv, want| {
+            let pos = Position::from_fen(fen);
+            let ad = AttackData::new(&pos);
+            assert_eq!(want, pos.pseudo_move_is_legal(mv, &ad));
+        };
+        test_case("k7/8/8/5n2/8/4K3/8/8 w - - 0 1",
+                  Move::new(E3, D4, Piece::WK, Piece::NoPiece), false);
+        test_case("k7/8/8/5n2/8/4K3/8/8 w - - 0 1",
+                  Move::new(E3, E2, Piece::WK, Piece::NoPiece), true);
+        test_case("k3r3/8/8/8/4Q3/4K3/8/8 w - - 0 1",
+                  Move::new(E4, E7, Piece::WQ, Piece::NoPiece), true);
+        test_case("k3r3/8/8/8/4Q3/4K3/8/8 w - - 0 1",
+                  Move::new(E4, E8, Piece::WQ, Piece::BR), true);
+        test_case("1k2r3/8/8/8/4Q3/4K3/8/8 w - - 0 1",
+                  Move::new(E4, D4, Piece::WQ, Piece::NoPiece), false);
+        test_case("k7/8/8/2Pp4/4K3/8/8/8 w - d6 0 2",
+                  Move::new_en_passant(C5, D6, Piece::WP, Piece::BP), true);
+        test_case("k7/8/8/r1Pp2K1/8/8/8/8 w - d6 0 2",
+                  Move::new_en_passant(C5, D6, Piece::WP, Piece::BP), false);
+        test_case("n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1",
+                  Move::new(D7, D8, Piece::BK, Piece::NoPiece), false);
+        test_case("n1n5/PPPk4/8/8/8/8/4Kp1p/5b1N w - - 0 1",
+                  Move::new(E2, E1, Piece::WK, Piece::NoPiece), false);
+        test_case("r2q3r/p1ppkpb1/bn2pnp1/3PN3/NB2P3/5Q1p/PPP1BPPP/1R2K2R b K - 0 3",
+                  Move::new(C7, C5, Piece::BP, Piece::NoPiece), true);
     });
 }
