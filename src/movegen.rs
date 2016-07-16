@@ -177,6 +177,59 @@ pub fn add_pawn_moves(pos: &Position, moves: &mut Vec<Move>) {
     add_masked_pawn_moves(pos, !0, moves);
 }
 
+// gen_evasions appends all available pseudo-legal moves to moves. It is only
+// valid when the side to move is in check, and it is the only move generation
+// function that should be called under those circumstances.
+pub fn gen_evasions(pos: &Position, moves: &mut Vec<Move>) {
+    let us = pos.us();
+    let ksq = pos.king_sq(us);
+    let (mut slide_attack, mut num_checkers) = (0, 0);
+    let mut checkers = pos.checkers();
+    let mut check_sq = Square::NoSquare;
+
+    debug_assert!(checkers != 0);
+    while checkers != 0 {
+       check_sq = bitboard::pop_square(&mut checkers);
+       if pos.piece_at(check_sq).piece_type().index() >= PieceType::Bishop.index() {
+           slide_attack |= bb!(check_sq) ^ bitboard::ray(check_sq, ksq);
+       }
+       num_checkers += 1;
+    }
+
+    // King escapes
+    let bb = bitboard::king_attacks(ksq) & !slide_attack & !pos.pieces_of_color(us);
+    add_moves(pos, ksq, bb, moves);
+    if num_checkers > 1 {
+        // More than one checker, non-king moves are impossible.
+        return;
+    }
+
+    // Add moves that block or capture the checker.
+    let mask = bitboard::between(ksq, check_sq) | bb!(check_sq); 
+    let our_pieces = pos.pieces_of_color(us);
+    add_non_slider_moves(pos,
+                         our_pieces & pos.pieces_of_type(PieceType::Knight),
+                         mask,
+                         moves,
+                         bitboard::knight_attacks);
+    add_slider_moves(pos,
+                     our_pieces & pos.pieces_of_type(PieceType::Bishop),
+                     mask,
+                     moves,
+                     bitboard::bishop_attacks);
+    add_slider_moves(pos,
+                     our_pieces & pos.pieces_of_type(PieceType::Rook),
+                     mask,
+                     moves,
+                     bitboard::rook_attacks);
+    add_slider_moves(pos,
+                     our_pieces & pos.pieces_of_type(PieceType::Queen),
+                     mask,
+                     moves,
+                     bitboard::queen_attacks);
+    add_masked_pawn_moves(pos, mask, moves);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -320,5 +373,31 @@ mod tests {
                             Move::new(C7, C6, Piece::BP, Piece::NoPiece),
                             Move::new(D7, D6, Piece::BP, Piece::NoPiece),
                             Move::new(G6, G5, Piece::BP, Piece::NoPiece)));
+    });
+
+    chess_test!(test_gen_evasions, {
+        let test_case = |fen, expect: &mut Vec<Move>| {
+            let pos = Position::from_fen(fen);
+            expect.sort_by_key(|m| { m.as_u32() });
+            let mut moves = Vec::new();
+            gen_evasions(&pos, &mut moves);
+            moves.sort_by_key(|m| { m.as_u32() });
+            assert_eq!(*expect, moves);
+        };
+        test_case("8/1k6/5N2/2q5/6n1/3P4/5K2/6Q1 w - - 0 1",
+                  &mut vec!(Move::new(F2, F1, Piece::WK, Piece::NoPiece),
+                            Move::new(F2, G2, Piece::WK, Piece::NoPiece),
+                            Move::new(F2, G3, Piece::WK, Piece::NoPiece),
+                            Move::new(F2, F3, Piece::WK, Piece::NoPiece),
+                            Move::new(F2, E2, Piece::WK, Piece::NoPiece),
+                            Move::new(F2, E1, Piece::WK, Piece::NoPiece)));
+        test_case("r2q3r/p1ppkpb1/bn2pnp1/3PN3/NB2P3/5Q1p/PPP1BPPP/1R2K2R b K - 0 3",
+                  &mut vec!(Move::new(C7, C5, Piece::BP, Piece::NoPiece),
+                            Move::new(D7, D6, Piece::BP, Piece::NoPiece),
+                            Move::new(E7, E8, Piece::BK, Piece::NoPiece)));
+        test_case("r2q3r/p1ppkpb1/b1n1pnp1/3PN3/NB2P3/5Q1p/PPP1BPPP/1R2K2R b K - 0 1",
+                  &mut vec!(Move::new(D7, D6, Piece::BP, Piece::NoPiece),
+                            Move::new(E7, E8, Piece::BK, Piece::NoPiece),
+                            Move::new(C6, B4, Piece::BN, Piece::WB)));
     });
 }
