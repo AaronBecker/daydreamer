@@ -22,12 +22,24 @@ macro_rules! min {
     };
 }
 
+// hashmap literals, akin to vec!
+macro_rules! hashmap {
+    ($($key:expr => $val:expr,)+) => { hashmap!($($key => $val),+) };
+    ($($key : expr => $val : expr),*) => {
+        {
+            let mut map = ::std::collections::HashMap::new();
+            $(map.insert($key, $val);)*
+            map
+        }
+    }
+}
+
 // The bitboard you get from OR'ing together any number of elements tat are
 // convertable to a bitboard.
 macro_rules! bb {
     ( $( $x:expr ),* ) => {
         {
-            use bitboard::{IntoBitboard};
+            use bitboard::IntoBitboard;
             let mut ret = 0;
             $(
                 ret |= $x.into_bitboard();
@@ -42,6 +54,7 @@ macro_rules! chess_test {
     ($id:ident, $b:block) => {
         #[test]
         fn $id() {
+            use bitboard;
             bitboard::initialize();
             $b
         }

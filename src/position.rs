@@ -1,6 +1,7 @@
 use board::*;
 use bitboard;
 use bitboard::Bitboard;
+use movegen;
 use movement;
 use movement::Move;
 use options;
@@ -273,7 +274,6 @@ impl Position {
 
     pub fn debug_string(&self) -> String {
         let mut s = String::new();
-
         for rank in each_rank().rev() {
             for file in each_file() {
                 s.push(self.piece_at(Square::new(file, rank)).glyph());
@@ -281,6 +281,17 @@ impl Position {
             s.push('\n');
         }
         s.push_str(self.to_string().as_str());
+        s.push('\n');
+
+        let ad = AttackData::new(self);
+        let moves = &mut Vec::new();
+        movegen::gen_legal(self, &ad, moves);
+
+        for m in moves.iter() {
+            s.push_str(m.to_string().as_str());
+            s.push(' ');
+        }
+        s.push('\n');
         s
     }
 
@@ -414,6 +425,7 @@ impl Position {
     }
 
     fn place_piece(&mut self, p: Piece, sq: Square) {
+        debug_assert!(self.board[sq.index()] == Piece::NoPiece);
         self.board[sq.index()] = p;
         let b = bitboard::bb(sq);
         self.pieces_of_color[p.color().index()] |= b;
@@ -423,8 +435,9 @@ impl Position {
 
     fn remove_piece(&mut self, sq: Square) {
         let p = self.board[sq.index()];
+        debug_assert!(p != Piece::NoPiece);
         self.board[sq.index()] = Piece::NoPiece;
-        let b = !bitboard::bb(sq);
+        let b = bitboard::bb(sq);
         self.pieces_of_color[p.color().index()] ^= b;
         self.pieces_of_type[p.piece_type().index()] ^= b;
         self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
@@ -470,7 +483,7 @@ impl Position {
 
         if m.is_castle() {
             let (rdest, kdest) = if from.index() < to.index() {
-                (Square::F1.relative_to(us), Square::F1.relative_to(us))
+                (Square::F1.relative_to(us), Square::G1.relative_to(us))
             } else {
                 (Square::D1.relative_to(us), Square::C1.relative_to(us))
             };
@@ -520,7 +533,7 @@ impl Position {
         let (from, to) = (mv.from(), mv.to());
         if mv.is_castle() {
             let (rdest, kdest) = if from.index() < to.index() {
-                (Square::F1.relative_to(us), Square::F1.relative_to(us))
+                (Square::F1.relative_to(us), Square::G1.relative_to(us))
             } else {
                 (Square::D1.relative_to(us), Square::C1.relative_to(us))
             };
@@ -710,7 +723,7 @@ impl ::std::fmt::Display for Position {
 pub struct AttackData {
     potential_checks: [Bitboard; 8], // per piece type
     check_discoverers: Bitboard,
-    pinned: Bitboard,
+    pub pinned: Bitboard,
     their_king: Square,
 }
 
@@ -723,7 +736,7 @@ impl AttackData {
         AttackData {
             potential_checks: [
                 0, // PieceType::NoPieceType
-                bitboard::pawn_attacks(pos.us(), their_king),
+                bitboard::pawn_attacks(pos.them(), their_king),
                 bitboard::knight_attacks(their_king),
                 ba,
                 ra,

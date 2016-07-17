@@ -9,8 +9,11 @@ pub mod bitboard;
 pub mod movement;
 pub mod movegen;
 pub mod options;
+pub mod perft;
 pub mod position;
+pub mod uci;
 
 fn main() {
     bitboard::initialize();
+    uci::input_loop();
 }

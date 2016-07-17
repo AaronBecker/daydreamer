@@ -230,6 +230,26 @@ pub fn gen_evasions(pos: &Position, moves: &mut Vec<Move>) {
     add_masked_pawn_moves(pos, mask, moves);
 }
 
+pub fn gen_legal(pos: &Position, ad: &position::AttackData, moves: &mut Vec<Move>) {
+    if pos.checkers() != 0 {
+        gen_evasions(pos, moves);
+    } else {
+        add_castles(pos, moves);
+        add_piece_captures(pos, moves);
+        add_piece_non_captures(pos, moves);
+        add_pawn_moves(pos, moves);
+    }
+
+    moves.retain(|m| {
+        if ad.pinned == 0 && m.piece().piece_type() != PieceType::King && !m.is_en_passant() {
+            true
+        } else {
+            pos.pseudo_move_is_legal(*m, ad)
+        }
+    });
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
