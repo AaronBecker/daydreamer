@@ -491,6 +491,7 @@ impl Position {
             self.transfer_piece(to, rdest);
             self.place_piece(Piece::new(us, PieceType::King), kdest);
             to = kdest;
+            self.state.checkers = self.attackers(ad.their_king) & self.pieces_of_color(us);
         } else {
             self.transfer_piece(from, to);
             let promote = m.promote();
@@ -756,7 +757,6 @@ mod tests {
     use super::*;
     use board::*;
     use board::Square::*;
-    use bitboard;
     use movement::*;
 
     chess_test!(test_fen, {

@@ -1,6 +1,9 @@
 use std::io::{stdin, BufRead};
 
+use movement;
+use movement::Move;
 use perft;
+use position;
 use position::Position;
 
 const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -50,7 +53,7 @@ fn handle_line(root_data: &mut RootData, line: &str) -> Result<(), String> {
             Some("position") => return handle_position(root_data, &mut tokens),
             Some("print") => return handle_print(root_data, &mut tokens),
             Some("quit") => ::std::process::exit(0),
-            Some(unknown) => println!("info string ignoring unrecognized token '{}'", unknown),
+            Some(unknown) => try!(make_move(root_data, unknown)),
             None => return Ok(()),
         }
     }
@@ -80,10 +83,26 @@ fn handle_position<'a, I>(root_data: &mut RootData, tokens: &mut I) -> Result<()
     }
 
     // Remaining tokens should be moves.
+    let ad = position::AttackData::new(&root_data.pos);
     while let Some(tok) = tokens.next() {
         // handle moves
+        let m = Move::from_uci(&root_data.pos, &ad, tok);
+        if m == movement::NO_MOVE {
+            return Err(format!("invalid move {}", tok));
+        }
+        root_data.pos.do_move(m, &ad);
     }
 
+    Ok(())
+}
+
+fn make_move(root_data: &mut RootData, mv: &str) -> Result<(), String> {
+    let ad = position::AttackData::new(&root_data.pos);
+    let m = Move::from_uci(&root_data.pos, &ad, mv);
+    if m == movement::NO_MOVE {
+        return Err(format!("unrecognized token {}", mv));
+    }
+    root_data.pos.do_move(m, &ad);
     Ok(())
 }
 
@@ -92,7 +111,10 @@ fn handle_perft<'a, I>(root_data: &mut RootData, tokens: &mut I) -> Result<(), S
     match tokens.next() {
         Some(depth) => {
             let d = try!(depth.parse::<u32>().map_err(|e| e.to_string()));
-            println!("{}", perft::perft(&mut root_data.pos, d));
+            let t1 = ::time::precise_time_ns();
+            let count = perft::perft(&mut root_data.pos, d);
+            let t2 = ::time::precise_time_ns();
+            println!("{} ({} ms, {} nodes/s", count, (t2 - t1) / 1_000_000, count * 1_000_000_000 / (t2 - t1));
         },
         None => return Err("input ended with no depth".to_string()),
     }

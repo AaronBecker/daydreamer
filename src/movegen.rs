@@ -255,7 +255,6 @@ mod tests {
     use super::*;
     use board::*;
     use board::Square::*;
-    use bitboard;
     use movement::*;
     use position::Position;
 
