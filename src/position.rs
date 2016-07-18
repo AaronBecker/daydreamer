@@ -164,6 +164,14 @@ impl Position {
     pub fn pieces(&self, p: Piece) -> Bitboard {
         self.pieces_of_color[p.color().index()] & self.pieces_of_type[p.piece_type().index()]
     }
+
+    pub fn our_pieces(&self) -> Bitboard {
+        self.pieces_of_color[self.state.us.index()]
+    }
+
+    pub fn their_pieces(&self) -> Bitboard {
+        self.pieces_of_color[self.state.us.flip().index()]
+    }
     
     pub fn king_sq(&self, c: Color) -> Square {
         bitboard::lsb(self.pieces_of_color_and_type(c, PieceType::King))
@@ -208,7 +216,7 @@ impl Position {
     }
 
     fn find_checkers(&self) -> Bitboard {
-        self.attackers(self.king_sq(self.us())) & self.pieces_of_color(self.them())
+        self.attackers(self.king_sq(self.us())) & self.their_pieces()
     }
 
     pub fn checkers(&self) -> Bitboard {
@@ -491,17 +499,17 @@ impl Position {
             self.transfer_piece(to, rdest);
             self.place_piece(Piece::new(us, PieceType::King), kdest);
             to = kdest;
-            self.state.checkers = self.attackers(ad.their_king) & self.pieces_of_color(us);
+            self.state.checkers = self.attackers(ad.their_king) & self.our_pieces();
         } else {
             self.transfer_piece(from, to);
             let promote = m.promote();
             if m.is_en_passant() {
                 self.remove_piece(to.pawn_push(them));
-                self.state.checkers = self.attackers(ad.their_king) & self.pieces_of_color(us);
+                self.state.checkers = self.attackers(ad.their_king) & self.our_pieces();
             } else if promote != PieceType::NoPieceType {
                 self.remove_piece(to);
                 self.place_piece(Piece::new(us, promote), to);
-                self.state.checkers = self.attackers(ad.their_king) & self.pieces_of_color(us);
+                self.state.checkers = self.attackers(ad.their_king) & self.our_pieces()
             }
         }
 
@@ -515,13 +523,13 @@ impl Position {
                     self.state.checkers |=
                         bitboard::bishop_attacks(ad.their_king, self.all_pieces()) &
                         (self.pieces_of_type(PieceType::Bishop) | self.pieces_of_type(PieceType::Queen)) &
-                        self.pieces_of_color(us);
+                        self.our_pieces();
                 }
                 if piece_type != PieceType::Rook {
                     self.state.checkers |=
                         bitboard::rook_attacks(ad.their_king, self.all_pieces()) &
                         (self.pieces_of_type(PieceType::Rook) | self.pieces_of_type(PieceType::Queen)) &
-                        self.pieces_of_color(us);
+                        self.our_pieces();
                 }
             }
         }
@@ -571,13 +579,13 @@ impl Position {
             if bitboard::bishop_attacks(ksq, after) &
                 (self.pieces_of_type(PieceType::Bishop) |
                  self.pieces_of_type(PieceType::Queen)) &
-                    self.pieces_of_color(them) != 0 {
+                    self.their_pieces() != 0 {
                 return false;
             }
             if bitboard::rook_attacks(ksq, after) &
                 (self.pieces_of_type(PieceType::Rook) |
                  self.pieces_of_type(PieceType::Queen)) &
-                    self.pieces_of_color(them) != 0 {
+                    self.their_pieces() != 0 {
                 return false;
             }
         }
@@ -589,7 +597,7 @@ impl Position {
             // Note: the king can't screen attacks to its destination,
             // because that would mean we're currently in check, and
             // we don't generate those moves in GenEvasions.
-            return self.attackers(mv.to()) & self.pieces_of_color(them) == 0;
+            return self.attackers(mv.to()) & self.their_pieces() == 0;
         }
 
         // If the piece that moved wasn't pinned, we're fine.

@@ -38,7 +38,7 @@ fn add_non_slider_moves(pos: &Position,
 }
 
 fn add_piece_moves(pos: &Position, targets: Bitboard, moves: &mut Vec<Move>) {
-    let our_pieces = pos.pieces_of_color(pos.us());
+    let our_pieces = pos.our_pieces();
     add_non_slider_moves(pos,
                          our_pieces & pos.pieces_of_type(PieceType::Knight),
                          targets,
@@ -67,7 +67,7 @@ fn add_piece_moves(pos: &Position, targets: Bitboard, moves: &mut Vec<Move>) {
 }
 
 pub fn add_piece_captures(pos: &Position, moves: &mut Vec<Move>) {
-    add_piece_moves(pos, pos.pieces_of_color(pos.them()), moves);
+    add_piece_moves(pos, pos.their_pieces(), moves);
 }
 
 pub fn add_piece_non_captures(pos: &Position, moves: &mut Vec<Move>) {
@@ -84,7 +84,7 @@ pub fn add_castles(pos: &Position, moves: &mut Vec<Move>) {
         let mut failed = pos.all_pieces() & ci.path != 0;
         let mut sq = ci.kdest;
         while !failed && sq != ci.king {
-            if pos.attackers(sq) & pos.pieces_of_color(them) != 0 {
+            if pos.attackers(sq) & pos.their_pieces() != 0 {
                 failed = true;
             }
             sq = shift_sq(sq, ci.d);
@@ -155,8 +155,9 @@ fn add_masked_pawn_moves(pos: &Position,
     let promote_from_mask = pawns & our_7;
     let capture_from_mask = pawns & !promote_from_mask;
     for d in [up + WEST, up + EAST].iter() {
-        let promote_to_mask = pos.pieces_of_color(them) & bitboard::shift(promote_from_mask, *d) & mask;
-        let capture_to_mask = pos.pieces_of_color(them) & bitboard::shift(capture_from_mask, *d) & mask;
+        let their_pieces = pos.their_pieces();
+        let promote_to_mask = their_pieces & bitboard::shift(promote_from_mask, *d) & mask;
+        let capture_to_mask = their_pieces & bitboard::shift(capture_from_mask, *d) & mask;
 
         add_pawn_promotions(pos, promote_from_mask, promote_to_mask, *d, moves);
         add_pawn_non_promotions(pos, capture_from_mask, capture_to_mask, *d, moves);
@@ -197,7 +198,7 @@ pub fn gen_evasions(pos: &Position, moves: &mut Vec<Move>) {
     }
 
     // King escapes
-    let bb = bitboard::king_attacks(ksq) & !slide_attack & !pos.pieces_of_color(us);
+    let bb = bitboard::king_attacks(ksq) & !slide_attack & !pos.our_pieces();
     add_moves(pos, ksq, bb, moves);
     if num_checkers > 1 {
         // More than one checker, non-king moves are impossible.
@@ -206,7 +207,7 @@ pub fn gen_evasions(pos: &Position, moves: &mut Vec<Move>) {
 
     // Add moves that block or capture the checker.
     let mask = bitboard::between(ksq, check_sq) | bb!(check_sq); 
-    let our_pieces = pos.pieces_of_color(us);
+    let our_pieces = pos.our_pieces();
     add_non_slider_moves(pos,
                          our_pieces & pos.pieces_of_type(PieceType::Knight),
                          mask,
