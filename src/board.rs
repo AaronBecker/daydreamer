@@ -49,13 +49,8 @@ impl Color {
     }
 
     pub fn flip(self) -> Color {
-        // TODO: consider self ^ 1
-        // The performance difference probably can't be measured, though.
-        match self {
-            Color::White => Color::Black,
-            Color::Black => Color::White,
-            Color::NoColor => Color::NoColor,
-        }
+        debug_assert!(self != Color::NoColor);
+        unsafe { mem::transmute(self as u8 ^ 1) }
     }
 
     pub fn glyph(self) -> char {

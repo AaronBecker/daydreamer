@@ -68,7 +68,6 @@ impl Move {
         self.is_castle() && self.from().index() < self.to().index()
     }
 
-
     pub fn new(from: Square, to: Square, p: Piece, capture: Piece) -> Move {
         Move((from.index() as u32) |
              ((to.index() as u32) << 8) |

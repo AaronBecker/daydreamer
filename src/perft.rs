@@ -15,7 +15,7 @@ fn internal_perft(pos: &mut Position, depth: u32, divide: bool) -> u64 {
     }
 
     let ad = AttackData::new(pos);
-    let moves = &mut Vec::new();
+    let moves = &mut Vec::with_capacity(128);
     gen_legal(pos, &ad, moves);
     if depth == 1 {
         return moves.len() as u64;
