@@ -6,6 +6,8 @@ use movement;
 use movement::Move;
 use options;
 
+pub const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
 // CastleRights represents the available castling rights for both sides (black
 // and white) and both directions (long and short). This doesn't indicate the
 // castling is actually possible at the moment, only that it could become

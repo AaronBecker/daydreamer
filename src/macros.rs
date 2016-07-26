@@ -22,6 +22,20 @@ macro_rules! min {
     };
 }
 
+macro_rules! clamp {
+    ($x:expr, $min:expr, $max:expr) => {
+        {
+            if $x < $min {
+                $min
+            } else if $x > $max {
+                $max
+            } else {
+                $x
+            }
+        }
+    };
+}
+
 // hashmap literals, akin to vec!
 macro_rules! hashmap {
     ($($key:expr => $val:expr,)+) => { hashmap!($($key => $val),+) };

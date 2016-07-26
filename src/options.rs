@@ -9,3 +9,7 @@ pub fn c960() -> bool {
 pub fn arena_960_castling() -> bool {
     false
 }
+
+pub fn time_buffer() -> u32 {
+    10
+}

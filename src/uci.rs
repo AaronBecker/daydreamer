@@ -1,58 +1,154 @@
 use std::io::{stdin, BufRead};
+use std::sync::mpsc;
+use std::thread;
+use std::time;
+use std::time::Duration;
 
+use board;
 use movement;
 use movement::Move;
+use options;
 use perft;
 use position;
 use position::Position;
 
-const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum EngineState {
+    Waiting,
+    Stopping,
+    Searching,
+}
+
+pub struct Constraints {
+    infinite: bool,
+    use_timer: bool,
+    hard_limit: Duration,
+    soft_limit: Duration,
+    node_limit: u64,
+    depth_limit: u8,
+    searchmoves: Vec<Move>,
+}
+
+impl Constraints {
+    pub fn new() -> Constraints {
+        Constraints {
+            infinite: false,
+            use_timer: false,
+            hard_limit: Duration::new(0, 0),
+            soft_limit: Duration::new(0, 0),
+            node_limit: u64::max_value(),
+            depth_limit: u8::max_value(),
+            searchmoves: Vec::new(),
+        }
+    }
+
+    pub fn set_timer(&mut self, us: board::Color, wtime: u32, btime: u32, winc: u32, binc: u32, movetime: u32, movestogo: u32) {
+        if wtime == 0 && btime == 0 && winc == 0 && binc == 0 && movetime == 0 {
+            self.use_timer = false;
+            return;
+        }
+        self.use_timer = true;
+        
+        if movetime != 0 {
+            self.hard_limit = Duration::from_millis(max!(0, movetime - options::time_buffer()) as u64);
+            self.soft_limit = self.hard_limit;
+            return;
+        }
+        let time = if us == board::Color::White { wtime } else { btime };
+        let inc = if us == board::Color::White { winc } else { binc };
+        let (mut soft_limit, mut hard_limit);
+        if movestogo != 0 {
+            // x/y time control
+            soft_limit = time / clamp!(movestogo, 2, 20);
+            hard_limit = if movestogo == 1 {
+                max!(time - 250, time / 2)
+            } else {
+                min!(time / 4, time * 4 / movestogo)
+            };
+        } else {
+            // x+y time control
+            soft_limit = time / 30 + inc;
+            hard_limit = max!(time / 5, inc - 250);
+        }
+        soft_limit = min!(soft_limit, time - options::time_buffer());
+        hard_limit = min!(hard_limit, time - options::time_buffer());
+        self.soft_limit = Duration::from_millis(soft_limit as u64);
+        self.hard_limit = Duration::from_millis(hard_limit as u64);
+    }
+
+}
 
 // note: this should probably move to the search eventually
 pub struct RootData {
     pos: Position,
+    state: EngineState,
+    uci_channel: mpsc::Receiver<String>,
 }
 
 impl RootData {
-    pub fn new() -> RootData {
+    pub fn new(uci_channel: mpsc::Receiver<String>) -> RootData {
         RootData {
-            pos: Position::from_fen(START_FEN),
+            pos: Position::from_fen(position::START_FEN),
+            state: EngineState::Waiting,
+            uci_channel: uci_channel,
         }
     }
 }
 
 pub fn input_loop() {
-    // note: we'll eventually need some root data that's more than just a position here
-    let mut root_data = RootData::new();
+    let (tx, rx) = mpsc::channel();
+    let mut root_data = RootData::new(rx);
+
+    thread::spawn(move || { read_input_forever(tx) });
+    loop {
+        match root_data.uci_channel.try_recv() {
+            Ok(command) => match handle_command(&mut root_data, command.as_str()) {
+                Ok(_) => (),
+                Err(err) => {
+                    println!("info string ignoring input '{}': {}", command, err);
+                }
+            },
+            Err(mpsc::TryRecvError::Empty) => thread::sleep(time::Duration::from_millis(10)),
+            Err(mpsc::TryRecvError::Disconnected) => panic!("Broken connection to stdin"),
+        }
+    }
+}
+
+fn read_input_forever(chan: mpsc::Sender<String>) {
     let stdin = stdin();
     for line in stdin.lock().lines() {
         match line {
-            Ok(s) => {
-                match handle_line(&mut root_data, s.as_str()) {
-                    Ok(_) => (),
-                    Err(err) => {
-                        println!("info string ignoring input '{}': {}", s, err);
-                    }
-                }
-            }
+            Ok(s) => chan.send(s).unwrap(),
             _ => (),
         }
     }
 }
 
-fn handle_line(root_data: &mut RootData, line: &str) -> Result<(), String> {
+fn handle_command(root_data: &mut RootData, line: &str) -> Result<(), String> {
     let mut tokens = line.split_whitespace();
     loop {
         match tokens.next() {
+            Some("uci") => {
+                println!("id name baru 0");
+                println!("id author Aaron Becker");
+                println!("uciok");
+            }
             Some("isready") => {
                 println!("readyok");
                 return Ok(());
             },
+            Some("debug") => return Ok(()),
+            Some("register") => return Ok(()),
+            Some("ucinewgame") => return Ok(()),
+            Some("position") => return handle_position(root_data, &mut tokens),
+            Some("go") => return Ok(()),
+            Some("stop") => return Ok(()),
+            Some("ponderhit") => return Ok(()),
+            Some("quit") => ::std::process::exit(0),
+            // Custom extensions
             Some("perft") => return handle_perft(root_data, &mut tokens),
             Some("divide") => return handle_divide(root_data, &mut tokens),
-            Some("position") => return handle_position(root_data, &mut tokens),
             Some("print") => return handle_print(root_data, &mut tokens),
-            Some("quit") => ::std::process::exit(0),
             Some(unknown) => try!(make_move(root_data, unknown)),
             None => return Ok(()),
         }
@@ -63,7 +159,7 @@ fn handle_position<'a, I>(root_data: &mut RootData, tokens: &mut I) -> Result<()
         where I: Iterator<Item=&'a str> {
     match tokens.next() {
         Some("startpos") => {
-            try!(root_data.pos.load_fen(START_FEN));
+            try!(root_data.pos.load_fen(position::START_FEN));
         },
         Some("fen") => {
             let mut fen = String::new();
@@ -132,7 +228,6 @@ fn handle_divide<'a, I>(root_data: &mut RootData, tokens: &mut I) -> Result<(), 
     }
     Ok(())
 }
-
 
 fn handle_print<'a, I>(root_data: &mut RootData, _tokens: &mut I) -> Result<(), String>
         where I: Iterator<Item=&'a str> {
