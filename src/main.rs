@@ -16,5 +16,11 @@ pub mod uci;
 
 fn main() {
     bitboard::initialize();
-    uci::input_loop();
+
+    // Treat each argument as a file containing uci commands.
+    for arg in ::std::env::args().skip(1) {
+        uci::read_stream(Some(arg.to_string()));
+    }
+    // Read from stdin.
+    uci::read_stream(None);
 }

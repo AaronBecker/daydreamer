@@ -1,4 +1,5 @@
-use std::io::{stdin, BufRead};
+use std::fs::File;
+use std::io::{stdin, BufRead, BufReader};
 use std::sync::mpsc;
 use std::thread;
 use std::time;
@@ -10,12 +11,12 @@ use position;
 use search;
 use search::SearchData;
 
-pub fn input_loop() {
+pub fn read_stream(script: Option<String>) {
     let (tx, rx) = mpsc::channel();
     let mut search_data = SearchData::new(rx);
     let engine_state = search_data.state.clone();
 
-    thread::spawn(move || { read_input_forever(tx, engine_state) });
+    thread::spawn(move || { read_file_or_stdin(script, tx, engine_state) });
     loop {
         match search_data.uci_channel.try_recv() {
             Ok(command) => match handle_command(&mut search_data, command.as_str()) {
@@ -25,31 +26,61 @@ pub fn input_loop() {
                 }
             },
             Err(mpsc::TryRecvError::Empty) => thread::sleep(time::Duration::from_millis(1)),
-            Err(mpsc::TryRecvError::Disconnected) => panic!("Broken connection to stdin"),
+            Err(mpsc::TryRecvError::Disconnected) => return,
         }
     }
 }
 
-fn read_input_forever(chan: mpsc::Sender<String>, state: search::EngineState) {
-    let stdin = stdin();
-    for line in stdin.lock().lines() {
+fn read_file_or_stdin(input: Option<String>, chan: mpsc::Sender<String>, state: search::EngineState) {
+    match input {
+        Some(filename) => {
+            let filename_copy = filename.clone();
+            match File::open(filename) {
+                Ok(f) => consume_stream(BufReader::new(f), chan, state),
+                Err(e) => {
+                    println!("couldn't open file '{}': {}", filename_copy, e);
+                    println!("reading from stdin");
+                    let stdin = stdin();
+                    consume_stream(stdin.lock(), chan, state);
+                },
+            }
+        },
+        None => {
+            let stdin = stdin();
+            consume_stream(stdin.lock(), chan, state);
+        }
+    }
+}
+
+fn consume_stream<T: BufRead>(stream: T, chan: mpsc::Sender<String>, state: search::EngineState) {
+    for line in stream.lines() {
         match line {
             Ok(s) => {
-                match state.load() {
-                    search::WAITING_STATE | search::STOPPING_STATE => chan.send(s).unwrap(),
-                    search::SEARCHING_STATE => {
-                        match s.split_whitespace().next() {
-                            Some("stop") => state.enter(search::STOPPING_STATE),
-                            Some("quit") => ::std::process::exit(0),
-                            Some("isready") => println!("readyok"),
-                            Some(_) => println!("info string busy searching, ignoring command '{}'", s),
-                            None => (),
+                println!("reading line '{}'", s);
+                match s.split_whitespace().next() {
+                    Some("stop") => state.enter(search::STOPPING_STATE),
+                    Some("quit") => ::std::process::exit(0),
+                    Some("isready") => println!("readyok"),
+                    Some(_) => {
+                        match state.load() {
+                            // If the engine is searching, we handle commands
+                            // ourselves. Only a few commands are valid during a
+                            // search. This lets us signal the searching thread
+                            // to stop without doing command processing in the
+                            // search thread.
+                            search::SEARCHING_STATE => {
+                                println!("info string busy searching, ignoring command '{}'", s);
+                            },
+                            // If we're not actively searching, the main thread
+                            // will handle the command.
+                            search::WAITING_STATE | search::STOPPING_STATE => chan.send(s).unwrap(),
+                            _ => panic!("unrecognized engine state: {}", state.load()),
                         }
                     }
-                    _ => panic!("unrecognized engine state: {}", state.load()),
+                    None => (),
                 }
             }
-            _ => (),
+            _ => return,
         }
     }
 }

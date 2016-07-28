@@ -165,6 +165,11 @@ impl SearchData {
 }
 
 pub fn go(search_data: &mut SearchData) {
+   // We might have received a stop command already, in which case we
+   // shouldn't start searching.
+   if search_data.state.load() == STOPPING_STATE {
+      return;
+   }
    search_data.state.enter(SEARCHING_STATE);
    loop {
       if search_data.state.load() == STOPPING_STATE {
