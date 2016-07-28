@@ -13,8 +13,9 @@ use search::SearchData;
 pub fn input_loop() {
     let (tx, rx) = mpsc::channel();
     let mut search_data = SearchData::new(rx);
+    let engine_state = search_data.state.clone();
 
-    thread::spawn(move || { read_input_forever(tx) });
+    thread::spawn(move || { read_input_forever(tx, engine_state) });
     loop {
         match search_data.uci_channel.try_recv() {
             Ok(command) => match handle_command(&mut search_data, command.as_str()) {
@@ -23,17 +24,31 @@ pub fn input_loop() {
                     println!("info string ignoring input '{}': {}", command, err);
                 }
             },
-            Err(mpsc::TryRecvError::Empty) => thread::sleep(time::Duration::from_millis(10)),
+            Err(mpsc::TryRecvError::Empty) => thread::sleep(time::Duration::from_millis(1)),
             Err(mpsc::TryRecvError::Disconnected) => panic!("Broken connection to stdin"),
         }
     }
 }
 
-fn read_input_forever(chan: mpsc::Sender<String>) {
+fn read_input_forever(chan: mpsc::Sender<String>, state: search::EngineState) {
     let stdin = stdin();
     for line in stdin.lock().lines() {
         match line {
-            Ok(s) => chan.send(s).unwrap(),
+            Ok(s) => {
+                match state.load() {
+                    search::WAITING_STATE | search::STOPPING_STATE => chan.send(s).unwrap(),
+                    search::SEARCHING_STATE => {
+                        match s.split_whitespace().next() {
+                            Some("stop") => state.enter(search::STOPPING_STATE),
+                            Some("quit") => ::std::process::exit(0),
+                            Some("isready") => println!("readyok"),
+                            Some(_) => println!("info string busy searching, ignoring command '{}'", s),
+                            None => (),
+                        }
+                    }
+                    _ => panic!("unrecognized engine state: {}", state.load()),
+                }
+            }
             _ => (),
         }
     }

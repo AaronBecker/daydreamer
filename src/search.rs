@@ -1,6 +1,8 @@
-use std::sync::mpsc;
+use std::sync::{Arc, mpsc};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time;
 use std::time::{Duration, SystemTime};
+
 
 use board;
 use movement::Move;
@@ -8,12 +10,29 @@ use options;
 use position;
 use position::Position;
 
+pub const WAITING_STATE: usize = 0;
+pub const SEARCHING_STATE: usize = 1;
+pub const STOPPING_STATE: usize = 2;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum EngineState {
-    Waiting,
-    Stopping,
-    Searching,
+#[derive(Clone)]
+pub struct EngineState {
+   pub state: Arc<AtomicUsize>,
+}
+
+impl EngineState {
+   pub fn new() -> EngineState {
+      EngineState {
+         state: Arc::new(AtomicUsize::new(WAITING_STATE)),
+      }
+   }
+
+   pub fn enter(&self, state: usize) {
+      self.state.store(state, Ordering::Release);
+   }
+
+   pub fn load(&self) -> usize {
+      self.state.load(Ordering::Acquire)
+   }
 }
 
 pub struct SearchConstraints {
@@ -44,6 +63,7 @@ impl SearchConstraints {
 
     pub fn set_timer(&mut self, us: board::Color, wtime: u32, btime: u32,
                      winc: u32, binc: u32, movetime: u32, movestogo: u32) {
+        self.start_time = time::SystemTime::now();
         if wtime == 0 && btime == 0 && winc == 0 && binc == 0 && movetime == 0 {
             self.use_timer = false;
             return;
@@ -110,8 +130,8 @@ impl SearchStats {
 pub struct SearchData {
     pub root_data: RootData,
     pub constraints: SearchConstraints,
-    stats: SearchStats,
-    state: EngineState,
+    pub stats: SearchStats,
+    pub state: EngineState,
     pub uci_channel: mpsc::Receiver<String>,
 }
 
@@ -121,7 +141,7 @@ impl SearchData {
             root_data: RootData::new(),
             constraints: SearchConstraints::new(),
             stats: SearchStats::new(),
-            state: EngineState::Waiting,
+            state: EngineState::new(),
             uci_channel: uci_channel,
         }
     }
@@ -145,4 +165,12 @@ impl SearchData {
 }
 
 pub fn go(search_data: &mut SearchData) {
+   search_data.state.enter(SEARCHING_STATE);
+   loop {
+      if search_data.state.load() == STOPPING_STATE {
+         break;
+      }
+      println!("searching");
+      ::std::thread::sleep(time::Duration::from_secs(2));
+   }
 }
