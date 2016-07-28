@@ -17,10 +17,10 @@ pub enum EngineState {
 }
 
 pub struct SearchConstraints {
-    infinite: bool,
-    searchmoves: Vec<Move>, // TODO this doesn't seem quite right here, maybe move out
-    node_limit: u64,
-    depth_limit: u8,
+    pub infinite: bool,
+    pub searchmoves: Vec<Move>, // TODO this doesn't seem quite right here, maybe move out
+    pub node_limit: u64,
+    pub depth_limit: u8,
 
     use_timer: bool,
     hard_limit: Duration,
@@ -109,7 +109,7 @@ impl SearchStats {
 
 pub struct SearchData {
     pub root_data: RootData,
-    constraints: SearchConstraints,
+    pub constraints: SearchConstraints,
     stats: SearchStats,
     state: EngineState,
     pub uci_channel: mpsc::Receiver<String>,
@@ -142,4 +142,7 @@ impl SearchData {
         }
         false
     }
+}
+
+pub fn go(search_data: &mut SearchData) {
 }
