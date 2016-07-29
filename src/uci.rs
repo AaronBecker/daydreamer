@@ -11,15 +11,15 @@ use position;
 use search;
 use search::SearchData;
 
-pub fn read_stream(script: Option<String>) {
+pub fn read_stream(search_data: &mut SearchData, script: Option<String>) {
     let (tx, rx) = mpsc::channel();
-    let mut search_data = SearchData::new(rx);
+    search_data.uci_channel = rx;
     let engine_state = search_data.state.clone();
 
     thread::spawn(move || { read_file_or_stdin(script, tx, engine_state) });
     loop {
         match search_data.uci_channel.try_recv() {
-            Ok(command) => match handle_command(&mut search_data, command.as_str()) {
+            Ok(command) => match handle_command(search_data, command.as_str()) {
                 Ok(_) => (),
                 Err(err) => {
                     println!("info string ignoring input '{}': {}", command, err);
@@ -56,11 +56,11 @@ fn consume_stream<T: BufRead>(stream: T, chan: mpsc::Sender<String>, state: sear
     for line in stream.lines() {
         match line {
             Ok(s) => {
-                println!("reading line '{}'", s);
                 match s.split_whitespace().next() {
+                    Some("isready") => println!("readyok"),
+                    Some("sleep") => thread::sleep(time::Duration::from_secs(1)),
                     Some("stop") => state.enter(search::STOPPING_STATE),
                     Some("quit") => ::std::process::exit(0),
-                    Some("isready") => println!("readyok"),
                     Some(_) => {
                         match state.load() {
                             // If the engine is searching, we handle commands

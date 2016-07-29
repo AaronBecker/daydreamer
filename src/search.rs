@@ -136,13 +136,15 @@ pub struct SearchData {
 }
 
 impl SearchData {
-    pub fn new(uci_channel: mpsc::Receiver<String>) -> SearchData {
+    pub fn new() -> SearchData {
+        // Dummy receiver channel to avoid uninitialized memory.
+        let (_, rx) = mpsc::channel();
         SearchData {
             root_data: RootData::new(),
             constraints: SearchConstraints::new(),
             stats: SearchStats::new(),
             state: EngineState::new(),
-            uci_channel: uci_channel,
+            uci_channel: rx,
         }
     }
 

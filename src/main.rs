@@ -16,11 +16,12 @@ pub mod uci;
 
 fn main() {
     bitboard::initialize();
+    let mut search_data = search::SearchData::new();
 
     // Treat each argument as a file containing uci commands.
     for arg in ::std::env::args().skip(1) {
-        uci::read_stream(Some(arg.to_string()));
+        uci::read_stream(&mut search_data, Some(arg.to_string()));
     }
     // Read from stdin.
-    uci::read_stream(None);
+    uci::read_stream(&mut search_data, None);
 }
