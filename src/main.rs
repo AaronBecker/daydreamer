@@ -11,6 +11,7 @@ pub mod movegen;
 pub mod options;
 pub mod perft;
 pub mod position;
+pub mod score;
 pub mod search;
 pub mod uci;
 

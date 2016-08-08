@@ -3,7 +3,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time;
 use std::time::{Duration, SystemTime};
 
-
 use board;
 use movement::Move;
 use options;
@@ -37,7 +36,7 @@ impl EngineState {
 
 pub struct SearchConstraints {
     pub infinite: bool,
-    pub searchmoves: Vec<Move>, // TODO this doesn't seem quite right here, maybe move out
+    pub searchmoves: Vec<Move>, // TODO: this doesn't seem quite right here, maybe move out
     pub node_limit: u64,
     pub depth_limit: u8,
 

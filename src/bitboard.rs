@@ -84,13 +84,13 @@ pub fn relative_rank_bb(c: Color, r: Rank) -> Bitboard {
 fn direction(sq1: Square, sq2: Square) -> Delta {
     let mut d: Delta = 0;
     let (r1, r2) = (sq1.rank() as u8, sq2.rank() as u8);
-    let (f1, f2) = (sq1.file() as u8, sq2.file() as u8);
     if r1 < r2 {
         d += NORTH;
     } else if r1 > r2 {
         d += SOUTH;
     }
 
+    let (f1, f2) = (sq1.file() as u8, sq2.file() as u8);
     if f1 < f2 {
         d += EAST;
     } else if f1 > f2 {
