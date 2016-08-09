@@ -5,6 +5,7 @@ use movegen;
 use movement;
 use movement::Move;
 use options;
+use score::RawScore;
 
 pub const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -143,7 +144,6 @@ impl Position {
     // clear resets the position and removes all pieces from the board.
     pub fn clear(&mut self) {
         unsafe { ::std::intrinsics::write_bytes(self, 0, 1) }
-        self.state.checkers = 0;
         self.state.ep_square = Square::NoSquare;
     }
 
@@ -181,6 +181,11 @@ impl Position {
 
     pub fn piece_at(&self, sq: Square) -> Piece {
         self.board[sq.index()]
+    }
+
+    pub fn phase(&self) -> RawScore {
+        // FIXME
+        0
     }
 
     pub fn us(&self) -> Color {
