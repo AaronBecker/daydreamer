@@ -5,7 +5,8 @@ use movegen;
 use movement;
 use movement::Move;
 use options;
-use score::RawScore;
+use score;
+use score::{Phase, Score};
 
 pub const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -61,6 +62,8 @@ pub struct State {
     ep_square: Square,
     castle_rights: CastleRights,
     us: Color,
+    phase: Phase,
+    material_score: Score,
     // TODO:
     //      position hash
     //      material score
@@ -77,6 +80,8 @@ impl State {
             ep_square: Square::NoSquare,
             castle_rights: CASTLE_NONE,
             us: Color::NoColor,
+            phase: 0,
+            material_score: score::NONE,
         }
     }
 
@@ -84,7 +89,6 @@ impl State {
         // It's not clear that this is guaranteed to work correctly, but looking at the
         // implementation of std::cell::Cell makes me think it should be no problem.
         unsafe { ::std::intrinsics::write_bytes(self, 0, 1); }
-        self.checkers = 0;
         self.ep_square = Square::NoSquare;
     }
 
@@ -183,9 +187,8 @@ impl Position {
         self.board[sq.index()]
     }
 
-    pub fn phase(&self) -> RawScore {
-        // FIXME
-        0
+    pub fn phase(&self) -> Phase {
+        self.state.phase
     }
 
     pub fn us(&self) -> Color {
@@ -446,6 +449,8 @@ impl Position {
         self.pieces_of_color[p.color().index()] |= b;
         self.pieces_of_type[p.piece_type().index()] |= b;
         self.pieces_of_type[PieceType::AllPieces.index()] |= b;
+        self.state.phase += Score::phase(p.piece_type());
+        self.state.material_score += Score::value(p.piece_type());
     }
 
     fn remove_piece(&mut self, sq: Square) {
@@ -456,6 +461,8 @@ impl Position {
         self.pieces_of_color[p.color().index()] ^= b;
         self.pieces_of_type[p.piece_type().index()] ^= b;
         self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
+        self.state.phase -= Score::phase(p.piece_type());
+        self.state.material_score -= Score::value(p.piece_type());
     }
 
     fn transfer_piece(&mut self, from: Square, to: Square) {
