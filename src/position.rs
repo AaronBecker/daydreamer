@@ -52,6 +52,54 @@ const EMPTY_CASTLE_INFO: CastleInfo = CastleInfo {
         may_discover_check: false,
     };
 
+pub type HashKey = u64;
+
+static mut piece_random: [[[HashKey; 64]; 7]; 2] = [[[0; 64]; 7]; 2];
+static mut castle_random: [HashKey; 16] = [0; 16];
+static mut enpassant_random: [HashKey; 8] = [0; 8];
+static mut side_random: HashKey = 0;
+
+// initialize sets up the Zobrist hash tables. Only done once, at startup.
+pub fn initialize()
+{
+    static INIT: ::std::sync::Once = ::std::sync::ONCE_INIT;
+    INIT.call_once(|| {
+        use rand::{Rng, SeedableRng, StdRng};
+        let seed: &[_] = &[1];
+        let mut prng: StdRng = SeedableRng::from_seed(seed);
+        for i in 0..2 {
+            for j in 0..7 {
+                for k in 0..64 {
+                    unsafe { piece_random[i][j][k] = prng.gen::<u64>(); }
+                }
+            }
+        }
+        for i in 0..16 {
+            unsafe { castle_random[i] = prng.gen::<u64>(); }
+        }
+        for i in 0..8 {
+            unsafe { enpassant_random[i] = prng.gen::<u64>(); }
+        }
+        unsafe { side_random = prng.gen::<u64>(); }
+    });
+}
+
+pub fn piece_hash(p: Piece, sq: Square) -> HashKey {
+    unsafe { piece_random[p.color().index()][p.piece_type().index()][sq.index()] }
+}
+
+pub fn ep_hash(sq: Square) -> HashKey {
+    unsafe { enpassant_random[sq.file().index()] }
+}
+
+pub fn castle_hash(cr: CastleRights) -> HashKey {
+    unsafe { castle_random[cr as usize] }
+}
+
+pub fn side_hash() -> HashKey {
+    unsafe { side_random }
+}
+
 // State stores core position state information that would otherwise be lost
 // when making a move.
 pub struct State {
@@ -64,10 +112,7 @@ pub struct State {
     us: Color,
     phase: Phase,
     material_score: Score,
-    // TODO:
-    //      position hash
-    //      material score
-    //      phase info?
+    hash: HashKey,
 }
 
 impl State {
@@ -82,6 +127,7 @@ impl State {
             us: Color::NoColor,
             phase: 0,
             material_score: score::NONE,
+            hash: 0,
         }
     }
 
@@ -189,6 +235,38 @@ impl Position {
 
     pub fn phase(&self) -> Phase {
         self.state.phase
+    }
+
+    pub fn computed_phase(&self) -> Phase {
+        let mut phase = 0;
+        for sq in each_square() {
+            phase += Score::phase(self.piece_at(sq).piece_type());
+        }
+        phase
+    }
+
+    pub fn hash(&self) -> HashKey {
+        self.state.hash
+    }
+
+    // Calculate the hash of a position from scratch. Used when setting a position
+    // from FEN, and to verify the correctness of incremental hash updates.
+    pub fn computed_hash(&self) -> HashKey {
+        let mut hash = 0;
+        for sq in each_square() {
+            if self.piece_at(sq) == Piece::NoPiece {
+                continue
+            }
+            hash ^= piece_hash(self.piece_at(sq), sq);
+        }
+        if self.state.ep_square != Square::NoSquare {
+            hash ^= ep_hash(self.ep_square());
+        }
+        hash ^= castle_hash(self.castle_rights());
+        if self.us() == Color::Black {
+            hash ^= side_hash();
+        }
+        hash
     }
 
     pub fn us(&self) -> Color {
@@ -365,6 +443,8 @@ impl Position {
 
         self.state.fifty_move_counter = 0;
         self.state.ply = 0;
+        self.state.hash = self.computed_hash();
+        self.state.phase = self.computed_phase();
 
         if pieces.len() <= 4 {
             return Ok(());
@@ -449,7 +529,6 @@ impl Position {
         self.pieces_of_color[p.color().index()] |= b;
         self.pieces_of_type[p.piece_type().index()] |= b;
         self.pieces_of_type[PieceType::AllPieces.index()] |= b;
-        self.state.phase += Score::phase(p.piece_type());
         self.state.material_score += Score::value(p.piece_type());
     }
 
@@ -461,7 +540,6 @@ impl Position {
         self.pieces_of_color[p.color().index()] ^= b;
         self.pieces_of_type[p.piece_type().index()] ^= b;
         self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
-        self.state.phase -= Score::phase(p.piece_type());
         self.state.material_score -= Score::value(p.piece_type());
     }
 
@@ -481,9 +559,12 @@ impl Position {
     pub fn do_move(&mut self, m: Move, ad: &AttackData) {
         let (us, them) = (self.us(), self.them());
         let (from, mut to) = (m.from(), m.to()); // note: we update 'to' for castling moves
-        let (capture, piece_type) = (m.capture(), m.piece().piece_type());
+        let (capture, piece, piece_type) = (m.capture(), m.piece(), m.piece().piece_type());
 
-        self.state.ep_square = Square::NoSquare;
+        if self.state.ep_square != Square::NoSquare {
+            self.state.hash ^= ep_hash(self.state.ep_square);
+            self.state.ep_square = Square::NoSquare;
+        }
         self.state.ply += 1;
         self.state.checkers = 0;
 
@@ -493,6 +574,7 @@ impl Position {
                 (bitboard::pawn_attacks(us, from.pawn_push(us)) &
                  self.pieces_of_color_and_type(them, PieceType::Pawn) != 0) {
                 self.state.ep_square = from.pawn_push(us);
+                self.state.hash ^= ep_hash(self.state.ep_square);
             }
         } else {
             self.state.fifty_move_counter += 1;
@@ -500,8 +582,12 @@ impl Position {
 
         if capture != Piece::NoPiece {
             self.state.fifty_move_counter = 0;
+            self.state.hash ^= piece_hash(capture, to);
+            self.state.phase -= Score::phase(capture.piece_type());
         }
+        self.state.hash ^= castle_hash(self.state.castle_rights);
         self.state.castle_rights = self.remove_rights(self.state.castle_rights, from, to);
+        self.state.hash ^= castle_hash(self.state.castle_rights);
 
         if m.is_castle() {
             let (rdest, kdest) = if from.index() < to.index() {
@@ -509,6 +595,7 @@ impl Position {
             } else {
                 (Square::D1.relative_to(us), Square::C1.relative_to(us))
             };
+            self.state.hash ^= piece_hash(self.piece_at(to), rdest) ^ piece_hash(self.piece_at(to), to);
             self.remove_piece(from);
             self.transfer_piece(to, rdest);
             self.place_piece(Piece::new(us, PieceType::King), kdest);
@@ -518,14 +605,21 @@ impl Position {
             self.transfer_piece(from, to);
             let promote = m.promote();
             if m.is_en_passant() {
+                let cap_sq = to.pawn_push(them);
+                self.state.hash ^= piece_hash(capture, to) ^ piece_hash(self.piece_at(cap_sq), cap_sq);
                 self.remove_piece(to.pawn_push(them));
                 self.state.checkers = self.attackers(ad.their_king) & self.our_pieces();
             } else if promote != PieceType::NoPieceType {
+                let new_piece = Piece::new(us, promote);
                 self.remove_piece(to);
-                self.place_piece(Piece::new(us, promote), to);
+                self.place_piece(new_piece, to);
+                self.state.hash ^= piece_hash(new_piece, to) ^ piece_hash(piece, to);
+                self.state.phase += Score::phase(promote);
                 self.state.checkers = self.attackers(ad.their_king) & self.our_pieces()
             }
         }
+
+        self.state.hash ^= piece_hash(piece, to) ^ piece_hash(piece, from);
 
         if self.obvious_check(m, ad) {
             let (bb_from, bb_to) = (bitboard::bb(from), bitboard::bb(to));
@@ -548,6 +642,10 @@ impl Position {
             }
         }
         self.state.us = self.state.us.flip();
+        self.state.hash ^= side_hash();
+
+        debug_assert!(self.state.hash == self.computed_hash());
+        debug_assert!(self.state.phase == self.computed_phase());
     }
 
     pub fn undo_move(&mut self, mv: Move, undo: &UndoState) {
@@ -579,6 +677,9 @@ impl Position {
             self.place_piece(Piece::new(us, PieceType::Pawn), from);
         }
         self.state.last_move = mv;
+
+        debug_assert!(self.state.hash == self.computed_hash());
+        debug_assert!(self.state.phase == self.computed_phase());
     }
 
     pub fn pseudo_move_is_legal(&self, mv: Move, ad: &AttackData) -> bool {

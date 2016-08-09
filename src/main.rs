@@ -17,6 +17,7 @@ pub mod uci;
 
 fn main() {
     bitboard::initialize();
+    position::initialize();
     let mut search_data = search::SearchData::new();
 
     // Treat each argument as a file containing uci commands.

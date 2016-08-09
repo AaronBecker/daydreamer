@@ -31,7 +31,7 @@ impl Score {
         PT_SCORE[pt.index()]
     }
 
-    pub fn phase(pt: PieceType) -> Phase{
+    pub fn phase(pt: PieceType) -> Phase {
         PT_PHASE[pt.index()]
     }
 }

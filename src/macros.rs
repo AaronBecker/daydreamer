@@ -70,6 +70,8 @@ macro_rules! chess_test {
         fn $id() {
             use bitboard;
             bitboard::initialize();
+            use position;
+            position::initialize();
             $b
         }
     };
