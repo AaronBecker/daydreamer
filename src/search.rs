@@ -4,10 +4,11 @@ use std::time;
 use std::time::{Duration, SystemTime};
 
 use board;
+use movegen;
 use movement::Move;
 use options;
 use position;
-use position::Position;
+use position::{AttackData, Position};
 
 pub const WAITING_STATE: usize = 0;
 pub const SEARCHING_STATE: usize = 1;
@@ -172,6 +173,13 @@ pub fn go(search_data: &mut SearchData) {
       return;
    }
    search_data.state.enter(SEARCHING_STATE);
+
+   let ad = AttackData::new(&search_data.root_data.pos);
+   let mut moves = search_data.constraints.searchmoves.clone();
+   if moves.len() == 0 {
+      movegen::gen_legal(&search_data.root_data.pos, &ad, &mut moves);
+   }
+
    loop {
       if search_data.state.load() == STOPPING_STATE {
          break;
