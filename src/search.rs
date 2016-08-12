@@ -1,7 +1,7 @@
 use std::sync::{Arc, mpsc};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant};
 
 use board;
 use movegen;
@@ -9,6 +9,12 @@ use movement::Move;
 use options;
 use position;
 use position::{AttackData, Position};
+use score;
+use score::Score;
+
+pub type Depth = f32;
+pub const ONE_PLY: Depth = 1.;
+pub const MAX_PLY: Depth = 128.;
 
 pub const WAITING_STATE: usize = 0;
 pub const SEARCHING_STATE: usize = 1;
@@ -39,12 +45,12 @@ pub struct SearchConstraints {
     pub infinite: bool,
     pub searchmoves: Vec<Move>, // TODO: this doesn't seem quite right here, maybe move out
     pub node_limit: u64,
-    pub depth_limit: u8,
+    pub depth_limit: Depth,
 
     use_timer: bool,
     hard_limit: Duration,
     soft_limit: Duration,
-    start_time: SystemTime,
+    start_time: Instant,
 }
 
 impl SearchConstraints {
@@ -53,17 +59,17 @@ impl SearchConstraints {
             infinite: false,
             searchmoves: Vec::new(),
             node_limit: u64::max_value(),
-            depth_limit: u8::max_value(),
+            depth_limit: MAX_PLY,
             use_timer: false,
             hard_limit: Duration::new(0, 0),
             soft_limit: Duration::new(0, 0),
-            start_time: time::SystemTime::now(),
+            start_time: time::Instant::now(),
         }
     }
 
     pub fn set_timer(&mut self, us: board::Color, wtime: u32, btime: u32,
                      winc: u32, binc: u32, movetime: u32, movestogo: u32) {
-        self.start_time = time::SystemTime::now();
+        self.start_time = time::Instant::now();
         if wtime == 0 && btime == 0 && winc == 0 && binc == 0 && movetime == 0 {
             self.use_timer = false;
             return;
@@ -91,13 +97,12 @@ impl SearchConstraints {
             soft_limit = time / 30 + inc;
             hard_limit = max!(time / 5, inc - 250);
         }
-        soft_limit = min!(soft_limit, time - options::time_buffer());
+        soft_limit = min!(soft_limit, time - options::time_buffer()) * 6 / 10;
         hard_limit = min!(hard_limit, time - options::time_buffer());
         self.soft_limit = Duration::from_millis(soft_limit as u64);
         self.hard_limit = Duration::from_millis(hard_limit as u64);
     }
 }
-
 
 pub struct SearchStats {
    nodes: u64,
@@ -115,8 +120,25 @@ impl SearchStats {
     }
 }
 
+pub struct RootMove {
+   m: Move,
+   score: Score,
+   pv: Vec<Move>,
+}
+
+impl RootMove {
+   pub fn new(m: Move) -> RootMove {
+      RootMove {
+         m: m,
+         score: score::NONE,
+         pv: Vec::with_capacity(128),
+      }
+   }
+}
+
 pub struct SearchData {
     pub pos: Position,
+    pub root_moves: Vec<RootMove>,
     pub constraints: SearchConstraints,
     pub stats: SearchStats,
     pub state: EngineState,
@@ -129,6 +151,7 @@ impl SearchData {
         let (_, rx) = mpsc::channel();
         SearchData {
             pos: Position::from_fen(position::START_FEN),
+            root_moves: Vec::new(),
             constraints: SearchConstraints::new(),
             stats: SearchStats::new(),
             state: EngineState::new(),
@@ -136,7 +159,7 @@ impl SearchData {
         }
     }
 
-    pub fn should_stop(&self, depth: u8, nodes: u64) -> bool {
+    pub fn should_stop(&self, depth: Depth, nodes: u64) -> bool {
         if self.constraints.infinite {
             return true;
         }
@@ -144,35 +167,60 @@ impl SearchData {
             return true
         }
         if self.constraints.use_timer {
-            // TODO: actually use the soft limit
-            match self.constraints.start_time.elapsed() {
-                Ok(d) => return d > self.constraints.hard_limit,
-                Err(_) => return false,
-            }
+            return self.constraints.start_time.elapsed() > self.constraints.hard_limit
         }
         false
     }
 }
 
-pub fn go(search_data: &mut SearchData) {
+pub fn go(data: &mut SearchData) {
    // We might have received a stop command already, in which case we
    // shouldn't start searching.
-   if search_data.state.load() == STOPPING_STATE {
+   if data.state.load() == STOPPING_STATE {
       return;
    }
-   search_data.state.enter(SEARCHING_STATE);
+   data.state.enter(SEARCHING_STATE);
 
-   let ad = AttackData::new(&search_data.pos);
-   let mut moves = search_data.constraints.searchmoves.clone();
+   let ad = AttackData::new(&data.pos);
+   let mut moves = data.constraints.searchmoves.clone();
    if moves.len() == 0 {
-      movegen::gen_legal(&search_data.pos, &ad, &mut moves);
+      movegen::gen_legal(&data.pos, &ad, &mut moves);
+   }
+   if moves.len() == 0 {
+      println!("info string no moves to search");
+      println!("bestmove (none)");
+      return
+   }
+   for m in moves.iter() {
+      data.root_moves.push(RootMove::new(*m));
    }
 
-   loop {
-      if search_data.state.load() == STOPPING_STATE {
+   deepening_search(data);
+
+   println!("bestmove {}", data.root_moves[0].m);
+   data.state.enter(WAITING_STATE);
+}
+
+fn should_deepen(data: &SearchData, d: Depth) -> bool {
+   if data.state.load() == STOPPING_STATE { return false }
+   if data.constraints.depth_limit <= d { return false }
+   if !data.constraints.use_timer { return true }
+   // If we're much more than halfway through our time, we won't make it
+   // through the first move of the next iteration anyway.
+   if data.constraints.start_time.elapsed() > data.constraints.soft_limit {
+      return false
+   }
+   true
+}
+
+fn deepening_search(data: &mut SearchData) {
+   let mut depth = 0.;
+   while should_deepen(data, depth) {
+      if data.state.load() == STOPPING_STATE {
          break;
       }
       println!("searching");
       ::std::thread::sleep(time::Duration::from_secs(2));
+      depth += ONE_PLY;
    }
 }
