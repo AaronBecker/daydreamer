@@ -122,7 +122,7 @@ fn handle_position<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Resul
         where I: Iterator<Item=&'a str> {
     match tokens.next() {
         Some("startpos") => {
-            try!(search_data.root_data.pos.load_fen(position::START_FEN));
+            try!(search_data.pos.load_fen(position::START_FEN));
         },
         Some("fen") => {
             let mut fen = String::new();
@@ -134,7 +134,7 @@ fn handle_position<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Resul
                 fen.push_str(" ");
             }
             if fen.len() > 0 {
-                try!(search_data.root_data.pos.load_fen(fen.as_str()));
+                try!(search_data.pos.load_fen(fen.as_str()));
             }
         },
         Some(x) => return Err(format!("unrecognized token '{}'", x)),
@@ -142,14 +142,14 @@ fn handle_position<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Resul
     }
 
     // Remaining tokens should be moves.
-    let ad = position::AttackData::new(&search_data.root_data.pos);
+    let ad = position::AttackData::new(&search_data.pos);
     while let Some(tok) = tokens.next() {
         // handle moves
-        let m = Move::from_uci(&search_data.root_data.pos, &ad, tok);
+        let m = Move::from_uci(&search_data.pos, &ad, tok);
         if m == movement::NO_MOVE {
             return Err(format!("invalid move {}", tok));
         }
-        search_data.root_data.pos.do_move(m, &ad);
+        search_data.pos.do_move(m, &ad);
     }
 
     Ok(())
@@ -194,11 +194,11 @@ fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), 
             },
             "ponder" => println!("info string ponder not supported, ignoring"),
             "searchmoves" => {
-                let ad = position::AttackData::new(&search_data.root_data.pos);
+                let ad = position::AttackData::new(&search_data.pos);
                 loop {
                     // Keep reading the next token as long as it's a valid move.
                     if let Some(tok) = ptokens.peek() {
-                        let m = Move::from_uci(&search_data.root_data.pos, &ad, tok);
+                        let m = Move::from_uci(&search_data.pos, &ad, tok);
                         if m == movement::NO_MOVE {
                             break
                         }
@@ -211,19 +211,19 @@ fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), 
             _ => println!("info string unrecognized token {}", tok),
         }
     }
-    search_data.constraints.set_timer(search_data.root_data.pos.us(),
+    search_data.constraints.set_timer(search_data.pos.us(),
                                       wtime, btime, winc, binc, movetime, movestogo);
     search::go(search_data);
     Ok(())
 }
 
 fn make_move(search_data: &mut SearchData, mv: &str) -> Result<(), String> {
-    let ad = position::AttackData::new(&search_data.root_data.pos);
-    let m = Move::from_uci(&search_data.root_data.pos, &ad, mv);
+    let ad = position::AttackData::new(&search_data.pos);
+    let m = Move::from_uci(&search_data.pos, &ad, mv);
     if m == movement::NO_MOVE {
         return Err(format!("unrecognized token {}", mv));
     }
-    search_data.root_data.pos.do_move(m, &ad);
+    search_data.pos.do_move(m, &ad);
     Ok(())
 }
 
@@ -233,7 +233,7 @@ fn handle_perft<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(
         Some(depth) => {
             let d = try!(depth.parse::<u32>().map_err(|e| e.to_string()));
             let t1 = ::time::precise_time_ns();
-            let count = perft::perft(&mut search_data.root_data.pos, d);
+            let count = perft::perft(&mut search_data.pos, d);
             let t2 = ::time::precise_time_ns();
             println!("{} ({} ms, {} nodes/s", count, (t2 - t1) / 1_000_000, count * 1_000_000_000 / (t2 - t1));
         },
@@ -247,7 +247,7 @@ fn handle_divide<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<
     match tokens.next() {
         Some(depth) => {
             let d = try!(depth.parse::<u32>().map_err(|e| e.to_string()));
-            println!("{}", perft::divide(&mut search_data.root_data.pos, d));
+            println!("{}", perft::divide(&mut search_data.pos, d));
         },
         None => return Err("input ended with no depth".to_string()),
     }
@@ -256,6 +256,6 @@ fn handle_divide<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<
 
 fn handle_print<'a, I>(search_data: &mut SearchData, _tokens: &mut I) -> Result<(), String>
         where I: Iterator<Item=&'a str> {
-    println!("{}", search_data.root_data.pos.debug_string());
+    println!("{}", search_data.pos.debug_string());
     Ok(())
 }

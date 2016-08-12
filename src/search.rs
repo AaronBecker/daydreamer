@@ -98,18 +98,6 @@ impl SearchConstraints {
     }
 }
 
-// note: this should probably move to the search eventually
-pub struct RootData {
-    pub pos: Position,
-}
-
-impl RootData {
-    pub fn new() -> RootData {
-        RootData {
-            pos: Position::from_fen(position::START_FEN),
-        }
-    }
-}
 
 pub struct SearchStats {
    nodes: u64,
@@ -128,7 +116,7 @@ impl SearchStats {
 }
 
 pub struct SearchData {
-    pub root_data: RootData,
+    pub pos: Position,
     pub constraints: SearchConstraints,
     pub stats: SearchStats,
     pub state: EngineState,
@@ -140,7 +128,7 @@ impl SearchData {
         // Dummy receiver channel to avoid uninitialized memory.
         let (_, rx) = mpsc::channel();
         SearchData {
-            root_data: RootData::new(),
+            pos: Position::from_fen(position::START_FEN),
             constraints: SearchConstraints::new(),
             stats: SearchStats::new(),
             state: EngineState::new(),
@@ -174,10 +162,10 @@ pub fn go(search_data: &mut SearchData) {
    }
    search_data.state.enter(SEARCHING_STATE);
 
-   let ad = AttackData::new(&search_data.root_data.pos);
+   let ad = AttackData::new(&search_data.pos);
    let mut moves = search_data.constraints.searchmoves.clone();
    if moves.len() == 0 {
-      movegen::gen_legal(&search_data.root_data.pos, &ad, &mut moves);
+      movegen::gen_legal(&search_data.pos, &ad, &mut moves);
    }
 
    loop {
