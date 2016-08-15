@@ -95,7 +95,7 @@ impl SearchConstraints {
         } else {
             // x+y time control
             soft_limit = time / 30 + inc;
-            hard_limit = max!(time / 5, inc - 250);
+            hard_limit = max!((time / 5) as i32, (inc as i32) - 250) as u32;
         }
         soft_limit = min!(soft_limit, time - options::time_buffer()) * 6 / 10;
         hard_limit = min!(hard_limit, time - options::time_buffer());
@@ -211,6 +211,10 @@ fn should_deepen(data: &SearchData, d: Depth) -> bool {
       return false
    }
    true
+}
+
+fn should_print(data: &SearchData) -> bool {
+   data.constraints.start_time.elapsed().as_secs() > 1
 }
 
 fn deepening_search(data: &mut SearchData) {
