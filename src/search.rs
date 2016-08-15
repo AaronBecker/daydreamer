@@ -5,10 +5,10 @@ use std::time::{Duration, Instant};
 
 use board;
 use movegen;
-use movement::Move;
+use movement::{Move, NO_MOVE};
 use options;
 use position;
-use position::{AttackData, Position};
+use position::{AttackData, Position, UndoState};
 use score;
 use score::Score;
 
@@ -19,7 +19,7 @@ pub type SearchDepth = f32;
 pub const ONE_PLY_F: SearchDepth = 1.;
 pub const MAX_PLY_F: SearchDepth = 128.;
 
-pub type Depth = u8;
+pub type Depth = usize;
 pub const ONE_PLY: Depth = 1;
 pub const MAX_PLY: Depth = 128;
 
@@ -50,6 +50,14 @@ impl EngineState {
    pub fn load(&self) -> usize {
       self.state.load(Ordering::Acquire)
    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum SearchResult {
+    Aborted,
+    FailHigh,
+    FailLow,
+    Exact,
 }
 
 // SearchConstraints track the conditions for a search as specified via UCI.
@@ -145,7 +153,7 @@ impl RootMove {
       RootMove {
          m: m,
          score: score::MIN_SCORE,
-         pv: Vec::with_capacity(128),
+         pv: Vec::with_capacity(MAX_PLY),
       }
    }
 }
@@ -158,6 +166,7 @@ pub struct SearchData {
     pub stats: SearchStats,
     pub state: EngineState,
     pub uci_channel: mpsc::Receiver<String>,
+    pub pv_stack: [[Move; MAX_PLY]; MAX_PLY],
 }
 
 impl SearchData {
@@ -172,6 +181,8 @@ impl SearchData {
             stats: SearchStats::new(),
             state: EngineState::new(),
             uci_channel: rx,
+            //search_stack: vec,
+            pv_stack: [[NO_MOVE; MAX_PLY]; MAX_PLY],
         }
     }
 
@@ -193,6 +204,10 @@ impl SearchData {
     pub fn elapsed_ms(&self) -> u64 {
        let e = self.constraints.start_time.elapsed();
        1 + e.as_secs() * 1000 + e.subsec_nanos() as u64 / 1_000_000
+    }
+
+    pub fn init_ply(&mut self, ply: usize) {
+        self.pv_stack[ply][ply] = NO_MOVE;
     }
 }
 
@@ -277,14 +292,72 @@ fn deepening_search(data: &mut SearchData) {
       }
       // TODO: aspiration windows
       let (alpha, beta) = (score::MIN_SCORE, score::MAX_SCORE);
-      let score = root_search(data, alpha, beta);
-      debug_assert!(score > score::MIN_SCORE && score < score::MAX_SCORE);
+      let result = root_search(data, alpha, beta);
+      if result == SearchResult::Aborted { break }
       data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
       print_pv(data, alpha, beta);
       data.current_depth += ONE_PLY;
    }
 }
 
-fn root_search(data: &mut SearchData, alpha: Score, beta: Score) -> Score {
-   unimplemented!();
+// Note: the non-exact result stuff isn't currently used because I
+// haven't implemented aspiration or reductions yet.
+fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchResult {
+    let (orig_alpha, mut best_alpha) = (alpha, alpha);
+    data.init_ply(0);
+
+    let ad = AttackData::new(&data.pos);
+    let undo = UndoState::undo_state(&data.pos);
+    let mut move_number = 0;
+    for i in 0..data.root_moves.len() {
+        let m = data.root_moves[i].m;
+        if should_print(data) {
+            println!("info currmove {} currmovenumber {}", m, move_number + 1);
+        }
+        data.stats.nodes += 1;
+        data.pos.do_move(m, &ad);
+        let mut full_search = move_number < options::multi_pv();
+        let mut score = score::MIN_SCORE;
+        let depth = data.current_depth as SearchDepth;
+        alpha = if full_search { orig_alpha } else { best_alpha };
+        if !full_search {
+            // TODO: test depth reductions here
+            score = -search(data, 1, -alpha - 1, -alpha, depth - ONE_PLY_F);
+            if score > alpha { full_search = true };
+        }
+        if full_search {
+            score = -search(data, 1, -beta, -alpha, depth - ONE_PLY_F);
+        }
+        data.pos.undo_move(m, &undo);
+        debug_assert!(score > score::MIN_SCORE && score < score::MAX_SCORE);
+        if data.state.load() == STOPPING_STATE { return SearchResult::Aborted; }
+        data.root_moves[i].score = score::MIN_SCORE;
+        if full_search || score > alpha {
+            // We have updated move info for the root.
+            data.root_moves[i].score = score;
+            data.root_moves[i].pv.clear();
+            for ply in 1..MAX_PLY {
+                let mv = data.pv_stack[1][ply];
+                if mv == NO_MOVE { break }
+                data.root_moves[i].pv.push(data.pv_stack[1][i]);
+            }
+        }
+        if score > alpha {
+            if move_number > options::multi_pv() { print_pv(data, alpha, beta) }
+            alpha = score;
+            if score > best_alpha { best_alpha = score }
+        }
+        if score >= beta { break }
+        move_number += 1;
+    }
+    if alpha == orig_alpha {
+        return SearchResult::FailLow;
+    } else if alpha >= beta {
+        return SearchResult::FailHigh;
+    }
+    SearchResult::Exact
+}
+
+fn search(data: &mut SearchData, ply: usize, alpha: Score, beta: Score, depth: SearchDepth) -> Score {
+    unimplemented!();
 }

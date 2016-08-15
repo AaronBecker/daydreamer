@@ -9,11 +9,11 @@ pub const MAX_SCORE: Score = MATE_SCORE + 1;
 pub const MIN_SCORE: Score = -MAX_SCORE;
 pub const DRAW_SCORE: Score = 0;
 
-pub fn mate_in(ply: u8) -> Score {
+pub fn mate_in(ply: usize) -> Score {
     MATE_SCORE - ply as i16
 }
 
-pub fn mated_in(ply: u8) -> Score {
+pub fn mated_in(ply: usize) -> Score {
     ply as i16 - MATE_SCORE
 }
 
