@@ -144,7 +144,7 @@ impl RootMove {
    pub fn new(m: Move) -> RootMove {
       RootMove {
          m: m,
-         score: score::NONE,
+         score: score::MIN_SCORE,
          pv: Vec::with_capacity(128),
       }
    }
@@ -217,9 +217,9 @@ pub fn go(data: &mut SearchData) {
    data.state.enter(WAITING_STATE);
 }
 
-fn should_deepen(data: &SearchData, d: SearchDepth) -> bool {
+fn should_deepen(data: &SearchData) -> bool {
    if data.state.load() == STOPPING_STATE { return false }
-   if data.constraints.depth_limit as SearchDepth <= d { return false }
+   if data.constraints.depth_limit <= data.current_depth { return false }
    if !data.constraints.use_timer { return true }
    // If we're much more than halfway through our time, we won't make it
    // through the first move of the next iteration anyway.
@@ -234,13 +234,35 @@ fn should_print(data: &SearchData) -> bool {
 }
 
 fn deepening_search(data: &mut SearchData) {
-   let mut depth = 2. * ONE_PLY_F;
-   while should_deepen(data, depth) {
-      if data.state.load() == STOPPING_STATE {
-         break;
+   data.current_depth = 2 * ONE_PLY;
+   while should_deepen(data) {
+      if should_print(data) {
+         println!("info depth {}", data.current_depth);
       }
-      println!("searching");
-      ::std::thread::sleep(time::Duration::from_secs(2));
-      depth += ONE_PLY_F;
+      /*
+      Score score = data.root_moves[0].score;
+      Score alpha = MinScore;
+      Score beta = MaxScore;
+      for (const auto& window : aspiration_windows) {
+          if (depth >= MinAspirationDepth) {
+              alpha = std::max(alpha, score - window);
+              beta = std::min(score + window, MaxScore);
+          }
+          score = RootSearch(&nodes[2], alpha, beta, depth);
+          assert(score > MinScore && score < MaxScore);
+
+          // TODO: test breaking ties by number of nodes searched
+          std::sort(data.root_moves.begin(), data.root_moves.end(),
+                    [](const RootMove& a,
+                       const RootMove& b) { return a.score > b.score; });
+          PrintPV(alpha, beta);
+          if (score > alpha && score < beta) {
+              break;
+          }
+          Println(strings::Substitute("broke aspiration window $0, retrying",
+                                      window));
+      }
+      */
+      data.current_depth += ONE_PLY;
    }
 }

@@ -6,7 +6,7 @@ use movement;
 use movement::Move;
 use options;
 use score;
-use score::{Phase, Score};
+use score::{Phase, PhaseScore};
 
 pub const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -111,7 +111,7 @@ pub struct State {
     castle_rights: CastleRights,
     us: Color,
     phase: Phase,
-    material_score: Score,
+    material_score: PhaseScore,
     hash: HashKey,
 }
 
@@ -240,7 +240,7 @@ impl Position {
     pub fn computed_phase(&self) -> Phase {
         let mut phase = 0;
         for sq in each_square() {
-            phase += Score::phase(self.piece_at(sq).piece_type());
+            phase += PhaseScore::phase(self.piece_at(sq).piece_type());
         }
         phase
     }
@@ -529,7 +529,7 @@ impl Position {
         self.pieces_of_color[p.color().index()] |= b;
         self.pieces_of_type[p.piece_type().index()] |= b;
         self.pieces_of_type[PieceType::AllPieces.index()] |= b;
-        self.state.material_score += Score::value(p.piece_type());
+        self.state.material_score += PhaseScore::value(p.piece_type());
     }
 
     fn remove_piece(&mut self, sq: Square) {
@@ -540,7 +540,7 @@ impl Position {
         self.pieces_of_color[p.color().index()] ^= b;
         self.pieces_of_type[p.piece_type().index()] ^= b;
         self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
-        self.state.material_score -= Score::value(p.piece_type());
+        self.state.material_score -= PhaseScore::value(p.piece_type());
     }
 
     fn transfer_piece(&mut self, from: Square, to: Square) {
@@ -583,7 +583,7 @@ impl Position {
         if capture != Piece::NoPiece {
             self.state.fifty_move_counter = 0;
             self.state.hash ^= piece_hash(capture, to);
-            self.state.phase -= Score::phase(capture.piece_type());
+            self.state.phase -= PhaseScore::phase(capture.piece_type());
         }
         self.state.hash ^= castle_hash(self.state.castle_rights);
         self.state.castle_rights = self.remove_rights(self.state.castle_rights, from, to);
@@ -614,7 +614,7 @@ impl Position {
                 self.remove_piece(to);
                 self.place_piece(new_piece, to);
                 self.state.hash ^= piece_hash(new_piece, to) ^ piece_hash(piece, to);
-                self.state.phase += Score::phase(promote);
+                self.state.phase += PhaseScore::phase(promote);
                 self.state.checkers = self.attackers(ad.their_king) & self.our_pieces()
             }
         }
