@@ -187,6 +187,13 @@ impl SearchData {
         }
         false
     }
+
+    // elapsed_ms is the number of milliseconds that have elapsed since the
+    // search started. It's always at least 1, to avoid divide-by-zero errors.
+    pub fn elapsed_ms(&self) -> u64 {
+       let e = self.constraints.start_time.elapsed();
+       1 + e.as_secs() * 1000 + e.subsec_nanos() as u64 / 1_000_000
+    }
 }
 
 pub fn go(data: &mut SearchData) {
@@ -233,36 +240,51 @@ fn should_print(data: &SearchData) -> bool {
    data.constraints.start_time.elapsed().as_secs() > 1
 }
 
+// print_pv prints out the most up-to-date information about the current
+// principal variations in the format expected by UCI.
+fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
+    let ms = data.elapsed_ms();
+    let nps = if ms < 20 {
+        String::new()  // don't report nps if we just started.
+    } else {
+        format!("nps {} ", data.stats.nodes * 1000 / ms)
+    };
+    for i in 0..options::multi_pv() {
+        let rm = &data.root_moves[i];
+        let mut pv = String::new();
+        pv.push_str(&format!("{} ", rm.m));
+        for m in rm.pv.iter() {
+            pv.push_str(&format!("{} ", *m));
+        }
+        debug_assert!(rm.score > score::MIN_SCORE && rm.score < score::MAX_SCORE);
+        let bound = if rm.score <= alpha {
+            String::from("upperbound")
+        } else if rm.score >= beta {
+            String::from("lowerbound")
+        } else {
+            String::new()
+        };
+        println!("info multipv {} depth {} score {} {}time {} nodes {} {}pv {}",
+                 i + 1, data.current_depth, rm.score, bound, ms, data.stats.nodes, nps, pv);
+    }
+}
+
 fn deepening_search(data: &mut SearchData) {
    data.current_depth = 2 * ONE_PLY;
    while should_deepen(data) {
       if should_print(data) {
          println!("info depth {}", data.current_depth);
       }
-      /*
-      Score score = data.root_moves[0].score;
-      Score alpha = MinScore;
-      Score beta = MaxScore;
-      for (const auto& window : aspiration_windows) {
-          if (depth >= MinAspirationDepth) {
-              alpha = std::max(alpha, score - window);
-              beta = std::min(score + window, MaxScore);
-          }
-          score = RootSearch(&nodes[2], alpha, beta, depth);
-          assert(score > MinScore && score < MaxScore);
-
-          // TODO: test breaking ties by number of nodes searched
-          std::sort(data.root_moves.begin(), data.root_moves.end(),
-                    [](const RootMove& a,
-                       const RootMove& b) { return a.score > b.score; });
-          PrintPV(alpha, beta);
-          if (score > alpha && score < beta) {
-              break;
-          }
-          Println(strings::Substitute("broke aspiration window $0, retrying",
-                                      window));
-      }
-      */
+      // TODO: aspiration windows
+      let (alpha, beta) = (score::MIN_SCORE, score::MAX_SCORE);
+      let score = root_search(data, alpha, beta);
+      debug_assert!(score > score::MIN_SCORE && score < score::MAX_SCORE);
+      data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
+      print_pv(data, alpha, beta);
       data.current_depth += ONE_PLY;
    }
+}
+
+fn root_search(data: &mut SearchData, alpha: Score, beta: Score) -> Score {
+   unimplemented!();
 }

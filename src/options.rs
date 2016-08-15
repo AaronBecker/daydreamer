@@ -13,3 +13,7 @@ pub fn arena_960_castling() -> bool {
 pub fn time_buffer() -> u32 {
     10
 }
+
+pub fn multi_pv() -> usize {
+    1
+}
