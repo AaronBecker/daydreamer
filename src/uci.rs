@@ -183,7 +183,7 @@ fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), 
             "movestogo" => if let Some(x) = ptokens.next() { movestogo = parse_u32_or_0(x) },
             "movetime" => if let Some(x) = ptokens.next() { movetime= parse_u32_or_0(x) },
             "depth" => if let Some(x) = ptokens.next() {
-                search_data.constraints.depth_limit = parse_u64_or_0(x) as f32;
+                search_data.constraints.depth_limit = parse_u64_or_0(x) as u8;
             },
             "nodes" => if let Some(x) = ptokens.next() {
                 search_data.constraints.node_limit = parse_u64_or_0(x);

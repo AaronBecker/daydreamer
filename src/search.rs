@@ -12,18 +12,29 @@ use position::{AttackData, Position};
 use score;
 use score::Score;
 
-pub type Depth = f32;
-pub const ONE_PLY: Depth = 1.;
-pub const MAX_PLY: Depth = 128.;
+// Inside the search, we keep the remaining depth to search as a floating point
+// value to accomodate fractional extensions and reductions better. Elsewhere
+// depths are all integers to accommodate depth-indexed arrays.
+pub type SearchDepth = f32;
+pub const ONE_PLY_F: SearchDepth = 1.;
+pub const MAX_PLY_F: SearchDepth = 128.;
 
-pub const WAITING_STATE: usize = 0;
-pub const SEARCHING_STATE: usize = 1;
-pub const STOPPING_STATE: usize = 2;
+pub type Depth = u8;
+pub const ONE_PLY: Depth = 1;
+pub const MAX_PLY: Depth = 128;
 
+// EngineState is an atomic value that tracks engine state. It's atomic so that
+// we can safely signal the search to stop based on external inputs without
+// requiring the search thread to poll input. Logically it should be an enum,
+// but I don't know of a way to get atomic operations on an enum type.
 #[derive(Clone)]
 pub struct EngineState {
    pub state: Arc<AtomicUsize>,
 }
+
+pub const WAITING_STATE: usize = 0;
+pub const SEARCHING_STATE: usize = 1;
+pub const STOPPING_STATE: usize = 2;
 
 impl EngineState {
    pub fn new() -> EngineState {
@@ -41,6 +52,9 @@ impl EngineState {
    }
 }
 
+// SearchConstraints track the conditions for a search as specified via UCI.
+// This is mostly about how much searching we should do before stopping, but
+// also includes a list of moves to consider at the root.
 pub struct SearchConstraints {
     pub infinite: bool,
     pub searchmoves: Vec<Move>, // TODO: this doesn't seem quite right here, maybe move out
@@ -139,6 +153,7 @@ impl RootMove {
 pub struct SearchData {
     pub pos: Position,
     pub root_moves: Vec<RootMove>,
+    pub current_depth: Depth,
     pub constraints: SearchConstraints,
     pub stats: SearchStats,
     pub state: EngineState,
@@ -152,6 +167,7 @@ impl SearchData {
         SearchData {
             pos: Position::from_fen(position::START_FEN),
             root_moves: Vec::new(),
+            current_depth: 0,
             constraints: SearchConstraints::new(),
             stats: SearchStats::new(),
             state: EngineState::new(),
@@ -201,9 +217,9 @@ pub fn go(data: &mut SearchData) {
    data.state.enter(WAITING_STATE);
 }
 
-fn should_deepen(data: &SearchData, d: Depth) -> bool {
+fn should_deepen(data: &SearchData, d: SearchDepth) -> bool {
    if data.state.load() == STOPPING_STATE { return false }
-   if data.constraints.depth_limit <= d { return false }
+   if data.constraints.depth_limit as SearchDepth <= d { return false }
    if !data.constraints.use_timer { return true }
    // If we're much more than halfway through our time, we won't make it
    // through the first move of the next iteration anyway.
@@ -218,13 +234,13 @@ fn should_print(data: &SearchData) -> bool {
 }
 
 fn deepening_search(data: &mut SearchData) {
-   let mut depth = 0.;
+   let mut depth = 2. * ONE_PLY_F;
    while should_deepen(data, depth) {
       if data.state.load() == STOPPING_STATE {
          break;
       }
       println!("searching");
       ::std::thread::sleep(time::Duration::from_secs(2));
-      depth += ONE_PLY;
+      depth += ONE_PLY_F;
    }
 }
