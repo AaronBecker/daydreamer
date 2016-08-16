@@ -273,39 +273,57 @@ fn should_print(data: &SearchData) -> bool {
    data.constraints.start_time.elapsed().as_secs() > 1
 }
 
-// print_pv prints out the most up-to-date information about the current
-// principal variations in the format expected by UCI.
-fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
+// print_pv_single prints the search data for a single root move.
+fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Score, beta: Score) {
     let ms = data.elapsed_ms();
     let nps = if ms < 20 {
         String::new()  // don't report nps if we just started.
     } else {
         format!("nps {} ", data.stats.nodes * 1000 / ms)
     };
+    let mut pv = String::new();
+    pv.push_str(&format!("{} ", rm.m));
+    for m in rm.pv.iter() {
+        pv.push_str(&format!("{} ", *m));
+    }
+    debug_assert!(score_is_valid(rm.score));
+    let bound = if rm.score <= alpha {
+        String::from("upperbound ")
+    } else if rm.score >= beta {
+        String::from("lowerbound ")
+    } else {
+        String::new()
+    };
+    let score = if is_mate_score(rm.score) {
+       let mut mate_in = (score::MATE_SCORE - rm.score.abs() + 1) / 2;
+       if rm.score < 0 { mate_in *= -1; }
+       format!("mate {}", mate_in)
+    } else {
+       format!("cp {}", rm.score)
+    };
+    println!("info multipv {} depth {} score {} {}time {} nodes {} {}pv {}",
+             ordinal, data.current_depth, score, bound, ms, data.stats.nodes, nps, pv);
+}
+
+// print_pv prints out the most up-to-date information about the current
+// principal variations in the format expected by UCI.
+fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
+    // We need to print the n highest-scoring moves. They may not be in order
+    // so we extract them in order with a heap.
+    use std::collections::BinaryHeap;
+
+    let mut heap = BinaryHeap::new();
+    for entry in data.root_moves.iter().enumerate() {
+        let (i, rm) = entry;
+        heap.push((rm.score, i));
+    }
+
     for i in 0..options::multi_pv() {
-        let rm = &data.root_moves[i];
-        let mut pv = String::new();
-        pv.push_str(&format!("{} ", rm.m));
-        for m in rm.pv.iter() {
-            pv.push_str(&format!("{} ", *m));
+        if let Some((_, idx)) = heap.pop() {
+            print_pv_single(data, &data.root_moves[idx], i + 1, alpha, beta);
+        } else {
+            panic!("failed to extract root move for printing");
         }
-        debug_assert!(score_is_valid(rm.score));
-        let bound = if rm.score <= alpha {
-            String::from("upperbound ")
-        } else if rm.score >= beta {
-            String::from("lowerbound ")
-        } else {
-            String::new()
-        };
-        let score = if is_mate_score(rm.score) {
-           let mut mate_in = (score::MATE_SCORE - rm.score.abs() + 1) / 2;
-           if rm.score < 0 { mate_in *= -1; }
-           format!("mate {}", mate_in)
-        } else {
-           format!("cp {}", rm.score)
-        };
-        println!("info multipv {} depth {} score {} {}time {} nodes {} {}pv {}",
-                 i + 1, data.current_depth, score, bound, ms, data.stats.nodes, nps, pv);
     }
 }
 
