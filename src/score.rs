@@ -99,3 +99,9 @@ impl ::std::ops::SubAssign for PhaseScore {
         self.eg -= rhs.eg;
     }
 }
+
+impl ::std::fmt::Display for PhaseScore {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "({}, {})", self.mg, self.eg)
+    }
+}

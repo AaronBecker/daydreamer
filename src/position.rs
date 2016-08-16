@@ -380,8 +380,7 @@ impl Position {
             }
             s.push('\n');
         }
-        s.push_str(self.to_string().as_str());
-        s.push('\n');
+        s.push_str(format!("{}\n", self).as_str());
 
         let ad = AttackData::new(self);
         let moves = &mut Vec::new();
@@ -391,7 +390,9 @@ impl Position {
             s.push_str(m.to_string().as_str());
             s.push(' ');
         }
-        s.push('\n');
+        s.push_str(format!("\nmaterial score: {}\n", self.state.material_score).as_str());
+        s.push_str(format!("phase: {}\n", self.state.phase).as_str());
+        s.push_str(format!("interpolated score: {}\n", self.material_score()).as_str());
         s
     }
 
