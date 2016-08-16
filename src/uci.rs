@@ -202,6 +202,7 @@ fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), 
                         if m == movement::NO_MOVE {
                             break
                         }
+                        // FIXME: we're just throwing the move away
                     } else {
                         break
                     }

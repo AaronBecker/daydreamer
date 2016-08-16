@@ -186,6 +186,13 @@ impl SearchData {
         }
     }
 
+    pub fn reset(&mut self) {
+      self.root_moves = Vec::new();
+      self.current_depth = 0;
+      self.stats = SearchStats::new();
+      self.pv_stack = [[NO_MOVE; MAX_PLY]; MAX_PLY];
+    }
+
     pub fn should_stop(&self, depth: Depth, nodes: u64) -> bool {
         if self.constraints.infinite {
             return true;
@@ -228,6 +235,7 @@ pub fn go(data: &mut SearchData) {
       return;
    }
    data.state.enter(SEARCHING_STATE);
+   data.reset();
 
    let ad = AttackData::new(&data.pos);
    let mut moves = data.constraints.searchmoves.clone();

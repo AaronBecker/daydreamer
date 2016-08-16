@@ -393,6 +393,8 @@ impl Position {
         s.push_str(format!("\nmaterial score: {}\n", self.state.material_score).as_str());
         s.push_str(format!("phase: {}\n", self.state.phase).as_str());
         s.push_str(format!("interpolated score: {}\n", self.material_score()).as_str());
+        s.push_str(format!("hash:          {}\n", self.state.hash).as_str());
+        s.push_str(format!("computed_hash: {}\n", self.computed_hash()).as_str());
         s
     }
 
@@ -459,7 +461,7 @@ impl Position {
             return Ok(());
         }
         self.state.ply = pieces[5].parse().unwrap();
-        self.state.ply = ::std::cmp::max(2 * (self.state.ply - 1), 0);
+        self.state.ply = ::std::cmp::max(2 * (self.state.ply as i16 - 1), 0) as u16;
         if self.us() == Color::Black {
             self.state.ply += 1;
         }
@@ -562,6 +564,9 @@ impl Position {
     }
 
     pub fn do_move(&mut self, m: Move, ad: &AttackData) {
+        debug_assert!(self.state.hash == self.computed_hash());
+        debug_assert!(self.state.phase == self.computed_phase());
+
         let (us, them) = (self.us(), self.them());
         let (from, mut to) = (m.from(), m.to()); // note: we update 'to' for castling moves
         let (capture, piece, piece_type) = (m.capture(), m.piece(), m.piece().piece_type());
@@ -654,6 +659,9 @@ impl Position {
     }
 
     pub fn undo_move(&mut self, mv: Move, undo: &UndoState) {
+        debug_assert!(self.state.hash == self.computed_hash());
+        debug_assert!(self.state.phase == self.computed_phase());
+
         self.copy_state(undo);
         let (us, them) = (self.us(), self.them());
         let (from, to) = (mv.from(), mv.to());
