@@ -10,7 +10,7 @@ use options;
 use position;
 use position::{AttackData, Position, UndoState};
 use score;
-use score::{Score, score_is_valid};
+use score::{Score, score_is_valid, is_mate_score};
 
 // Inside the search, we keep the remaining depth to search as a floating point
 // value to accomodate fractional extensions and reductions better. Elsewhere
@@ -289,8 +289,15 @@ fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
         } else {
             String::new()
         };
+        let score = if is_mate_score(rm.score) {
+           let mut mate_in = (score::MATE_SCORE - rm.score.abs() + 1) / 2;
+           if rm.score < 0 { mate_in *= -1; }
+           format!("mate {}", mate_in)
+        } else {
+           format!("cp {}", rm.score)
+        };
         println!("info multipv {} depth {} score {} {}time {} nodes {} {}pv {}",
-                 i + 1, data.current_depth, rm.score, bound, ms, data.stats.nodes, nps, pv);
+                 i + 1, data.current_depth, score, bound, ms, data.stats.nodes, nps, pv);
     }
 }
 
