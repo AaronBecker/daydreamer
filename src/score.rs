@@ -1,8 +1,11 @@
 use board::PieceType;
 use position::Position;
 
-pub type Score = i16;
-pub type Phase = i16;
+// Note: actual scores fit in an i16 and can be safely stored in 16 bits in
+// transposition tables etc, but we use i32 because intermediate calculations
+// can over- or underflow and casting everywhere is tedious.
+pub type Score = i32;
+pub type Phase = i32;
 
 pub const MATE_SCORE: Score = 30000;
 pub const MAX_SCORE: Score = MATE_SCORE + 1;
@@ -14,11 +17,11 @@ pub fn score_is_valid(s: Score) -> bool {
 }
 
 pub fn mate_in(ply: usize) -> Score {
-    MATE_SCORE - ply as i16
+    MATE_SCORE - ply as Score
 }
 
 pub fn mated_in(ply: usize) -> Score {
-    ply as i16 - MATE_SCORE
+    ply as Score - MATE_SCORE
 }
 
 pub fn is_mate_score(s: Score) -> bool {
@@ -40,8 +43,11 @@ pub const ROOK: PhaseScore = PhaseScore{ mg: 500, eg: 650 };
 pub const QUEEN: PhaseScore = PhaseScore{ mg: 1000, eg: 1200 };
 
 const PT_SCORE: [PhaseScore; 8] = [NONE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, NONE, NONE];
-const PT_PHASE: [Phase; 8] = [NONE.mg, NONE.mg, KNIGHT.mg, BISHOP.mg, ROOK.mg, QUEEN.mg, NONE.mg, NONE.mg];
-const MAX_PHASE: Score = 2 * (2 * (KNIGHT.mg + BISHOP.mg + ROOK.mg) + QUEEN.mg);
+const PT_PHASE: [Phase; 8] = [
+    NONE.mg as Phase, NONE.mg as Phase, KNIGHT.mg as Phase,
+    BISHOP.mg as Phase, ROOK.mg as Phase, QUEEN.mg as Phase,
+    NONE.mg as Phase, NONE.mg as Phase];
+const MAX_PHASE: Phase = 2 * (2 * (KNIGHT.mg + BISHOP.mg + ROOK.mg) + QUEEN.mg) as Phase;
 
 impl PhaseScore {
     pub fn interpolate(self, pos: &Position) -> Score {
