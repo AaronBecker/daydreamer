@@ -212,7 +212,7 @@ impl SearchData {
 
     pub fn update_pv(&mut self, ply: usize, m: Move) {
         self.pv_stack[ply][ply] = m;
-        let mut i = ply;
+        let mut i = ply + 1;
         while self.pv_stack[ply + 1][i] != NO_MOVE {
             self.pv_stack[ply][i] = self.pv_stack[ply + 1][i];
             i += 1;
@@ -251,7 +251,7 @@ pub fn go(data: &mut SearchData) {
 
 fn should_deepen(data: &SearchData) -> bool {
    if data.state.load() == STOPPING_STATE { return false }
-   if data.constraints.depth_limit <= data.current_depth { return false }
+   if data.constraints.depth_limit < data.current_depth { return false }
    if !data.constraints.use_timer { return true }
    // If we're much more than halfway through our time, we won't make it
    // through the first move of the next iteration anyway.
@@ -283,9 +283,9 @@ fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
         }
         debug_assert!(score_is_valid(rm.score));
         let bound = if rm.score <= alpha {
-            String::from("upperbound")
+            String::from("upperbound ")
         } else if rm.score >= beta {
-            String::from("lowerbound")
+            String::from("lowerbound ")
         } else {
             String::new()
         };
@@ -356,7 +356,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
             for ply in 1..MAX_PLY {
                 let mv = data.pv_stack[1][ply];
                 if mv == NO_MOVE { break }
-                data.root_moves[i].pv.push(data.pv_stack[1][i]);
+                data.root_moves[i].pv.push(mv);
             }
         }
         if score > alpha {
@@ -441,7 +441,8 @@ fn search(data: &mut SearchData, ply: usize,
     best_score
 }
 
-fn quiesce(data: &mut SearchData, _: usize, _: Score, _: Score, _: SearchDepth) -> Score {
+fn quiesce(data: &mut SearchData, ply: usize, _: Score, _: Score, _: SearchDepth) -> Score {
     // don't even bother with this until we have proper move selection code.
+    data.init_ply(ply);
     data.pos.material_score()
 }
