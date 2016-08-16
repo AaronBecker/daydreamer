@@ -1,9 +1,10 @@
-use board::PieceType;
+use board::{Piece, PieceType};
 use position::Position;
 
 // Note: actual scores fit in an i16 and can be safely stored in 16 bits in
 // transposition tables etc, but we use i32 because intermediate calculations
 // can over- or underflow and casting everywhere is tedious.
+// TODO: test for nps effects if we switch to i16
 pub type Score = i32;
 pub type Phase = i32;
 
@@ -42,7 +43,17 @@ pub const BISHOP: PhaseScore = PhaseScore{ mg: 350, eg: 400 };
 pub const ROOK: PhaseScore = PhaseScore{ mg: 500, eg: 650 };
 pub const QUEEN: PhaseScore = PhaseScore{ mg: 1000, eg: 1200 };
 
-const PT_SCORE: [PhaseScore; 8] = [NONE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, NONE, NONE];
+// This is incredibly gross, but I don't want the piece score array to be
+// mutable and the compiler won't evaluate PieceScore negation at compile
+// time so this is what we're stuck with.
+const BPAWN: PhaseScore = PhaseScore{ mg: -85, eg: -115 };
+const BKNIGHT: PhaseScore = PhaseScore{ mg: -350, eg: -400 };
+const BBISHOP: PhaseScore = PhaseScore{ mg: -350, eg: -400 };
+const BROOK: PhaseScore = PhaseScore{ mg: -500, eg: -650 };
+const BQUEEN: PhaseScore = PhaseScore{ mg: -1000, eg: -1200 };
+
+const PIECE_SCORE: [PhaseScore; 16] = [NONE, BPAWN, BKNIGHT, BBISHOP, BROOK, BQUEEN, NONE, NONE,
+                                       NONE,  PAWN,  KNIGHT,  BISHOP,  ROOK,  QUEEN, NONE, NONE];
 const PT_PHASE: [Phase; 8] = [
     NONE.mg as Phase, NONE.mg as Phase, KNIGHT.mg as Phase,
     BISHOP.mg as Phase, ROOK.mg as Phase, QUEEN.mg as Phase,
@@ -55,8 +66,8 @@ impl PhaseScore {
         (self.eg * (MAX_PHASE - phase) + self.mg * phase) / MAX_PHASE
     }
 
-    pub fn value(pt: PieceType) -> PhaseScore {
-        PT_SCORE[pt.index()]
+    pub fn value(p: Piece) -> PhaseScore {
+        PIECE_SCORE[p.index()]
     }
 
     pub fn phase(pt: PieceType) -> Phase {
@@ -97,6 +108,17 @@ impl ::std::ops::SubAssign for PhaseScore {
     fn sub_assign(&mut self, rhs: PhaseScore) {
         self.mg -= rhs.mg;
         self.eg -= rhs.eg;
+    }
+}
+
+impl ::std::ops::Neg for PhaseScore {
+    type Output = PhaseScore;
+
+    fn neg(self) -> PhaseScore {
+        PhaseScore {
+            mg: -self.mg,
+            eg: -self.eg,
+        }
     }
 }
 

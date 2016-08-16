@@ -534,7 +534,7 @@ impl Position {
         self.pieces_of_color[p.color().index()] |= b;
         self.pieces_of_type[p.piece_type().index()] |= b;
         self.pieces_of_type[PieceType::AllPieces.index()] |= b;
-        self.state.material_score += PhaseScore::value(p.piece_type());
+        self.state.material_score += PhaseScore::value(p);
     }
 
     fn remove_piece(&mut self, sq: Square) {
@@ -545,7 +545,7 @@ impl Position {
         self.pieces_of_color[p.color().index()] ^= b;
         self.pieces_of_type[p.piece_type().index()] ^= b;
         self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
-        self.state.material_score -= PhaseScore::value(p.piece_type());
+        self.state.material_score -= PhaseScore::value(p);
     }
 
     fn transfer_piece(&mut self, from: Square, to: Square) {
