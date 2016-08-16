@@ -10,7 +10,7 @@ use options;
 use position;
 use position::{AttackData, Position, UndoState};
 use score;
-use score::Score;
+use score::{Score, score_is_valid};
 
 // Inside the search, we keep the remaining depth to search as a floating point
 // value to accomodate fractional extensions and reductions better. Elsewhere
@@ -209,6 +209,16 @@ impl SearchData {
     pub fn init_ply(&mut self, ply: usize) {
         self.pv_stack[ply][ply] = NO_MOVE;
     }
+
+    pub fn update_pv(&mut self, ply: usize, m: Move) {
+        self.pv_stack[ply][ply] = m;
+        let mut i = ply;
+        while self.pv_stack[ply + 1][i] != NO_MOVE {
+            self.pv_stack[ply][i] = self.pv_stack[ply + 1][i];
+            i += 1;
+        }
+        self.pv_stack[ply][i] = NO_MOVE;
+    }
 }
 
 pub fn go(data: &mut SearchData) {
@@ -271,7 +281,7 @@ fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
         for m in rm.pv.iter() {
             pv.push_str(&format!("{} ", *m));
         }
-        debug_assert!(rm.score > score::MIN_SCORE && rm.score < score::MAX_SCORE);
+        debug_assert!(score_is_valid(rm.score));
         let bound = if rm.score <= alpha {
             String::from("upperbound")
         } else if rm.score >= beta {
@@ -329,7 +339,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
             score = -search(data, 1, -beta, -alpha, depth - ONE_PLY_F);
         }
         data.pos.undo_move(m, &undo);
-        debug_assert!(score > score::MIN_SCORE && score < score::MAX_SCORE);
+        debug_assert!(score_is_valid(score));
         if data.state.load() == STOPPING_STATE { return SearchResult::Aborted; }
         data.root_moves[i].score = score::MIN_SCORE;
         if full_search || score > alpha {
@@ -358,6 +368,73 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
     SearchResult::Exact
 }
 
-fn search(data: &mut SearchData, ply: usize, alpha: Score, beta: Score, depth: SearchDepth) -> Score {
-    unimplemented!();
+fn search(data: &mut SearchData, ply: usize,
+          mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
+    data.init_ply(ply);
+    if data.state.load() == STOPPING_STATE { return score::DRAW_SCORE; }
+    if depth < ONE_PLY_F {
+        return quiesce(data, ply, alpha, beta, depth);
+    }
+
+    debug_assert!(score_is_valid(alpha) && score_is_valid(beta));
+    alpha = max!(alpha, score::mated_in(ply));
+    beta = min!(beta, score::mate_in(ply));
+    if alpha >= beta { return alpha }
+
+    let open_window = beta - alpha > 1;
+    let mut best_score = score::MIN_SCORE;
+    let ad = AttackData::new(&data.pos);
+    let undo = UndoState::undo_state(&data.pos);
+    // TODO: nullmove, razoring
+    let mut num_moves = 0;
+
+    // TODO: proper move ordering interface, plus generate pseudo-legal moves
+    // and check legality afterwards.
+    let moves = &mut Vec::with_capacity(128);
+    movegen::gen_legal(&data.pos, &ad, moves);
+    for m in moves.iter() {
+        num_moves += 1;
+        // TODO: pruning, futility, depth extension
+        data.stats.nodes += 1;
+        data.pos.do_move(*m, &ad);
+        let mut score = score::MIN_SCORE;
+        let mut full_search = open_window && num_moves == 1;
+        if !full_search {
+            // TODO: depth reductions
+            score = -search(data, ply + 1, -alpha - 1, -alpha, depth - ONE_PLY_F);
+            if open_window && score > alpha { full_search = true; }
+        }
+        if full_search {
+            score = -search(data, ply + 1, -beta, -alpha, depth - ONE_PLY_F);
+        }
+        debug_assert!(score_is_valid(score));
+        data.pos.undo_move(*m, &undo);
+
+        // If we're aborting, the score from the last move shouldn't be trusted,
+        // since we didn't finish searching it, so bail out without updating
+        // pv, bounds, etc.
+        if data.state.load() == STOPPING_STATE { return score::DRAW_SCORE; }
+        if score > best_score {
+            best_score = score;
+            if score > alpha {
+                alpha = score;
+                data.update_pv(ply, *m);
+            }
+            if score >= beta { break }
+        }
+    }
+    if num_moves == 0 {
+        // Stalemate or checkmate. We have to be careful not to prune away any
+        // moves without checking their legality until we know that there's at
+        // least one legal move so that this check is valid.
+        if data.pos.checkers() != 0 { return score::mated_in(ply) }
+        return score::DRAW_SCORE;
+    }
+    debug_assert!(score_is_valid(best_score));
+    best_score
+}
+
+fn quiesce(data: &mut SearchData, _: usize, _: Score, _: Score, _: SearchDepth) -> Score {
+    // don't even bother with this until we have proper move selection code.
+    data.pos.material_score()
 }

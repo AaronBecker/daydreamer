@@ -9,6 +9,10 @@ pub const MAX_SCORE: Score = MATE_SCORE + 1;
 pub const MIN_SCORE: Score = -MAX_SCORE;
 pub const DRAW_SCORE: Score = 0;
 
+pub fn score_is_valid(s: Score) -> bool {
+    s <= MAX_SCORE && s >= MIN_SCORE
+}
+
 pub fn mate_in(ply: usize) -> Score {
     MATE_SCORE - ply as i16
 }

@@ -6,7 +6,7 @@ use movement;
 use movement::Move;
 use options;
 use score;
-use score::{Phase, PhaseScore};
+use score::{Phase, PhaseScore, Score};
 
 pub const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -313,6 +313,10 @@ impl Position {
 
     pub fn last_move(&self) -> Move {
         self.state.last_move
+    }
+
+    pub fn material_score(&self) -> Score {
+        self.state.material_score.interpolate(self)
     }
 
     // attack_occluders returns the set of pieces of color c that are blocking
