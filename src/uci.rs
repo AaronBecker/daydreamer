@@ -142,9 +142,10 @@ fn handle_position<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Resul
     }
 
     // Remaining tokens should be moves.
-    let ad = position::AttackData::new(&search_data.pos);
     while let Some(tok) = tokens.next() {
+        if tok == "moves" { continue }
         // handle moves
+        let ad = position::AttackData::new(&search_data.pos);
         let m = Move::from_uci(&search_data.pos, &ad, tok);
         if m == movement::NO_MOVE {
             return Err(format!("invalid move {}", tok));
