@@ -6,6 +6,13 @@ use movement::Move;
 use bitboard;
 use bitboard::Bitboard;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum GenerationType {
+    Loud,
+    Quiet,
+    Both,
+}
+
 fn add_moves(pos: &Position, from: Square, mut bb: Bitboard, moves: &mut Vec<Move>) {
     while bb != 0 {
         let to = bitboard::pop_square(&mut bb);
@@ -106,19 +113,24 @@ pub fn add_castles(pos: &Position, moves: &mut Vec<Move>) {
     }
 }
 
-pub fn add_pawn_promotions(pos: &Position,
-                           pawns: Bitboard,
-                           mut mask: Bitboard,
-                           d: Delta,
-                           moves: &mut Vec<Move>) {
+fn add_pawn_promotions(pos: &Position,
+                       pawns: Bitboard,
+                       mut mask: Bitboard,
+                       d: Delta,
+                       gt: GenerationType,
+                       moves: &mut Vec<Move>) {
     mask &= bitboard::shift(pawns, d);
     while mask != 0 {
         let to = bitboard::pop_square(&mut mask);
         let from = board::shift_sq(to, -d);
-        moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Knight));
-        moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Bishop));
-        moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Rook));
-        moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Queen));
+        if gt != GenerationType::Quiet {
+            moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Queen));
+        }
+        if gt != GenerationType::Loud {
+            moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Rook));
+            moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Bishop));
+            moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Knight));
+        }
     }
 }
 
@@ -137,6 +149,7 @@ fn add_pawn_non_promotions(pos: &Position,
 
 fn add_masked_pawn_moves(pos: &Position,
                          mask: Bitboard,
+                         gt: GenerationType,
                          moves: &mut Vec<Move>) {
     let (us, them) = (pos.us(), pos.them());
     let up = if us == Color::White { NORTH } else { SOUTH };
@@ -148,22 +161,29 @@ fn add_masked_pawn_moves(pos: &Position,
     let our_2 = bitboard::relative_rank_bb(us, Rank::_2);
     let our_7 = bitboard::relative_rank_bb(us, Rank::_7);
 
-    add_pawn_non_promotions(pos, pawns & !our_7, push_once_mask, up, moves);
-    add_pawn_non_promotions(pos, pawns & our_2, push_twice_mask, up + up, moves);
-    add_pawn_promotions(pos, pawns & our_7, push_once_mask, up, moves);
+    if gt != GenerationType::Loud {
+        add_pawn_non_promotions(pos, pawns & !our_7, push_once_mask, up, moves);
+        add_pawn_non_promotions(pos, pawns & our_2, push_twice_mask, up + up, moves);
+    }
 
     let promote_from_mask = pawns & our_7;
     let capture_from_mask = pawns & !promote_from_mask;
-    for d in [up + WEST, up + EAST].iter() {
-        let their_pieces = pos.their_pieces();
-        let promote_to_mask = their_pieces & bitboard::shift(promote_from_mask, *d) & mask;
-        let capture_to_mask = their_pieces & bitboard::shift(capture_from_mask, *d) & mask;
+    add_pawn_promotions(pos, pawns & our_7, push_once_mask, up, gt, moves);
 
-        add_pawn_promotions(pos, promote_from_mask, promote_to_mask, *d, moves);
-        add_pawn_non_promotions(pos, capture_from_mask, capture_to_mask, *d, moves);
+    if gt != GenerationType::Quiet || promote_from_mask != 0 {
+        for d in [up + WEST, up + EAST].iter() {
+            let their_pieces = pos.their_pieces();
+            let promote_to_mask = their_pieces & bitboard::shift(promote_from_mask, *d) & mask;
+            let capture_to_mask = their_pieces & bitboard::shift(capture_from_mask, *d) & mask;
+
+            add_pawn_promotions(pos, promote_from_mask, promote_to_mask, *d, gt, moves);
+            if gt != GenerationType::Quiet {
+                add_pawn_non_promotions(pos, capture_from_mask, capture_to_mask, *d, moves);
+            }
+        }
     }
 
-    if pos.ep_square() != Square::NoSquare {
+    if gt != GenerationType::Quiet && pos.ep_square() != Square::NoSquare {
         let mut bb = capture_from_mask & bitboard::pawn_attacks(them, pos.ep_square());
         while bb != 0 {
             moves.push(Move::new_en_passant(bitboard::pop_square(&mut bb),
@@ -175,7 +195,7 @@ fn add_masked_pawn_moves(pos: &Position,
 }
 
 pub fn add_pawn_moves(pos: &Position, moves: &mut Vec<Move>) {
-    add_masked_pawn_moves(pos, !0, moves);
+    add_masked_pawn_moves(pos, !0, GenerationType::Both, moves);
 }
 
 // gen_evasions appends all available pseudo-legal moves to moves. It is only
@@ -228,7 +248,7 @@ pub fn gen_evasions(pos: &Position, moves: &mut Vec<Move>) {
                      mask,
                      moves,
                      bitboard::queen_attacks);
-    add_masked_pawn_moves(pos, mask, moves);
+    add_masked_pawn_moves(pos, mask, GenerationType::Both, moves);
 }
 
 pub fn gen_legal(pos: &Position, ad: &position::AttackData, moves: &mut Vec<Move>) {
@@ -250,6 +270,15 @@ pub fn gen_legal(pos: &Position, ad: &position::AttackData, moves: &mut Vec<Move
     });
 }
 
+pub fn gen_loud(pos: &Position, moves: &mut Vec<Move>) {
+    add_piece_captures(pos, moves);
+    add_masked_pawn_moves(pos, !0, GenerationType::Loud, moves);
+}
+
+pub fn gen_quiet(pos: &Position, moves: &mut Vec<Move>) {
+    add_piece_non_captures(pos, moves);
+    add_masked_pawn_moves(pos, !0, GenerationType::Quiet, moves);
+}
 
 #[cfg(test)]
 mod tests {
@@ -420,4 +449,46 @@ mod tests {
                             Move::new(E7, E8, Piece::BK, Piece::NoPiece),
                             Move::new(C6, B4, Piece::BN, Piece::WB)));
     });
+
+    chess_test!(test_loud_quiet, {
+        let test_case = |fen, expect_loud: &mut Vec<Move>, expect_quiet: &mut Vec<Move>| {
+            let pos = Position::from_fen(fen);
+            expect_loud.sort_by_key(|m| { m.as_u32() });
+            let mut moves = Vec::new();
+            gen_loud(&pos, &mut moves);
+            moves.sort_by_key(|m| { m.as_u32() });
+            assert_eq!(*expect_loud, moves);
+
+            expect_quiet.sort_by_key(|m| { m.as_u32() });
+            moves.clear();
+            gen_quiet(&pos, &mut moves);
+            moves.sort_by_key(|m| { m.as_u32() });
+            assert_eq!(*expect_quiet, moves);
+        };
+        test_case("k4b2/6P1/8/1pP5/8/8/6P1/7K w - b6 0 1",
+                  &mut vec!(Move::new_en_passant(C5, B6, Piece::WP, Piece::BP),
+                            Move::new_promotion(G7, F8, Piece::WP, Piece::BB, PieceType::Queen),
+                            Move::new_promotion(G7, G8, Piece::WP, Piece::NoPiece, PieceType::Queen)),
+                  &mut vec!(Move::new(C5, C6, Piece::WP, Piece::NoPiece),
+                            Move::new(G2, G3, Piece::WP, Piece::NoPiece),
+                            Move::new(G2, G4, Piece::WP, Piece::NoPiece),
+                            Move::new_promotion(G7, F8, Piece::WP, Piece::BB, PieceType::Rook),
+                            Move::new_promotion(G7, F8, Piece::WP, Piece::BB, PieceType::Bishop),
+                            Move::new_promotion(G7, F8, Piece::WP, Piece::BB, PieceType::Knight),
+                            Move::new_promotion(G7, G8, Piece::WP, Piece::NoPiece, PieceType::Rook),
+                            Move::new_promotion(G7, G8, Piece::WP, Piece::NoPiece, PieceType::Bishop),
+                            Move::new_promotion(G7, G8, Piece::WP, Piece::NoPiece, PieceType::Knight),
+                            Move::new(H1, G1, Piece::WK, Piece::NoPiece),
+                            Move::new(H1, H2, Piece::WK, Piece::NoPiece)));
+        test_case("k4b2/6P1/8/1pP5/8/8/6P1/7K b - - 0 1",
+                  &mut vec!(Move::new(F8, C5, Piece::BB, Piece::WP),
+                            Move::new(F8, G7, Piece::BB, Piece::WP)),
+                  &mut vec!(Move::new(F8, E7, Piece::BB, Piece::NoPiece),
+                            Move::new(F8, D6, Piece::BB, Piece::NoPiece),
+                            Move::new(B5, B4, Piece::BP, Piece::NoPiece),
+                            Move::new(A8, A7, Piece::BK, Piece::NoPiece),
+                            Move::new(A8, B7, Piece::BK, Piece::NoPiece),
+                            Move::new(A8, B8, Piece::BK, Piece::NoPiece)));
+    });
+
 }
