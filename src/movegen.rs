@@ -6,6 +6,14 @@ use movement::Move;
 use bitboard;
 use bitboard::Bitboard;
 
+// Moves are categorized as loud or quiet; in non-check situations they're
+// generated separately and loud moves have priority in search ordering.
+//
+// Loud moves are promotions to queen and all captures that aren't also
+// underpromotions.
+//
+// Quiet moves are everything else: non-capturing moves that aren't
+// promotion to queen, plus all underpromotions.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum GenerationType {
     Loud,
