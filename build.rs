@@ -4,7 +4,6 @@ use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
-
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
     let out_path = Path::new(&out_dir).join("version.rs");
@@ -19,3 +18,4 @@ fn main() {
     let version = String::from_utf8(git_output.stdout).expect("couldn't parse git output");
     f.write_all(version.trim().as_bytes()).unwrap();
 }
+
