@@ -90,7 +90,9 @@ fn handle_command(search_data: &mut SearchData, line: &str) -> Result<(), String
     loop {
         match tokens.next() {
             Some("uci") => {
-                println!("id name baru 0");
+                println!("id name Baru {} ({})",
+                         include_str!(concat!(env!("OUT_DIR"), "/version.rs")),
+                         env!("CARGO_PKG_VERSION"));
                 println!("id author Aaron Becker");
                 println!("uciok");
             }

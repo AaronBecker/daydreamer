@@ -2,6 +2,7 @@
 name = "baru"
 version = "0.1.0"
 authors = ["akb <aaron@falsesharing.com>"]
+build = "build.rs"
 
 [dependencies]
 rand = "*"
