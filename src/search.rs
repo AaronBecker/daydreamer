@@ -20,7 +20,7 @@ pub const ONE_PLY_F: SearchDepth = 1.;
 pub const MAX_PLY_F: SearchDepth = 128.;
 
 pub fn is_quiescence_depth(sd: SearchDepth) -> bool {
-   sd < ONE_PLY_F
+    sd < ONE_PLY_F
 }
 
 pub type Depth = usize;
@@ -33,7 +33,7 @@ pub const MAX_PLY: Depth = 128;
 // but I don't know of a way to get atomic operations on an enum type.
 #[derive(Clone)]
 pub struct EngineState {
-   pub state: Arc<AtomicUsize>,
+    pub state: Arc<AtomicUsize>,
 }
 
 pub const WAITING_STATE: usize = 0;
@@ -41,19 +41,19 @@ pub const SEARCHING_STATE: usize = 1;
 pub const STOPPING_STATE: usize = 2;
 
 impl EngineState {
-   pub fn new() -> EngineState {
-      EngineState {
-         state: Arc::new(AtomicUsize::new(WAITING_STATE)),
-      }
-   }
+    pub fn new() -> EngineState {
+        EngineState {
+            state: Arc::new(AtomicUsize::new(WAITING_STATE)),
+        }
+    }
 
-   pub fn enter(&self, state: usize) {
-      self.state.store(state, Ordering::Release);
-   }
+    pub fn enter(&self, state: usize) {
+        self.state.store(state, Ordering::Release);
+    }
 
-   pub fn load(&self) -> usize {
-      self.state.load(Ordering::Acquire)
-   }
+    pub fn load(&self) -> usize {
+        self.state.load(Ordering::Acquire)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -199,7 +199,7 @@ impl SearchData {
 
     pub fn should_stop(&self, depth: Depth, nodes: u64) -> bool {
         if self.constraints.infinite {
-            return true;
+            return false;
         }
         if depth > self.constraints.depth_limit || nodes > self.constraints.node_limit {
             return true
@@ -266,6 +266,7 @@ pub fn go(data: &mut SearchData) {
 
 fn should_deepen(data: &SearchData) -> bool {
    if data.state.load() == STOPPING_STATE { return false }
+   if data.constraints.infinite { return true }
    if data.constraints.depth_limit < data.current_depth { return false }
    if !data.constraints.use_timer { return true }
    // If we're much more than halfway through our time, we won't make it
@@ -420,6 +421,7 @@ fn search(data: &mut SearchData, ply: usize,
     alpha = max!(alpha, score::mated_in(ply));
     beta = min!(beta, score::mate_in(ply));
     if alpha >= beta { return alpha }
+    // TODO: trivial draw detection
 
     let open_window = beta - alpha > 1;
     let mut best_score = score::MIN_SCORE;
@@ -432,10 +434,10 @@ fn search(data: &mut SearchData, ply: usize,
     // and check legality afterwards.
     let mut selector = MoveSelector::legal();
     while let Some(m) = selector.next(&data.pos, &ad) {
-        num_moves += 1;
         // TODO: pruning, futility, depth extension
-        data.stats.nodes += 1;
         data.pos.do_move(m, &ad);
+        data.stats.nodes += 1;
+        num_moves += 1;
         let mut score = score::MIN_SCORE;
         let mut full_search = open_window && num_moves == 1;
         if !full_search {
@@ -473,8 +475,59 @@ fn search(data: &mut SearchData, ply: usize,
     best_score
 }
 
-fn quiesce(data: &mut SearchData, ply: usize, _: Score, _: Score, _: SearchDepth) -> Score {
+fn quiesce(data: &mut SearchData, ply: usize,
+           mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
     // don't even bother with this until we have proper move selection code.
     data.init_ply(ply);
-    data.pos.material_score()
+    if data.state.load() == STOPPING_STATE { return score::DRAW_SCORE; }
+    debug_assert!(score_is_valid(alpha) && score_is_valid(beta));
+    alpha = max!(alpha, score::mated_in(ply));
+    beta = min!(beta, score::mate_in(ply));
+    if alpha >= beta { return alpha }
+    // TODO: trivial draw detection
+
+    let mut best_score = score::MIN_SCORE;
+    if data.pos.checkers() != 0 {
+        best_score = data.pos.material_score();
+        if best_score >= alpha {
+            alpha = best_score;
+            debug_assert!(score_is_valid(best_score));
+            if best_score >= beta { return best_score }
+        }
+    }
+
+    let ad = AttackData::new(&data.pos);
+    let undo = UndoState::undo_state(&data.pos);
+    let mut num_moves = 0;
+
+    let mut selector = MoveSelector::new(&data.pos, depth);
+    while let Some(m) = selector.next(&data.pos, &ad) {
+        if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
+        data.pos.do_move(m, &ad);
+        data.stats.nodes += 1;
+        num_moves += 1;
+
+        // TODO: pruning
+        let score = -quiesce(data, ply + 1, -beta, -alpha, depth - ONE_PLY_F);
+        debug_assert!(score_is_valid(score));
+        data.pos.undo_move(m, &undo);
+
+        // If we're aborting, the score from the last move shouldn't be trusted,
+        // since we didn't finish searching it, so bail out without updating
+        // pv, bounds, etc.
+        if data.state.load() == STOPPING_STATE { return score::DRAW_SCORE; }
+        if score > best_score {
+            best_score = score;
+            if score > alpha {
+                alpha = score;
+                data.update_pv(ply, m);
+            }
+            if score >= beta { break }
+        }
+    }
+    // Detect checkmate. We can't find stalemate because we don't reliably generate
+    // quiet moves, but evasion movegen is always exhaustive.
+    if num_moves == 0 && data.pos.checkers() != 0 { return score::mated_in(ply) }
+    debug_assert!(score_is_valid(best_score));
+    best_score
 }
