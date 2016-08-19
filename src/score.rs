@@ -60,8 +60,9 @@ const PT_PHASE: [Phase; 8] = [
     NONE.mg as Phase, NONE.mg as Phase];
 const MAX_PHASE: Phase = 2 * (2 * (KNIGHT.mg + BISHOP.mg + ROOK.mg) + QUEEN.mg) as Phase;
 
+const MG_MATERIAL: [Score; 8] = [NONE.mg, PAWN.mg, KNIGHT.mg, BISHOP.mg, ROOK.mg, QUEEN.mg, NONE.mg, NONE.mg];
 pub fn mg_material(pt: PieceType) -> Score {
-    PIECE_SCORE[pt.index()].mg
+    MG_MATERIAL[pt.index()]
 }
 
 impl PhaseScore {
