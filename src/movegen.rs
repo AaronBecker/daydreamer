@@ -323,7 +323,6 @@ const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Loud,
                                                    SelectionPhase::Done];
 const EVASION_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Evasions, SelectionPhase::Done];
 const QUIESCENCE_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Loud,
-                                                       SelectionPhase::Quiet,
                                                        //SelectionPhase::BadCaptures,
                                                        SelectionPhase::Done];
 

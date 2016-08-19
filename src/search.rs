@@ -17,7 +17,7 @@ use score::{Score, score_is_valid, is_mate_score};
 // depths are all integers to accommodate depth-indexed arrays.
 pub type SearchDepth = f32;
 pub const ONE_PLY_F: SearchDepth = 1.;
-pub const MAX_PLY_F: SearchDepth = 128.;
+pub const MAX_PLY_F: SearchDepth = 127.;
 
 pub fn is_quiescence_depth(sd: SearchDepth) -> bool {
     sd < ONE_PLY_F
@@ -25,7 +25,7 @@ pub fn is_quiescence_depth(sd: SearchDepth) -> bool {
 
 pub type Depth = usize;
 pub const ONE_PLY: Depth = 1;
-pub const MAX_PLY: Depth = 128;
+pub const MAX_PLY: Depth = 127;
 
 // EngineState is an atomic value that tracks engine state. It's atomic so that
 // we can safely signal the search to stop based on external inputs without
@@ -170,7 +170,7 @@ pub struct SearchData {
     pub stats: SearchStats,
     pub state: EngineState,
     pub uci_channel: mpsc::Receiver<String>,
-    pub pv_stack: [[Move; MAX_PLY]; MAX_PLY],
+    pub pv_stack: [[Move; MAX_PLY + 1]; MAX_PLY + 1],
 }
 
 impl SearchData {
@@ -186,7 +186,7 @@ impl SearchData {
             state: EngineState::new(),
             uci_channel: rx,
             //search_stack: vec,
-            pv_stack: [[NO_MOVE; MAX_PLY]; MAX_PLY],
+            pv_stack: [[NO_MOVE; MAX_PLY + 1]; MAX_PLY + 1],
         }
     }
 
@@ -194,7 +194,7 @@ impl SearchData {
       self.root_moves = Vec::new();
       self.current_depth = 0;
       self.stats = SearchStats::new();
-      self.pv_stack = [[NO_MOVE; MAX_PLY]; MAX_PLY];
+      self.pv_stack = [[NO_MOVE; MAX_PLY + 1]; MAX_PLY + 1];
     }
 
     pub fn should_stop(&self, depth: Depth, nodes: u64) -> bool {
@@ -477,17 +477,17 @@ fn search(data: &mut SearchData, ply: usize,
 
 fn quiesce(data: &mut SearchData, ply: usize,
            mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
-    // don't even bother with this until we have proper move selection code.
-    data.init_ply(ply);
     if data.state.load() == STOPPING_STATE { return score::DRAW_SCORE; }
     debug_assert!(score_is_valid(alpha) && score_is_valid(beta));
     alpha = max!(alpha, score::mated_in(ply));
     beta = min!(beta, score::mate_in(ply));
     if alpha >= beta { return alpha }
     // TODO: trivial draw detection
+    if ply >= MAX_PLY { return score::DRAW_SCORE }
+    data.init_ply(ply);
 
     let mut best_score = score::MIN_SCORE;
-    if data.pos.checkers() != 0 {
+    if data.pos.checkers() == 0 {
         best_score = data.pos.material_score();
         if best_score >= alpha {
             alpha = best_score;
