@@ -85,6 +85,11 @@ impl PieceType {
         self as usize
     }
 
+    pub fn next(self) -> PieceType {
+        debug_assert!(self.index() < PieceType::AllPieces.index());
+        unsafe { mem::transmute(self as u8 + 1) }
+    }
+
     pub fn from_u8(x: u8) -> PieceType {
         debug_assert!(x <= PieceType::AllPieces as u8);
         unsafe { mem::transmute(x) }

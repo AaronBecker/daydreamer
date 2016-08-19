@@ -289,10 +289,9 @@ impl Position {
         &self.possible_castles[c.index()][side]
     }
 
-    // attackers gives the set of pieces attacking sq, regardless of color.
-    pub fn attackers(&self, sq: Square) -> Bitboard {
+    // attackers gives the set of pieces in occ attacking sq, regardless of color.
+    pub fn masked_attackers(&self, sq: Square, occ: Bitboard) -> Bitboard {
         let mut b: Bitboard = 0;
-        let occ = self.all_pieces();
         b |= bitboard::white_pawn_attacks(sq) & self.pieces(Piece::BP);
         b |= bitboard::black_pawn_attacks(sq) & self.pieces(Piece::WP);
         b |= bitboard::knight_attacks(sq) & self.pieces_of_type(PieceType::Knight);
@@ -301,6 +300,11 @@ impl Position {
         b |= bitboard::rook_attacks(sq, occ) & (self.pieces_of_type(PieceType::Rook) | queens);
         b |= bitboard::king_attacks(sq) & self.pieces_of_type(PieceType::King);
         b
+    }
+
+    // attackers gives the set of pieces attacking sq, regardless of color.
+    pub fn attackers(&self, sq: Square) -> Bitboard {
+        self.masked_attackers(sq, self.all_pieces())
     }
 
     fn find_checkers(&self) -> Bitboard {
@@ -813,6 +817,85 @@ impl Position {
         return castle;
     }
 
+    // static_exchange_eval counts all attackers and defenders of a square to
+    // determine whether or not a capture is advantageous. Captures with a positive
+    // static eval are favorable. Does not take into account pins, checks, and so
+    // on. Handles en passant correctly. Doesn't handle promotions.
+    pub fn static_exchange_eval(&self, m: Move) -> Score {
+        // Just bail out on castles. Doing the work to handle them in a principled
+        // way seems like a waste since there are almost never relevant capture
+        // followups anyway..
+        if m.is_castle() { return 0; }
+
+        let sq = m.to();
+        let attacker = m.piece();
+        let mut captured = m.capture().piece_type();
+        let mut us = attacker.color();
+        let mut gain = [0; 32];
+        gain[0] = score::mg_material(captured);
+
+        let mut occ = self.all_pieces() ^ bitboard::bb(m.from());
+        if m.is_en_passant() {
+            occ ^= bitboard::bb(sq.pawn_push(us.flip()));
+        }
+
+        let mut attackers = self.masked_attackers(sq, occ) & occ;
+        us = us.flip();
+        let mut active_attackers = attackers & self.pieces_of_color(us);
+        captured = attacker.piece_type();
+        let mut gain_index = 1;
+
+        // Now play out all possible captures in order of increasing piece value
+        // while alternating colors. Whenever a capture is made, add any x-ray
+        // attackers that removal of the piece would reveal.
+        while active_attackers != 0 {
+            // Score the potential capture under the assumption that it's defended.
+            gain[gain_index] = score::mg_material(captured) - gain[gain_index - 1];
+
+            // Find the next lowest valued attacker.
+            captured = PieceType::Pawn;
+            let mut candidates = active_attackers & self.pieces_of_type(captured);
+            while candidates == 0 {
+                captured = captured.next();
+                candidates = active_attackers & self.pieces_of_type(captured);
+            }
+            debug_assert!(captured.index() <= PieceType::King.index());
+            // Next attacker is lsb of candidates. Remove it.
+            // Note: x & -x isolates the least significant bit of x.
+            occ ^= candidates & candidates.wrapping_neg();
+
+            // Add in revealed x-ray attackers.
+            attackers |= bitboard::bishop_attacks(sq, occ) &
+                (self.pieces_of_type(PieceType::Bishop) | self.pieces_of_type(PieceType::Queen));
+            attackers |= bitboard::rook_attacks(sq, occ) &
+                (self.pieces_of_type(PieceType::Rook) | self.pieces_of_type(PieceType::Queen));
+            attackers &= occ;
+
+            us = us.flip();
+            active_attackers = attackers & self.pieces_of_color(us);
+
+            if captured == PieceType::King && active_attackers != 0 { break }
+            gain_index += 1;
+        }
+
+        // Now that gain array is set up, scan back through to get score.
+        while gain_index > 1 {
+            gain_index -= 1;
+            gain[gain_index - 1] = min!(-gain[gain_index], gain[gain_index - 1]);
+        }
+        gain[0]
+    }
+
+    // static_exchange_sign just tells us whether an exchange is ok (>= 0),
+    // or bad (< 0). We can often skip the expensive calculations this way.
+    pub fn static_exchange_sign(&self, m: Move) -> Score {
+        let attacker_type = m.piece().piece_type();
+        if attacker_type == PieceType::King ||
+                attacker_type.index() <= m.capture().piece_type().index() {
+            return 1;
+        }
+        self.static_exchange_eval(m)
+    }
 }
 
 impl ::std::fmt::Display for Position {
@@ -1056,5 +1139,39 @@ mod tests {
                   Move::new(E2, E1, Piece::WK, Piece::NoPiece), false);
         test_case("r2q3r/p1ppkpb1/bn2pnp1/3PN3/NB2P3/5Q1p/PPP1BPPP/1R2K2R b K - 0 3",
                   Move::new(C7, C5, Piece::BP, Piece::NoPiece), true);
+    });
+
+    chess_test!(static_exchange_eval, {
+        use score::mg_material;
+        let test_case = |fen, uci, want| {
+            let pos = Position::from_fen(fen);
+            let ad = AttackData::new(&pos);
+            let m = Move::from_uci(&pos, &ad, uci);
+            let see = pos.static_exchange_eval(m);
+            assert_eq!(see, want);
+            if see >= 0 {
+                assert!(pos.static_exchange_sign(m) >= 0);
+            } else {
+                assert!(pos.static_exchange_sign(m) < 0);
+            }
+        };
+        let (p, n, b, r, q) = (mg_material(PieceType::Pawn),
+                               mg_material(PieceType::Knight),
+                               mg_material(PieceType::Bishop),
+                               mg_material(PieceType::Rook),
+                               mg_material(PieceType::Queen));
+        test_case("1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - -", "e1e5", p);
+        test_case("1k1r4/1pp4p/p2p4/4p3/8/P5P1/1PP4P/2K1R3 w - - 0 1", "e1e5", p - r);
+        test_case("1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - - ", "d3e5", p - n);
+        test_case("k6K/3p4/4b3/8/3N4/8/8/4R3 w - -", "d4e6", p + b - n);
+        test_case("k6K/3p4/4b3/8/3N4/8/8/4R3 w - -", "e1e6", p + b - r);
+        test_case("k6K/3p4/8/8/3N4/8/8/4R3 w - -", "d4e6", p - n);
+        test_case("8/4k3/8/8/RrR1N2r/8/5K2/8 b - - 11 1", "h4e4", n - r);
+        test_case("8/4k3/8/8/RrR1N2q/8/5K2/8 b - - 11 1", "h4e4", n - q);
+        test_case("2b3k1/1p3ppp/8/pP6/8/2PB4/5PPP/6K1 w - a6 0 2", "b5a6", 0);
+        test_case("2b3k1/1p3ppp/3R4/pP6/8/2PB4/5PPP/6K1 w - a6 0 1", "b5a6", p);
+        test_case("2b3k1/1p3ppp/8/pP6/8/2PB4/R4PPP/6K1 w - a6 0 1", "b5a6", p);
+        test_case("8/8/8/4k3/r3P3/4K3/8/4R3 b - - 0 1", "a4e4", p);
+        test_case("8/8/8/4k3/r3P1R1/4K3/8/8 b - - 0 1", "a4e4", p - r);
     });
 }
