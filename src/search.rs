@@ -4,7 +4,7 @@ use std::time;
 use std::time::{Duration, Instant};
 
 use board;
-use movegen;
+use movegen::MoveSelector;
 use movement::{Move, NO_MOVE};
 use options;
 use position;
@@ -18,6 +18,10 @@ use score::{Score, score_is_valid, is_mate_score};
 pub type SearchDepth = f32;
 pub const ONE_PLY_F: SearchDepth = 1.;
 pub const MAX_PLY_F: SearchDepth = 128.;
+
+pub fn is_quiescence_depth(sd: SearchDepth) -> bool {
+   sd < ONE_PLY_F
+}
 
 pub type Depth = usize;
 pub const ONE_PLY: Depth = 1;
@@ -240,7 +244,10 @@ pub fn go(data: &mut SearchData) {
    let ad = AttackData::new(&data.pos);
    let mut moves = data.constraints.searchmoves.clone();
    if moves.len() == 0 {
-      movegen::gen_legal(&data.pos, &ad, &mut moves);
+      let mut ms = MoveSelector::legal();
+      while let Some(m) = ms.next(&data.pos, &ad) {
+         moves.push(m);
+      }
    }
    if moves.len() == 0 {
       println!("info string no moves to search");
@@ -405,7 +412,7 @@ fn search(data: &mut SearchData, ply: usize,
           mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
     data.init_ply(ply);
     if data.state.load() == STOPPING_STATE { return score::DRAW_SCORE; }
-    if depth < ONE_PLY_F {
+    if is_quiescence_depth(depth) {
         return quiesce(data, ply, alpha, beta, depth);
     }
 
@@ -423,13 +430,12 @@ fn search(data: &mut SearchData, ply: usize,
 
     // TODO: proper move ordering interface, plus generate pseudo-legal moves
     // and check legality afterwards.
-    let moves = &mut Vec::with_capacity(128);
-    movegen::gen_legal(&data.pos, &ad, moves);
-    for m in moves.iter() {
+    let mut selector = MoveSelector::legal();
+    while let Some(m) = selector.next(&data.pos, &ad) {
         num_moves += 1;
         // TODO: pruning, futility, depth extension
         data.stats.nodes += 1;
-        data.pos.do_move(*m, &ad);
+        data.pos.do_move(m, &ad);
         let mut score = score::MIN_SCORE;
         let mut full_search = open_window && num_moves == 1;
         if !full_search {
@@ -441,7 +447,7 @@ fn search(data: &mut SearchData, ply: usize,
             score = -search(data, ply + 1, -beta, -alpha, depth - ONE_PLY_F);
         }
         debug_assert!(score_is_valid(score));
-        data.pos.undo_move(*m, &undo);
+        data.pos.undo_move(m, &undo);
 
         // If we're aborting, the score from the last move shouldn't be trusted,
         // since we didn't finish searching it, so bail out without updating
@@ -451,7 +457,7 @@ fn search(data: &mut SearchData, ply: usize,
             best_score = score;
             if score > alpha {
                 alpha = score;
-                data.update_pv(ply, *m);
+                data.update_pv(ply, m);
             }
             if score >= beta { break }
         }

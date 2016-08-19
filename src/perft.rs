@@ -1,5 +1,5 @@
 use position::{Position, AttackData, UndoState};
-use movegen::gen_legal;
+use movegen::MoveSelector;
 
 pub fn perft(pos: &mut Position, depth: u32) -> u64 {
     internal_perft(pos, depth, false)
@@ -15,25 +15,27 @@ fn internal_perft(pos: &mut Position, depth: u32, divide: bool) -> u64 {
     }
 
     let ad = AttackData::new(pos);
-    let moves = &mut Vec::with_capacity(128);
-    gen_legal(pos, &ad, moves);
+    let mut ms = MoveSelector::legal();
     if depth == 1 {
-        return moves.len() as u64;
+        let mut count = 0;
+        while let Some(_) = ms.next(&pos, &ad) {
+            count += 1;
+        }
+        return count;
     }
 
     let mut count = 0;
     let undo = UndoState::undo_state(&pos);
-    for mv in moves.iter() {
-        pos.do_move(*mv, &ad);
+    while let Some(mv) = ms.next(&pos, &ad) {
+        pos.do_move(mv, &ad);
         let subtree = perft(pos, depth - 1);
-        pos.undo_move(*mv, &undo);
+        pos.undo_move(mv, &undo);
         if divide {
             println!("{:<5} {:15}", mv.to_string(), subtree);
         }
         count += subtree;
     }
     return count;
-
 }
 
 #[cfg(test)]

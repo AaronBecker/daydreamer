@@ -2,7 +2,7 @@ use board::*;
 use options;
 use position::Position;
 use position::AttackData;
-use movegen::gen_legal;
+use movegen::MoveSelector;
 
 // Move is a 4-byte quantity that encodes source and destination square, the
 // moved piece, any captured piece, the promotion value (if any), and flags to
@@ -104,11 +104,10 @@ impl Move {
 
     pub fn from_uci(pos: &Position, ad: &AttackData, uci: &str) -> Move {
         let uci_lower = uci.to_lowercase();
-        let mut moves = Vec::new();
-        gen_legal(pos, &ad, &mut moves);
-        for m in moves.iter() {
+        let mut ms = MoveSelector::legal();
+        while let Some(m) = ms.next(pos, ad) {
             if m.to_string() == uci_lower {
-                return *m;
+                return m;
             }
         }
         NO_MOVE

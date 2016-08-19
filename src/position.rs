@@ -1,7 +1,7 @@
 use board::*;
 use bitboard;
 use bitboard::Bitboard;
-use movegen;
+use movegen::MoveSelector;
 use movement;
 use movement::Move;
 use options;
@@ -383,10 +383,9 @@ impl Position {
         s.push_str(format!("{}\n", self).as_str());
 
         let ad = AttackData::new(self);
-        let moves = &mut Vec::new();
-        movegen::gen_legal(self, &ad, moves);
+        let mut ms = MoveSelector::legal();
 
-        for m in moves.iter() {
+        while let Some(m) = ms.next(&self, &ad) {
             s.push_str(m.to_string().as_str());
             s.push(' ');
         }

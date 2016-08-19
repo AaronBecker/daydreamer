@@ -1,10 +1,27 @@
+use bitboard;
+use bitboard::Bitboard;
 use board;
 use board::*;
 use position;
 use position::Position;
 use movement::Move;
-use bitboard;
-use bitboard::Bitboard;
+use score;
+use score::Score;
+use search;
+
+struct ScoredMove {
+    m: Move,
+    s: Score,
+}
+
+impl ScoredMove {
+    pub fn new(m: Move) -> ScoredMove {
+        ScoredMove {
+            m: m,
+            s: 0,
+        }
+    }
+}
 
 // Moves are categorized as loud or quiet; in non-check situations they're
 // generated separately and loud moves have priority in search ordering.
@@ -21,17 +38,17 @@ enum GenerationType {
     Both,
 }
 
-fn add_moves(pos: &Position, from: Square, mut bb: Bitboard, moves: &mut Vec<Move>) {
+fn add_moves(pos: &Position, from: Square, mut bb: Bitboard, moves: &mut Vec<ScoredMove>) {
     while bb != 0 {
         let to = bitboard::pop_square(&mut bb);
-        moves.push(Move::new(from, to, pos.piece_at(from), pos.piece_at(to)));
+        moves.push(ScoredMove::new(Move::new(from, to, pos.piece_at(from), pos.piece_at(to))));
     }
 }
 
 fn add_slider_moves(pos: &Position,
                     mut source_bb: Bitboard,
                     mask: Bitboard,
-                    moves: &mut Vec<Move>,
+                    moves: &mut Vec<ScoredMove>,
                     attack_fn: fn(Square, Bitboard) -> Bitboard) {
     while source_bb != 0 {
         let from = bitboard::pop_square(&mut source_bb);
@@ -43,7 +60,7 @@ fn add_slider_moves(pos: &Position,
 fn add_non_slider_moves(pos: &Position,
                         mut source_bb: Bitboard,
                         mask: Bitboard,
-                        moves: &mut Vec<Move>,
+                        moves: &mut Vec<ScoredMove>,
                         attack_fn: fn(Square) -> Bitboard) {
     while source_bb != 0 {
         let from = bitboard::pop_square(&mut source_bb);
@@ -52,7 +69,7 @@ fn add_non_slider_moves(pos: &Position,
     }
 }
 
-fn add_piece_moves(pos: &Position, targets: Bitboard, moves: &mut Vec<Move>) {
+fn add_piece_moves(pos: &Position, targets: Bitboard, moves: &mut Vec<ScoredMove>) {
     let our_pieces = pos.our_pieces();
     add_non_slider_moves(pos,
                          our_pieces & pos.pieces_of_type(PieceType::Knight),
@@ -81,15 +98,15 @@ fn add_piece_moves(pos: &Position, targets: Bitboard, moves: &mut Vec<Move>) {
                      bitboard::queen_attacks);
 }
 
-pub fn add_piece_captures(pos: &Position, moves: &mut Vec<Move>) {
+fn add_piece_captures(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_moves(pos, pos.their_pieces(), moves);
 }
 
-pub fn add_piece_non_captures(pos: &Position, moves: &mut Vec<Move>) {
+fn add_piece_non_captures(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_moves(pos, !pos.all_pieces(), moves);
 }
 
-pub fn add_castles(pos: &Position, moves: &mut Vec<Move>) {
+fn add_castles(pos: &Position, moves: &mut Vec<ScoredMove>) {
     let (us, them) = (pos.us(), pos.them());
     for side in 0..2 {
         if pos.castle_rights() & (position::WHITE_OO << (side * 2) << us.index()) == 0 {
@@ -116,7 +133,7 @@ pub fn add_castles(pos: &Position, moves: &mut Vec<Move>) {
             }
         }
         if !failed {
-            moves.push(Move::new_castle(ci.king, ci.rook, pos.piece_at(ci.king)));
+            moves.push(ScoredMove::new(Move::new_castle(ci.king, ci.rook, pos.piece_at(ci.king))));
         }
     }
 }
@@ -126,18 +143,18 @@ fn add_pawn_promotions(pos: &Position,
                        mut mask: Bitboard,
                        d: Delta,
                        gt: GenerationType,
-                       moves: &mut Vec<Move>) {
+                       moves: &mut Vec<ScoredMove>) {
     mask &= bitboard::shift(pawns, d);
     while mask != 0 {
         let to = bitboard::pop_square(&mut mask);
         let from = board::shift_sq(to, -d);
         if gt != GenerationType::Quiet {
-            moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Queen));
+            moves.push(ScoredMove::new(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Queen)));
         }
         if gt != GenerationType::Loud {
-            moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Rook));
-            moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Bishop));
-            moves.push(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Knight));
+            moves.push(ScoredMove::new(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Rook)));
+            moves.push(ScoredMove::new(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Bishop)));
+            moves.push(ScoredMove::new(Move::new_promotion(from, to, pos.piece_at(from), pos.piece_at(to), PieceType::Knight)));
         }
     }
 }
@@ -146,19 +163,19 @@ fn add_pawn_non_promotions(pos: &Position,
                            pawns: Bitboard,
                            mut mask: Bitboard,
                            d: Delta,
-                           moves: &mut Vec<Move>) {
+                           moves: &mut Vec<ScoredMove>) {
     mask &= bitboard::shift(pawns, d);
     while mask != 0 {
         let to = bitboard::pop_square(&mut mask);
         let from = board::shift_sq(to, -d);
-        moves.push(Move::new(from, to, pos.piece_at(from), pos.piece_at(to)));
+        moves.push(ScoredMove::new(Move::new(from, to, pos.piece_at(from), pos.piece_at(to))));
     }
 }
 
 fn add_masked_pawn_moves(pos: &Position,
                          mask: Bitboard,
                          gt: GenerationType,
-                         moves: &mut Vec<Move>) {
+                         moves: &mut Vec<ScoredMove>) {
     let (us, them) = (pos.us(), pos.them());
     let up = if us == Color::White { NORTH } else { SOUTH };
     let pawns = pos.pieces_of_color_and_type(us, PieceType::Pawn);
@@ -194,22 +211,23 @@ fn add_masked_pawn_moves(pos: &Position,
     if gt != GenerationType::Quiet && pos.ep_square() != Square::NoSquare {
         let mut bb = capture_from_mask & bitboard::pawn_attacks(them, pos.ep_square());
         while bb != 0 {
-            moves.push(Move::new_en_passant(bitboard::pop_square(&mut bb),
-                                            pos.ep_square(),
-                                            Piece::new(us, PieceType::Pawn),
-                                            Piece::new(them, PieceType::Pawn)));
+            moves.push(ScoredMove::new(
+                    Move::new_en_passant(bitboard::pop_square(&mut bb),
+                                         pos.ep_square(),
+                                         Piece::new(us, PieceType::Pawn),
+                                         Piece::new(them, PieceType::Pawn))));
         }
     }
 }
 
-pub fn add_pawn_moves(pos: &Position, moves: &mut Vec<Move>) {
+fn add_pawn_moves(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_masked_pawn_moves(pos, !0, GenerationType::Both, moves);
 }
 
 // gen_evasions appends all available pseudo-legal moves to moves. It is only
 // valid when the side to move is in check, and it is the only move generation
 // function that should be called under those circumstances.
-pub fn gen_evasions(pos: &Position, moves: &mut Vec<Move>) {
+fn gen_evasions(pos: &Position, moves: &mut Vec<ScoredMove>) {
     let us = pos.us();
     let ksq = pos.king_sq(us);
     let (mut slide_attack, mut num_checkers) = (0, 0);
@@ -259,7 +277,7 @@ pub fn gen_evasions(pos: &Position, moves: &mut Vec<Move>) {
     add_masked_pawn_moves(pos, mask, GenerationType::Both, moves);
 }
 
-pub fn gen_legal(pos: &Position, ad: &position::AttackData, moves: &mut Vec<Move>) {
+fn gen_legal(pos: &Position, ad: &position::AttackData, moves: &mut Vec<ScoredMove>) {
     if pos.checkers() != 0 {
         gen_evasions(pos, moves);
     } else {
@@ -270,233 +288,201 @@ pub fn gen_legal(pos: &Position, ad: &position::AttackData, moves: &mut Vec<Move
     }
 
     moves.retain(|m| {
-        if ad.pinned == 0 && m.piece().piece_type() != PieceType::King && !m.is_en_passant() {
+        if ad.pinned == 0 && m.m.piece().piece_type() != PieceType::King && !m.m.is_en_passant() {
             true
         } else {
-            pos.pseudo_move_is_legal(*m, ad)
+            pos.pseudo_move_is_legal(m.m, ad)
         }
     });
 }
 
-pub fn gen_loud(pos: &Position, moves: &mut Vec<Move>) {
+fn gen_loud(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_captures(pos, moves);
     add_masked_pawn_moves(pos, !0, GenerationType::Loud, moves);
 }
 
-pub fn gen_quiet(pos: &Position, moves: &mut Vec<Move>) {
+fn gen_quiet(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_non_captures(pos, moves);
     add_masked_pawn_moves(pos, !0, GenerationType::Quiet, moves);
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum SelectionPhase {
+    Legal,
+    Loud,
+    Quiet,
+    //BadCaptures,
+    Evasions,
+    Done,
+}
+
+const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Legal, SelectionPhase::Done];
+const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Loud,
+                                                   SelectionPhase::Quiet,
+                                                   //SelectionPhase::BadCaptures,
+                                                   SelectionPhase::Done];
+const EVASION_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Evasions, SelectionPhase::Done];
+const QUIESCENCE_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Loud,
+                                                       SelectionPhase::Quiet,
+                                                       //SelectionPhase::BadCaptures,
+                                                       SelectionPhase::Done];
+
+pub struct MoveSelector {
+    moves: Vec<ScoredMove>,
+    //bad_captures: Vec<ScoredMove>,
+    phases: &'static [SelectionPhase],
+    phase_index: usize,
+}
+
+impl MoveSelector {
+    pub fn new(pos: &Position, d: search::SearchDepth) -> MoveSelector {
+        MoveSelector {
+            moves: Vec::with_capacity(128),  // TODO: check the performance implications of a
+                                             // smaller allocation.
+                                             // Maybe also consider putting everything in a big
+                                             // fixed buffer to avoid any allocations at all.
+            //bad_captures: Vec::with_capacity(32),
+            phases: if pos.checkers() != 0 {
+                        EVASION_PHASES
+                    } else if search::is_quiescence_depth(d) {
+                        QUIESCENCE_PHASES
+                    } else {
+                        NORMAL_PHASES
+                    },
+            phase_index: 0,
+        }
+    }
+
+    pub fn legal() -> MoveSelector {
+        MoveSelector {
+            moves: Vec::with_capacity(128),
+            //bad_captures: Vec::new(),
+            phases: LEGAL_PHASES,
+            phase_index: 0,
+        }
+    }
+
+    fn gen(&mut self, pos: &Position, ad: &position::AttackData) {
+        match self.phases[self.phase_index] {
+            SelectionPhase::Legal => gen_legal(pos, ad, &mut self.moves),
+            SelectionPhase::Loud => gen_loud(pos, &mut self.moves),
+            SelectionPhase::Quiet => gen_quiet(pos, &mut self.moves),
+            //SelectionPhase::BadCaptures => self.moves = self.bad_captures,
+            SelectionPhase::Evasions => gen_evasions(pos, &mut self.moves),
+            SelectionPhase::Done => panic!("move selection phase error"),
+        }
+    }
+
+    // Once we have an SEE implementation we can tell the difference between
+    // good and bad captures and can update a bunch of this code.
+    fn order(&mut self) {
+        // Note that we want the moves ordered least to best, so we can
+        // efficiently pop moves of the end of the vector.
+        let phase = self.phases[self.phase_index];
+        if phase == SelectionPhase::Quiet {
+            return;
+        }
+        // BadCaptures handling
+        for m in self.moves.iter_mut() {
+            m.s = score::mg_material(m.m.capture().piece_type()) -
+                m.m.piece().piece_type().index() as Score;
+        }
+        // TODO: this is probably pretty inefficient because it does an
+        // allocation and this is a very small list. Consider writing a
+        // small insertion sort implementation.
+        self.moves.sort_by_key(|x| x.s);
+    }
+
+    pub fn next(&mut self, pos: &Position, ad: &position::AttackData) -> Option<Move> {
+        while self.moves.len() == 0 {
+            if self.phases[self.phase_index] == SelectionPhase::Done {
+                return None
+            }
+            self.gen(pos, ad);
+            self.order();
+            self.phase_index += 1;
+        }
+
+        Some(self.moves.pop().unwrap().m)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use board::*;
-    use board::Square::*;
-    use movement::*;
-    use position::Position;
+    use movement::Move;
+    use position::{AttackData, Position};
 
-    chess_test!(test_add_piece_moves, {
-        let test_case = |fen, expect_captures: &mut Vec<Move>, expect_non_captures: &mut Vec<Move>| {
+    chess_test!(test_legal_generation, {
+        let test_case = |fen, expect_moves: &Vec<&str>| {
             let pos = Position::from_fen(fen);
-            expect_captures.sort_by_key(|m| { m.as_u32() });
-            expect_non_captures.sort_by_key(|m| { m.as_u32() });
+            let ad = AttackData::new(&pos);
             let mut moves = Vec::new();
-            add_piece_captures(&pos, &mut moves);
+            for uci in expect_moves.iter() {
+                moves.push(Move::from_uci(&pos, &ad, *uci));
+            }
             moves.sort_by_key(|m| { m.as_u32() });
-            assert_eq!(*expect_captures, moves);
 
-            moves.clear();
-            add_piece_non_captures(&pos, &mut moves);
-            moves.sort_by_key(|m| { m.as_u32() });
-            assert_eq!(*expect_non_captures, moves);
+            let mut ms = MoveSelector::legal();
+            let mut got = Vec::new();
+            while let Some(m) = ms.next(&pos, &ad) {
+                got.push(m);
+            }
+            got.sort_by_key(|m| { m.as_u32() });
+            assert_eq!(moves, got);
         };
         test_case("rb2k1Nr/7p/5P1b/1qp5/8/2P5/P2P3P/RN2K1nR w KQkq - 0 1",
-                  &mut vec!(Move::new(H1, G1, Piece::WR, Piece::BN),
-                            Move::new(G8, H6, Piece::WN, Piece::BB)),
-                  &mut vec!(Move::new(B1, A3, Piece::WN, Piece::NoPiece),
-                            Move::new(G8, E7, Piece::WN, Piece::NoPiece),
-                            Move::new(E1, D1, Piece::WK, Piece::NoPiece),
-                            Move::new(E1, E2, Piece::WK, Piece::NoPiece),
-                            Move::new(E1, F2, Piece::WK, Piece::NoPiece),
-                            Move::new(E1, F1, Piece::WK, Piece::NoPiece)));
-
+                  &mut vec!("g8h6", "h1g1", "b1a3", "g8e7", "e1d1", "e1f2", "a2a3",
+                            "d2d3", "h2h3", "c3c4", "f6f7", "a2a4", "d2d4", "h2h4"));
         test_case("rb2k1Nr/7p/5P1b/1qp5/8/2P5/P2P3P/RN2K1nR b KQkq - 0 1",
-                  &mut vec!(Move::new(A8, A2, Piece::BR, Piece::WP),
-                            Move::new(B5, B1, Piece::BQ, Piece::WN),
-                            Move::new(B8, H2, Piece::BB, Piece::WP),
-                            Move::new(H8, G8, Piece::BR, Piece::WN),
-                            Move::new(H6, D2, Piece::BB, Piece::WP)),
-                  &mut vec!(Move::new(A8, A7, Piece::BR, Piece::NoPiece),
-                            Move::new(A8, A6, Piece::BR, Piece::NoPiece),
-                            Move::new(A8, A5, Piece::BR, Piece::NoPiece),
-                            Move::new(A8, A4, Piece::BR, Piece::NoPiece),
-                            Move::new(A8, A3, Piece::BR, Piece::NoPiece),
-                            Move::new(B8, A7, Piece::BB, Piece::NoPiece),
-                            Move::new(B8, C7, Piece::BB, Piece::NoPiece),
-                            Move::new(B8, D6, Piece::BB, Piece::NoPiece),
-                            Move::new(B8, E5, Piece::BB, Piece::NoPiece),
-                            Move::new(B8, F4, Piece::BB, Piece::NoPiece),
-                            Move::new(B8, G3, Piece::BB, Piece::NoPiece),
-                            Move::new(G1, E2, Piece::BN, Piece::NoPiece),
-                            Move::new(G1, F3, Piece::BN, Piece::NoPiece),
-                            Move::new(G1, H3, Piece::BN, Piece::NoPiece),
-                            Move::new(B5, A4, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, A6, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, A5, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, B6, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, B7, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, B4, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, B3, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, B2, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, C4, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, D3, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, E2, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, F1, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, C6, Piece::BQ, Piece::NoPiece),
-                            Move::new(B5, D7, Piece::BQ, Piece::NoPiece),
-                            Move::new(H6, G7, Piece::BB, Piece::NoPiece),
-                            Move::new(H6, F8, Piece::BB, Piece::NoPiece),
-                            Move::new(H6, G5, Piece::BB, Piece::NoPiece),
-                            Move::new(H6, F4, Piece::BB, Piece::NoPiece),
-                            Move::new(H6, E3, Piece::BB, Piece::NoPiece),
-                            Move::new(E8, D8, Piece::BK, Piece::NoPiece),
-                            Move::new(E8, F8, Piece::BK, Piece::NoPiece),
-                            Move::new(E8, D7, Piece::BK, Piece::NoPiece),
-                            Move::new(E8, E7, Piece::BK, Piece::NoPiece),
-                            Move::new(E8, F7, Piece::BK, Piece::NoPiece)));
-    });
-
-    chess_test!(test_add_castles, {
-        let test_case = |fen, expect: &mut Vec<Move>| {
-            let pos = Position::from_fen(fen);
-            expect.sort_by_key(|m| { m.as_u32() });
-            let mut moves = Vec::new();
-            add_castles(&pos, &mut moves);
-            moves.sort_by_key(|m| { m.as_u32() });
-            assert_eq!(*expect, moves);
-        };
+                  &mut vec!("h6d2", "b8h2", "a8a2", "h8g8", "b5b1", "g1e2", "g1f3", "g1h3",
+                            "h6e3", "h6f4", "h6g5", "h6g7", "h6f8", "b8g3", "b8f4", "b8e5",
+                            "b8d6", "b8a7", "b8c7", "a8a3", "a8a4", "a8a5", "a8a6", "a8a7",
+                            "b5f1", "b5b2", "b5e2", "b5b3", "b5d3", "b5a4", "b5b4", "b5c4",
+                            "b5a5", "b5a6", "b5b6", "b5c6", "b5b7", "b5d7", "e8d7", "e8f7",
+                            "e8d8", "e8f8", "c5c4"));
         test_case("4k3/8/8/8/8/8/8/R3K2R w KQ - 0 1",
-                  &mut vec!(Move::new_castle(E1, H1, Piece::WK),
-                            Move::new_castle(E1, A1, Piece::WK)));
+                  &mut vec!("e1g1", "e1c1", "a1b1", "a1c1", "a1d1", "a1a2", "a1a3", "a1a4",
+                            "a1a5", "a1a6", "a1a7", "a1a8", "h1f1", "h1g1", "h1h2", "h1h3",
+                            "h1h4", "h1h5", "h1h6", "h1h7", "h1h8", "e1d1", "e1f1", "e1d2",
+                            "e1e2", "e1f2"));
         test_case("4k3/8/8/8/8/8/8/R3K2R w KQ - 0 1",
-                  &mut vec!(Move::new_castle(E1, H1, Piece::WK),
-                            Move::new_castle(E1, A1, Piece::WK)));
+                  &mut vec!("e1g1", "e1c1", "a1b1", "a1c1", "a1d1", "a1a2", "a1a3", "a1a4",
+                            "a1a5", "a1a6", "a1a7", "a1a8", "h1f1", "h1g1", "h1h2", "h1h3",
+                            "h1h4", "h1h5", "h1h6", "h1h7", "h1h8", "e1d1", "e1f1", "e1d2",
+                            "e1e2", "e1f2"));
         test_case("4k3/8/8/8/8/8/8/R3K2R w Kq - 0 1",
-                  &mut vec!(Move::new_castle(E1, H1, Piece::WK)));
+                  &mut vec!("e1g1", "a1b1", "a1c1", "a1d1", "a1a2", "a1a3", "a1a4", "a1a5",
+                            "a1a6", "a1a7", "a1a8", "h1f1", "h1g1", "h1h2", "h1h3", "h1h4",
+                            "h1h5", "h1h6", "h1h7", "h1h8", "e1d1", "e1f1", "e1d2", "e1e2",
+                            "e1f2"));
         test_case("r3k2r/8/8/8/8/8/8/R3K2R b kq - 0 1",
-                  &mut vec!(Move::new_castle(E8, H8, Piece::BK),
-                            Move::new_castle(E8, A8, Piece::BK)));
-        test_case("r3k2r/8/8/2q5/8/8/8/R3K2R w KQkq - 0 1", &mut Vec::new());
-    });
-
-    chess_test!(test_add_pawn_moves, {
-        let test_case = |fen, expect: &mut Vec<Move>| {
-            let pos = Position::from_fen(fen);
-            expect.sort_by_key(|m| { m.as_u32() });
-            let mut moves = Vec::new();
-            add_pawn_moves(&pos, &mut moves);
-            moves.sort_by_key(|m| { m.as_u32() });
-            assert_eq!(*expect, moves);
-        };
+                  &mut vec!("e8g8", "e8c8", "a8a1", "h8h1", "a8a2", "a8a3", "a8a4", "a8a5",
+                            "a8a6", "a8a7", "a8b8", "a8c8", "a8d8", "h8h2", "h8h3", "h8h4",
+                            "h8h5", "h8h6", "h8h7", "h8f8", "h8g8", "e8d7", "e8e7", "e8f7",
+                            "e8d8", "e8f8"));
+        test_case("r3k2r/8/8/2q5/8/8/8/R3K2R w KQkq - 0 1",
+                  &mut vec!("a1a8", "h1h8", "a1b1", "a1c1", "a1d1", "a1a2", "a1a3", "a1a4",
+                            "a1a5", "a1a6", "a1a7", "h1f1", "h1g1", "h1h2", "h1h3", "h1h4",
+                            "h1h5", "h1h6", "h1h7", "e1d1", "e1f1", "e1d2", "e1e2"));
         test_case("4knn1/P5P1/3p4/PpP5/6n1/5b2/4PPP1/4K3 w - b6 0 1",
-                  &mut vec!(Move::new(E2, F3, Piece::WP, Piece::BB),
-                            Move::new(G2, F3, Piece::WP, Piece::BB),
-                            Move::new(C5, D6, Piece::WP, Piece::BP),
-                            Move::new_en_passant(A5, B6, Piece::WP, Piece::BP),
-                            Move::new_en_passant(C5, B6, Piece::WP, Piece::BP),
-                            Move::new(A5, A6, Piece::WP, Piece::NoPiece),
-                            Move::new(C5, C6, Piece::WP, Piece::NoPiece),
-                            Move::new(E2, E3, Piece::WP, Piece::NoPiece),
-                            Move::new(E2, E4, Piece::WP, Piece::NoPiece),
-                            Move::new(G2, G3, Piece::WP, Piece::NoPiece),
-                            Move::new_promotion(G7, F8, Piece::WP, Piece::BN, PieceType::Rook),
-                            Move::new_promotion(G7, F8, Piece::WP, Piece::BN, PieceType::Bishop),
-                            Move::new_promotion(G7, F8, Piece::WP, Piece::BN, PieceType::Knight),
-                            Move::new_promotion(G7, F8, Piece::WP, Piece::BN, PieceType::Queen),
-                            Move::new_promotion(A7, A8, Piece::WP, Piece::NoPiece, PieceType::Rook),
-                            Move::new_promotion(A7, A8, Piece::WP, Piece::NoPiece, PieceType::Bishop),
-                            Move::new_promotion(A7, A8, Piece::WP, Piece::NoPiece, PieceType::Knight),
-                            Move::new_promotion(A7, A8, Piece::WP, Piece::NoPiece, PieceType::Queen)));
+                  &mut vec!("e1d1", "e1f1", "e1d2", "e2e3", "g2g3", "a5a6", "c5c6", "e2e4",
+                            "a7a8n", "a7a8b", "a7a8r", "a7a8q", "g7f8n", "g7f8b", "g7f8r",
+                            "g7f8q", "g2f3", "e2f3", "c5d6", "a5b6", "c5b6"));
         test_case("4k3/p1pp1pb1/1n2pnp1/3PN3/Pp2P3/2N2Q1p/1PPBBPPP/R3K2R b KQ a3 0 1",
-                  &mut vec!(Move::new_en_passant(B4, A3, Piece::BP, Piece::WP),
-                            Move::new(B4, C3, Piece::BP, Piece::WN),
-                            Move::new(H3, G2, Piece::BP, Piece::WP),
-                            Move::new(E6, D5, Piece::BP, Piece::WP),
-                            Move::new(A7, A6, Piece::BP, Piece::NoPiece),
-                            Move::new(A7, A5, Piece::BP, Piece::NoPiece),
-                            Move::new(B4, B3, Piece::BP, Piece::NoPiece),
-                            Move::new(C7, C5, Piece::BP, Piece::NoPiece),
-                            Move::new(C7, C6, Piece::BP, Piece::NoPiece),
-                            Move::new(D7, D6, Piece::BP, Piece::NoPiece),
-                            Move::new(G6, G5, Piece::BP, Piece::NoPiece)));
-    });
-
-    chess_test!(test_gen_evasions, {
-        let test_case = |fen, expect: &mut Vec<Move>| {
-            let pos = Position::from_fen(fen);
-            expect.sort_by_key(|m| { m.as_u32() });
-            let mut moves = Vec::new();
-            gen_evasions(&pos, &mut moves);
-            moves.sort_by_key(|m| { m.as_u32() });
-            assert_eq!(*expect, moves);
-        };
+                  &mut vec!("b6a4", "b6d5", "f6e4", "f6d5", "b6c4", "b6a8", "b6c8", "f6g4",
+                            "f6h5", "f6h7", "f6g8", "g7h6", "g7f8", "g7h8", "e8e7", "e8d8",
+                            "e8f8", "b4b3", "g6g5", "a7a6", "c7c6", "d7d6", "a7a5", "c7c5",
+                            "h3g2", "e6d5", "b4c3", "b4a3"));
         test_case("8/1k6/5N2/2q5/6n1/3P4/5K2/6Q1 w - - 0 1",
-                  &mut vec!(Move::new(F2, F1, Piece::WK, Piece::NoPiece),
-                            Move::new(F2, G2, Piece::WK, Piece::NoPiece),
-                            Move::new(F2, G3, Piece::WK, Piece::NoPiece),
-                            Move::new(F2, F3, Piece::WK, Piece::NoPiece),
-                            Move::new(F2, E2, Piece::WK, Piece::NoPiece),
-                            Move::new(F2, E1, Piece::WK, Piece::NoPiece)));
+                  &mut vec!("f2e1", "f2f1", "f2e2", "f2g2", "f2f3", "f2g3"));
         test_case("r2q3r/p1ppkpb1/bn2pnp1/3PN3/NB2P3/5Q1p/PPP1BPPP/1R2K2R b K - 0 3",
-                  &mut vec!(Move::new(C7, C5, Piece::BP, Piece::NoPiece),
-                            Move::new(D7, D6, Piece::BP, Piece::NoPiece),
-                            Move::new(E7, E8, Piece::BK, Piece::NoPiece)));
-        test_case("r2q3r/p1ppkpb1/b1n1pnp1/3PN3/NB2P3/5Q1p/PPP1BPPP/1R2K2R b K - 0 1",
-                  &mut vec!(Move::new(D7, D6, Piece::BP, Piece::NoPiece),
-                            Move::new(E7, E8, Piece::BK, Piece::NoPiece),
-                            Move::new(C6, B4, Piece::BN, Piece::WB)));
-    });
-
-    chess_test!(test_loud_quiet, {
-        let test_case = |fen, expect_loud: &mut Vec<Move>, expect_quiet: &mut Vec<Move>| {
-            let pos = Position::from_fen(fen);
-            expect_loud.sort_by_key(|m| { m.as_u32() });
-            let mut moves = Vec::new();
-            gen_loud(&pos, &mut moves);
-            moves.sort_by_key(|m| { m.as_u32() });
-            assert_eq!(*expect_loud, moves);
-
-            expect_quiet.sort_by_key(|m| { m.as_u32() });
-            moves.clear();
-            gen_quiet(&pos, &mut moves);
-            moves.sort_by_key(|m| { m.as_u32() });
-            assert_eq!(*expect_quiet, moves);
-        };
+                  &mut vec!("e7e8", "d7d6", "c7c5"));
         test_case("k4b2/6P1/8/1pP5/8/8/6P1/7K w - b6 0 1",
-                  &mut vec!(Move::new_en_passant(C5, B6, Piece::WP, Piece::BP),
-                            Move::new_promotion(G7, F8, Piece::WP, Piece::BB, PieceType::Queen),
-                            Move::new_promotion(G7, G8, Piece::WP, Piece::NoPiece, PieceType::Queen)),
-                  &mut vec!(Move::new(C5, C6, Piece::WP, Piece::NoPiece),
-                            Move::new(G2, G3, Piece::WP, Piece::NoPiece),
-                            Move::new(G2, G4, Piece::WP, Piece::NoPiece),
-                            Move::new_promotion(G7, F8, Piece::WP, Piece::BB, PieceType::Rook),
-                            Move::new_promotion(G7, F8, Piece::WP, Piece::BB, PieceType::Bishop),
-                            Move::new_promotion(G7, F8, Piece::WP, Piece::BB, PieceType::Knight),
-                            Move::new_promotion(G7, G8, Piece::WP, Piece::NoPiece, PieceType::Rook),
-                            Move::new_promotion(G7, G8, Piece::WP, Piece::NoPiece, PieceType::Bishop),
-                            Move::new_promotion(G7, G8, Piece::WP, Piece::NoPiece, PieceType::Knight),
-                            Move::new(H1, G1, Piece::WK, Piece::NoPiece),
-                            Move::new(H1, H2, Piece::WK, Piece::NoPiece)));
+                  &mut vec!("h1g1", "h1h2", "g2g3", "c5c6", "g2g4", "g7g8n", "g7g8b",
+                            "g7g8r", "g7g8q", "g7f8n", "g7f8b", "g7f8r", "g7f8q", "c5b6"));
         test_case("k4b2/6P1/8/1pP5/8/8/6P1/7K b - - 0 1",
-                  &mut vec!(Move::new(F8, C5, Piece::BB, Piece::WP),
-                            Move::new(F8, G7, Piece::BB, Piece::WP)),
-                  &mut vec!(Move::new(F8, E7, Piece::BB, Piece::NoPiece),
-                            Move::new(F8, D6, Piece::BB, Piece::NoPiece),
-                            Move::new(B5, B4, Piece::BP, Piece::NoPiece),
-                            Move::new(A8, A7, Piece::BK, Piece::NoPiece),
-                            Move::new(A8, B7, Piece::BK, Piece::NoPiece),
-                            Move::new(A8, B8, Piece::BK, Piece::NoPiece)));
-    });
+                  &mut vec!("f8c5", "f8g7", "f8d6", "f8e7", "a8a7", "a8b7", "a8b8", "b5b4"));
 
+    });
 }

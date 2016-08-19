@@ -60,6 +60,10 @@ const PT_PHASE: [Phase; 8] = [
     NONE.mg as Phase, NONE.mg as Phase];
 const MAX_PHASE: Phase = 2 * (2 * (KNIGHT.mg + BISHOP.mg + ROOK.mg) + QUEEN.mg) as Phase;
 
+pub fn mg_material(pt: PieceType) -> Score {
+    PIECE_SCORE[pt.index()].mg
+}
+
 impl PhaseScore {
     pub fn interpolate(self, pos: &Position) -> Score {
         let phase = clamp!(pos.phase(), 0, MAX_PHASE);
