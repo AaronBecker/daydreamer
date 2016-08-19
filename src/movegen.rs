@@ -485,4 +485,7 @@ mod tests {
                   &mut vec!("f8c5", "f8g7", "f8d6", "f8e7", "a8a7", "a8b7", "a8b8", "b5b4"));
 
     });
+
+    // TODO: some tests for ordering, to be added after I implement,
+    // at a minimum, bad capture deferment.
 }
