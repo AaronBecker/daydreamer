@@ -311,7 +311,7 @@ enum SelectionPhase {
     Legal,
     Loud,
     Quiet,
-    //BadCaptures,
+    BadCaptures,
     Evasions,
     Done,
 }
@@ -319,16 +319,15 @@ enum SelectionPhase {
 const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Legal, SelectionPhase::Done];
 const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Loud,
                                                    SelectionPhase::Quiet,
-                                                   //SelectionPhase::BadCaptures,
+                                                   SelectionPhase::BadCaptures,
                                                    SelectionPhase::Done];
 const EVASION_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Evasions, SelectionPhase::Done];
 const QUIESCENCE_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Loud,
-                                                       //SelectionPhase::BadCaptures,
                                                        SelectionPhase::Done];
 
 pub struct MoveSelector {
     moves: Vec<ScoredMove>,
-    //bad_captures: Vec<ScoredMove>,
+    bad_captures: Vec<ScoredMove>,
     phases: &'static [SelectionPhase],
     phase_index: usize,
 }
@@ -340,7 +339,7 @@ impl MoveSelector {
                                              // smaller allocation.
                                              // Maybe also consider putting everything in a big
                                              // fixed buffer to avoid any allocations at all.
-            //bad_captures: Vec::with_capacity(32),
+            bad_captures: Vec::with_capacity(32),
             phases: if pos.checkers() != 0 {
                         EVASION_PHASES
                     } else if search::is_quiescence_depth(d) {
@@ -355,7 +354,7 @@ impl MoveSelector {
     pub fn legal() -> MoveSelector {
         MoveSelector {
             moves: Vec::with_capacity(128),
-            //bad_captures: Vec::new(),
+            bad_captures: Vec::new(),
             phases: LEGAL_PHASES,
             phase_index: 0,
         }
@@ -366,7 +365,7 @@ impl MoveSelector {
             SelectionPhase::Legal => gen_legal(pos, ad, &mut self.moves),
             SelectionPhase::Loud => gen_loud(pos, &mut self.moves),
             SelectionPhase::Quiet => gen_quiet(pos, &mut self.moves),
-            //SelectionPhase::BadCaptures => self.moves = self.bad_captures,
+            SelectionPhase::BadCaptures => self.moves.append(&mut self.bad_captures),
             SelectionPhase::Evasions => gen_evasions(pos, &mut self.moves),
             SelectionPhase::Done => panic!("move selection phase error"),
         }
@@ -393,16 +392,25 @@ impl MoveSelector {
     }
 
     pub fn next(&mut self, pos: &Position, ad: &position::AttackData) -> Option<Move> {
-        while self.moves.len() == 0 {
-            if self.phases[self.phase_index] == SelectionPhase::Done {
-                return None
+        loop {
+            while self.moves.len() == 0 {
+                if self.phases[self.phase_index] == SelectionPhase::Done {
+                    return None
+                }
+                self.gen(pos, ad);
+                self.order();
+                self.phase_index += 1;
             }
-            self.gen(pos, ad);
-            self.order();
-            self.phase_index += 1;
-        }
 
-        Some(self.moves.pop().unwrap().m)
+            let m = self.moves.pop().unwrap().m;
+            if self.phases[self.phase_index] == SelectionPhase::Loud {
+                if pos.static_exchange_sign(m) < 0 {
+                    self.bad_captures.push(ScoredMove::new(m));
+                    continue;
+                }
+            }
+            return Some(m)
+        }
     }
 }
 
