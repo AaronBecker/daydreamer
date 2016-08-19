@@ -245,9 +245,11 @@ pub fn go(data: &mut SearchData) {
       let engine_state = data.state.clone();
       thread::spawn(move || {
          thread::sleep(sleep_time);
-         if engine_state.generation.load(Ordering::Acquire) != current_gen {
+         if engine_state.load() != SEARCHING_STATE ||
+            engine_state.generation.load(Ordering::Acquire) != current_gen {
             return;
          }
+         println!("info string watchdog stopping search");
          engine_state.enter(STOPPING_STATE);
       });
    }
