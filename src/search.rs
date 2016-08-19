@@ -1,5 +1,6 @@
 use std::sync::{Arc, mpsc};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::thread;
 use std::time;
 use std::time::{Duration, Instant};
 
@@ -34,6 +35,7 @@ pub const MAX_PLY: Depth = 127;
 #[derive(Clone)]
 pub struct EngineState {
     pub state: Arc<AtomicUsize>,
+    pub generation: Arc<AtomicUsize>,
 }
 
 pub const WAITING_STATE: usize = 0;
@@ -44,6 +46,7 @@ impl EngineState {
     pub fn new() -> EngineState {
         EngineState {
             state: Arc::new(AtomicUsize::new(WAITING_STATE)),
+            generation: Arc::new(AtomicUsize::new(0)),
         }
     }
 
@@ -233,6 +236,22 @@ impl SearchData {
 }
 
 pub fn go(data: &mut SearchData) {
+   // Spawn a thread that will wake up when we hit our time limit and change
+   // our state to STOPPING if the search hasn't terminated yet. This lets
+   // us avoid checking the timer in the search thread.
+   // TODO: replace state checks with should_stop implementation in search.
+   {
+      let current_gen = 1 + data.state.generation.fetch_add(1, Ordering::AcqRel);
+      let sleep_time = data.constraints.hard_limit;
+      let engine_state = data.state.clone();
+      thread::spawn(move || {
+         thread::sleep(sleep_time);
+         if engine_state.generation.load(Ordering::Acquire) != current_gen {
+            return;
+         }
+         engine_state.enter(STOPPING_STATE);
+      });
+   }
    // We might have received a stop command already, in which case we
    // shouldn't start searching.
    if data.state.load() == STOPPING_STATE {
