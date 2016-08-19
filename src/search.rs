@@ -64,6 +64,12 @@ pub enum SearchResult {
     Exact,
 }
 
+// in_millis converts a duration to integer milliseconds. It's always at least
+// 1, to avoid divide-by-zero errors.
+pub fn in_millis(d: &Duration) -> u64 {
+   1 + d.as_secs() * 1000 + d.subsec_nanos() as u64 / 1_000_000
+}
+
 // SearchConstraints track the conditions for a search as specified via UCI.
 // This is mostly about how much searching we should do before stopping, but
 // also includes a list of moves to consider at the root.
@@ -210,13 +216,6 @@ impl SearchData {
         false
     }
 
-    // elapsed_ms is the number of milliseconds that have elapsed since the
-    // search started. It's always at least 1, to avoid divide-by-zero errors.
-    pub fn elapsed_ms(&self) -> u64 {
-       let e = self.constraints.start_time.elapsed();
-       1 + e.as_secs() * 1000 + e.subsec_nanos() as u64 / 1_000_000
-    }
-
     pub fn init_ply(&mut self, ply: usize) {
         self.pv_stack[ply][ply] = NO_MOVE;
     }
@@ -260,6 +259,10 @@ pub fn go(data: &mut SearchData) {
 
    deepening_search(data);
 
+   println!("info string time {} soft limit {} hard limit {}",
+            in_millis(&data.constraints.start_time.elapsed()),
+            in_millis(&data.constraints.soft_limit),
+            in_millis(&data.constraints.hard_limit));
    println!("bestmove {}", data.root_moves[0].m);
    data.state.enter(WAITING_STATE);
 }
@@ -283,7 +286,7 @@ fn should_print(data: &SearchData) -> bool {
 
 // print_pv_single prints the search data for a single root move.
 fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Score, beta: Score) {
-    let ms = data.elapsed_ms();
+    let ms = in_millis(&data.constraints.start_time.elapsed());
     let nps = if ms < 20 {
         String::new()  // don't report nps if we just started.
     } else {
