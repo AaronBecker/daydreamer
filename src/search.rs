@@ -449,11 +449,10 @@ fn search(data: &mut SearchData, ply: usize,
     // TODO: nullmove, razoring
     let mut num_moves = 0;
 
-    // TODO: proper move ordering interface, plus generate pseudo-legal moves
-    // and check legality afterwards.
-    let mut selector = MoveSelector::legal();
+    let mut selector = MoveSelector::new(&data.pos, depth);
     while let Some(m) = selector.next(&data.pos, &ad) {
         // TODO: pruning, futility, depth extension
+        if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
         data.stats.nodes += 1;
         num_moves += 1;
