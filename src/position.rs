@@ -154,6 +154,7 @@ pub struct Position {
     board: [Piece; 64],
     pieces_of_type: [Bitboard; 8],
     pieces_of_color: [Bitboard; 2],
+    hash_history: Vec<HashKey>,
 
     // We store information about possible castles in Position, even though
     // they don't change over the course of a game so they could be global
@@ -176,6 +177,7 @@ impl Position {
             board: [Piece::NoPiece; 64],
             pieces_of_type: [0; 8],
             pieces_of_color: [0; 2],
+            hash_history: Vec::with_capacity(255),
             castle_mask: [CASTLE_NONE; 64],
             possible_castles: [[EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO], [EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO]],
         }
@@ -193,8 +195,13 @@ impl Position {
 
     // clear resets the position and removes all pieces from the board.
     pub fn clear(&mut self) {
-        unsafe { ::std::intrinsics::write_bytes(self, 0, 1) }
-        self.state.ep_square = Square::NoSquare;
+        self.state = State::new();
+        self.board = [Piece::NoPiece; 64];
+        self.pieces_of_type = [0; 8];
+        self.pieces_of_color = [0; 2];
+        self.hash_history.clear();
+        self.castle_mask = [CASTLE_NONE; 64];
+        self.possible_castles = [[EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO], [EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO]];
     }
 
     pub fn all_pieces(&self) -> Bitboard {
@@ -287,6 +294,36 @@ impl Position {
 
     pub fn possible_castles(&self, c: Color, side: usize) -> &CastleInfo {
         &self.possible_castles[c.index()][side]
+    }
+
+    fn insufficient_material(&self) -> bool {
+        // Note: this criterion misses some insufficient material scenarios,
+        // for example K vs KNN and KB vs KN, but that's ok.
+        self.pieces_of_type(PieceType::Pawn) == 0 &&
+            self.state.phase < PhaseScore::phase(PieceType::Rook)
+    }
+
+    // repetition detects draws by repetition. Note that we only have to look
+    // at our own plies since the last pawn push, capture, or nullmove.
+    fn repetition(&self) -> bool {
+        let max_age = min!(self.state.ply as usize, self.state.fifty_move_counter as usize);
+        let mut age = 2;
+        let end = self.hash_history.len() - 1;
+        while age <= max_age {
+            if self.state.hash == self.hash_history[end - age] { return true }
+            age += 2;
+        }
+        false
+    }
+
+    // is_draw is true only if the position is definitely a draw (i.e. good
+    // play isn't required; checkmate is impossible). It's not precise, but
+    // it's never true in non-draw situations.
+    pub fn is_draw(&self) -> bool {
+        self.state.fifty_move_counter > 100 ||
+            (self.state.fifty_move_counter == 100 && self.checkers() == 0) ||
+            self.insufficient_material() ||
+            self.repetition()
     }
 
     // attackers gives the set of pieces in occ attacking sq, regardless of color.
@@ -455,6 +492,7 @@ impl Position {
         self.state.ply = 0;
         self.state.hash = self.computed_hash();
         self.state.phase = self.computed_phase();
+        self.hash_history.push(self.state.hash);
 
         if pieces.len() <= 4 {
             return Ok(());
@@ -656,6 +694,7 @@ impl Position {
         }
         self.state.us = self.state.us.flip();
         self.state.hash ^= side_hash();
+        self.hash_history.push(self.state.hash);
 
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
@@ -693,6 +732,7 @@ impl Position {
             self.place_piece(Piece::new(us, PieceType::Pawn), from);
         }
         self.state.last_move = mv;
+        self.hash_history.pop();
 
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
@@ -1173,5 +1213,39 @@ mod tests {
         test_case("2b3k1/1p3ppp/8/pP6/8/2PB4/R4PPP/6K1 w - a6 0 1", "b5a6", p);
         test_case("8/8/8/4k3/r3P3/4K3/8/4R3 b - - 0 1", "a4e4", p);
         test_case("8/8/8/4k3/r3P1R1/4K3/8/8 b - - 0 1", "a4e4", p - r);
+    });
+
+    chess_test!(is_draw, {
+        let test_case = |fen, moves: Vec<&str>, want| {
+            let mut pos = Position::from_fen(fen);
+            for uci in moves.iter() {
+                let ad = AttackData::new(&pos);
+                let m = Move::from_uci(&pos, &ad, *uci);
+                pos.do_move(m, &ad);
+            }
+            assert_eq!(pos.is_draw(), want);
+        };
+        // Repetition
+        test_case(START_FEN, vec!("b1c3", "b8c6", "c3b1", "c6b8"), true);
+        // Non-repetition due to castle rights
+        test_case("r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1",
+                  vec!("e1e2", "f8e7", "e2e1", "e7f8"), false);
+        // Non-repetition due to en passant
+        test_case("rnbqkbnr/2pppppp/p7/1pP5/8/8/PP1PPPPP/RNBQKBNR w KQkq b6 0 3",
+                  vec!("b1c3", "b8c6", "c3b1", "c6b8"), false);
+        // 50 move rule
+        test_case("8/7k/1R6/R7/8/7P/8/1K6 w - - 98 1", vec!("a5a7", "h7h8"), true);
+        // Non 50 move rule due to checkmate
+        test_case("8/7k/1R6/R7/8/7P/8/1K6 w - - 97 1", vec!("a5a7", "h7h8", "b6b8"), false);
+        // Non 50 move rule due to pawn move
+        test_case("8/7k/1R6/R7/8/7P/8/1K6 w - - 98 1", vec!("h3h4", "h7h8"), false);
+        // Sufficient material
+        test_case("7k/1R6/8/8/8/8/8/1K6 w - - 0 1", vec!(), false);
+        test_case("7k/1Q6/8/8/8/8/8/1K6 w - - 0 1", vec!(), false);
+        test_case("7k/8/8/8/8/5P2/8/1K6 w - - 0 1", vec!(), false);
+        test_case("7k/8/8/8/4B3/5N2/8/1K6 w - - 0 1", vec!(), false);
+        // Insufficient material
+        test_case("7k/8/8/8/8/5N2/8/1K6 w - - 0 1", vec!(), true);
+        test_case("7k/8/8/8/8/5B2/8/1K6 w - - 0 1", vec!(), true);
     });
 }
