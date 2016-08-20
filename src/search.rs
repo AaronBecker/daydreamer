@@ -208,8 +208,8 @@ impl SearchData {
 
     pub fn should_stop(&self) -> bool {
         if self.state.load() == STOPPING_STATE { return true }
-        if self.constraints.infinite { return false }
-        if self.stats.nodes >= self.constraints.node_limit { return true }
+        if self.stats.nodes >= self.constraints.node_limit &&
+           !self.constraints.infinite { return true }
         false
     }
 
