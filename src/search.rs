@@ -206,16 +206,10 @@ impl SearchData {
       self.pv_stack = [[NO_MOVE; MAX_PLY + 1]; MAX_PLY + 1];
     }
 
-    pub fn should_stop(&self, depth: Depth, nodes: u64) -> bool {
-        if self.constraints.infinite {
-            return false;
-        }
-        if depth > self.constraints.depth_limit || nodes > self.constraints.node_limit {
-            return true
-        }
-        if self.constraints.use_timer {
-            return self.constraints.start_time.elapsed() > self.constraints.hard_limit
-        }
+    pub fn should_stop(&self) -> bool {
+        if self.state.load() == STOPPING_STATE { return true }
+        if self.constraints.infinite { return false }
+        if self.stats.nodes >= self.constraints.node_limit { return true }
         false
     }
 
@@ -238,20 +232,21 @@ pub fn go(data: &mut SearchData) {
    // Spawn a thread that will wake up when we hit our time limit and change
    // our state to STOPPING if the search hasn't terminated yet. This lets
    // us avoid checking the timer in the search thread.
-   // TODO: replace state checks with should_stop implementation in search.
    {
       let current_gen = 1 + data.state.generation.fetch_add(1, Ordering::AcqRel);
-      let sleep_time = data.constraints.hard_limit;
-      let engine_state = data.state.clone();
-      thread::spawn(move || {
-         thread::sleep(sleep_time);
-         if engine_state.load() != SEARCHING_STATE ||
-            engine_state.generation.load(Ordering::Acquire) != current_gen {
-            return;
-         }
-         println!("info string watchdog stopping search");
-         engine_state.enter(STOPPING_STATE);
-      });
+      if data.constraints.use_timer {
+         let sleep_time = data.constraints.hard_limit;
+         let engine_state = data.state.clone();
+         thread::spawn(move || {
+            thread::sleep(sleep_time);
+            if engine_state.load() != SEARCHING_STATE ||
+               engine_state.generation.load(Ordering::Acquire) != current_gen {
+               return;
+            }
+            println!("info string watchdog stopping search");
+            engine_state.enter(STOPPING_STATE);
+         });
+      }
    }
    // We might have received a stop command already, in which case we
    // shouldn't start searching.
@@ -289,7 +284,7 @@ pub fn go(data: &mut SearchData) {
 }
 
 fn should_deepen(data: &SearchData) -> bool {
-   if data.state.load() == STOPPING_STATE { return false }
+   if data.should_stop() { return false }
    if data.constraints.infinite { return true }
    if data.constraints.depth_limit < data.current_depth { return false }
    if !data.constraints.use_timer { return true }
@@ -405,7 +400,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
         }
         data.pos.undo_move(m, &undo);
         debug_assert!(score_is_valid(score));
-        if data.state.load() == STOPPING_STATE { return SearchResult::Aborted; }
+        if data.should_stop() { return SearchResult::Aborted }
         data.root_moves[i].score = score::MIN_SCORE;
         if full_search || score > alpha {
             // We have updated move info for the root.
@@ -436,7 +431,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
 fn search(data: &mut SearchData, ply: usize,
           mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
     data.init_ply(ply);
-    if data.state.load() == STOPPING_STATE { return score::DRAW_SCORE; }
+    if data.should_stop() { return score::DRAW_SCORE; }
     if is_quiescence_depth(depth) {
         return quiesce(data, ply, alpha, beta, depth);
     }
@@ -445,7 +440,7 @@ fn search(data: &mut SearchData, ply: usize,
     alpha = max!(alpha, score::mated_in(ply));
     beta = min!(beta, score::mate_in(ply));
     if alpha >= beta { return alpha }
-    // TODO: trivial draw detection
+    if data.pos.is_draw() { return score::DRAW_SCORE }
 
     let open_window = beta - alpha > 1;
     let mut best_score = score::MIN_SCORE;
@@ -478,7 +473,7 @@ fn search(data: &mut SearchData, ply: usize,
         // If we're aborting, the score from the last move shouldn't be trusted,
         // since we didn't finish searching it, so bail out without updating
         // pv, bounds, etc.
-        if data.state.load() == STOPPING_STATE { return score::DRAW_SCORE; }
+        if data.should_stop() { return score::DRAW_SCORE; }
         if score > best_score {
             best_score = score;
             if score > alpha {
@@ -501,12 +496,12 @@ fn search(data: &mut SearchData, ply: usize,
 
 fn quiesce(data: &mut SearchData, ply: usize,
            mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
-    if data.state.load() == STOPPING_STATE { return score::DRAW_SCORE; }
+    if data.should_stop() { return score::DRAW_SCORE; }
     debug_assert!(score_is_valid(alpha) && score_is_valid(beta));
     alpha = max!(alpha, score::mated_in(ply));
     beta = min!(beta, score::mate_in(ply));
     if alpha >= beta { return alpha }
-    // TODO: trivial draw detection
+    if data.pos.is_draw() { return score::DRAW_SCORE }
     if ply >= MAX_PLY { return score::DRAW_SCORE }
     data.init_ply(ply);
 
@@ -539,7 +534,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
         // If we're aborting, the score from the last move shouldn't be trusted,
         // since we didn't finish searching it, so bail out without updating
         // pv, bounds, etc.
-        if data.state.load() == STOPPING_STATE { return score::DRAW_SCORE; }
+        if data.should_stop() { return score::DRAW_SCORE; }
         if score > best_score {
             best_score = score;
             if score > alpha {
