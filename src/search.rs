@@ -253,7 +253,6 @@ pub fn go(data: &mut SearchData) {
    if data.state.load() == STOPPING_STATE {
       return;
    }
-   data.state.enter(SEARCHING_STATE);
    data.reset();
 
    let ad = AttackData::new(&data.pos);
@@ -280,7 +279,6 @@ pub fn go(data: &mut SearchData) {
             in_millis(&data.constraints.soft_limit),
             in_millis(&data.constraints.hard_limit));
    println!("bestmove {}", data.root_moves[0].m);
-   data.state.enter(WAITING_STATE);
 }
 
 fn should_deepen(data: &SearchData) -> bool {
