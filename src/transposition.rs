@@ -16,11 +16,11 @@ use search::SearchDepth;
 #[derive(Clone, Copy)]
 pub struct Entry {
     key: u32,
-    m: Move,
-    score: i16,
+    pub m: Move,
+    pub score: i16,
     generation: u8,
-    depth: u8,
-    score_type: ScoreType,
+    pub depth: u8,
+    pub score_type: ScoreType,
     // TODO: when we have a proper eval, add static eval.
 }
 

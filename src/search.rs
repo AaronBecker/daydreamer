@@ -12,6 +12,7 @@ use position;
 use position::{AttackData, Position, UndoState};
 use score;
 use score::{Score, score_is_valid, is_mate_score};
+use transposition;
 
 // Inside the search, we keep the remaining depth to search as a floating point
 // value to accomodate fractional extensions and reductions better. Elsewhere
@@ -180,6 +181,7 @@ pub struct SearchData {
     pub state: EngineState,
     pub uci_channel: mpsc::Receiver<String>,
     pub pv_stack: [[Move; MAX_PLY + 1]; MAX_PLY + 1],
+    pub tt: transposition::Table,
 }
 
 impl SearchData {
@@ -194,8 +196,8 @@ impl SearchData {
             stats: SearchStats::new(),
             state: EngineState::new(),
             uci_channel: rx,
-            //search_stack: vec,
             pv_stack: [[NO_MOVE; MAX_PLY + 1]; MAX_PLY + 1],
+            tt: transposition::Table::new(16 << 20), // TODO: uci handling for table size
         }
     }
 
@@ -271,6 +273,7 @@ pub fn go(data: &mut SearchData) {
    for m in moves.iter() {
       data.root_moves.push(RootMove::new(*m));
    }
+   data.tt.new_generation();
 
    deepening_search(data);
 
@@ -440,7 +443,29 @@ fn search(data: &mut SearchData, ply: usize,
     if alpha >= beta { return alpha }
     if data.pos.is_draw() { return score::DRAW_SCORE }
 
+    let orig_alpha = alpha;
     let open_window = beta - alpha > 1;
+
+    // Do cutoff based on transposition table.
+    // TODO: use the move for ordering as well.
+    if !open_window {
+        let (mut hash_move, mut hash_score) = (NO_MOVE, 0);
+        if let Some(entry) = data.tt.get(data.pos.hash()) {
+            if depth as u8 <= entry.depth {
+                if (entry.score >= beta as i16 && entry.score_type & score::AT_LEAST != 0) ||
+                    (entry.score <= alpha as i16 && entry.score_type & score::AT_MOST != 0) {
+                    hash_move = entry.m;
+                    hash_score = entry.score as Score;
+                }
+            }
+        }
+        if hash_score != 0 {
+            data.init_ply(ply + 1);
+            data.update_pv(ply, hash_move);
+            return hash_score;
+        }
+    }
+
     let mut best_score = score::MIN_SCORE;
     let ad = AttackData::new(&data.pos);
     let undo = UndoState::undo_state(&data.pos);
@@ -477,7 +502,10 @@ fn search(data: &mut SearchData, ply: usize,
                 alpha = score;
                 data.update_pv(ply, m);
             }
-            if score >= beta { break }
+            if score >= beta {
+               data.tt.put(data.pos.hash(), m, depth, beta, score::AT_LEAST);
+               break
+            }
         }
     }
     if num_moves == 0 {
@@ -488,6 +516,11 @@ fn search(data: &mut SearchData, ply: usize,
         return score::DRAW_SCORE;
     }
     debug_assert!(score_is_valid(best_score));
+    if alpha == orig_alpha {
+        data.tt.put(data.pos.hash(), NO_MOVE, depth, alpha, score::AT_MOST);
+    } else {
+        data.tt.put(data.pos.hash(), data.pv_stack[ply][ply], depth, alpha, score::EXACT);
+    }
     best_score
 }
 
