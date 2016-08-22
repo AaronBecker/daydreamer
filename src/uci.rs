@@ -217,9 +217,7 @@ fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), 
     }
     search_data.constraints.set_timer(search_data.pos.us(),
                                       wtime, btime, winc, binc, movetime, movestogo);
-    search_data.state.enter(search::SEARCHING_STATE);
     search::go(search_data);
-    search_data.state.enter(search::WAITING_STATE);
     Ok(())
 }
 

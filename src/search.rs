@@ -231,52 +231,54 @@ impl SearchData {
 }
 
 pub fn go(data: &mut SearchData) {
-   // Spawn a thread that will wake up when we hit our time limit and change
-   // our state to STOPPING if the search hasn't terminated yet. This lets
-   // us avoid checking the timer in the search thread.
-   {
-      let current_gen = 1 + data.state.generation.fetch_add(1, Ordering::AcqRel);
-      if data.constraints.use_timer {
-         let sleep_time = data.constraints.hard_limit;
-         let engine_state = data.state.clone();
-         thread::spawn(move || {
-            thread::sleep(sleep_time);
-            if engine_state.load() != SEARCHING_STATE ||
-               engine_state.generation.load(Ordering::Acquire) != current_gen {
-               return;
-            }
-            println!("info string watchdog stopping search");
-            engine_state.enter(STOPPING_STATE);
-         });
-      }
-   }
-   data.reset();
-
-   let ad = AttackData::new(&data.pos);
-   let mut moves = data.constraints.searchmoves.clone();
-   if moves.len() == 0 {
-      let mut ms = MoveSelector::legal();
-      while let Some(m) = ms.next(&data.pos, &ad) {
-         moves.push(m);
-      }
-   }
-   if moves.len() == 0 {
-      println!("info string no moves to search");
-      println!("bestmove (none)");
-      return
-   }
-   for m in moves.iter() {
-      data.root_moves.push(RootMove::new(*m));
-   }
-   data.tt.new_generation();
-
-   deepening_search(data);
-
-   println!("info string time {} soft limit {} hard limit {}",
-            in_millis(&data.constraints.start_time.elapsed()),
-            in_millis(&data.constraints.soft_limit),
-            in_millis(&data.constraints.hard_limit));
-   println!("bestmove {}", data.root_moves[0].m);
+    // Spawn a thread that will wake up when we hit our time limit and change
+    // our state to STOPPING if the search hasn't terminated yet. This lets
+    // us avoid checking the timer in the search thread.
+    {
+        let current_gen = 1 + data.state.generation.fetch_add(1, Ordering::AcqRel);
+        if data.constraints.use_timer {
+            let sleep_time = data.constraints.hard_limit;
+            let engine_state = data.state.clone();
+            thread::spawn(move || {
+                thread::sleep(sleep_time);
+                if engine_state.load() != SEARCHING_STATE ||
+                    engine_state.generation.load(Ordering::Acquire) != current_gen {
+                    return;
+                }
+                println!("info string watchdog stopping search");
+                engine_state.enter(STOPPING_STATE);
+            });
+        }
+    }
+    search_data.state.enter(search::SEARCHING_STATE);
+    data.reset();
+ 
+    let ad = AttackData::new(&data.pos);
+    let mut moves = data.constraints.searchmoves.clone();
+    if moves.len() == 0 {
+        let mut ms = MoveSelector::legal();
+        while let Some(m) = ms.next(&data.pos, &ad) {
+            moves.push(m);
+        }
+    }
+    if moves.len() == 0 {
+        println!("info string no moves to search");
+        println!("bestmove (none)");
+        return
+    }
+    for m in moves.iter() {
+        data.root_moves.push(RootMove::new(*m));
+    }
+    data.tt.new_generation();
+ 
+    deepening_search(data);
+ 
+    println!("info string time {} soft limit {} hard limit {}",
+             in_millis(&data.constraints.start_time.elapsed()),
+             in_millis(&data.constraints.soft_limit),
+             in_millis(&data.constraints.hard_limit));
+    println!("bestmove {}", data.root_moves[0].m);
+    search_data.state.enter(search::WAITING_STATE);
 }
 
 fn should_deepen(data: &SearchData) -> bool {
