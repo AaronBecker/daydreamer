@@ -250,11 +250,6 @@ pub fn go(data: &mut SearchData) {
          });
       }
    }
-   // We might have received a stop command already, in which case we
-   // shouldn't start searching.
-   if data.state.load() == STOPPING_STATE {
-      return;
-   }
    data.reset();
 
    let ad = AttackData::new(&data.pos);
