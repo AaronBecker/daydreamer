@@ -132,3 +132,9 @@ impl ::std::fmt::Display for PhaseScore {
         write!(f, "({}, {})", self.mg, self.eg)
     }
 }
+
+pub type ScoreType = u8;
+pub const AT_LEAST: ScoreType = 0x01;
+pub const AT_MOST: ScoreType = 0x02;
+pub const EXACT: ScoreType = 0x03;
+pub const BOUNDS_MASK: ScoreType = 0x03;
