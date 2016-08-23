@@ -489,7 +489,7 @@ fn search(data: &mut SearchData, ply: usize,
         data.pos.do_nullmove();
         let null_r = 2.0 + ((depth + 2.0) / 4.0) +
             clamp!(0.0, 1.5, (lazy_score-beta) as SearchDepth / 100.0);
-        let mut null_score = -search(data, ply + 1, -beta, -alpha, depth - null_r);
+        let mut null_score = -search(data, ply + 1, -beta, -beta + 1, depth - null_r);
         data.pos.undo_nullmove(&undo);
         if is_mate_score(null_score) {
             // Mate scores out of null search are untrustworthy.
