@@ -1,4 +1,4 @@
-use board::{Piece, PieceType};
+use board::{Color, Piece, PieceType};
 use position::Position;
 
 // Note: actual scores fit in an i16 and can be safely stored in 16 bits in
@@ -52,8 +52,8 @@ const BBISHOP: PhaseScore = PhaseScore{ mg: -350, eg: -400 };
 const BROOK: PhaseScore = PhaseScore{ mg: -500, eg: -650 };
 const BQUEEN: PhaseScore = PhaseScore{ mg: -1000, eg: -1200 };
 
-const PIECE_SCORE: [PhaseScore; 16] = [NONE, BPAWN, BKNIGHT, BBISHOP, BROOK, BQUEEN, NONE, NONE,
-                                       NONE,  PAWN,  KNIGHT,  BISHOP,  ROOK,  QUEEN, NONE, NONE];
+const PIECE_SCORE: [PhaseScore; 16] = [NONE,  PAWN,  KNIGHT,  BISHOP,  ROOK,  QUEEN, NONE, NONE,
+                                       NONE, BPAWN, BKNIGHT, BBISHOP, BROOK, BQUEEN, NONE, NONE];
 const PT_PHASE: [Phase; 8] = [
     NONE.mg as Phase, NONE.mg as Phase, KNIGHT.mg as Phase,
     BISHOP.mg as Phase, ROOK.mg as Phase, QUEEN.mg as Phase,
@@ -65,10 +65,18 @@ pub fn mg_material(pt: PieceType) -> Score {
     MG_MATERIAL[pt.index()]
 }
 
+// FIXME: improve the names so that it's not confusing whether or not the
+// returned values are from white's perspective or from the player to move's
+// perspective.
 impl PhaseScore {
     pub fn interpolate(self, pos: &Position) -> Score {
         let phase = clamp!(pos.phase(), 0, MAX_PHASE);
-        (self.eg * (MAX_PHASE - phase) + self.mg * phase) / MAX_PHASE
+        let s = (self.eg * (MAX_PHASE - phase) + self.mg * phase) / MAX_PHASE;
+        if pos.us() == Color::White {
+            s
+        } else {
+            -s
+        }
     }
 
     pub fn value(p: Piece) -> PhaseScore {

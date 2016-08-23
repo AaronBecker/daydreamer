@@ -353,7 +353,7 @@ fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
 }
 
 fn deepening_search(data: &mut SearchData) {
-    data.current_depth = 2 * ONE_PLY;
+    data.current_depth = 1;
     while should_deepen(data) {
         if should_print(data) {
             println!("info depth {}", data.current_depth);
@@ -379,6 +379,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
     let mut move_number = 0;
     for i in 0..data.root_moves.len() {
         let m = data.root_moves[i].m;
+        //println!("******* ROOT MOVE {}", m);
         if should_print(data) {
             println!("info currmove {} currmovenumber {}", m, move_number + 1);
         }
@@ -400,6 +401,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
         debug_assert!(score_is_valid(score));
         if data.should_stop() { return SearchResult::Aborted }
         data.root_moves[i].score = score::MIN_SCORE;
+        //println!("******* ROOT MOVE {} raw score {}", m, score);
         if full_search || score > alpha {
             // We have updated move info for the root.
             data.root_moves[i].score = score;
@@ -415,6 +417,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
             alpha = score;
             if score > best_alpha { best_alpha = score }
         }
+        //println!("******* ROOT MOVE {} score {}", m, data.root_moves[i].score);
         if score >= beta { break }
         move_number += 1;
     }
@@ -474,6 +477,7 @@ fn search(data: &mut SearchData, ply: usize,
         // TODO: pruning, futility, depth extension
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
+        //println!("{:ply$}ply {}, do_move {}", ' ', ply, m, ply = ply);
         data.stats.nodes += 1;
         num_moves += 1;
         let mut score = score::MIN_SCORE;
@@ -493,6 +497,7 @@ fn search(data: &mut SearchData, ply: usize,
         // since we didn't finish searching it, so bail out without updating
         // pv, bounds, etc.
         if data.should_stop() { return score::DRAW_SCORE; }
+        //println!("{:ply$}ply {}, un_move {} score = {}", ' ', ply, m, score, ply = ply);
         if score > best_score {
             best_score = score;
             if score > alpha {
@@ -550,6 +555,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     while let Some(m) = selector.next(&data.pos, &ad) {
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
+        //println!("{:ply$}ply {} qsearch, do_move {}", ' ', ply, m, ply = ply);
         data.stats.nodes += 1;
         num_moves += 1;
 
@@ -557,6 +563,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
         let score = -quiesce(data, ply + 1, -beta, -alpha, depth - ONE_PLY_F);
         debug_assert!(score_is_valid(score));
         data.pos.undo_move(m, &undo);
+        //println!("{:ply$}ply {} qsearch, un_move {} score {}", ' ', ply, m, score, ply = ply);
 
         // If we're aborting, the score from the last move shouldn't be trusted,
         // since we didn't finish searching it, so bail out without updating
