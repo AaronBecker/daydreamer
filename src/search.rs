@@ -500,8 +500,8 @@ fn search(data: &mut SearchData, ply: usize,
                 data.update_pv(ply, m);
             }
             if score >= beta {
-               data.tt.put(data.pos.hash(), m, depth, beta, score::AT_LEAST);
-               break
+                data.tt.put(data.pos.hash(), m, depth, beta, score::AT_LEAST);
+                break
             }
         }
     }
@@ -515,7 +515,7 @@ fn search(data: &mut SearchData, ply: usize,
     debug_assert!(score_is_valid(best_score));
     if alpha == orig_alpha {
         data.tt.put(data.pos.hash(), NO_MOVE, depth, alpha, score::AT_MOST);
-    } else {
+    } else if best_score < beta {
         data.tt.put(data.pos.hash(), data.pv_stack[ply][ply], depth, alpha, score::EXACT);
     }
     best_score

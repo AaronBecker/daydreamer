@@ -306,9 +306,12 @@ impl Position {
     // repetition detects draws by repetition. Note that we only have to look
     // at our own plies since the last pawn push, capture, or nullmove.
     fn repetition(&self) -> bool {
-        let max_age = min!(self.state.ply as usize, self.state.fifty_move_counter as usize);
-        let mut age = 2;
+        // Note: self.state.ply isn't reliable here because it can be set directly
+        // via FEN without a corresponding hash history.
+        // TODO: consider just removing self.state.ply.
         let end = self.hash_history.len() - 1;
+        let max_age = min!(end, self.state.fifty_move_counter as usize);
+        let mut age = 2;
         while age <= max_age {
             if self.state.hash == self.hash_history[end - age] { return true }
             age += 2;
