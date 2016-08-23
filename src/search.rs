@@ -62,16 +62,16 @@ impl EngineState {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SearchResult {
-    Aborted,
-    FailHigh,
-    FailLow,
-    Exact,
+     Aborted,
+     FailHigh,
+     FailLow,
+     Exact,
 }
 
 // in_millis converts a duration to integer milliseconds. It's always at least
 // 1, to avoid divide-by-zero errors.
 pub fn in_millis(d: &Duration) -> u64 {
-   1 + d.as_secs() * 1000 + d.subsec_nanos() as u64 / 1_000_000
+    1 + d.as_secs() * 1000 + d.subsec_nanos() as u64 / 1_000_000
 }
 
 // SearchConstraints track the conditions for a search as specified via UCI.
@@ -141,9 +141,9 @@ impl SearchConstraints {
 }
 
 pub struct SearchStats {
-   nodes: u64,
-   qnodes: u64,
-   pvnodes: u64,
+    nodes: u64,
+    qnodes: u64,
+    pvnodes: u64,
 }
 
 impl SearchStats {
@@ -157,19 +157,19 @@ impl SearchStats {
 }
 
 pub struct RootMove {
-   m: Move,
-   score: Score,
-   pv: Vec<Move>,
+    m: Move,
+    score: Score,
+    pv: Vec<Move>,
 }
 
 impl RootMove {
-   pub fn new(m: Move) -> RootMove {
-      RootMove {
-         m: m,
-         score: score::MIN_SCORE,
-         pv: Vec::with_capacity(MAX_PLY),
-      }
-   }
+    pub fn new(m: Move) -> RootMove {
+        RootMove {
+            m: m,
+            score: score::MIN_SCORE,
+            pv: Vec::with_capacity(MAX_PLY),
+        }
+    }
 }
 
 pub struct SearchData {
@@ -202,10 +202,10 @@ impl SearchData {
     }
 
     pub fn reset(&mut self) {
-      self.root_moves = Vec::new();
-      self.current_depth = 0;
-      self.stats = SearchStats::new();
-      self.pv_stack = [[NO_MOVE; MAX_PLY + 1]; MAX_PLY + 1];
+        self.root_moves = Vec::new();
+        self.current_depth = 0;
+        self.stats = SearchStats::new();
+        self.pv_stack = [[NO_MOVE; MAX_PLY + 1]; MAX_PLY + 1];
     }
 
     pub fn should_stop(&self) -> bool {
@@ -282,52 +282,52 @@ pub fn go(data: &mut SearchData) {
 }
 
 fn should_deepen(data: &SearchData) -> bool {
-   if data.should_stop() { return false }
-   if data.constraints.infinite { return true }
-   if data.constraints.depth_limit < data.current_depth { return false }
-   if !data.constraints.use_timer { return true }
-   // If we're much more than halfway through our time, we won't make it
-   // through the first move of the next iteration anyway.
-   if data.constraints.start_time.elapsed() > data.constraints.soft_limit {
-      return false
-   }
-   true
+    if data.should_stop() { return false }
+    if data.constraints.infinite { return true }
+    if data.constraints.depth_limit < data.current_depth { return false }
+    if !data.constraints.use_timer { return true }
+    // If we're much more than halfway through our time, we won't make it
+    // through the first move of the next iteration anyway.
+    if data.constraints.start_time.elapsed() > data.constraints.soft_limit {
+        return false
+    }
+    true
 }
 
 fn should_print(data: &SearchData) -> bool {
-   data.constraints.start_time.elapsed().as_secs() > 1
+    data.constraints.start_time.elapsed().as_secs() > 1
 }
 
 // print_pv_single prints the search data for a single root move.
 fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Score, beta: Score) {
-    let ms = in_millis(&data.constraints.start_time.elapsed());
-    let nps = if ms < 20 {
-        String::new()  // don't report nps if we just started.
-    } else {
-        format!("nps {} ", data.stats.nodes * 1000 / ms)
-    };
-    let mut pv = String::new();
-    pv.push_str(&format!("{} ", rm.m));
-    for m in rm.pv.iter() {
-        pv.push_str(&format!("{} ", *m));
-    }
-    debug_assert!(score_is_valid(rm.score));
-    let bound = if rm.score <= alpha {
-        String::from("upperbound ")
-    } else if rm.score >= beta {
-        String::from("lowerbound ")
-    } else {
-        String::new()
-    };
-    let score = if is_mate_score(rm.score) {
-       let mut mate_in = (score::MATE_SCORE - rm.score.abs() + 1) / 2;
-       if rm.score < 0 { mate_in *= -1; }
-       format!("mate {}", mate_in)
-    } else {
-       format!("cp {}", rm.score)
-    };
-    println!("info multipv {} depth {} score {} {}time {} nodes {} {}pv {}",
-             ordinal, data.current_depth, score, bound, ms, data.stats.nodes, nps, pv);
+     let ms = in_millis(&data.constraints.start_time.elapsed());
+     let nps = if ms < 20 {
+         String::new()  // don't report nps if we just started.
+     } else {
+         format!("nps {} ", data.stats.nodes * 1000 / ms)
+     };
+     let mut pv = String::new();
+     pv.push_str(&format!("{} ", rm.m));
+     for m in rm.pv.iter() {
+         pv.push_str(&format!("{} ", *m));
+     }
+     debug_assert!(score_is_valid(rm.score));
+     let bound = if rm.score <= alpha {
+         String::from("upperbound ")
+     } else if rm.score >= beta {
+         String::from("lowerbound ")
+     } else {
+         String::new()
+     };
+     let score = if is_mate_score(rm.score) {
+         let mut mate_in = (score::MATE_SCORE - rm.score.abs() + 1) / 2;
+         if rm.score < 0 { mate_in *= -1; }
+         format!("mate {}", mate_in)
+     } else {
+         format!("cp {}", rm.score)
+     };
+     println!("info multipv {} depth {} score {} {}time {} nodes {} {}pv {}",
+              ordinal, data.current_depth, score, bound, ms, data.stats.nodes, nps, pv);
 }
 
 // print_pv prints out the most up-to-date information about the current
@@ -353,19 +353,19 @@ fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
 }
 
 fn deepening_search(data: &mut SearchData) {
-   data.current_depth = 2 * ONE_PLY;
-   while should_deepen(data) {
-      if should_print(data) {
-         println!("info depth {}", data.current_depth);
-      }
-      // TODO: aspiration windows
-      let (alpha, beta) = (score::MIN_SCORE, score::MAX_SCORE);
-      let result = root_search(data, alpha, beta);
-      if result == SearchResult::Aborted { break }
-      data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
-      print_pv(data, alpha, beta);
-      data.current_depth += ONE_PLY;
-   }
+    data.current_depth = 2 * ONE_PLY;
+    while should_deepen(data) {
+        if should_print(data) {
+            println!("info depth {}", data.current_depth);
+        }
+        // TODO: aspiration windows
+        let (alpha, beta) = (score::MIN_SCORE, score::MAX_SCORE);
+        let result = root_search(data, alpha, beta);
+        if result == SearchResult::Aborted { break }
+        data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
+        print_pv(data, alpha, beta);
+        data.current_depth += ONE_PLY;
+    }
 }
 
 // Note: the non-exact result stuff isn't currently used because I
