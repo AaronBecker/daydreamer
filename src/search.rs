@@ -481,9 +481,9 @@ fn search(data: &mut SearchData, ply: usize,
         data.pos.checkers() == 0 &&
         // We have some non-pawn material.
         // FIXME: we should really have something pre-calculated here.
-        data.pos.our_pieces() ^
+        (data.pos.our_pieces() ^
             data.pos.pieces_of_color_and_type(data.pos.us(), PieceType::Pawn) ^
-            data.pos.pieces_of_color_and_type(data.pos.us(), PieceType::King) != 0 {
+            data.pos.pieces_of_color_and_type(data.pos.us(), PieceType::King)) != 0 {
         // Nullmove search.
         let undo = UndoState::undo_state(&data.pos);
         data.pos.do_nullmove();

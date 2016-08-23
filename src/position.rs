@@ -744,11 +744,15 @@ impl Position {
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
         debug_assert!(self.checkers() == 0);
-        self.state.hash ^= side_hash();
         self.state.ply += 1;
-        self.state.fifty_move_counter += 1;
+        self.state.fifty_move_counter = 0;
         self.state.us = self.state.us.flip();
         self.state.last_move = NULL_MOVE;
+        if self.state.ep_square != Square::NoSquare {
+            self.state.hash ^= ep_hash(self.state.ep_square);
+            self.state.ep_square = Square::NoSquare;
+        }
+        self.state.hash ^= side_hash();
         self.hash_history.push(self.state.hash);
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
