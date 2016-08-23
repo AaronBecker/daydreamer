@@ -2,7 +2,7 @@ use board::*;
 use bitboard;
 use bitboard::Bitboard;
 use movegen::MoveSelector;
-use movement::Move;
+use movement::{Move, NO_MOVE, NULL_MOVE};
 use options;
 use score;
 use score::{Phase, PhaseScore, Score};
@@ -103,6 +103,7 @@ pub fn side_hash() -> HashKey {
 // when making a move.
 pub struct State {
     checkers: Bitboard,
+    last_move: Move,
     ply: u16,
     fifty_move_counter: u8,
     ep_square: Square,
@@ -117,6 +118,7 @@ impl State {
     pub fn new() -> State {
         State {
             checkers: 0,
+            last_move: NO_MOVE,
             ply: 0,
             fifty_move_counter: 0,
             ep_square: Square::NoSquare,
@@ -350,6 +352,10 @@ impl Position {
 
     pub fn checkers(&self) -> Bitboard {
         self.state.checkers
+    }
+
+    pub fn last_move(&self) -> Move {
+        self.state.last_move
     }
 
     pub fn material_score(&self) -> Score {
@@ -691,6 +697,7 @@ impl Position {
         self.state.us = self.state.us.flip();
         self.state.hash ^= side_hash();
         self.hash_history.push(self.state.hash);
+        self.state.last_move = m;
 
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
@@ -741,6 +748,7 @@ impl Position {
         self.state.ply += 1;
         self.state.fifty_move_counter += 1;
         self.state.us = self.state.us.flip();
+        self.state.last_move = NULL_MOVE;
         self.hash_history.push(self.state.hash);
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());

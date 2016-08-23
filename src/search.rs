@@ -5,14 +5,18 @@ use std::time;
 use std::time::{Duration, Instant};
 
 use board;
+use board::PieceType;
 use movegen::MoveSelector;
-use movement::{Move, NO_MOVE};
+use movement::{Move, NO_MOVE, NULL_MOVE};
 use options;
 use position;
 use position::{AttackData, Position, UndoState};
 use score;
 use score::{Score, score_is_valid, is_mate_score};
 use transposition;
+
+const NULL_MOVE_ENABLED: bool = true;
+const NULL_EVAL_MARGIN: Score = 200;
 
 // Inside the search, we keep the remaining depth to search as a floating point
 // value to accomodate fractional extensions and reductions better. Elsewhere
@@ -464,6 +468,34 @@ fn search(data: &mut SearchData, ply: usize,
             data.update_pv(ply, hash_move);
             return hash_score;
         }
+    }
+
+    // TODO: replace with piece-square scores if I decide to do those.
+    let lazy_score = data.pos.material_score();
+    if NULL_MOVE_ENABLED &&
+        !open_window &&
+        depth > 1.0 &&
+        data.pos.last_move() != NULL_MOVE &&
+        lazy_score + NULL_EVAL_MARGIN > beta &&
+        !is_mate_score(beta) &&
+        data.pos.checkers() == 0 &&
+        // We have some non-pawn material.
+        // FIXME: we should really have something pre-calculated here.
+        data.pos.our_pieces() ^
+            data.pos.pieces_of_color_and_type(data.pos.us(), PieceType::Pawn) ^
+            data.pos.pieces_of_color_and_type(data.pos.us(), PieceType::King) != 0 {
+        // Nullmove search.
+        let undo = UndoState::undo_state(&data.pos);
+        data.pos.do_nullmove();
+        let null_r = 2.0 + ((depth + 2.0) / 4.0) +
+            clamp!(0.0, 1.5, (lazy_score-beta) as SearchDepth / 100.0);
+        let mut null_score = -search(data, ply + 1, -beta, -alpha, depth - null_r);
+        data.pos.undo_nullmove(&undo);
+        if is_mate_score(null_score) {
+            // Mate scores out of null search are untrustworthy.
+            null_score = beta;
+        }
+        if null_score >= beta { return beta }
     }
 
     let mut best_score = score::MIN_SCORE;
