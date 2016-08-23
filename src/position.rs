@@ -2,7 +2,6 @@ use board::*;
 use bitboard;
 use bitboard::Bitboard;
 use movegen::MoveSelector;
-use movement;
 use movement::Move;
 use options;
 use score;
@@ -104,7 +103,6 @@ pub fn side_hash() -> HashKey {
 // when making a move.
 pub struct State {
     checkers: Bitboard,
-    last_move: Move,
     ply: u16,
     fifty_move_counter: u8,
     ep_square: Square,
@@ -119,7 +117,6 @@ impl State {
     pub fn new() -> State {
         State {
             checkers: 0,
-            last_move: movement::NO_MOVE,
             ply: 0,
             fifty_move_counter: 0,
             ep_square: Square::NoSquare,
@@ -353,10 +350,6 @@ impl Position {
 
     pub fn checkers(&self) -> Bitboard {
         self.state.checkers
-    }
-
-    pub fn last_move(&self) -> Move {
-        self.state.last_move
     }
 
     pub fn material_score(&self) -> Score {
@@ -734,9 +727,30 @@ impl Position {
             self.remove_piece(from);
             self.place_piece(Piece::new(us, PieceType::Pawn), from);
         }
-        self.state.last_move = mv;
         self.hash_history.pop();
 
+        debug_assert!(self.state.hash == self.computed_hash());
+        debug_assert!(self.state.phase == self.computed_phase());
+    }
+
+    pub fn do_nullmove(&mut self) {
+        debug_assert!(self.state.hash == self.computed_hash());
+        debug_assert!(self.state.phase == self.computed_phase());
+        debug_assert!(self.checkers() == 0);
+        self.state.hash ^= side_hash();
+        self.state.ply += 1;
+        self.state.fifty_move_counter += 1;
+        self.state.us = self.state.us.flip();
+        self.hash_history.push(self.state.hash);
+        debug_assert!(self.state.hash == self.computed_hash());
+        debug_assert!(self.state.phase == self.computed_phase());
+    }
+
+    pub fn undo_nullmove(&mut self, undo: &UndoState) {
+        debug_assert!(self.state.hash == self.computed_hash());
+        debug_assert!(self.state.phase == self.computed_phase());
+        self.copy_state(undo);
+        self.hash_history.pop();
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
     }
