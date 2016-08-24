@@ -110,7 +110,7 @@ pub struct State {
     castle_rights: CastleRights,
     us: Color,
     phase: Phase,
-    material_score: PhaseScore,
+    psqt_score: PhaseScore,
     hash: HashKey,
 }
 
@@ -125,7 +125,7 @@ impl State {
             castle_rights: CASTLE_NONE,
             us: Color::NoColor,
             phase: 0,
-            material_score: score::NONE,
+            psqt_score: score::NONE,
             hash: 0,
         }
     }
@@ -358,8 +358,16 @@ impl Position {
         self.state.last_move
     }
 
-    pub fn material_score(&self) -> Score {
-        self.state.material_score.interpolate(self)
+    pub fn psqt_score(&self) -> Score {
+        self.state.psqt_score.interpolate(self)
+    }
+
+    pub fn computed_psqt_score(&self) -> PhaseScore {
+        let mut s = score::NONE;
+        for sq in each_square() {
+            s += score::PSQT[self.board[sq.index()].index()][sq.index()]
+        }
+        s
     }
 
     // attack_occluders returns the set of pieces of color c that are blocking
@@ -432,9 +440,9 @@ impl Position {
             s.push_str(m.to_string().as_str());
             s.push(' ');
         }
-        s.push_str(format!("\nmaterial score: {}\n", self.state.material_score).as_str());
+        s.push_str(format!("\npsqt score: {} ({})\n", self.psqt_score(), self.state.psqt_score).as_str());
+        s.push_str(format!("computed psqt score: {}\n", self.computed_psqt_score()).as_str());
         s.push_str(format!("phase: {}\n", self.state.phase).as_str());
-        s.push_str(format!("interpolated score: {}\n", self.material_score()).as_str());
         s.push_str(format!("hash:          {}\n", self.state.hash).as_str());
         s.push_str(format!("computed_hash: {}\n", self.computed_hash()).as_str());
         s
@@ -579,7 +587,6 @@ impl Position {
         self.pieces_of_color[p.color().index()] |= b;
         self.pieces_of_type[p.piece_type().index()] |= b;
         self.pieces_of_type[PieceType::AllPieces.index()] |= b;
-        self.state.material_score += PhaseScore::value(p);
     }
 
     fn remove_piece(&mut self, sq: Square) {
@@ -590,7 +597,6 @@ impl Position {
         self.pieces_of_color[p.color().index()] ^= b;
         self.pieces_of_type[p.piece_type().index()] ^= b;
         self.pieces_of_type[PieceType::AllPieces.index()] ^= b;
-        self.state.material_score -= PhaseScore::value(p);
     }
 
     fn transfer_piece(&mut self, from: Square, to: Square) {
@@ -609,6 +615,7 @@ impl Position {
     pub fn do_move(&mut self, m: Move, ad: &AttackData) {
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
+        debug_assert!(self.state.psqt_score == self.computed_psqt_score());
 
         let (us, them) = (self.us(), self.them());
         let (from, mut to) = (m.from(), m.to()); // note: we update 'to' for castling moves
@@ -637,6 +644,7 @@ impl Position {
             self.state.fifty_move_counter = 0;
             self.state.hash ^= piece_hash(capture, to);
             self.state.phase -= PhaseScore::phase(capture.piece_type());
+            self.state.psqt_score -= score::PSQT[capture.index()][to.index()];
         }
         self.state.hash ^= castle_hash(self.state.castle_rights);
         self.state.castle_rights = self.remove_rights(self.state.castle_rights, from, to);
@@ -648,7 +656,10 @@ impl Position {
             } else {
                 (Square::D1.relative_to(us), Square::C1.relative_to(us))
             };
-            self.state.hash ^= piece_hash(self.piece_at(to), rdest) ^ piece_hash(self.piece_at(to), to);
+            let to_piece = self.piece_at(to);
+            self.state.hash ^= piece_hash(to_piece, rdest) ^ piece_hash(to_piece, to);
+            self.state.psqt_score += score::PSQT[to_piece.index()][rdest.index()] -
+                score::PSQT[to_piece.index()][to.index()];
             self.remove_piece(from);
             self.transfer_piece(to, rdest);
             self.place_piece(Piece::new(us, PieceType::King), kdest);
@@ -659,13 +670,18 @@ impl Position {
             let promote = m.promote();
             if m.is_en_passant() {
                 let cap_sq = to.pawn_push(them);
-                self.state.hash ^= piece_hash(capture, to) ^ piece_hash(self.piece_at(cap_sq), cap_sq);
+                let cap_piece = self.piece_at(cap_sq);
+                self.state.hash ^= piece_hash(capture, to) ^ piece_hash(cap_piece, cap_sq);
+                self.state.psqt_score += score::PSQT[capture.index()][to.index()] -
+                    score::PSQT[cap_piece.index()][cap_sq.index()];
                 self.remove_piece(to.pawn_push(them));
                 self.state.checkers = self.attackers(ad.their_king) & self.our_pieces();
             } else if promote != PieceType::NoPieceType {
                 let new_piece = Piece::new(us, promote);
                 self.remove_piece(to);
                 self.place_piece(new_piece, to);
+                self.state.psqt_score += score::PSQT[new_piece.index()][to.index()] -
+                    score::PSQT[piece.index()][to.index()];
                 self.state.hash ^= piece_hash(new_piece, to) ^ piece_hash(piece, to);
                 self.state.phase += PhaseScore::phase(promote);
                 self.state.checkers = self.attackers(ad.their_king) & self.our_pieces()
@@ -673,6 +689,8 @@ impl Position {
         }
 
         self.state.hash ^= piece_hash(piece, to) ^ piece_hash(piece, from);
+        self.state.psqt_score += score::PSQT[piece.index()][to.index()] -
+            score::PSQT[piece.index()][from.index()];
 
         if self.obvious_check(m, ad) {
             let (bb_from, bb_to) = (bitboard::bb(from), bitboard::bb(to));
@@ -701,11 +719,13 @@ impl Position {
 
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
+        debug_assert!(self.state.psqt_score == self.computed_psqt_score(), "{}, move = {}, psqt = {}, computed_psqt = {}", self, m, self.state.psqt_score, self.computed_psqt_score());
     }
 
     pub fn undo_move(&mut self, mv: Move, undo: &UndoState) {
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
+        debug_assert!(self.state.psqt_score == self.computed_psqt_score());
 
         self.copy_state(undo);
         let (us, them) = (self.us(), self.them());
@@ -738,6 +758,7 @@ impl Position {
 
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
+        debug_assert!(self.state.psqt_score == self.computed_psqt_score());
     }
 
     pub fn do_nullmove(&mut self) {

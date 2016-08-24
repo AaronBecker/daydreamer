@@ -18,7 +18,8 @@ use transposition;
 const NULL_MOVE_ENABLED: bool = true;
 const NULL_EVAL_MARGIN: Score = 200;
 
-const TT_ENABLED: bool = false;
+// FIXME: transposition table causes a pv reporting bug
+const TT_ENABLED: bool = true;
 
 // Inside the search, we keep the remaining depth to search as a floating point
 // value to accomodate fractional extensions and reductions better. Elsewhere
@@ -407,7 +408,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
         debug_assert!(score_is_valid(score));
         if data.should_stop() { return SearchResult::Aborted }
         data.root_moves[i].score = score::MIN_SCORE;
-        //println!("******* ROOT MOVE {} raw score {}", m, score);
+        //println!("******* ROOT MOVE {} alpha {} beta {} raw score {} psqt_score {}", m, alpha, beta, score);
         if full_search || score > alpha {
             // We have updated move info for the root.
             data.root_moves[i].score = score;
@@ -423,7 +424,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
             alpha = score;
             if score > best_alpha { best_alpha = score }
         }
-        //println!("******* ROOT MOVE {} score {}", m, data.root_moves[i].score);
+        //println!("******* ROOT MOVE {} alpha {} beta {} score {}", m, alpha, beta, data.root_moves[i].score);
         if score >= beta { break }
         move_number += 1;
     }
@@ -472,8 +473,7 @@ fn search(data: &mut SearchData, ply: usize,
         }
     }
 
-    // TODO: replace with piece-square scores if I decide to do those.
-    let lazy_score = data.pos.material_score();
+    let lazy_score = data.pos.psqt_score();
     if NULL_MOVE_ENABLED &&
         !open_window &&
         depth > 1.0 &&
@@ -573,7 +573,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
 
     let mut best_score = score::MIN_SCORE;
     if data.pos.checkers() == 0 {
-        best_score = data.pos.material_score();
+        best_score = data.pos.psqt_score();
         if best_score >= alpha {
             alpha = best_score;
             debug_assert!(score_is_valid(best_score));
