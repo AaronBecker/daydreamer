@@ -454,21 +454,22 @@ fn search(data: &mut SearchData, ply: usize,
     let open_window = beta - alpha > 1;
 
     // Do cutoff based on transposition table.
-    // TODO: use the move for ordering as well.
     let (mut tt_move, mut tt_score) = (NO_MOVE, 0);
     if !open_window && TT_ENABLED {
         if let Some(entry) = data.tt.get(data.pos.hash()) {
+            tt_move = entry.m;
             if depth as u8 <= entry.depth {
                 if (entry.score >= beta as i16 && entry.score_type & score::AT_LEAST != 0) ||
                     (entry.score <= alpha as i16 && entry.score_type & score::AT_MOST != 0) {
-                    tt_move = entry.m;
                     tt_score = entry.score as Score;
                 }
             }
         }
         if tt_score != 0 {
-            data.init_ply(ply + 1);
-            data.update_pv(ply, tt_move);
+            if open_window {
+                data.init_ply(ply + 1);
+                data.update_pv(ply, tt_move);
+            }
             return tt_score;
         }
     }
@@ -500,7 +501,7 @@ fn search(data: &mut SearchData, ply: usize,
         if null_score >= beta { return beta }
     }
 
-    let mut best_score = score::MIN_SCORE;
+    let (mut best_score, mut best_move) = (score::MIN_SCORE, NO_MOVE);
     let ad = AttackData::new(&data.pos);
     let undo = UndoState::undo_state(&data.pos);
     // TODO: nullmove, razoring
@@ -534,13 +535,14 @@ fn search(data: &mut SearchData, ply: usize,
         //println!("{:ply$}ply {}, un_move {} score = {}", ' ', ply, m, score, ply = ply);
         if score > best_score {
             best_score = score;
+            best_move = m;
             if score > alpha {
                 alpha = score;
-                data.update_pv(ply, m);
+                if open_window { data.update_pv(ply, m) }
             }
             if score >= beta {
                 data.tt.put(data.pos.hash(), m, depth, beta, score::AT_LEAST);
-                break
+                return beta;
             }
         }
     }
@@ -552,11 +554,8 @@ fn search(data: &mut SearchData, ply: usize,
         return score::DRAW_SCORE;
     }
     debug_assert!(score_is_valid(best_score));
-    if alpha == orig_alpha {
-        data.tt.put(data.pos.hash(), NO_MOVE, depth, alpha, score::AT_MOST);
-    } else if best_score < beta {
-        data.tt.put(data.pos.hash(), data.pv_stack[ply][ply], depth, alpha, score::EXACT);
-    }
+    data.tt.put(data.pos.hash(), best_move, depth, alpha,
+                if alpha == orig_alpha { score::AT_MOST } else { score::EXACT });
     best_score
 }
 
@@ -581,6 +580,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
         }
     }
 
+    let open_window = beta - alpha > 1;
     let ad = AttackData::new(&data.pos);
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
@@ -607,7 +607,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
             best_score = score;
             if score > alpha {
                 alpha = score;
-                data.update_pv(ply, m);
+                if open_window { data.update_pv(ply, m) }
             }
             if score >= beta { break }
         }
