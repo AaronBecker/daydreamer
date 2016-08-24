@@ -18,6 +18,8 @@ use transposition;
 const NULL_MOVE_ENABLED: bool = true;
 const NULL_EVAL_MARGIN: Score = 200;
 
+const TT_ENABLED: bool = false;
+
 // Inside the search, we keep the remaining depth to search as a floating point
 // value to accomodate fractional extensions and reductions better. Elsewhere
 // depths are all integers to accommodate depth-indexed arrays.
@@ -452,7 +454,7 @@ fn search(data: &mut SearchData, ply: usize,
 
     // Do cutoff based on transposition table.
     // TODO: use the move for ordering as well.
-    if !open_window {
+    if !open_window && TT_ENABLED {
         let (mut hash_move, mut hash_score) = (NO_MOVE, 0);
         if let Some(entry) = data.tt.get(data.pos.hash()) {
             if depth as u8 <= entry.depth {
