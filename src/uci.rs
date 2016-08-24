@@ -175,7 +175,7 @@ fn parse_u32_or_0(token: &str) -> u32 {
 fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), String>
         where I: Iterator<Item=&'a str> {
     let (mut wtime, mut winc, mut btime, mut binc) = (0, 0, 0, 0);
-    let (mut movestogo, mut movetime) = (0, 0);
+    let (mut movestogo, mut movetime, mut infinite) = (0, 0, false);
     let mut ptokens = tokens.peekable();
     while let Some(tok) = ptokens.next() {
         match tok {
@@ -191,7 +191,7 @@ fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), 
             "nodes" => if let Some(x) = ptokens.next() {
                 search_data.constraints.node_limit = parse_u64_or_0(x);
             },
-            "infinite" => search_data.constraints.infinite = true,
+            "infinite" => infinite = true,
             "mate" => if let Some(_) = ptokens.next() {
                 println!("info string mate search not supported, ignoring");
             },
@@ -215,6 +215,7 @@ fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), 
             _ => println!("info string unrecognized token {}", tok),
         }
     }
+    search_data.constraints.infinite = infinite;
     search_data.constraints.set_timer(search_data.pos.us(),
                                       wtime, btime, winc, binc, movetime, movestogo);
     search::go(search_data);
