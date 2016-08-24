@@ -107,8 +107,8 @@ impl PieceType {
     }
 }
 
-pub fn each_piece_type() -> EachElement<Color> {
-    EachElement::<Color> {
+pub fn each_piece_type() -> EachElement<PieceType> {
+    EachElement::<PieceType> {
         front: PieceType::Pawn as u8,
         back: PieceType::AllPieces as u8,
         phantom: ::std::marker::PhantomData,
@@ -327,11 +327,15 @@ impl Square {
         }
     }
 
+    pub fn flip(self) -> Square {
+        unsafe { mem::transmute((self as u8) ^ (Square::A8 as u8)) }
+    }
+
     // Flip the square for black, or leave it for white.
     pub fn relative_to(self, c: Color) -> Square {
         match c {
             Color::White => self,
-            Color::Black => unsafe { mem::transmute((self as u8) ^ (Square::A8 as u8)) },
+            Color::Black => self.flip(),
             _ => self,
         }
     }
