@@ -2,9 +2,9 @@ use bitboard;
 use bitboard::Bitboard;
 use board;
 use board::*;
+use movement::{Move, NO_MOVE};
 use position;
 use position::Position;
-use movement::Move;
 use score;
 use score::Score;
 use search;
@@ -309,6 +309,7 @@ fn gen_quiet(pos: &Position, moves: &mut Vec<ScoredMove>) {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum SelectionPhase {
     Legal,
+    TT,
     Loud,
     Quiet,
     BadCaptures,
@@ -317,11 +318,12 @@ enum SelectionPhase {
 }
 
 const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Legal, SelectionPhase::Done];
-const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Loud,
+const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::TT,
+                                                   SelectionPhase::Loud,
                                                    SelectionPhase::Quiet,
                                                    SelectionPhase::BadCaptures,
                                                    SelectionPhase::Done];
-const EVASION_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Evasions, SelectionPhase::Done];
+const EVASION_PHASES: &'static [SelectionPhase] = &[SelectionPhase::TT, SelectionPhase::Evasions, SelectionPhase::Done];
 const QUIESCENCE_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Loud,
                                                        SelectionPhase::Done];
 
@@ -330,10 +332,11 @@ pub struct MoveSelector {
     bad_captures: Vec<ScoredMove>,
     phases: &'static [SelectionPhase],
     phase_index: usize,
+    tt_move: Move,
 }
 
 impl MoveSelector {
-    pub fn new(pos: &Position, d: search::SearchDepth) -> MoveSelector {
+    pub fn new(pos: &Position, d: search::SearchDepth, tt_move: Move) -> MoveSelector {
         MoveSelector {
             moves: Vec::with_capacity(128),  // TODO: check the performance implications of a
                                              // smaller allocation.
@@ -348,6 +351,11 @@ impl MoveSelector {
                         NORMAL_PHASES
                     },
             phase_index: 0,
+            tt_move: if pos.tt_move_is_plausible(tt_move) {
+                         tt_move
+                     } else {
+                         NO_MOVE
+                     },
         }
     }
 
@@ -357,11 +365,13 @@ impl MoveSelector {
             bad_captures: Vec::new(),
             phases: LEGAL_PHASES,
             phase_index: 0,
+            tt_move: NO_MOVE,
         }
     }
 
     fn gen(&mut self, pos: &Position, ad: &position::AttackData) {
         match self.phases[self.phase_index] {
+            SelectionPhase::TT => panic!("move selector can't generate tt moves"),
             SelectionPhase::Legal => gen_legal(pos, ad, &mut self.moves),
             SelectionPhase::Loud => gen_loud(pos, &mut self.moves),
             SelectionPhase::Quiet => gen_quiet(pos, &mut self.moves),
@@ -393,6 +403,12 @@ impl MoveSelector {
 
     pub fn next(&mut self, pos: &Position, ad: &position::AttackData) -> Option<Move> {
         loop {
+            if self.phases[self.phase_index] == SelectionPhase::TT {
+                self.phase_index += 1;
+                if self.tt_move != NO_MOVE {
+                    return Some(self.tt_move);
+                }
+            }
             while self.moves.len() == 0 {
                 if self.phases[self.phase_index] == SelectionPhase::Done {
                     return None
@@ -403,6 +419,9 @@ impl MoveSelector {
             }
 
             let m = self.moves.pop().unwrap().m;
+            if m == self.tt_move {
+                continue;
+            }
             if self.phases[self.phase_index] == SelectionPhase::Loud {
                 if pos.static_exchange_sign(m) < 0 {
                     self.bad_captures.push(ScoredMove::new(m));

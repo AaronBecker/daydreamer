@@ -455,21 +455,21 @@ fn search(data: &mut SearchData, ply: usize,
 
     // Do cutoff based on transposition table.
     // TODO: use the move for ordering as well.
+    let (mut tt_move, mut tt_score) = (NO_MOVE, 0);
     if !open_window && TT_ENABLED {
-        let (mut hash_move, mut hash_score) = (NO_MOVE, 0);
         if let Some(entry) = data.tt.get(data.pos.hash()) {
             if depth as u8 <= entry.depth {
                 if (entry.score >= beta as i16 && entry.score_type & score::AT_LEAST != 0) ||
                     (entry.score <= alpha as i16 && entry.score_type & score::AT_MOST != 0) {
-                    hash_move = entry.m;
-                    hash_score = entry.score as Score;
+                    tt_move = entry.m;
+                    tt_score = entry.score as Score;
                 }
             }
         }
-        if hash_score != 0 {
+        if tt_score != 0 {
             data.init_ply(ply + 1);
-            data.update_pv(ply, hash_move);
-            return hash_score;
+            data.update_pv(ply, tt_move);
+            return tt_score;
         }
     }
 
@@ -506,7 +506,7 @@ fn search(data: &mut SearchData, ply: usize,
     // TODO: nullmove, razoring
     let mut num_moves = 0;
 
-    let mut selector = MoveSelector::new(&data.pos, depth);
+    let mut selector = MoveSelector::new(&data.pos, depth, tt_move);
     while let Some(m) = selector.next(&data.pos, &ad) {
         // TODO: pruning, futility, depth extension
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
@@ -585,7 +585,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
 
-    let mut selector = MoveSelector::new(&data.pos, depth);
+    let mut selector = MoveSelector::new(&data.pos, depth, NO_MOVE);
     while let Some(m) = selector.next(&data.pos, &ad) {
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
