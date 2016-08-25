@@ -60,6 +60,11 @@ fn consume_stream<T: BufRead>(stream: T, chan: mpsc::Sender<String>, state: sear
                     Some("isready") => println!("readyok"),
                     Some("sleep") => thread::sleep(time::Duration::from_secs(1)),
                     Some("stop") => state.enter(search::STOPPING_STATE),
+                    Some("ponderhit") => {
+                        if state.load() == search::PONDERING_STATE {
+                            state.enter(search::SEARCHING_STATE)
+                        }
+                    },
                     Some("quit") => ::std::process::exit(0),
                     Some(_) => {
                         match state.load() {
@@ -68,7 +73,7 @@ fn consume_stream<T: BufRead>(stream: T, chan: mpsc::Sender<String>, state: sear
                             // search. This lets us signal the searching thread
                             // to stop without doing command processing in the
                             // search thread.
-                            search::SEARCHING_STATE => {
+                            search::SEARCHING_STATE | search::PONDERING_STATE => {
                                 println!("info string busy searching, ignoring command '{}'", s);
                             },
                             // If we're not actively searching, the main thread
@@ -175,7 +180,7 @@ fn parse_u32_or_0(token: &str) -> u32 {
 fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), String>
         where I: Iterator<Item=&'a str> {
     let (mut wtime, mut winc, mut btime, mut binc) = (0, 0, 0, 0);
-    let (mut movestogo, mut movetime, mut infinite) = (0, 0, false);
+    let (mut movestogo, mut movetime, mut infinite, mut ponder) = (0, 0, false, false);
     let mut ptokens = tokens.peekable();
     while let Some(tok) = ptokens.next() {
         match tok {
@@ -195,7 +200,7 @@ fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), 
             "mate" => if let Some(_) = ptokens.next() {
                 println!("info string mate search not supported, ignoring");
             },
-            "ponder" => println!("info string ponder not supported, ignoring"),
+            "ponder" => ponder = true,
             "searchmoves" => {
                 let ad = position::AttackData::new(&search_data.pos);
                 loop {
@@ -216,6 +221,7 @@ fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), 
         }
     }
     search_data.constraints.infinite = infinite;
+    search_data.constraints.ponder = ponder;
     search_data.constraints.set_timer(search_data.pos.us(),
                                       wtime, btime, winc, binc, movetime, movestogo);
     search::go(search_data);

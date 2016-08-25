@@ -48,7 +48,8 @@ pub struct EngineState {
 
 pub const WAITING_STATE: usize = 0;
 pub const SEARCHING_STATE: usize = 1;
-pub const STOPPING_STATE: usize = 2;
+pub const PONDERING_STATE: usize = 2;
+pub const STOPPING_STATE: usize = 3;
 
 impl EngineState {
     pub fn new() -> EngineState {
@@ -86,6 +87,7 @@ pub fn in_millis(d: &Duration) -> u64 {
 // also includes a list of moves to consider at the root.
 pub struct SearchConstraints {
     pub infinite: bool,
+    pub ponder : bool,
     pub searchmoves: Vec<Move>, // TODO: this doesn't seem quite right here, maybe move out
     pub node_limit: u64,
     pub depth_limit: Depth,
@@ -100,6 +102,7 @@ impl SearchConstraints {
     pub fn new() -> SearchConstraints {
         SearchConstraints {
             infinite: false,
+            ponder: false,
             searchmoves: Vec::new(),
             node_limit: u64::max_value(),
             depth_limit: MAX_PLY,
@@ -216,7 +219,9 @@ impl SearchData {
     }
 
     pub fn should_stop(&self) -> bool {
-        if self.state.load() == STOPPING_STATE { return true }
+        let engine_state = self.state.load();
+        if engine_state == PONDERING_STATE { return false }
+        if engine_state == STOPPING_STATE { return true }
         if self.stats.nodes >= self.constraints.node_limit &&
            !self.constraints.infinite { return true }
         false
@@ -243,21 +248,23 @@ pub fn go(data: &mut SearchData) {
     // us avoid checking the timer in the search thread.
     {
         let current_gen = 1 + data.state.generation.fetch_add(1, Ordering::AcqRel);
-        if data.constraints.use_timer {
+        if data.constraints.use_timer && !data.constraints.infinite {
             let sleep_time = data.constraints.hard_limit;
             let engine_state = data.state.clone();
             thread::spawn(move || {
                 thread::sleep(sleep_time);
+                while engine_state.load() == PONDERING_STATE {
+                    thread::sleep(sleep_time);
+                }
                 if engine_state.load() != SEARCHING_STATE ||
                     engine_state.generation.load(Ordering::Acquire) != current_gen {
                     return;
                 }
-                println!("info string watchdog stopping search");
                 engine_state.enter(STOPPING_STATE);
             });
         }
     }
-    data.state.enter(SEARCHING_STATE);
+    data.state.enter(if data.constraints.ponder { PONDERING_STATE } else { SEARCHING_STATE });
     data.reset();
  
     let ad = AttackData::new(&data.pos);
@@ -284,11 +291,16 @@ pub fn go(data: &mut SearchData) {
              in_millis(&data.constraints.start_time.elapsed()),
              in_millis(&data.constraints.soft_limit),
              in_millis(&data.constraints.hard_limit));
-    println!("bestmove {}", data.root_moves[0].m);
+    print!("bestmove {}", data.root_moves[0].m);
+    if data.root_moves[0].pv.len() > 0 {
+        print!(" ponder {}", data.root_moves[0].pv[0]);
+    }
+    println!("");
     data.state.enter(WAITING_STATE);
 }
 
 fn should_deepen(data: &SearchData) -> bool {
+    if data.state.load() == PONDERING_STATE { return true }
     if data.should_stop() { return false }
     if data.constraints.infinite { return true }
     if data.constraints.depth_limit < data.current_depth { return false }
