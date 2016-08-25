@@ -367,8 +367,7 @@ fn deepening_search(data: &mut SearchData) {
         }
         // TODO: aspiration windows
         let (alpha, beta) = (score::MIN_SCORE, score::MAX_SCORE);
-        let result = root_search(data, alpha, beta);
-        if result == SearchResult::Aborted { break }
+        root_search(data, alpha, beta);
         data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
         print_pv(data, alpha, beta);
         data.current_depth += ONE_PLY;
