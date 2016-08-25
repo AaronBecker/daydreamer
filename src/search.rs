@@ -578,11 +578,10 @@ fn search(data: &mut SearchData, ply: usize,
             }
             if score >= beta {
                 if !m.is_capture() && !m.is_promote() {
-                    // FIXME: re-enable post-testing
-                    //if data.search_stack[ply].killers[0] != m {
-                    //    data.search_stack[ply].killers[1] = data.search_stack[ply].killers[0];
-                    //    data.search_stack[ply].killers[0] = m;
-                    //}
+                    if data.search_stack[ply].killers[0] != m {
+                        data.search_stack[ply].killers[1] = data.search_stack[ply].killers[0];
+                        data.search_stack[ply].killers[0] = m;
+                    }
                 }
                 data.tt.put(data.pos.hash(), m, depth, beta, score::AT_LEAST);
                 return beta;
