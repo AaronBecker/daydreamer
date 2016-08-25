@@ -1,5 +1,6 @@
 use position::{Position, AttackData, UndoState};
 use movegen::MoveSelector;
+use search;
 
 pub fn perft(pos: &mut Position, depth: u32) -> u64 {
     internal_perft(pos, depth, false)
@@ -18,7 +19,7 @@ fn internal_perft(pos: &mut Position, depth: u32, divide: bool) -> u64 {
     let mut ms = MoveSelector::legal();
     if depth == 1 {
         let mut count = 0;
-        while let Some(_) = ms.next(&pos, &ad) {
+        while let Some(_) = ms.next(&pos, &ad, &search::EMPTY_HISTORY) {
             count += 1;
         }
         return count;
@@ -26,7 +27,7 @@ fn internal_perft(pos: &mut Position, depth: u32, divide: bool) -> u64 {
 
     let mut count = 0;
     let undo = UndoState::undo_state(&pos);
-    while let Some(mv) = ms.next(&pos, &ad) {
+    while let Some(mv) = ms.next(&pos, &ad, &search::EMPTY_HISTORY) {
         pos.do_move(mv, &ad);
         let subtree = perft(pos, depth - 1);
         pos.undo_move(mv, &undo);

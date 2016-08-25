@@ -6,6 +6,7 @@ use movement::{Move, NO_MOVE, NULL_MOVE};
 use options;
 use score;
 use score::{Phase, PhaseScore, Score};
+use search;
 
 pub const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -436,7 +437,7 @@ impl Position {
         let ad = AttackData::new(self);
         let mut ms = MoveSelector::legal();
 
-        while let Some(m) = ms.next(&self, &ad) {
+        while let Some(m) = ms.next(&self, &ad, &search::EMPTY_HISTORY) {
             s.push_str(m.to_string().as_str());
             s.push(' ');
         }

@@ -390,15 +390,13 @@ impl MoveSelector {
 
     // Once we have an SEE implementation we can tell the difference between
     // good and bad captures and can update a bunch of this code.
-    fn order(&mut self, pos: &Position) {
+    fn order(&mut self, pos: &Position, history: &[Score; 64 * 16]) {
         // Note that we want the moves ordered least to best, so we can
         // efficiently pop moves of the end of the vector.
 
         // MAX_HISTORY isn't used (we don't have history at all), but I'm
         // adding the constant as a reminder about how history should be
         // ordered relative to other stuff when we have it.
-        const MAX_HISTORY: Score = 10000;
-        const MIN_HISTORY: Score = -10000;
         match self.phases[self.phase_index] {
             SelectionPhase::TT => panic!("move selector can't order tt moves"),
             SelectionPhase::Done => panic!("move selection phase error"),
@@ -412,8 +410,9 @@ impl MoveSelector {
             },
             SelectionPhase::Quiet => {
                 for m in self.moves.iter_mut() {
-                    if m.m == self.killers[0] { m.s = MAX_HISTORY + 2}
-                    if m.m == self.killers[1] { m.s = MAX_HISTORY + 1 }
+                    if m.m == self.killers[0] { m.s = search::MAX_HISTORY + 2}
+                    if m.m == self.killers[1] { m.s = search::MAX_HISTORY + 1 }
+                    m.s += history[search::SearchData::history_index(m.m)];
                 }
             },
             SelectionPhase::BadCaptures => {
@@ -436,14 +435,15 @@ impl MoveSelector {
                         if see < 0 {
                             // SEE values less than zero are actually calculated
                             // out, so the value is meaningful.
-                            m.s = MIN_HISTORY + see;
+                            m.s = search::MIN_HISTORY + see;
                         } else {
                             m.s = score::mg_material(m.m.capture().piece_type()) -
-                                m.m.piece().piece_type().index() as Score + MAX_HISTORY;
+                                m.m.piece().piece_type().index() as Score + search::MAX_HISTORY;
                         }
                     } else {
-                        if m.m == self.killers[0] { m.s = MAX_HISTORY + 2}
-                        if m.m == self.killers[1] { m.s = MAX_HISTORY + 1 }
+                        if m.m == self.killers[0] { m.s = search::MAX_HISTORY + 2}
+                        if m.m == self.killers[1] { m.s = search::MAX_HISTORY + 1 }
+                        m.s += history[search::SearchData::history_index(m.m)];
                     }
                 }
             }
@@ -455,7 +455,7 @@ impl MoveSelector {
         self.moves.sort_by_key(|x| x.s);
     }
 
-    pub fn next(&mut self, pos: &Position, ad: &position::AttackData) -> Option<Move> {
+    pub fn next(&mut self, pos: &Position, ad: &position::AttackData, history: &[Score; 64 * 16]) -> Option<Move> {
         loop {
             if self.phases[self.phase_index] == SelectionPhase::TT {
                 self.phase_index += 1;
@@ -468,7 +468,7 @@ impl MoveSelector {
                     return None
                 }
                 self.gen(pos, ad);
-                self.order(pos);
+                self.order(pos, history);
                 self.phase_index += 1;
             }
 

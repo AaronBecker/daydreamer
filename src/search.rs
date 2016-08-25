@@ -206,8 +206,13 @@ pub struct SearchData {
     pub uci_channel: mpsc::Receiver<String>,
     pub pv_stack: [[Move; MAX_PLY + 1]; MAX_PLY + 1],
     pub search_stack: [Node; MAX_PLY + 1],
+    pub history: [Score; 64 * 16],
     pub tt: transposition::Table,
 }
+
+pub const MAX_HISTORY: Score = 10000;
+pub const MIN_HISTORY: Score = -10000;
+pub const EMPTY_HISTORY: [Score; 64 * 16] = [0; 64 * 16];
 
 impl SearchData {
     pub fn new() -> SearchData {
@@ -223,6 +228,7 @@ impl SearchData {
             uci_channel: rx,
             pv_stack: [[NO_MOVE; MAX_PLY + 1]; MAX_PLY + 1],
             search_stack: [Node::new(); MAX_PLY + 1],
+            history: [0; 64 * 16],
             tt: transposition::Table::new(16 << 20), // TODO: uci handling for table size
         }
     }
@@ -241,6 +247,30 @@ impl SearchData {
         if self.stats.nodes >= self.constraints.node_limit &&
            !self.constraints.infinite { return true }
         false
+    }
+
+    pub fn history_index(m: Move) -> usize {
+        m.piece().piece_type().index() << 6 | m.to().index()
+    }
+
+    pub fn record_success(&mut self, m: Move, d: SearchDepth) {
+        let index = SearchData::history_index(m);
+        self.history[index] += (d * d) as Score;
+        if self.history[index] > MAX_HISTORY {
+            for i in 0..(64 * 16) {
+                self.history[i] = self.history[i] >> 1;
+            }
+        }
+    }
+
+    pub fn record_failure(&mut self, m: Move, d: SearchDepth) {
+        let index = SearchData::history_index(m);
+        self.history[index] -= (d * d) as Score;
+        if self.history[index] < MIN_HISTORY {
+            for i in 0..(64 * 16) {
+                self.history[i] = self.history[i] >> 1;
+            }
+        }
     }
 
     pub fn init_ply(&mut self, ply: usize) {
@@ -287,7 +317,7 @@ pub fn go(data: &mut SearchData) {
     let mut moves = data.constraints.searchmoves.clone();
     if moves.len() == 0 {
         let mut ms = MoveSelector::legal();
-        while let Some(m) = ms.next(&data.pos, &ad) {
+        while let Some(m) = ms.next(&data.pos, &ad, &data.history) {
             moves.push(m);
         }
     }
@@ -543,7 +573,8 @@ fn search(data: &mut SearchData, ply: usize,
     let mut num_moves = 0;
 
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
-    while let Some(m) = selector.next(&data.pos, &ad) {
+    let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 64], 0);
+    while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
         // TODO: pruning, futility, depth extension
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
@@ -563,7 +594,10 @@ fn search(data: &mut SearchData, ply: usize,
         }
         debug_assert!(score_is_valid(score));
         data.pos.undo_move(m, &undo);
-
+        if !m.is_capture() && !m.is_promote() && searched_quiet_count < 64 {
+            searched_quiets[searched_quiet_count] = m;
+            searched_quiet_count += 1;
+        }
         // If we're aborting, the score from the last move shouldn't be trusted,
         // since we didn't finish searching it, so bail out without updating
         // pv, bounds, etc.
@@ -581,6 +615,10 @@ fn search(data: &mut SearchData, ply: usize,
                     if data.search_stack[ply].killers[0] != m {
                         data.search_stack[ply].killers[1] = data.search_stack[ply].killers[0];
                         data.search_stack[ply].killers[0] = m;
+                    }
+                    data.record_success(m, depth);
+                    for i in 0..searched_quiet_count {
+                        data.record_failure(searched_quiets[i], depth);
                     }
                 }
                 data.tt.put(data.pos.hash(), m, depth, beta, score::AT_LEAST);
@@ -628,7 +666,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let mut num_moves = 0;
 
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], NO_MOVE);
-    while let Some(m) = selector.next(&data.pos, &ad) {
+    while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
         //println!("{:ply$}ply {} qsearch, do_move {}", ' ', ply, m, ply = ply);
