@@ -620,7 +620,7 @@ fn search(data: &mut SearchData, ply: usize,
                         data.search_stack[ply].killers[0] = m;
                     }
                     data.record_success(m, depth);
-                    for i in 0..searched_quiet_count {
+                    for i in 0..searched_quiet_count-1 {
                         data.record_failure(searched_quiets[i], depth);
                     }
                 }
