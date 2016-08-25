@@ -121,13 +121,13 @@ impl<'a> Table {
         // TODO: test ignoring the write if the depth is shallower (maybe by some
         // margin) than the existing entry and we're updating an existing entry
         debug_assert!(index < BUCKET_SIZE);
-        debug_assert!(s >= i16::min_value() as i32 && s <= i16::max_value() as i32);
         bucket.entries[index].key = short_key;
         bucket.entries[index].m = m;
         bucket.entries[index].score = s as i16;
         bucket.entries[index].generation = self.generation;
         bucket.entries[index].depth = d as u8;
         bucket.entries[index].score_type = st;
+        debug_assert!(s == bucket.entries[index].score as Score);
     }
 }
 

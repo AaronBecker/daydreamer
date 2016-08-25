@@ -335,14 +335,22 @@ pub fn go(data: &mut SearchData) {
  
     deepening_search(data);
 
-    while !data.should_stop() {
-        thread::sleep(time::Duration::from_millis(5));
+    loop {
+        let engine_state = data.state.load();
+        if engine_state == PONDERING_STATE ||
+            data.constraints.infinite && engine_state == SEARCHING_STATE {
+            thread::sleep(time::Duration::from_millis(1));
+        } else {
+            break
+        }
     }
  
-    println!("info string time {} soft limit {} hard limit {}",
-             in_millis(&data.constraints.start_time.elapsed()),
-             in_millis(&data.constraints.soft_limit),
-             in_millis(&data.constraints.hard_limit));
+    if data.constraints.use_timer {
+        println!("info string time {} soft limit {} hard limit {}",
+                 in_millis(&data.constraints.start_time.elapsed()),
+                 in_millis(&data.constraints.soft_limit),
+                 in_millis(&data.constraints.hard_limit));
+    }
     print!("bestmove {}", data.root_moves[0].m);
     if data.root_moves[0].pv.len() > 0 {
         print!(" ponder {}", data.root_moves[0].pv[0]);
@@ -480,7 +488,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
         debug_assert!(score_is_valid(score));
         if data.should_stop() { return SearchResult::Aborted }
         data.root_moves[i].score = score::MIN_SCORE;
-        //println!("******* ROOT MOVE {} alpha {} beta {} raw score {} psqt_score {}", m, alpha, beta, score);
+        //println!("******* ROOT MOVE {} alpha {} beta {} raw score {}", m, alpha, beta, score);
         if full_search || score > alpha {
             // We have updated move info for the root.
             data.root_moves[i].score = score;
@@ -518,7 +526,7 @@ fn search(data: &mut SearchData, ply: usize,
 
     debug_assert!(score_is_valid(alpha) && score_is_valid(beta));
     alpha = max!(alpha, score::mated_in(ply));
-    beta = min!(beta, score::mate_in(ply));
+    beta = min!(beta, score::mate_in(ply + 1));
     if alpha >= beta { return alpha }
     if data.pos.is_draw() { return score::DRAW_SCORE }
 
@@ -526,9 +534,10 @@ fn search(data: &mut SearchData, ply: usize,
     let open_window = beta - alpha > 1;
 
     // Do cutoff based on transposition table.
-    let (mut tt_move, mut tt_score) = (NO_MOVE, 0);
-    if !open_window && TT_ENABLED {
+    let (mut tt_move, mut tt_score) = (NO_MOVE, score::MIN_SCORE);
+    if TT_ENABLED {
         if let Some(entry) = data.tt.get(data.pos.hash()) {
+            //println!("{:ply$}tt hit: m={}, depth={}, score={}", ' ', entry.m, entry.depth, entry.score, ply = ply);
             tt_move = entry.m;
             if depth as u8 <= entry.depth {
                 if (entry.score >= beta as i16 && entry.score_type & score::AT_LEAST != 0) ||
@@ -536,8 +545,10 @@ fn search(data: &mut SearchData, ply: usize,
                     tt_score = entry.score as Score;
                 }
             }
+        } else {
+            //println!("{:ply$}tt miss", ' ', ply = ply);
         }
-        if tt_score != 0 {
+        if !open_window && tt_score != score::MIN_SCORE {
             if open_window {
                 data.init_ply(ply + 1);
                 data.update_pv(ply, tt_move);
@@ -585,7 +596,7 @@ fn search(data: &mut SearchData, ply: usize,
         // TODO: pruning, futility, depth extension
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
-        //println!("{:ply$}ply {}, do_move {}", ' ', ply, m, ply = ply);
+        //if ply < 5 { println!("{:ply$}ply {}, do_move {}", ' ', ply, m, ply = ply); }
         data.stats.nodes += 1;
         num_moves += 1;
         let ext = extend(&data.pos);
@@ -609,7 +620,7 @@ fn search(data: &mut SearchData, ply: usize,
         // since we didn't finish searching it, so bail out without updating
         // pv, bounds, etc.
         if data.should_stop() { return score::DRAW_SCORE; }
-        //println!("{:ply$}ply {}, un_move {} score = {}", ' ', ply, m, score, ply = ply);
+        //if ply < 5 { println!("{:ply$}ply {}, un_move {} score = {}", ' ', ply, m, score, ply = ply); }
         if score > best_score {
             best_score = score;
             best_move = m;
@@ -637,21 +648,23 @@ fn search(data: &mut SearchData, ply: usize,
         // Stalemate or checkmate. We have to be careful not to prune away any
         // moves without checking their legality until we know that there's at
         // least one legal move so that this check is valid.
-        if data.pos.checkers() != 0 { return score::mated_in(ply) }
-        return score::DRAW_SCORE;
+        best_score = if data.pos.checkers() != 0 {
+            score::mated_in(ply)
+        } else {
+            score::DRAW_SCORE
+        };
     }
     debug_assert!(score_is_valid(best_score));
-    data.tt.put(data.pos.hash(), best_move, depth, alpha,
-                if alpha == orig_alpha { score::AT_MOST } else { score::EXACT });
+    data.tt.put(data.pos.hash(), best_move, depth, best_score,
+                if best_score <= orig_alpha { score::AT_MOST } else { score::EXACT });
     best_score
 }
 
 fn quiesce(data: &mut SearchData, ply: usize,
            mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
-    if data.should_stop() { return score::DRAW_SCORE; }
     debug_assert!(score_is_valid(alpha) && score_is_valid(beta));
     alpha = max!(alpha, score::mated_in(ply));
-    beta = min!(beta, score::mate_in(ply));
+    beta = min!(beta, score::mate_in(ply + 1));
     if alpha >= beta { return alpha }
     if data.pos.is_draw() { return score::DRAW_SCORE }
     if ply >= MAX_PLY { return score::DRAW_SCORE }
