@@ -334,6 +334,10 @@ pub fn go(data: &mut SearchData) {
     data.tt.new_generation();
  
     deepening_search(data);
+
+    while !data.should_stop() {
+        thread::sleep(time::Duration::from_millis(5));
+    }
  
     println!("info string time {} soft limit {} hard limit {}",
              in_millis(&data.constraints.start_time.elapsed()),
@@ -348,7 +352,7 @@ pub fn go(data: &mut SearchData) {
 }
 
 fn should_deepen(data: &SearchData) -> bool {
-    if data.current_depth == MAX_PLY { return false }
+    if data.current_depth == MAX_PLY - 1 { return false }
     if data.state.load() == PONDERING_STATE { return true }
     if data.should_stop() { return false }
     if data.constraints.infinite { return true }
