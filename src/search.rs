@@ -386,6 +386,13 @@ fn deepening_search(data: &mut SearchData) {
     }
 }
 
+fn extend(pos: &Position) -> SearchDepth {
+    if pos.checkers() != 0 {
+        return 1.0
+    }
+    0.0
+}
+
 // Note: the non-exact result stuff isn't currently used because I
 // haven't implemented aspiration or reductions yet.
 fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchResult {
@@ -406,14 +413,15 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
         let mut full_search = move_number < options::multi_pv();
         let mut score = score::MIN_SCORE;
         let depth = data.current_depth as SearchDepth;
+        let ext = extend(&data.pos);
         alpha = if full_search { orig_alpha } else { best_alpha };
         if !full_search {
             // TODO: test depth reductions here
-            score = -search(data, 1, -alpha - 1, -alpha, depth - ONE_PLY_F);
+            score = -search(data, 1, -alpha - 1, -alpha, depth + ext - ONE_PLY_F);
             if score > alpha { full_search = true };
         }
         if full_search {
-            score = -search(data, 1, -beta, -alpha, depth - ONE_PLY_F);
+            score = -search(data, 1, -beta, -alpha, depth + ext - ONE_PLY_F);
         }
         data.pos.undo_move(m, &undo);
         debug_assert!(score_is_valid(score));
@@ -526,15 +534,16 @@ fn search(data: &mut SearchData, ply: usize,
         //println!("{:ply$}ply {}, do_move {}", ' ', ply, m, ply = ply);
         data.stats.nodes += 1;
         num_moves += 1;
+        let ext = extend(&data.pos);
         let mut score = score::MIN_SCORE;
         let mut full_search = open_window && num_moves == 1;
         if !full_search {
             // TODO: depth reductions
-            score = -search(data, ply + 1, -alpha - 1, -alpha, depth - ONE_PLY_F);
+            score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - ONE_PLY_F);
             if open_window && score > alpha { full_search = true; }
         }
         if full_search {
-            score = -search(data, ply + 1, -beta, -alpha, depth - ONE_PLY_F);
+            score = -search(data, ply + 1, -beta, -alpha, depth + ext - ONE_PLY_F);
         }
         debug_assert!(score_is_valid(score));
         data.pos.undo_move(m, &undo);
