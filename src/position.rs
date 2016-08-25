@@ -503,6 +503,7 @@ impl Position {
         self.state.ply = 0;
         self.state.hash = self.computed_hash();
         self.state.phase = self.computed_phase();
+        self.state.psqt_score = self.computed_psqt_score();
         self.hash_history.push(self.state.hash);
 
         if pieces.len() <= 4 {
