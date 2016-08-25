@@ -182,6 +182,20 @@ impl RootMove {
     }
 }
 
+
+#[derive(Copy, Clone, Debug)]
+pub struct Node {
+    pub killers: [Move; 2],
+}
+
+impl Node {
+    pub fn new() -> Node {
+        Node {
+            killers: [NO_MOVE, NO_MOVE],
+        }
+    }
+}
+
 pub struct SearchData {
     pub pos: Position,
     pub root_moves: Vec<RootMove>,
@@ -191,6 +205,7 @@ pub struct SearchData {
     pub state: EngineState,
     pub uci_channel: mpsc::Receiver<String>,
     pub pv_stack: [[Move; MAX_PLY + 1]; MAX_PLY + 1],
+    pub search_stack: [Node; MAX_PLY + 1],
     pub tt: transposition::Table,
 }
 
@@ -207,6 +222,7 @@ impl SearchData {
             state: EngineState::new(),
             uci_channel: rx,
             pv_stack: [[NO_MOVE; MAX_PLY + 1]; MAX_PLY + 1],
+            search_stack: [Node::new(); MAX_PLY + 1],
             tt: transposition::Table::new(16 << 20), // TODO: uci handling for table size
         }
     }
@@ -526,7 +542,7 @@ fn search(data: &mut SearchData, ply: usize,
     // TODO: nullmove, razoring
     let mut num_moves = 0;
 
-    let mut selector = MoveSelector::new(&data.pos, depth, tt_move);
+    let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
     while let Some(m) = selector.next(&data.pos, &ad) {
         // TODO: pruning, futility, depth extension
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
@@ -561,6 +577,13 @@ fn search(data: &mut SearchData, ply: usize,
                 if open_window { data.update_pv(ply, m) }
             }
             if score >= beta {
+                if !m.is_capture() && !m.is_promote() {
+                    // FIXME: re-enable post-testing
+                    //if data.search_stack[ply].killers[0] != m {
+                    //    data.search_stack[ply].killers[1] = data.search_stack[ply].killers[0];
+                    //    data.search_stack[ply].killers[0] = m;
+                    //}
+                }
                 data.tt.put(data.pos.hash(), m, depth, beta, score::AT_LEAST);
                 return beta;
             }
@@ -605,7 +628,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
 
-    let mut selector = MoveSelector::new(&data.pos, depth, NO_MOVE);
+    let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], NO_MOVE);
     while let Some(m) = selector.next(&data.pos, &ad) {
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);

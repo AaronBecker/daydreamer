@@ -333,29 +333,35 @@ pub struct MoveSelector {
     phases: &'static [SelectionPhase],
     phase_index: usize,
     tt_move: Move,
+    killers: [Move; 2],
 }
 
 impl MoveSelector {
-    pub fn new(pos: &Position, d: search::SearchDepth, tt_move: Move) -> MoveSelector {
+    pub fn new(pos: &Position, d: search::SearchDepth, node: &search::Node, tt_move: Move) -> MoveSelector {
         MoveSelector {
             moves: Vec::with_capacity(128),  // TODO: check the performance implications of a
                                              // smaller allocation.
                                              // Maybe also consider putting everything in a big
                                              // fixed buffer to avoid any allocations at all.
             bad_captures: Vec::with_capacity(32),
-            phases: if pos.checkers() != 0 {
-                        EVASION_PHASES
-                    } else if search::is_quiescence_depth(d) {
-                        QUIESCENCE_PHASES
-                    } else {
-                        NORMAL_PHASES
-                    },
+            phases: {
+                if pos.checkers() != 0 {
+                    EVASION_PHASES
+                } else if search::is_quiescence_depth(d) {
+                    QUIESCENCE_PHASES
+                } else {
+                    NORMAL_PHASES
+                }
+            },
             phase_index: 0,
-            tt_move: if pos.tt_move_is_plausible(tt_move) {
-                         tt_move
-                     } else {
-                         NO_MOVE
-                     },
+            tt_move: {
+                if pos.tt_move_is_plausible(tt_move) {
+                    tt_move
+                } else {
+                    NO_MOVE
+                }
+            },
+            killers: node.killers,
         }
     }
 
@@ -366,6 +372,7 @@ impl MoveSelector {
             phases: LEGAL_PHASES,
             phase_index: 0,
             tt_move: NO_MOVE,
+            killers: [NO_MOVE; 2],
         }
     }
 
@@ -383,18 +390,65 @@ impl MoveSelector {
 
     // Once we have an SEE implementation we can tell the difference between
     // good and bad captures and can update a bunch of this code.
-    fn order(&mut self) {
+    fn order(&mut self, pos: &Position) {
         // Note that we want the moves ordered least to best, so we can
         // efficiently pop moves of the end of the vector.
-        let phase = self.phases[self.phase_index];
-        if phase == SelectionPhase::Quiet {
-            return;
+
+        // MAX_HISTORY isn't used (we don't have history at all), but I'm
+        // adding the constant as a reminder about how history should be
+        // ordered relative to other stuff when we have it.
+        const MAX_HISTORY: Score = 10000;
+        const MIN_HISTORY: Score = -10000;
+        match self.phases[self.phase_index] {
+            SelectionPhase::TT => panic!("move selector can't order tt moves"),
+            SelectionPhase::Done => panic!("move selection phase error"),
+            SelectionPhase::Legal => { return },
+            SelectionPhase::Loud => {
+                // MVV/LVA
+                for m in self.moves.iter_mut() {
+                    m.s = score::mg_material(m.m.capture().piece_type()) -
+                        m.m.piece().piece_type().index() as Score;
+                }
+            },
+            SelectionPhase::Quiet => {
+                for m in self.moves.iter_mut() {
+                    if m.m == self.killers[0] { m.s = MAX_HISTORY + 2}
+                    if m.m == self.killers[1] { m.s = MAX_HISTORY + 1 }
+                }
+            },
+            SelectionPhase::BadCaptures => {
+                // Note that this is an inefficiency: we're copying all the
+                // bad captures to reverse their order and put them into the
+                // moves vector so that the rest of the code will be more
+                // uniform and tidy.
+                while let Some(sm) = self.bad_captures.pop() {
+                    self.moves.push(sm);
+                }
+                // Bad captures have already been ordered in the LOUD phase.
+                return;
+            }
+            SelectionPhase::Evasions => {
+                // Evasions don't get a bad capture phase, so do static exchange
+                // evaluation now.
+                for m in self.moves.iter_mut() {
+                    if m.m.is_capture() || m.m.is_promote() {
+                        let see = pos.static_exchange_sign(m.m);
+                        if see < 0 {
+                            // SEE values less than zero are actually calculated
+                            // out, so the value is meaningful.
+                            m.s = MIN_HISTORY + see;
+                        } else {
+                            m.s = score::mg_material(m.m.capture().piece_type()) -
+                                m.m.piece().piece_type().index() as Score + MAX_HISTORY;
+                        }
+                    } else {
+                        if m.m == self.killers[0] { m.s = MAX_HISTORY + 2}
+                        if m.m == self.killers[1] { m.s = MAX_HISTORY + 1 }
+                    }
+                }
+            }
         }
-        // BadCaptures handling
-        for m in self.moves.iter_mut() {
-            m.s = score::mg_material(m.m.capture().piece_type()) -
-                m.m.piece().piece_type().index() as Score;
-        }
+
         // TODO: this is probably pretty inefficient because it does an
         // allocation and this is a very small list. Consider writing a
         // small insertion sort implementation.
@@ -414,21 +468,21 @@ impl MoveSelector {
                     return None
                 }
                 self.gen(pos, ad);
-                self.order();
+                self.order(pos);
                 self.phase_index += 1;
             }
 
-            let m = self.moves.pop().unwrap().m;
-            if m == self.tt_move {
+            let sm = self.moves.pop().unwrap();
+            if sm.m == self.tt_move {
                 continue;
             }
             if self.phases[self.phase_index] == SelectionPhase::Loud {
-                if pos.static_exchange_sign(m) < 0 {
-                    self.bad_captures.push(ScoredMove::new(m));
+                if pos.static_exchange_sign(sm.m) < 0 {
+                    self.bad_captures.push(sm);
                     continue;
                 }
             }
-            return Some(m)
+            return Some(sm.m)
         }
     }
 }

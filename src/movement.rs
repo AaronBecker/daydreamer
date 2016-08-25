@@ -43,6 +43,10 @@ impl Move {
         Piece::from_u32((self.0 >> 20) & 0x0f)
     }
 
+    pub fn is_capture(self) -> bool {
+        (self.0 >> 20) & 0x0f != 0
+    }
+
     // If this moves promotes, the piece type promoted to.
     pub fn promote(self) -> PieceType {
         PieceType::from_u32((self.0 >> 24) & 0x0f)
