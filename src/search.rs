@@ -250,7 +250,7 @@ impl SearchData {
     }
 
     pub fn history_index(m: Move) -> usize {
-        m.piece().piece_type().index() << 6 | m.to().index()
+        m.piece().index() << 6 | m.to().index()
     }
 
     pub fn record_success(&mut self, m: Move, d: SearchDepth) {
@@ -573,7 +573,7 @@ fn search(data: &mut SearchData, ply: usize,
     let mut num_moves = 0;
 
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
-    let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 64], 0);
+    let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 128], 0);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
         // TODO: pruning, futility, depth extension
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
@@ -594,7 +594,7 @@ fn search(data: &mut SearchData, ply: usize,
         }
         debug_assert!(score_is_valid(score));
         data.pos.undo_move(m, &undo);
-        if !m.is_capture() && !m.is_promote() && searched_quiet_count < 64 {
+        if !m.is_capture() && !m.is_promote() && searched_quiet_count < 127 {
             searched_quiets[searched_quiet_count] = m;
             searched_quiet_count += 1;
         }
