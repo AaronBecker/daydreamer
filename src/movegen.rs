@@ -410,9 +410,13 @@ impl MoveSelector {
             },
             SelectionPhase::Quiet => {
                 for m in self.moves.iter_mut() {
-                    if m.m == self.killers[0] { m.s = search::MAX_HISTORY + 2}
-                    if m.m == self.killers[1] { m.s = search::MAX_HISTORY + 1 }
-                    m.s += history[search::SearchData::history_index(m.m)];
+                    if m.m == self.killers[0] {
+                        m.s = search::MAX_HISTORY + 2
+                    } else if m.m == self.killers[1] {
+                        m.s = search::MAX_HISTORY + 1
+                    } else {
+                        m.s += history[search::SearchData::history_index(m.m)];
+                    }
                 }
             },
             SelectionPhase::BadCaptures => {
@@ -441,9 +445,13 @@ impl MoveSelector {
                                 m.m.piece().piece_type().index() as Score + search::MAX_HISTORY;
                         }
                     } else {
-                        if m.m == self.killers[0] { m.s = search::MAX_HISTORY + 2}
-                        if m.m == self.killers[1] { m.s = search::MAX_HISTORY + 1 }
-                        m.s += history[search::SearchData::history_index(m.m)];
+                        if m.m == self.killers[0] {
+                            m.s = search::MAX_HISTORY + 2
+                        } else if m.m == self.killers[1] {
+                            m.s = search::MAX_HISTORY + 1
+                        } else {
+                            m.s = history[search::SearchData::history_index(m.m)];
+                        }
                     }
                 }
             }

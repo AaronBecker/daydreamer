@@ -348,6 +348,7 @@ pub fn go(data: &mut SearchData) {
 }
 
 fn should_deepen(data: &SearchData) -> bool {
+    if data.current_depth == MAX_PLY { return false }
     if data.state.load() == PONDERING_STATE { return true }
     if data.should_stop() { return false }
     if data.constraints.infinite { return true }
