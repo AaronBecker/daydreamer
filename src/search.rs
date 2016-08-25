@@ -250,7 +250,9 @@ impl SearchData {
     }
 
     pub fn history_index(m: Move) -> usize {
-        m.piece().index() << 6 | m.to().index()
+        let index = m.piece().index() << 6 | m.to().index();
+        if index >= 16 * 64 { println!("failure, {} index is {}", m, index) }
+        index
     }
 
     pub fn record_success(&mut self, m: Move, d: SearchDepth) {
