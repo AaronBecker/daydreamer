@@ -251,29 +251,19 @@ impl SearchData {
     }
 
     pub fn history_index(m: Move) -> usize {
-        let index = m.piece().index() << 6 | m.to().index();
-        if index >= 16 * 64 { println!("failure, {} index is {}", m, index) }
-        index
+        m.piece().index() << 6 | m.to().index();
     }
 
     pub fn record_success(&mut self, m: Move, d: SearchDepth) {
-        //let index = SearchData::history_index(m);
-        //self.history[index] += (d * d) as Score;
-        //if self.history[index] > MAX_HISTORY {
-        //    for i in 0..(64 * 16) {
-        //        self.history[i] = self.history[i] >> 1;
-        //    }
-        //}
+        let index = SearchData::history_index(m);
+        self.history[index] = min!(MAX_HISTORY,
+                                   self.history[index] + (d * d) as Score);
     }
 
     pub fn record_failure(&mut self, m: Move, d: SearchDepth) {
-        //let index = SearchData::history_index(m);
-        //self.history[index] -= (d * d) as Score;
-        //if self.history[index] < MIN_HISTORY {
-        //    for i in 0..(64 * 16) {
-        //        self.history[i] = self.history[i] >> 1;
-        //    }
-        //}
+        let index = SearchData::history_index(m);
+        self.history[index] = max!(MIN_HISTORY,
+                                   self.history[index] - (d * d) as Score);
     }
 
     pub fn init_ply(&mut self, ply: usize) {
