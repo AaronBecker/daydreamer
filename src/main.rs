@@ -20,8 +20,8 @@ pub mod uci;
 
 fn main() {
     println!("Baru {} ({}), by Aaron Becker",
-             include_str!(concat!(env!("OUT_DIR"), "/version.rs")),
-             env!("CARGO_PKG_VERSION"));
+             env!("CARGO_PKG_VERSION"),
+             include_str!(concat!(env!("OUT_DIR"), "/version.rs")));
     bitboard::initialize();
     position::initialize();
     let mut search_data = search::SearchData::new();
