@@ -251,7 +251,7 @@ impl SearchData {
     }
 
     pub fn history_index(m: Move) -> usize {
-        m.piece().index() << 6 | m.to().index();
+        m.piece().index() << 6 | m.to().index()
     }
 
     pub fn record_success(&mut self, m: Move, d: SearchDepth) {
