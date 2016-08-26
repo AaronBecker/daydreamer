@@ -624,12 +624,15 @@ fn search(data: &mut SearchData, ply: usize,
         if !full_search {
             let mut lmr_red = 0.;
             if num_moves > 1 && !m.is_capture() && !m.is_promote() {
-                lmr_red += 1.;
+                lmr_red += 0.5;
                 if !open_window {
-                    lmr_red += 1.;
+                    lmr_red += 0.5;
+                }
+                if searched_quiet_count > 1 {
+                    lmr_red += 0.5;
                 }
                 if selector.bad_move() {
-                    lmr_red += 1.;
+                    lmr_red += 0.5;
                 }
             }
             if lmr_red > 0. {
