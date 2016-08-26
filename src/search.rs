@@ -24,6 +24,8 @@ const RAZORING_ENABLED: bool = true;
 const RAZOR_DEPTH: SearchDepth = 3.5;
 const RAZOR_MARGIN: [Score; 4] = [0 /* unused */, 300, 300, 325];
 
+const IID_ENABLED: bool = true;
+
 // Inside the search, we keep the remaining depth to search as a floating point
 // value to accomodate fractional extensions and reductions better. Elsewhere
 // depths are all integers to accommodate depth-indexed arrays.
@@ -561,6 +563,7 @@ fn search(data: &mut SearchData, ply: usize,
     }
 
     let lazy_score = data.pos.psqt_score();
+    let margin = beta - lazy_score;
     let depth_index = depth as usize;
 
     if NULL_MOVE_ENABLED &&
@@ -601,6 +604,21 @@ fn search(data: &mut SearchData, ply: usize,
         let qbeta = beta - RAZOR_MARGIN[depth_index];
         let qscore = quiesce(data, ply, qbeta - 1, qbeta, 0.);
         if qscore < qbeta { return qscore }
+    }
+
+    if IID_ENABLED && tt_move == NO_MOVE &&
+        ((open_window && depth >= 5. && margin <= 300) ||
+         (!open_window && depth >= 8. && margin <= 150)) {
+        let mut iid_depth = depth - 2.;
+        if !open_window && iid_depth > depth / 2. {
+            iid_depth = depth / 2.;
+        }
+        search(data, ply, alpha, beta, iid_depth);
+        if let Some(entry) = data.tt.get(data.pos.hash()) {
+            tt_move = entry.m;
+        } else {
+            tt_move = NO_MOVE;
+        }
     }
 
     let (mut best_score, mut best_move) = (score::MIN_SCORE, NO_MOVE);
