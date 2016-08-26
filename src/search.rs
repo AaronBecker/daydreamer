@@ -210,7 +210,6 @@ pub struct SearchData {
     pub tt: transposition::Table,
 }
 
-// TODO immediately: more rigorous history tests
 pub const MAX_HISTORY: Score = 10000;
 pub const MIN_HISTORY: Score = -10000;
 pub const EMPTY_HISTORY: [Score; 64 * 16] = [0; 64 * 16];
@@ -256,14 +255,22 @@ impl SearchData {
 
     pub fn record_success(&mut self, m: Move, d: SearchDepth) {
         let index = SearchData::history_index(m);
-        self.history[index] = min!(MAX_HISTORY,
-                                   self.history[index] + (d * d) as Score);
+        self.history[index] += (d * d) as Score;
+        if self.history[index] > MAX_HISTORY {
+            for i in 0..(64 * 16) {
+                self.history[i] = self.history[i] >> 1;
+            }
+        }
     }
 
     pub fn record_failure(&mut self, m: Move, d: SearchDepth) {
         let index = SearchData::history_index(m);
-        self.history[index] = max!(MIN_HISTORY,
-                                   self.history[index] - (d * d) as Score);
+        self.history[index] -= (d * d) as Score;
+        if self.history[index] < MIN_HISTORY {
+            for i in 0..(64 * 16) {
+                self.history[i] = self.history[i] >> 1;
+            }
+        }
     }
 
     pub fn init_ply(&mut self, ply: usize) {
