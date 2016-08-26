@@ -634,9 +634,6 @@ fn search(data: &mut SearchData, ply: usize,
                         lmr_red += 0.5;
                     }
                 }
-                if depth + ext - lmr_red < ONE_PLY_F {
-                    lmr_red = depth + ext - ONE_PLY_F;
-                }
             }
             if lmr_red > 0. {
                 score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - lmr_red - ONE_PLY_F);
