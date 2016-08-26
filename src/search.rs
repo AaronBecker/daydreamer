@@ -623,10 +623,14 @@ fn search(data: &mut SearchData, ply: usize,
         let mut full_search = open_window && num_moves == 1;
         if !full_search {
             let mut lmr_red = 0.;
+            let planned_depth = depth + ext - ONE_PLY_F;
             if searched_quiet_count > 0 && !m.is_capture() && !m.is_promote() {
-                lmr_red = 1.;
+                lmr_red = planned_depth.ln() * (num_moves as f32).ln();
                 if selector.bad_move() {
                     lmr_red += 1.;
+                }
+                if planned_depth - lmr_red < 1. {
+                    lmr_red = planned_depth - 1.
                 }
             }
             if lmr_red > 0. {
