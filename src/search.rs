@@ -18,8 +18,11 @@ use transposition;
 const NULL_MOVE_ENABLED: bool = true;
 const NULL_EVAL_MARGIN: Score = 200;
 
-// FIXME: transposition table causes a pv reporting bug
 const TT_ENABLED: bool = true;
+
+const RAZORING_ENABLED: bool = true;
+const RAZOR_DEPTH: SearchDepth = 3.5;
+const RAZOR_MARGIN: [Score; 4] = [0 /* unused */, 300, 300, 325];
 
 // Inside the search, we keep the remaining depth to search as a floating point
 // value to accomodate fractional extensions and reductions better. Elsewhere
@@ -556,6 +559,24 @@ fn search(data: &mut SearchData, ply: usize,
     }
 
     let lazy_score = data.pos.psqt_score();
+    let depth_index = depth as usize;
+
+    if RAZORING_ENABLED &&
+        !open_window &&
+        data.pos.last_move() != NULL_MOVE &&
+        depth <= RAZOR_DEPTH &&
+        tt_move == NO_MOVE &&
+        data.pos.checkers() == 0 &&
+        !is_mate_score(beta) &&
+        lazy_score + RAZOR_MARGIN[depth_index] < beta {
+        if depth <= 1.0 {
+            return quiesce(data, ply, alpha, beta, 0.);
+        }
+        let qbeta = beta - RAZOR_MARGIN[depth_index];
+        let qscore = quiesce(data, ply, qbeta - 1, qbeta, 0.);
+        if qscore < qbeta { return qscore }
+    }
+
     if NULL_MOVE_ENABLED &&
         !open_window &&
         depth > 1.0 &&
@@ -585,7 +606,6 @@ fn search(data: &mut SearchData, ply: usize,
     let (mut best_score, mut best_move) = (score::MIN_SCORE, NO_MOVE);
     let ad = AttackData::new(&data.pos);
     let undo = UndoState::undo_state(&data.pos);
-    // TODO: nullmove, razoring
     let mut num_moves = 0;
 
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
