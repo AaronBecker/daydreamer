@@ -12,6 +12,7 @@ fn main() {
     let git_desc = Command::new("git").arg("describe")
                                       .arg("--abbrev=7")
                                       .arg("--always")
+                                      .arg("--dirty")
                                       .arg("--tags")
                                       .output()
                                       .expect("failed to get git version");
@@ -23,8 +24,8 @@ fn main() {
 
     let version = String::from_utf8(git_desc.stdout).expect("couldn't parse git describe");
     let revision = String::from_utf8(git_rev.stdout).expect("couldn't parse git rev-parse");
-    let tag = if !version.contains(revision.as_str()) {
-        format!("{}-{}", version.trim(), revision.trim())
+    let tag = if !version.contains(revision.trim()) {
+        format!("{}-{}", version.trim(), revision)
     } else {
         format!("{}", version.trim())
     };

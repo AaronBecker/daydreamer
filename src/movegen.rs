@@ -334,6 +334,7 @@ pub struct MoveSelector {
     phase_index: usize,
     tt_move: Move,
     killers: [Move; 2],
+    last_score: Score,
 }
 
 impl MoveSelector {
@@ -365,6 +366,7 @@ impl MoveSelector {
                 }
             },
             killers: node.killers,
+            last_score: 0,
         }
     }
 
@@ -376,6 +378,7 @@ impl MoveSelector {
             phase_index: 0,
             tt_move: NO_MOVE,
             killers: [NO_MOVE; 2],
+            last_score: 0,
         }
     }
 
@@ -474,6 +477,7 @@ impl MoveSelector {
             if self.phases[self.phase_index] == SelectionPhase::TT {
                 self.phase_index += 1;
                 if self.tt_move != NO_MOVE {
+                    self.last_score = 1;
                     return Some(self.tt_move)
                 }
             }
@@ -491,13 +495,23 @@ impl MoveSelector {
                 continue
             }
             if self.phases[self.phase_index] == SelectionPhase::Loud {
-                if pos.static_exchange_sign(sm.m) < 0 {
+                let see = pos.static_exchange_sign(sm.m);
+                if see < 0 {
                     self.bad_captures.push(sm);
                     continue;
                 }
+                self.last_score = see;
+            } else if self.phases[self.phase_index] == SelectionPhase::BadCaptures {
+                self.last_score = -1;
+            } else {
+                self.last_score = sm.s;
             }
             return Some(sm.m)
         }
+    }
+
+    pub fn bad_move(&self) -> bool {
+        self.last_score < 0
     }
 }
 

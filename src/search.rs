@@ -618,12 +618,29 @@ fn search(data: &mut SearchData, ply: usize,
         data.stats.nodes += 1;
         num_moves += 1;
         let ext = extend(&data.pos, m);
+
         let mut score = score::MIN_SCORE;
         let mut full_search = open_window && num_moves == 1;
         if !full_search {
-            // TODO: depth reductions
-            score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - ONE_PLY_F);
-            if open_window && score > alpha { full_search = true; }
+            let mut lmr_red = 0.;
+            if num_moves > 1 && !m.is_capture() && !m.is_promote() {
+                lmr_red += 1.;
+                if !open_window {
+                    lmr_red += 1.;
+                }
+                if selector.bad_move() {
+                    lmr_red += 1.;
+                }
+            }
+            if lmr_red > 0. {
+                score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - lmr_red - ONE_PLY_F);
+            } else {
+                score = alpha + 1;
+            }
+            if score > alpha {
+                score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - ONE_PLY_F);
+                if open_window && score > alpha { full_search = true; }
+            }
         }
         if full_search {
             score = -search(data, ply + 1, -beta, -alpha, depth + ext - ONE_PLY_F);
