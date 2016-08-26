@@ -337,7 +337,10 @@ pub struct MoveSelector {
 }
 
 impl MoveSelector {
-    pub fn new(pos: &Position, d: search::SearchDepth, node: &search::Node, tt_move: Move) -> MoveSelector {
+    pub fn new(pos: &Position,
+               d: search::SearchDepth,
+               node: &search::Node,
+               tt_move: Move) -> MoveSelector {
         MoveSelector {
             moves: Vec::with_capacity(128),  // TODO: check the performance implications of a
                                              // smaller allocation.
@@ -428,8 +431,8 @@ impl MoveSelector {
                     self.moves.push(sm);
                 }
                 // Bad captures have already been ordered in the LOUD phase.
-                return;
-            }
+                return
+            },
             SelectionPhase::Evasions => {
                 // Evasions don't get a bad capture phase, so do static exchange
                 // evaluation now.
@@ -454,7 +457,7 @@ impl MoveSelector {
                         }
                     }
                 }
-            }
+            },
         }
 
         // TODO: this is probably pretty inefficient because it does an
@@ -463,12 +466,15 @@ impl MoveSelector {
         self.moves.sort_by_key(|x| x.s);
     }
 
-    pub fn next(&mut self, pos: &Position, ad: &position::AttackData, history: &[Score; 64 * 16]) -> Option<Move> {
+    pub fn next(&mut self,
+                pos: &Position,
+                ad: &position::AttackData,
+                history: &[Score; 64 * 16]) -> Option<Move> {
         loop {
             if self.phases[self.phase_index] == SelectionPhase::TT {
                 self.phase_index += 1;
                 if self.tt_move != NO_MOVE {
-                    return Some(self.tt_move);
+                    return Some(self.tt_move)
                 }
             }
             while self.moves.len() == 0 {
@@ -482,7 +488,7 @@ impl MoveSelector {
 
             let sm = self.moves.pop().unwrap();
             if sm.m == self.tt_move {
-                continue;
+                continue
             }
             if self.phases[self.phase_index] == SelectionPhase::Loud {
                 if pos.static_exchange_sign(sm.m) < 0 {
