@@ -625,14 +625,14 @@ fn search(data: &mut SearchData, ply: usize,
             let mut lmr_red = 0.;
             if searched_quiet_count > 0 && !m.is_capture() && !m.is_promote() {
                 lmr_red = 1.;
-                if num_moves > 8 {
-                    lmr_red += 0.5;
-                }
-                if searched_quiet_count > 8 {
-                    lmr_red += 0.5;
-                }
                 if selector.bad_move() {
                     lmr_red += 1.;
+                    if num_moves > 4 {
+                        lmr_red += 0.5;
+                    }
+                    if searched_quiet_count > 4 {
+                        lmr_red += 0.5;
+                    }
                 }
                 if depth + ext - lmr_red < ONE_PLY_F {
                     lmr_red = depth + ext - ONE_PLY_F;
