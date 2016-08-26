@@ -609,10 +609,11 @@ fn search(data: &mut SearchData, ply: usize,
     if IID_ENABLED && tt_move == NO_MOVE &&
         ((open_window && depth >= 5. && margin <= 300) ||
          (!open_window && depth >= 8. && margin <= 150)) {
-        let mut iid_depth = depth - 2.;
-        if !open_window && iid_depth > depth / 2. {
-            iid_depth = depth / 2.;
-        }
+        let iid_depth = if open_window {
+            (4. * depth / 5.) - 2.
+        } else {
+            (2. * depth / 3.) - 2.
+        };
         search(data, ply, alpha, beta, iid_depth);
         if let Some(entry) = data.tt.get(data.pos.hash()) {
             tt_move = entry.m;
