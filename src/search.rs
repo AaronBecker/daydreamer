@@ -448,11 +448,13 @@ fn deepening_search(data: &mut SearchData) {
     }
 }
 
-fn extend(pos: &Position) -> SearchDepth {
-    if pos.checkers() != 0 {
-        return 1.0
+fn extend(pos: &Position, m: Move) -> SearchDepth {
+    // TODO: try extending on moves that give check, rather than the ply after.
+    if pos.checkers() != 0 && pos.static_exchange_sign(m) >= 0 {
+        1.0
+    } else {
+        0.0
     }
-    0.0
 }
 
 // Note: the non-exact result stuff isn't currently used because I
@@ -475,7 +477,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
         let mut full_search = move_number < options::multi_pv();
         let mut score = score::MIN_SCORE;
         let depth = data.current_depth as SearchDepth;
-        let ext = extend(&data.pos);
+        let ext = extend(&data.pos, m);
         alpha = if full_search { orig_alpha } else { best_alpha };
         if !full_search {
             // TODO: test depth reductions here
@@ -561,6 +563,22 @@ fn search(data: &mut SearchData, ply: usize,
     let lazy_score = data.pos.psqt_score();
     let depth_index = depth as usize;
 
+    if RAZORING_ENABLED &&
+        !open_window &&
+        data.pos.last_move() != NULL_MOVE &&
+        depth <= RAZOR_DEPTH &&
+        tt_move == NO_MOVE &&
+        data.pos.checkers() == 0 &&
+        !is_mate_score(beta) &&
+        lazy_score + RAZOR_MARGIN[depth_index] < beta {
+        if depth <= 1.0 {
+            return quiesce(data, ply, alpha, beta, 0.);
+        }
+        let qbeta = beta - RAZOR_MARGIN[depth_index];
+        let qscore = quiesce(data, ply, qbeta - 1, qbeta, 0.);
+        if qscore < qbeta { return qscore }
+    }
+
     if NULL_MOVE_ENABLED &&
         !open_window &&
         depth > 1.0 &&
@@ -585,20 +603,6 @@ fn search(data: &mut SearchData, ply: usize,
             null_score = beta;
         }
         if null_score >= beta { return beta }
-    } else if RAZORING_ENABLED &&
-        !open_window &&
-        data.pos.last_move() != NULL_MOVE &&
-        depth <= RAZOR_DEPTH &&
-        tt_move == NO_MOVE &&
-        data.pos.checkers() == 0 &&
-        !is_mate_score(beta) &&
-        lazy_score + RAZOR_MARGIN[depth_index] < beta {
-        if depth <= 1.0 {
-            return quiesce(data, ply, alpha, beta, 0.);
-        }
-        let qbeta = beta - RAZOR_MARGIN[depth_index];
-        let qscore = quiesce(data, ply, qbeta - 1, qbeta, 0.);
-        if qscore < qbeta { return qscore }
     }
 
     let (mut best_score, mut best_move) = (score::MIN_SCORE, NO_MOVE);
@@ -615,7 +619,7 @@ fn search(data: &mut SearchData, ply: usize,
         //if ply < 5 { println!("{:ply$}ply {}, do_move {}", ' ', ply, m, ply = ply); }
         data.stats.nodes += 1;
         num_moves += 1;
-        let ext = extend(&data.pos);
+        let ext = extend(&data.pos, m);
         let mut score = score::MIN_SCORE;
         let mut full_search = open_window && num_moves == 1;
         if !full_search {
