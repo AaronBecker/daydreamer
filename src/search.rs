@@ -627,10 +627,10 @@ fn search(data: &mut SearchData, ply: usize,
                 lmr_red = 1.;
                 if selector.bad_move() {
                     lmr_red += 1.;
-                    if num_moves > 4 {
+                    if num_moves > 8 {
                         lmr_red += 0.5;
                     }
-                    if searched_quiet_count > 4 {
+                    if searched_quiet_count > 8 {
                         lmr_red += 0.5;
                     }
                 }
