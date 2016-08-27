@@ -391,6 +391,7 @@ enum SelectionPhase {
     Legal,
     TT,
     Loud,
+    Killers,
     Quiet,
     BadCaptures,
     Evasions,
@@ -400,6 +401,7 @@ enum SelectionPhase {
 const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Legal, SelectionPhase::Done];
 const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::TT,
                                                    SelectionPhase::Loud,
+                                                   SelectionPhase::Killers,
                                                    SelectionPhase::Quiet,
                                                    SelectionPhase::BadCaptures,
                                                    SelectionPhase::Done];
@@ -467,6 +469,14 @@ impl MoveSelector {
             SelectionPhase::TT => panic!("move selector can't generate tt moves"),
             SelectionPhase::Legal => gen_legal(pos, ad, &mut self.moves),
             SelectionPhase::Loud => gen_loud(pos, &mut self.moves),
+            SelectionPhase::Killers => {
+                if self.killers[1] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[1]) {
+                    self.moves.push(ScoredMove { m: self.killers[1], s: search::MAX_HISTORY + 1 });
+                }
+                if self.killers[0] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[0]) {
+                    self.moves.push(ScoredMove { m: self.killers[0], s: search::MAX_HISTORY + 2 });
+                }
+            }
             SelectionPhase::Quiet => gen_quiet(pos, &mut self.moves),
             SelectionPhase::BadCaptures => self.moves.append(&mut self.bad_captures),
             SelectionPhase::Evasions => gen_evasions(pos, &mut self.moves),
@@ -494,12 +504,17 @@ impl MoveSelector {
                         m.m.piece().piece_type().index() as Score;
                 }
             },
+            SelectionPhase::Killers => {
+                // Killers are ordered by gen.
+                return 
+            }
             SelectionPhase::Quiet => {
                 for m in self.moves.iter_mut() {
+                    // Order killers to the back since they'll be skipped anyway.
                     if m.m == self.killers[0] {
-                        m.s = search::MAX_HISTORY + 2
+                        m.s = -search::MAX_HISTORY
                     } else if m.m == self.killers[1] {
-                        m.s = search::MAX_HISTORY + 1
+                        m.s = --search::MAX_HISTORY
                     } else {
                         m.s += history[search::SearchData::history_index(m.m)];
                     }
@@ -574,15 +589,21 @@ impl MoveSelector {
             if sm.m == self.tt_move {
                 continue
             }
-            if self.phases[self.phase_index] == SelectionPhase::Loud {
+            let phase = self.phases[self.phase_index];
+            if phase == SelectionPhase::Loud {
                 let see = pos.static_exchange_sign(sm.m);
                 if see < 0 {
                     self.bad_captures.push(sm);
                     continue;
                 }
                 self.last_score = see;
-            } else if self.phases[self.phase_index] == SelectionPhase::BadCaptures {
+            } else if phase == SelectionPhase::BadCaptures {
                 self.last_score = -1;
+            } else if phase == SelectionPhase::Quiet {
+                if sm.m == self.killers[0] || sm.m == self.killers[1] {
+                    continue;
+                }
+                self.last_score = sm.s;
             } else {
                 self.last_score = sm.s;
             }
