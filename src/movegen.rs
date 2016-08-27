@@ -451,13 +451,17 @@ impl MoveSelector {
             },
             phase_index: 0,
             tt_move: {
-                let move_ok = pos.tt_move_is_plausible(tt_move);
-                if move_ok != move_is_pseudo_legal(pos, tt_move, false) {
-                    panic!("failed pseudolegality check in position {} for move {}-{}",
-                           pos, tt_move.from(), tt_move.to());
-                }
-                if move_ok {
-                    tt_move
+                if tt_move != NO_MOVE {
+                    let move_ok = pos.tt_move_is_plausible(tt_move);
+                    if move_ok != move_is_pseudo_legal(pos, tt_move, false) {
+                        panic!("failed pseudolegality check in position {} for move {}-{}",
+                               pos, tt_move.from(), tt_move.to());
+                    }
+                    if move_ok {
+                        tt_move
+                    } else {
+                        NO_MOVE
+                    }
                 } else {
                     NO_MOVE
                 }
@@ -517,11 +521,12 @@ impl MoveSelector {
             },
             SelectionPhase::Killers => {
                 // Killers are ordered by gen.
-                return
+                return 
             }
             SelectionPhase::Quiet => {
                 let mut killer0_found = false;
                 for m in self.moves.iter_mut() {
+                    // Order killers to the back since they'll be skipped anyway.
                     if m.m == self.killers[0] {
                         m.s = search::MAX_HISTORY + 2;
                         killer0_found = true;
