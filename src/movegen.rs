@@ -452,10 +452,11 @@ impl MoveSelector {
             phase_index: 0,
             tt_move: {
                 let move_ok = pos.tt_move_is_plausible(tt_move);
-                if move_ok != move_is_pseudo_legal(pos, tt_move, true) {
-                    panic!("failed pseudolegality check in position {} for move {}-{}", pos, tt_move.from(), tt_move.to());
+                if move_ok != move_is_pseudo_legal(pos, tt_move, false) {
+                    panic!("failed pseudolegality check in position {} for move {}-{}",
+                           pos, tt_move.from(), tt_move.to());
                 }
-                if move_is_pseudo_legal(pos, tt_move, true) {
+                if move_ok {
                     tt_move
                 } else {
                     NO_MOVE
@@ -519,13 +520,25 @@ impl MoveSelector {
                 return
             }
             SelectionPhase::Quiet => {
+                let mut killer0_found = false;
                 for m in self.moves.iter_mut() {
                     if m.m == self.killers[0] {
-                        m.s = search::MAX_HISTORY + 2
+                        m.s = search::MAX_HISTORY + 2;
+                        killer0_found = true;
                     } else if m.m == self.killers[1] {
                         m.s = search::MAX_HISTORY + 1
                     } else {
                         m.s += history[search::SearchData::history_index(m.m)];
+                    }
+                }
+                if killer0_found {
+                    if !move_is_pseudo_legal(pos, self.killers[0], false) {
+                        panic!("found non-pseudo-legal killer {} {}", pos.debug_string(), self.killers[0]);
+                    }
+                }
+                if !killer0_found && self.killers[0] != NO_MOVE {
+                    if move_is_pseudo_legal(pos, self.killers[0], false) {
+                        panic!("didn't find pseudo-legal killer {} {}", pos.debug_string(), self.killers[0]);
                     }
                 }
             },
