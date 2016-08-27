@@ -439,26 +439,21 @@ fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
 
 fn deepening_search(data: &mut SearchData) {
     data.current_depth = 1;
+    let (mut alpha, mut beta) = (score::MIN_SCORE, score::MAX_SCORE);
     while should_deepen(data) {
         if should_print(data) {
             println!("info depth {}", data.current_depth);
         }
         // Calculate aspiration search window.
-        let (mut alpha, mut beta) = (score::MIN_SCORE, score::MAX_SCORE);
         let mut aspire_factor = 10;
         let mut consecutive_fail_highs = 0;
         let mut consecutive_fail_lows = 0;
+        if data.current_depth > 5 && options::multi_pv() == 1 {
+            alpha = data.root_moves[0].score - aspire_factor;
+            beta = data.root_moves[0].score + aspire_factor;
+        }
 
         loop {
-            if data.current_depth > 5 && options::multi_pv() == 1 {
-                if consecutive_fail_lows > 0 {
-                    alpha -= min!(aspire_factor * consecutive_fail_lows, alpha - score::MIN_SCORE);
-                }
-                if consecutive_fail_highs > 0 {
-                    beta += min!(aspire_factor * consecutive_fail_highs, score::MAX_SCORE - beta); 
-                }
-            }
-
             root_search(data, alpha, beta);
             // TODO: try nodes searched under this move as a secondary key.
             data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
@@ -467,13 +462,19 @@ fn deepening_search(data: &mut SearchData) {
             if last_score <= alpha {
                 consecutive_fail_lows += 1;
                 consecutive_fail_highs = 0;
-                aspire_factor *= 2;
             } else if last_score >= beta {
                 consecutive_fail_lows = 0;
                 consecutive_fail_highs += 1;
-                aspire_factor *= 2;
             } else {
                 break;
+            }
+
+            aspire_factor *= 2;
+            if consecutive_fail_lows > 0 {
+                alpha -= min!(aspire_factor * consecutive_fail_lows, alpha - score::MIN_SCORE);
+            }
+            if consecutive_fail_highs > 0 {
+                beta += min!(aspire_factor * consecutive_fail_highs, score::MAX_SCORE - beta);
             }
         }
 
