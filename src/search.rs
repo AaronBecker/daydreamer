@@ -26,6 +26,7 @@ const RAZOR_DEPTH: SearchDepth = 3.5;
 const RAZOR_MARGIN: [Score; 4] = [0 /* unused */, 300, 300, 325];
 
 const IID_ENABLED: bool = true;
+const FUTILITY_ENABLED: bool = true;
 
 // Inside the search, we keep the remaining depth to search as a floating point
 // value to accomodate fractional extensions and reductions better. Elsewhere
@@ -632,25 +633,72 @@ fn search(data: &mut SearchData, ply: usize,
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
     let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 128], 0);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
-        // TODO: pruning, futility, depth extension
-        if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
-
         // gives_check is not precise, but it's just used for heuristic extensions.
         let gives_check = !m.is_castle() && !m.is_en_passant() &&
             ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
              (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
               bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
 
-        data.pos.do_move(m, &ad);
-        //if ply < 5 { println!("{:ply$}ply {}, do_move {}", ' ', ply, m, ply = ply); }
-        data.stats.nodes += 1;
-        num_moves += 1;
         let ext = if gives_check && data.pos.static_exchange_sign(m) >=0 {
             1.
         } else {
             0.
         };
 
+        if FUTILITY_ENABLED &&
+            !open_window &&
+            ext == 0. &&
+            depth <= 5. &&
+            data.pos.checkers() == 0 &&
+            num_moves >= depth_index + 2 &&
+            !m.is_capture() && !m.is_promote() && !m.is_castle() {
+            if lazy_score + score::mg_material(m.capture().piece_type()) + ((85. + 15. * depth + 2. * depth * depth) as Score) < beta + 2 * num_moves as Score {
+                continue;
+            }
+        }
+        /*
+        const bool prune_futile = futility_enabled &&
+             !full_window &&
+             !ext &&
+             !mate_threat &&
+             depth <= futility_depth_limit &&
+             !is_check(pos) &&
+             num_legal_moves >= depth_index + 2 &&
+             should_try_prune(&selector, move);
+         if (prune_futile) {
+             // History pruning.
+             // TODO: try more stringent depth requirements
+             // TODO: try pruning based on pure move ordering, or work
+             // move order into the history count
+             // TODO: experiment with pruning inside pv
+             if (history_prune_enabled && depth <= 3.0 &&
+                     is_history_prune_allowed(&root_data.history,
+                         move, depth)) {
+                 num_futile_moves++;
+                 undo_move(pos, move, &undo);
+                 if (full_window) add_pv_move(&selector, move, 0);
+                 continue;
+             }
+             // Value pruning.
+             if (value_prune_enabled &&
+                     lazy_score +
+                     material_value(get_move_capture(move)) +
+                     85 + 15*depth + 2*depth*depth <
+                     beta + 2*num_legal_moves) {
+                 num_futile_moves++;
+                 undo_move(pos, move, &undo);
+                 if (full_window) add_pv_move(&selector, move, 0);
+                 continue;
+             }
+         }*/
+        // TODO: pruning, futility, depth extension
+        if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
+
+
+        data.pos.do_move(m, &ad);
+        //if ply < 5 { println!("{:ply$}ply {}, do_move {}", ' ', ply, m, ply = ply); }
+        data.stats.nodes += 1;
+        num_moves += 1;
         let mut score = score::MIN_SCORE;
         let mut full_search = open_window && num_moves == 1;
         if !full_search {
