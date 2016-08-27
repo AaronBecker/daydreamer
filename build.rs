@@ -25,7 +25,7 @@ fn main() {
     let version = String::from_utf8(git_desc.stdout).expect("couldn't parse git describe");
     let revision = String::from_utf8(git_rev.stdout).expect("couldn't parse git rev-parse");
     let tag = if !version.contains(revision.trim()) {
-        format!("{}-{}", version.trim(), revision)
+        format!("{}-{}", version.trim(), revision.trim())
     } else {
         format!("{}", version.trim())
     };
