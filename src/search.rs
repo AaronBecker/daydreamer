@@ -445,12 +445,12 @@ fn deepening_search(data: &mut SearchData) {
             println!("info depth {}", data.current_depth);
         }
         // Calculate aspiration search window.
-        let mut aspire_factor = 10;
         let mut consecutive_fail_highs = 0;
         let mut consecutive_fail_lows = 0;
+        const ASPIRE_MARGIN: [Score; 6] = [10, 35, 75, 300, 500, score::MAX_SCORE];
         if data.current_depth > 5 && options::multi_pv() == 1 {
-            alpha = data.root_moves[0].score - aspire_factor;
-            beta = data.root_moves[0].score + aspire_factor;
+            alpha = data.root_moves[0].score - ASPIRE_MARGIN[0];
+            beta = data.root_moves[0].score + ASPIRE_MARGIN[0];
         }
 
         loop {
@@ -468,13 +468,12 @@ fn deepening_search(data: &mut SearchData) {
             } else {
                 break;
             }
-
-            aspire_factor *= 2;
+ 
             if consecutive_fail_lows > 0 {
-                alpha -= min!(aspire_factor * consecutive_fail_lows, alpha - score::MIN_SCORE);
+                alpha = max!(last_score - ASPIRE_MARGIN[consecutive_fail_lows], score::MIN_SCORE);
             }
             if consecutive_fail_highs > 0 {
-                beta += min!(aspire_factor * consecutive_fail_highs, score::MAX_SCORE - beta);
+                beta = min!(last_score + ASPIRE_MARGIN[consecutive_fail_highs], score::MAX_SCORE);
             }
         }
 
