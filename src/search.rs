@@ -448,35 +448,39 @@ fn deepening_search(data: &mut SearchData) {
         }
         // Calculate aspiration search window.
         let (mut alpha, mut beta) = (score::MIN_SCORE, score::MAX_SCORE);
-        const ASPIRE_LOW: [Score; 3] = [-35, -75, -300];
-        const ASPIRE_HIGH: [Score; 3] = [35, 75, 300];
-        if data.current_depth > 5 && options::multi_pv() == 1 {
-            alpha = if consecutive_fail_lows > 2 || last_score < score::mated_in(MAX_PLY) {
-                score::MIN_SCORE
-            } else {
-                last_score + ASPIRE_LOW[consecutive_fail_lows]
-            };
-            beta = if consecutive_fail_highs > 2 || last_score > score::mate_in(MAX_PLY) {
-                score::MAX_SCORE
-            } else {
-                last_score + ASPIRE_HIGH[consecutive_fail_highs]
-            };
-        }
 
-        root_search(data, alpha, beta);
-        // TODO: try nodes searched under this move as a secondary key.
-        data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
-        print_pv(data, alpha, beta);
-        last_score = data.root_moves[0].score;
-        if last_score <= alpha {
-            consecutive_fail_lows += 1;
-            consecutive_fail_highs = 0;
-        } else if last_score >= beta {
-            consecutive_fail_lows = 0;
-            consecutive_fail_highs += 1;
-        } else {
-            consecutive_fail_lows = 0;
-            consecutive_fail_highs = 0;
+        loop {
+            const ASPIRE_LOW: [Score; 3] = [-35, -75, -300];
+            const ASPIRE_HIGH: [Score; 3] = [35, 75, 300];
+            if data.current_depth > 5 && options::multi_pv() == 1 {
+                alpha = if consecutive_fail_lows > 2 || last_score < score::mated_in(MAX_PLY) {
+                    score::MIN_SCORE
+                } else {
+                    last_score + ASPIRE_LOW[consecutive_fail_lows]
+                };
+                beta = if consecutive_fail_highs > 2 || last_score > score::mate_in(MAX_PLY) {
+                    score::MAX_SCORE
+                } else {
+                    last_score + ASPIRE_HIGH[consecutive_fail_highs]
+                };
+            }
+
+            root_search(data, alpha, beta);
+            // TODO: try nodes searched under this move as a secondary key.
+            data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
+            print_pv(data, alpha, beta);
+            last_score = data.root_moves[0].score;
+            if last_score <= alpha {
+                consecutive_fail_lows += 1;
+                consecutive_fail_highs = 0;
+            } else if last_score >= beta {
+                consecutive_fail_lows = 0;
+                consecutive_fail_highs += 1;
+            } else {
+                consecutive_fail_lows = 0;
+                consecutive_fail_highs = 0;
+                break;
+            }
         }
 
         data.current_depth += ONE_PLY;
