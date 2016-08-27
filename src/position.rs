@@ -1066,10 +1066,10 @@ impl ::std::fmt::Display for Position {
 // calculate it once per position during search. I borrowed the idea for
 // this clever setup from Stockfish.
 pub struct AttackData {
-    potential_checks: [Bitboard; 8], // per piece type
-    check_discoverers: Bitboard,
+    pub potential_checks: [Bitboard; 8], // per piece type
+    pub check_discoverers: Bitboard,
     pub pinned: Bitboard,
-    their_king: Square,
+    pub their_king: Square,
 }
 
 impl AttackData {

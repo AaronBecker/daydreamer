@@ -4,6 +4,7 @@ use std::thread;
 use std::time;
 use std::time::{Duration, Instant};
 
+use bitboard;
 use board;
 use board::PieceType;
 use movegen::MoveSelector;
@@ -450,6 +451,7 @@ fn deepening_search(data: &mut SearchData) {
     }
 }
 
+// FIXME: not currently used.
 fn extend(pos: &Position, m: Move) -> SearchDepth {
     // TODO: try extending on moves that give check, rather than the ply after.
     if pos.checkers() != 0 && pos.static_exchange_sign(m) >= 0 {
@@ -632,11 +634,22 @@ fn search(data: &mut SearchData, ply: usize,
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
         // TODO: pruning, futility, depth extension
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
+
+        // gives_check is not precise, but it's just used for heuristic extensions.
+        let gives_check = !m.is_castle() && !m.is_en_passant() &&
+            ((ad.potential_checks[m.piece().index()] & bitboard::bb(m.to()) != 0) ||
+             (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
+              bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
+
         data.pos.do_move(m, &ad);
         //if ply < 5 { println!("{:ply$}ply {}, do_move {}", ' ', ply, m, ply = ply); }
         data.stats.nodes += 1;
         num_moves += 1;
-        let ext = extend(&data.pos, m);
+        let ext = if gives_check && data.pos.static_exchange_sign(m) >=0 {
+            1.
+        } else {
+            0.
+        };
 
         let mut score = score::MIN_SCORE;
         let mut full_search = open_window && num_moves == 1;
