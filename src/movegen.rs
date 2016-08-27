@@ -411,7 +411,7 @@ enum SelectionPhase {
 const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Legal, SelectionPhase::Done];
 const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::TT,
                                                    SelectionPhase::Loud,
-                                                   SelectionPhase::Killers,
+                                                   //SelectionPhase::Killers,
                                                    SelectionPhase::Quiet,
                                                    SelectionPhase::BadCaptures,
                                                    SelectionPhase::Done];
@@ -451,6 +451,10 @@ impl MoveSelector {
             },
             phase_index: 0,
             tt_move: {
+                let move_ok = pos.tt_move_is_plausible(tt_move);
+                if move_ok != move_is_pseudo_legal(pos, tt_move, true) {
+                    panic!("failed pseudolegality check in position {} for move {}-{}", pos, tt_move.from(), tt_move.to());
+                }
                 if move_is_pseudo_legal(pos, tt_move, true) {
                     tt_move
                 } else {
@@ -512,15 +516,14 @@ impl MoveSelector {
             },
             SelectionPhase::Killers => {
                 // Killers are ordered by gen.
-                return 
+                return
             }
             SelectionPhase::Quiet => {
                 for m in self.moves.iter_mut() {
-                    // Order killers to the back since they'll be skipped anyway.
                     if m.m == self.killers[0] {
-                        m.s = -search::MAX_HISTORY
+                        m.s = search::MAX_HISTORY + 2
                     } else if m.m == self.killers[1] {
-                        m.s = -search::MAX_HISTORY
+                        m.s = search::MAX_HISTORY + 1
                     } else {
                         m.s += history[search::SearchData::history_index(m.m)];
                     }
@@ -597,6 +600,7 @@ impl MoveSelector {
             }
             let phase = self.phases[self.phase_index];
             if phase == SelectionPhase::Loud {
+                // TODO: test updating the score to the see value.
                 let see = pos.static_exchange_sign(sm.m);
                 if see < 0 {
                     self.bad_captures.push(sm);
@@ -606,9 +610,9 @@ impl MoveSelector {
             } else if phase == SelectionPhase::BadCaptures {
                 self.last_score = -1;
             } else if phase == SelectionPhase::Quiet {
-                if sm.m == self.killers[0] || sm.m == self.killers[1] {
-                    continue;
-                }
+                //if sm.m == self.killers[0] || sm.m == self.killers[1] {
+                //    continue;
+                //}
                 self.last_score = sm.s;
             } else {
                 self.last_score = sm.s;
