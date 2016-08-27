@@ -637,7 +637,7 @@ fn search(data: &mut SearchData, ply: usize,
 
         // gives_check is not precise, but it's just used for heuristic extensions.
         let gives_check = !m.is_castle() && !m.is_en_passant() &&
-            ((ad.potential_checks[m.piece().index()] & bitboard::bb(m.to()) != 0) ||
+            ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
              (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
               bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
 
