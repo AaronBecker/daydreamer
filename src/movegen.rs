@@ -355,6 +355,12 @@ pub fn move_is_pseudo_legal(pos: &Position, m: Move) -> bool {
         if bitboard::queen_attacks(m.from(), pos.all_pieces()) & bb!(m.to()) == 0 {
             return false
         }
+    } else if pt == PieceType::Pawn {
+        // Avoid blocked pawn double-pushes.
+        let piece_behind = pos.piece_at(m.to().pawn_push(pos.them()));
+        if piece_behind != Piece::NoPiece && piece_behind != m.piece() {
+            return false;
+        }
     }
 
     // If we're in check, we don't generate some moves that would
@@ -487,12 +493,8 @@ impl MoveSelector {
     // Once we have an SEE implementation we can tell the difference between
     // good and bad captures and can update a bunch of this code.
     fn order(&mut self, pos: &Position, history: &[Score; 64 * 16]) {
-        // Note that we want the moves ordered least to best, so we can
+        // Note that we want the moves ordered worst to best, so we can
         // efficiently pop moves of the end of the vector.
-
-        // MAX_HISTORY isn't used (we don't have history at all), but I'm
-        // adding the constant as a reminder about how history should be
-        // ordered relative to other stuff when we have it.
         match self.phases[self.phase_index] {
             SelectionPhase::TT => panic!("move selector can't order tt moves"),
             SelectionPhase::Done => panic!("move selection phase error"),
@@ -514,7 +516,7 @@ impl MoveSelector {
                     if m.m == self.killers[0] {
                         m.s = -search::MAX_HISTORY
                     } else if m.m == self.killers[1] {
-                        m.s = --search::MAX_HISTORY
+                        m.s = -search::MAX_HISTORY
                     } else {
                         m.s += history[search::SearchData::history_index(m.m)];
                     }
@@ -648,6 +650,8 @@ mod tests {
         test_case("8/2k5/1B6/qp3P2/8/6b1/4R3/4K3 w K -", Move::new(E2, D2, WR, NoPiece), false);
         test_case("8/2k5/1B6/qp3P2/8/6b1/4R3/4K3 w K -", Move::new(E1, D1, WK, NoPiece), true);
         test_case("8/2k5/1B6/qp3P2/8/6b1/4R3/4K3 w K -", Move::new(E1, D2, WK, NoPiece), false);
+        test_case("4k3/8/8/8/8/8/4P3/4K3 w - -", Move::new(E2, E4, WP, NoPiece), true);
+        test_case("4k3/8/8/8/8/4p3/4P3/4K3 w - -", Move::new(E2, E4, WP, NoPiece), false);
     });
 
     chess_test!(test_legal_generation, {
