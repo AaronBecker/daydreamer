@@ -9,6 +9,7 @@ use score;
 use score::Score;
 use search;
 
+#[derive(Debug, PartialEq, Eq)]
 struct ScoredMove {
     m: Move,
     s: Score,
@@ -306,6 +307,85 @@ fn gen_quiet(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_masked_pawn_moves(pos, !0, GenerationType::Quiet, moves);
 }
 
+// Check a move *that was pseudo-legal in some position* to see if it's
+// pseudo-legal in this position. We don't need to filter out nonsense
+// moves (e.g. knight promotes to queen, pawn promotes on the third rank,
+// bishop moves like a knight), but we do need to filter out moves that
+// were pseudo-legal in other positions but aren't any more.
+pub fn move_is_pseudo_legal(pos: &Position, m: Move) -> bool {
+    // Handle difficult special cases by actually generating the moves.
+    if m.is_castle() || m.is_promote() || m.is_en_passant() {
+        let mut pseudos = Vec::with_capacity(128);
+        let sm = ScoredMove::new(m);
+        if pos.checkers() != 0 {
+            gen_evasions(pos, &mut pseudos);
+            return pseudos.contains(&sm);
+        }
+        if m.is_castle() {
+            add_castles(pos, &mut pseudos);
+            return pseudos.contains(&sm);
+        }
+        if m.is_promote() || m.is_en_passant() {
+            add_pawn_moves(pos, &mut pseudos);
+            return pseudos.contains(&sm);
+        }
+        debug_assert!(false);
+    }
+
+    debug_assert!(m.promote() == PieceType::NoPieceType);
+    // Check the contents of the source and destination squares.
+    if pos.piece_at(m.from()) != m.piece() {
+        return false;
+    }
+    if pos.piece_at(m.to()) != m.capture() {
+        return false;
+    }
+
+    // Make sure that sliding moves aren't occluded.
+    let pt = m.piece().piece_type();
+    if pt == PieceType::Bishop {
+        if bitboard::bishop_attacks(m.from(), pos.all_pieces()) & bb!(m.to()) == 0 {
+            return false
+        }
+    } else if pt == PieceType::Rook {
+        if bitboard::rook_attacks(m.from(), pos.all_pieces()) & bb!(m.to()) == 0 {
+            return false
+        }
+    } else if pt == PieceType::Queen {
+        if bitboard::queen_attacks(m.from(), pos.all_pieces()) & bb!(m.to()) == 0 {
+            return false
+        }
+    }
+
+    // If we're in check, we don't generate some moves that would
+    // otherwise be considered pseudolegal.
+    if pos.checkers() != 0 {
+        if pt == PieceType::King {
+            // We only generate legal king moves while in check.
+            // The pseudo-legality checker depends on this property.
+            let mut checkers = pos.checkers();
+            while checkers != 0 {
+                let check_sq = bitboard::pop_square(&mut checkers);
+                if pos.piece_at(check_sq).piece_type().index() >= PieceType::Bishop.index() {
+                    if bb!(m.to()) & (bb!(check_sq) ^ bitboard::ray(check_sq, m.from())) != 0 {
+                        return false;
+                    }
+                }
+            }
+        } else {
+            // We only generate king moves when in double check.
+            let checkers = pos.checkers();
+            if checkers.count_ones() > 1 { return false }
+
+            let check_sq = bitboard::lsb(checkers);
+            let mask = bitboard::between(pos.king_sq(pos.us()), check_sq) | bb!(check_sq); 
+            if bb!(m.to()) & mask == 0 { return false }
+        }
+    }
+    true
+}
+
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum SelectionPhase {
     Legal,
@@ -359,7 +439,7 @@ impl MoveSelector {
             },
             phase_index: 0,
             tt_move: {
-                if pos.tt_move_is_plausible(tt_move) {
+                if move_is_pseudo_legal(pos, tt_move) {
                     tt_move
                 } else {
                     NO_MOVE
@@ -520,6 +600,34 @@ mod tests {
     use super::*;
     use movement::Move;
     use position::{AttackData, Position};
+    use search;
+
+    chess_test!(test_move_is_pseudo_legal, {
+        let test_case = |fen, m, want| {
+            let pos = Position::from_fen(fen);
+            println!("{}", pos.debug_string());
+            assert_eq!(want, move_is_pseudo_legal(&pos, m));
+        };
+        use board::Square::*;
+        use board::Piece::*;
+        test_case("8/2k5/8/8/8/8/2q1K3/8 w - -", Move::new(E2, E1, WK, NoPiece), true);
+        test_case("8/2k5/8/8/8/8/2q2K2/8 w - -", Move::new(E2, D1, WK, NoPiece), false);
+        test_case("8/2k5/8/8/8/8/2q2K2/8 w - -", Move::new(E2, F2, WK, NoPiece), false);
+        test_case("6q1/2k5/8/8/8/8/8/4K2R w K -", Move::new_castle(E1, H1, WK), false);
+        test_case("8/2k5/8/5P2/8/8/8/4K3 w - -", Move::new_en_passant(F5, E6, WP, BP), false);
+        test_case("8/2k5/8/4pP2/8/8/8/4K3 w - e6", Move::new_en_passant(F5, E6, WP, BP), true);
+        test_case("8/2k5/r7/1p3P2/8/3B4/8/4K3 w K -", Move::new(D3, F5, WB, BB), false);
+        test_case("8/2k5/r7/1p3P2/8/3B4/8/4K3 w K -", Move::new(D3, A6, WB, BR), false);
+        test_case("8/2k5/r7/1p3P2/8/3B4/8/4K3 w K -", Move::new(D3, B5, WB, BP), true);
+        test_case("8/2k5/1B6/qp3P2/8/6b1/5R2/4K3 w K -", Move::new(B6, A5, WB, BQ), true);
+        test_case("8/2k5/1B6/qp3P2/8/6b1/5R2/4K3 w K -", Move::new(F2, D2, WR, NoPiece), true);
+        test_case("8/2k5/1B6/qp3P2/8/6b1/5R2/4K3 w K -", Move::new(E1, D1, WK, NoPiece), true);
+        test_case("8/2k5/1B6/qp3P2/8/6b1/5R2/4K3 w K -", Move::new(E1, D2, WK, NoPiece), false);
+        test_case("8/3k4/1B6/qp3P2/8/6b1/4R3/4K3 w K -", Move::new(B6, A5, WB, BQ), false);
+        test_case("8/2k5/1B6/qp3P2/8/6b1/4R3/4K3 w K -", Move::new(E2, D2, WR, NoPiece), false);
+        test_case("8/2k5/1B6/qp3P2/8/6b1/4R3/4K3 w K -", Move::new(E1, D1, WK, NoPiece), true);
+        test_case("8/2k5/1B6/qp3P2/8/6b1/4R3/4K3 w K -", Move::new(E1, D2, WK, NoPiece), false);
+    });
 
     chess_test!(test_legal_generation, {
         let test_case = |fen, expect_moves: &Vec<&str>| {
@@ -533,7 +641,7 @@ mod tests {
 
             let mut ms = MoveSelector::legal();
             let mut got = Vec::new();
-            while let Some(m) = ms.next(&pos, &ad) {
+            while let Some(m) = ms.next(&pos, &ad, &search::EMPTY_HISTORY) {
                 got.push(m);
             }
             got.sort_by_key(|m| { m.as_u32() });

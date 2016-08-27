@@ -790,40 +790,6 @@ impl Position {
         debug_assert!(self.state.phase == self.computed_phase());
     }
 
-    // Check a move from the transposition table to see if it's a pseudo-legal
-    // move in this position. By my numbers it's vanishingly unlikely that we'll
-    // pull a move out of the table that matches our key and has correct pieces
-    // on the from and to squares, so as an experiment I'm trying very simple
-    // validation here. If we end up crashing on illegal moves this is a
-    // possible cause.
-    pub fn tt_move_is_plausible(&self, mv: Move) -> bool {
-        if mv.is_castle() {
-            if mv.is_short_castle() {
-                return self.castle_rights() & (WHITE_OO << self.us().index()) != 0;
-            } else {
-                return self.castle_rights() & (WHITE_OOO << self.us().index()) != 0;
-            }
-        }
-
-        if mv.is_en_passant() {
-            if mv.to() != self.state.ep_square {
-                return false;
-            }
-            if self.piece_at(mv.from()).piece_type() != PieceType::Pawn {
-                return false;
-            }
-        } else {
-            if self.piece_at(mv.from()) != mv.piece() {
-                return false;
-            }
-            if self.piece_at(mv.to()) != mv.capture() {
-                return false;
-            }
-        }
-
-        true
-    }
-
     pub fn pseudo_move_is_legal(&self, mv: Move, ad: &AttackData) -> bool {
         let (us, them) = (self.us(), self.them());
         // Discovered check from en passant captures is gross and incredibly
