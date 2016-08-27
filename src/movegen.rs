@@ -312,7 +312,7 @@ fn gen_quiet(pos: &Position, moves: &mut Vec<ScoredMove>) {
 // moves (e.g. knight promotes to queen, pawn promotes on the third rank,
 // bishop moves like a knight), but we do need to filter out moves that
 // were pseudo-legal in other positions but aren't any more.
-pub fn move_is_pseudo_legal(pos: &Position, m: Move) -> bool {
+pub fn move_is_pseudo_legal(pos: &Position, m: Move, loose: bool) -> bool {
     // Handle difficult special cases by actually generating the moves.
     if m.is_castle() || m.is_promote() || m.is_en_passant() {
         let mut pseudos = Vec::with_capacity(128);
@@ -339,6 +339,10 @@ pub fn move_is_pseudo_legal(pos: &Position, m: Move) -> bool {
     }
     if pos.piece_at(m.to()) != m.capture() {
         return false;
+    }
+
+    if loose {
+        return true;
     }
 
     // Make sure that sliding moves aren't occluded.
@@ -447,7 +451,7 @@ impl MoveSelector {
             },
             phase_index: 0,
             tt_move: {
-                if move_is_pseudo_legal(pos, tt_move) {
+                if move_is_pseudo_legal(pos, tt_move, true) {
                     tt_move
                 } else {
                     NO_MOVE
@@ -476,10 +480,10 @@ impl MoveSelector {
             SelectionPhase::Legal => gen_legal(pos, ad, &mut self.moves),
             SelectionPhase::Loud => gen_loud(pos, &mut self.moves),
             SelectionPhase::Killers => {
-                if self.killers[1] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[1]) {
+                if self.killers[1] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[1], false) {
                     self.moves.push(ScoredMove { m: self.killers[1], s: search::MAX_HISTORY + 1 });
                 }
-                if self.killers[0] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[0]) {
+                if self.killers[0] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[0], false) {
                     self.moves.push(ScoredMove { m: self.killers[0], s: search::MAX_HISTORY + 2 });
                 }
             }
@@ -629,7 +633,7 @@ mod tests {
         let test_case = |fen, m, want| {
             let pos = Position::from_fen(fen);
             println!("{}", pos.debug_string());
-            assert_eq!(want, move_is_pseudo_legal(&pos, m));
+            assert_eq!(want, move_is_pseudo_legal(&pos, m, false));
         };
         use board::Square::*;
         use board::Piece::*;
