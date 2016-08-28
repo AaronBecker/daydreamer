@@ -454,7 +454,8 @@ impl MoveSelector {
                 if tt_move != NO_MOVE {
                     let move_ok = pos.tt_move_is_plausible(tt_move);
                     if move_ok != move_is_pseudo_legal(pos, tt_move, false) {
-                        panic!("failed pseudolegality check ({} != {}) in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", move_ok, move_is_pseudo_legal(pos, tt_move, false), pos.debug_string(), tt_move.from(), tt_move.to(), tt_move.piece().glyph(), tt_move.capture().glyph(), tt_move.promote().glyph(), tt_move.is_en_passant(), tt_move.is_castle());
+                        println!("failed pseudolegality check ({} != {}) in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", move_ok, move_is_pseudo_legal(pos, tt_move, false), pos.debug_string(), tt_move.from(), tt_move.to(), tt_move.piece().glyph(), tt_move.capture().glyph(), tt_move.promote().glyph(), tt_move.is_en_passant(), tt_move.is_castle());
+                        panic!("bailing out");
                     }
                     if move_ok {
                         tt_move
@@ -525,24 +526,25 @@ impl MoveSelector {
             SelectionPhase::Quiet => {
                 let mut killer0_found = false;
                 for m in self.moves.iter_mut() {
-                    // Order killers to the back since they'll be skipped anyway.
                     if m.m == self.killers[0] {
                         m.s = search::MAX_HISTORY + 2;
                         killer0_found = true;
                     } else if m.m == self.killers[1] {
-                        m.s = search::MAX_HISTORY + 1
+                        m.s = search::MAX_HISTORY + 1;
                     } else {
                         m.s += history[search::SearchData::history_index(m.m)];
                     }
                 }
                 if killer0_found {
                     if !move_is_pseudo_legal(pos, self.killers[0], false) {
-                        panic!("found non-pseudo-legal killer {} {}", pos.debug_string(), self.killers[0]);
+                        println!("found non-pseudo-legal killer in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", pos.debug_string(), tt_move.from(), tt_move.to(), tt_move.piece().glyph(), tt_move.capture().glyph(), tt_move.promote().glyph(), tt_move.is_en_passant(), tt_move.is_castle());
+                        panic!("bailing out");
                     }
                 }
                 if !killer0_found && self.killers[0] != NO_MOVE {
                     if move_is_pseudo_legal(pos, self.killers[0], false) {
-                        panic!("didn't find pseudo-legal killer {} {}", pos.debug_string(), self.killers[0]);
+                        println!("didn't find pseudo-legal killer in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", pos.debug_string(), tt_move.from(), tt_move.to(), tt_move.piece().glyph(), tt_move.capture().glyph(), tt_move.promote().glyph(), tt_move.is_en_passant(), tt_move.is_castle());
+                        panic!("bailing out")
                     }
                 }
             },
