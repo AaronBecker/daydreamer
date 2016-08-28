@@ -536,14 +536,16 @@ impl MoveSelector {
                     }
                 }
                 if killer0_found {
-                    if !move_is_pseudo_legal(pos, self.killers[0], false) {
-                        println!("found non-pseudo-legal killer in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", pos.debug_string(), tt_move.from(), tt_move.to(), tt_move.piece().glyph(), tt_move.capture().glyph(), tt_move.promote().glyph(), tt_move.is_en_passant(), tt_move.is_castle());
+                    let m = self.killers[0];
+                    if !move_is_pseudo_legal(pos, m, false) {
+                        println!("found non-pseudo-legal killer in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", pos.debug_string(), m.from(), m.to(), m.piece().glyph(), m.capture().glyph(), m.promote().glyph(), m.is_en_passant(), m.is_castle());
                         panic!("bailing out");
                     }
                 }
                 if !killer0_found && self.killers[0] != NO_MOVE {
-                    if move_is_pseudo_legal(pos, self.killers[0], false) {
-                        println!("didn't find pseudo-legal killer in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", pos.debug_string(), tt_move.from(), tt_move.to(), tt_move.piece().glyph(), tt_move.capture().glyph(), tt_move.promote().glyph(), tt_move.is_en_passant(), tt_move.is_castle());
+                    let m = self.killers[0];
+                    if move_is_pseudo_legal(pos, m, false) {
+                        println!("didn't find pseudo-legal killer in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", pos.debug_string(), m.from(), m.to(), m.piece().glyph(), m.capture().glyph(), m.promote().glyph(), m.is_en_passant(), m.is_castle());
                         panic!("bailing out")
                     }
                 }
