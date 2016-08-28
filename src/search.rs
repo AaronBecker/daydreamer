@@ -681,9 +681,11 @@ fn search(data: &mut SearchData, ply: usize,
             depth <= 5. &&
             data.pos.checkers() == 0 &&
             num_moves >= depth_index + 2 &&
-            !m.is_capture() && !m.is_promote() && !m.is_castle() {
+            !m.is_promote() {
             // TODO: try history pruning
-            if lazy_score + score::mg_material(m.capture().piece_type()) + ((85. + 15. * depth + 2. * depth * depth) as Score) < beta + 2 * num_moves as Score {
+            if lazy_score + score::mg_material(m.capture().piece_type()) +
+                ((85. + 15. * depth + 2. * depth * depth) as Score) <
+                beta + 2 * num_moves as Score {
                 continue;
             }
         }
