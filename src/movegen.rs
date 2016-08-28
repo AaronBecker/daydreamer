@@ -313,6 +313,11 @@ fn gen_quiet(pos: &Position, moves: &mut Vec<ScoredMove>) {
 // bishop moves like a knight), but we do need to filter out moves that
 // were pseudo-legal in other positions but aren't any more.
 pub fn move_is_pseudo_legal(pos: &Position, m: Move, loose: bool) -> bool {
+    // Check the contents of the source square and the side to move.
+    if pos.piece_at(m.from()) != m.piece() || m.piece().color() != pos.us() {
+        return false;
+    }
+
     // Handle difficult special cases by actually generating the moves.
     if m.is_castle() || m.is_promote() || m.is_en_passant() {
         let mut pseudos = Vec::with_capacity(128);
@@ -333,10 +338,9 @@ pub fn move_is_pseudo_legal(pos: &Position, m: Move, loose: bool) -> bool {
     }
 
     debug_assert!(m.promote() == PieceType::NoPieceType);
-    // Check the contents of the source and destination squares.
-    if pos.piece_at(m.from()) != m.piece() {
-        return false;
-    }
+
+    // Check the destination square. This isn't correct for castles
+    // and en-passant captures, so we can't check it up front.
     if pos.piece_at(m.to()) != m.capture() {
         return false;
     }
@@ -697,6 +701,8 @@ mod tests {
         test_case("4k3/8/8/8/8/4p3/4P3/4K3 w - -", Move::new(E2, E4, WP, NoPiece), false);
         test_case("r1bqk2r/pppp1ppp/2nbpn2/3N4/4P3/3B1N2/PPPP1PPP/R1BQK2R b KQkq -",
                   Move::new(E6, D5, BP, WN), true);
+        test_case("r2q1rk1/pb1p2pp/1pB1p3/2b2p2/2P5/4PN2/PPQ2PPP/R1B2RK1 b - - 0 4",
+                  Move::new(G1, H1, WK, NoPiece), false);
     });
 
     chess_test!(test_legal_generation, {

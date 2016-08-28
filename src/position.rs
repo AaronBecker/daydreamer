@@ -797,6 +797,10 @@ impl Position {
     // validation here. If we end up crashing on illegal moves this is a
     // possible cause.
     pub fn tt_move_is_plausible(&self, mv: Move) -> bool {
+        if mv.piece().color() != self.us() {
+            return false;
+        }
+
         if mv.is_castle() {
             if mv.is_short_castle() {
                 return self.castle_rights() & (WHITE_OO << self.us().index()) != 0;
