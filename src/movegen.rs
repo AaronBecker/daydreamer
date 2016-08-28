@@ -544,15 +544,8 @@ impl MoveSelector {
                 }
             },
             SelectionPhase::BadCaptures => {
-                // Note that this is an inefficiency: we're copying all the
-                // bad captures to reverse their order and put them into the
-                // moves vector so that the rest of the code will be more
-                // uniform and tidy.
-                while let Some(sm) = self.bad_captures.pop() {
-                    self.moves.push(sm);
-                }
-                // Bad captures have already been ordered in the LOUD phase.
-                return
+                // Scoring for bad captures already happended in the loud phase.
+                // We just need to sort.
             },
             SelectionPhase::Evasions => {
                 // Evasions don't get a bad capture phase, so do static exchange
@@ -607,10 +600,9 @@ impl MoveSelector {
                 continue
             }
             if phase == SelectionPhase::Loud {
-                // TODO: test updating the score to the see value.
                 let see = pos.static_exchange_sign(sm.m);
                 if see < 0 {
-                    self.bad_captures.push(sm);
+                    self.bad_captures.push(ScoredMove{ m: sm.m, s: see });
                     continue;
                 }
                 self.last_score = see;
