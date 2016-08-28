@@ -501,11 +501,7 @@ impl MoveSelector {
                 }
             },
             SelectionPhase::Quiet => gen_quiet(pos, &mut self.moves),
-            SelectionPhase::BadCaptures => {
-                while let Some(sm) = self.bad_captures.pop() {
-                    self.moves.push(sm);
-                }
-            }
+            SelectionPhase::BadCaptures => self.moves.append(&mut self.bad_captures),
             SelectionPhase::Evasions => gen_evasions(pos, &mut self.moves),
         }
     }
@@ -548,9 +544,8 @@ impl MoveSelector {
                 }
             },
             SelectionPhase::BadCaptures => {
-                // Scoring for bad captures already happended in the loud phase,
-                // and they're naturally ordered by MVV/LVA by gen()
-                return;
+                // Scoring for bad captures already happended in the loud phase.
+                // We just need to sort.
             },
             SelectionPhase::Evasions => {
                 // Evasions don't get a bad capture phase, so do static exchange

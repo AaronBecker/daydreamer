@@ -871,8 +871,6 @@ impl Position {
             self.pieces_of_color_and_type(us, PieceType::King) != 0
     }
 
-    // TODO: nullmove handling
-
     // remove_rights takes a CastleRights and the source and destination of a move,
     // and returns an updated CastleRights with the appropriate rights removed.
     pub fn remove_rights(&self, c: CastleRights, from: Square, to: Square) -> CastleRights {
