@@ -402,6 +402,7 @@ pub fn move_is_pseudo_legal(pos: &Position, m: Move, loose: bool) -> bool {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum SelectionPhase {
+    Start,
     Legal,
     TT,
     Loud,
@@ -412,15 +413,22 @@ enum SelectionPhase {
     Done,
 }
 
-const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Legal, SelectionPhase::Done];
-const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::TT,
+const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
+                                                  SelectionPhase::Legal,
+                                                  SelectionPhase::Done];
+const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
+                                                   SelectionPhase::TT,
                                                    SelectionPhase::Loud,
                                                    SelectionPhase::Killers,
                                                    SelectionPhase::Quiet,
                                                    SelectionPhase::BadCaptures,
                                                    SelectionPhase::Done];
-const EVASION_PHASES: &'static [SelectionPhase] = &[SelectionPhase::TT, SelectionPhase::Evasions, SelectionPhase::Done];
-const QUIESCENCE_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Loud,
+const EVASION_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
+                                                    SelectionPhase::TT,
+                                                    SelectionPhase::Evasions,
+                                                    SelectionPhase::Done];
+const QUIESCENCE_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
+                                                       SelectionPhase::Loud,
                                                        SelectionPhase::Done];
 
 pub struct MoveSelector {
@@ -454,17 +462,7 @@ impl MoveSelector {
                 }
             },
             phase_index: 0,
-            tt_move: {
-                if tt_move != NO_MOVE {
-                    if move_is_pseudo_legal(pos, tt_move, false) {
-                        tt_move
-                    } else {
-                        NO_MOVE
-                    }
-                } else {
-                    NO_MOVE
-                }
-            },
+            tt_move: tt_move,
             killers: node.killers,
             last_score: 0,
         }
@@ -484,7 +482,14 @@ impl MoveSelector {
 
     fn gen(&mut self, pos: &Position, ad: &position::AttackData) {
         match self.phases[self.phase_index] {
-            SelectionPhase::TT => panic!("move selector can't generate tt moves"),
+            SelectionPhase::Start | SelectionPhase::Done => {
+                panic!("move selection phase error");
+            },
+            SelectionPhase::TT => {
+                if self.tt_move != NO_MOVE && move_is_pseudo_legal(pos, self.tt_move, false) {
+                    self.moves.push(ScoredMove { m: self.tt_move, s: 1 });
+                }
+            },
             SelectionPhase::Legal => gen_legal(pos, ad, &mut self.moves),
             SelectionPhase::Loud => gen_loud(pos, &mut self.moves),
             SelectionPhase::Killers => {
@@ -494,11 +499,10 @@ impl MoveSelector {
                 if self.killers[0] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[0], false) {
                     self.moves.push(ScoredMove { m: self.killers[0], s: search::MAX_HISTORY + 2 });
                 }
-            }
+            },
             SelectionPhase::Quiet => gen_quiet(pos, &mut self.moves),
             SelectionPhase::BadCaptures => self.moves.append(&mut self.bad_captures),
             SelectionPhase::Evasions => gen_evasions(pos, &mut self.moves),
-            SelectionPhase::Done => panic!("move selection phase error"),
         }
     }
 
@@ -508,8 +512,12 @@ impl MoveSelector {
         // Note that we want the moves ordered worst to best, so we can
         // efficiently pop moves of the end of the vector.
         match self.phases[self.phase_index] {
-            SelectionPhase::TT => panic!("move selector can't order tt moves"),
-            SelectionPhase::Done => panic!("move selection phase error"),
+            SelectionPhase::Start | SelectionPhase::Done => {
+                panic!("move selection phase error");
+            },
+            SelectionPhase::TT => {
+                return;
+            },
             SelectionPhase::Legal => { return },
             SelectionPhase::Loud => {
                 // MVV/LVA
@@ -584,20 +592,13 @@ impl MoveSelector {
                 ad: &position::AttackData,
                 history: &[Score; 64 * 16]) -> Option<Move> {
         loop {
-            if self.phases[self.phase_index] == SelectionPhase::TT {
-                self.phase_index += 1;
-                if self.tt_move != NO_MOVE {
-                    self.last_score = 1;
-                    return Some(self.tt_move)
-                }
-            }
             while self.moves.len() == 0 {
+                self.phase_index += 1;
                 if self.phases[self.phase_index] == SelectionPhase::Done {
                     return None
                 }
                 self.gen(pos, ad);
                 self.order(pos, history);
-                self.phase_index += 1;
             }
 
             let sm = self.moves.pop().unwrap();
