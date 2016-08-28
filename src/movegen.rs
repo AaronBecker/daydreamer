@@ -415,7 +415,7 @@ enum SelectionPhase {
 const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Legal, SelectionPhase::Done];
 const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::TT,
                                                    SelectionPhase::Loud,
-                                                   //SelectionPhase::Killers,
+                                                   SelectionPhase::Killers,
                                                    SelectionPhase::Quiet,
                                                    SelectionPhase::BadCaptures,
                                                    SelectionPhase::Done];
@@ -456,12 +456,7 @@ impl MoveSelector {
             phase_index: 0,
             tt_move: {
                 if tt_move != NO_MOVE {
-                    let move_ok = pos.tt_move_is_plausible(tt_move);
-                    if move_ok != move_is_pseudo_legal(pos, tt_move, false) {
-                        println!("failed pseudolegality check ({} != {}) in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", move_ok, move_is_pseudo_legal(pos, tt_move, false), pos.debug_string(), tt_move.from(), tt_move.to(), tt_move.piece().glyph(), tt_move.capture().glyph(), tt_move.promote().glyph(), tt_move.is_en_passant(), tt_move.is_castle());
-                        panic!("bailing out");
-                    }
-                    if move_ok {
+                    if move_is_pseudo_legal(pos, tt_move, false) {
                         tt_move
                     } else {
                         NO_MOVE
@@ -528,43 +523,15 @@ impl MoveSelector {
                 return 
             }
             SelectionPhase::Quiet => {
-                let mut killer0_found = false;
                 for m in self.moves.iter_mut() {
+                    // Push killers to the back since they've already been
+                    // searched and will be skipped.
                     if m.m == self.killers[0] {
-                        m.s = search::MAX_HISTORY + 2;
-                        killer0_found = true;
+                        m.s = search::MIN_HISTORY - 1;
                     } else if m.m == self.killers[1] {
-                        m.s = search::MAX_HISTORY + 1;
+                        m.s = search::MIN_HISTORY;
                     } else {
                         m.s += history[search::SearchData::history_index(m.m)];
-                    }
-                }
-                if killer0_found {
-                    let m = self.killers[0];
-                    if !move_is_pseudo_legal(pos, m, false) {
-                        println!("found non-pseudo-legal killer in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", pos.debug_string(), m.from(), m.to(), m.piece().glyph(), m.capture().glyph(), m.promote().glyph(), m.is_en_passant(), m.is_castle());
-                        let mut quiets = Vec::new();
-                        println!("quiet gen in this position:");
-                        gen_quiet(pos, &mut quiets);
-                        for sm in quiets.iter() {
-                            let m = sm.m;
-                            println!("from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", m.from(), m.to(), m.piece().glyph(), m.capture().glyph(), m.promote().glyph(), m.is_en_passant(), m.is_castle());
-                        }
-                        panic!("bailing out");
-                    }
-                }
-                if !killer0_found && self.killers[0] != NO_MOVE {
-                    let m = self.killers[0];
-                    if move_is_pseudo_legal(pos, m, false) {
-                        println!("didn't find pseudo-legal killer in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", pos.debug_string(), m.from(), m.to(), m.piece().glyph(), m.capture().glyph(), m.promote().glyph(), m.is_en_passant(), m.is_castle());
-                        let mut quiets = Vec::new();
-                        println!("quiet gen in this position:");
-                        gen_quiet(pos, &mut quiets);
-                        for sm in quiets.iter() {
-                            let m = sm.m;
-                            println!("from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", m.from(), m.to(), m.piece().glyph(), m.capture().glyph(), m.promote().glyph(), m.is_en_passant(), m.is_castle());
-                        }
-                        panic!("bailing out")
                     }
                 }
             },
@@ -649,9 +616,9 @@ impl MoveSelector {
             } else if phase == SelectionPhase::BadCaptures {
                 self.last_score = -1;
             } else if phase == SelectionPhase::Quiet {
-                //if sm.m == self.killers[0] || sm.m == self.killers[1] {
-                //    continue;
-                //}
+                if sm.m == self.killers[0] || sm.m == self.killers[1] {
+                    continue;
+                }
                 self.last_score = sm.s;
             } else {
                 self.last_score = sm.s;
