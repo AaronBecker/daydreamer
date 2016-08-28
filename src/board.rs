@@ -101,7 +101,6 @@ impl PieceType {
     }
 
     pub fn glyph(self) -> char {
-        debug_assert!(self != PieceType::NoPieceType && self != PieceType::AllPieces);
         const GLYPHS: [char; 8] = ['0', 'p', 'n', 'b', 'r', 'q', 'k', 'a'];
         GLYPHS[self as usize]
     }

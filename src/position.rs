@@ -1052,12 +1052,17 @@ impl ::std::fmt::Display for Position {
             }
         }
                 
+        let ply = if self.state.ply == 0 {
+            1
+        } else {
+            (self.state.ply - self.us().index() as u16) / 2 + 1
+        };
         write!(f, " {} {} {} {} {}",
                self.us().glyph(),
                self.rights_string(),
                self.ep_square(),
                self.state.fifty_move_counter,
-               (self.state.ply - self.us().index() as u16) / 2 + 1)
+               ply)
     }
 }
 
