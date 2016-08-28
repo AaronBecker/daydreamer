@@ -602,10 +602,10 @@ impl MoveSelector {
             }
 
             let sm = self.moves.pop().unwrap();
-            if sm.m == self.tt_move {
+            let phase = self.phases[self.phase_index];
+            if phase != SelectionPhase::TT && sm.m == self.tt_move {
                 continue
             }
-            let phase = self.phases[self.phase_index];
             if phase == SelectionPhase::Loud {
                 // TODO: test updating the score to the see value.
                 let see = pos.static_exchange_sign(sm.m);
