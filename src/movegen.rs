@@ -539,6 +539,13 @@ impl MoveSelector {
                     let m = self.killers[0];
                     if !move_is_pseudo_legal(pos, m, false) {
                         println!("found non-pseudo-legal killer in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", pos.debug_string(), m.from(), m.to(), m.piece().glyph(), m.capture().glyph(), m.promote().glyph(), m.is_en_passant(), m.is_castle());
+                        let mut quiets = Vec::new();
+                        println!("quiet gen in this position:");
+                        gen_quiet(pos, &mut quiets);
+                        for sm in quiets.iter() {
+                            let m = sm.m;
+                            println!("from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", m.from(), m.to(), m.piece().glyph(), m.capture().glyph(), m.promote().glyph(), m.is_en_passant(), m.is_castle());
+                        }
                         panic!("bailing out");
                     }
                 }
@@ -546,6 +553,13 @@ impl MoveSelector {
                     let m = self.killers[0];
                     if move_is_pseudo_legal(pos, m, false) {
                         println!("didn't find pseudo-legal killer in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", pos.debug_string(), m.from(), m.to(), m.piece().glyph(), m.capture().glyph(), m.promote().glyph(), m.is_en_passant(), m.is_castle());
+                        let mut quiets = Vec::new();
+                        println!("quiet gen in this position:");
+                        gen_quiet(pos, &mut quiets);
+                        for sm in quiets.iter() {
+                            let m = sm.m;
+                            println!("from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", m.from(), m.to(), m.piece().glyph(), m.capture().glyph(), m.promote().glyph(), m.is_en_passant(), m.is_castle());
+                        }
                         panic!("bailing out")
                     }
                 }
