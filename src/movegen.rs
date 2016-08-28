@@ -361,8 +361,8 @@ pub fn move_is_pseudo_legal(pos: &Position, m: Move, loose: bool) -> bool {
         }
     } else if pt == PieceType::Pawn {
         // Avoid blocked pawn double-pushes.
-        let piece_behind = pos.piece_at(m.to().pawn_push(pos.them()));
-        if piece_behind != Piece::NoPiece && piece_behind != m.piece() {
+        if ((m.from().index() as i8) - (m.to().index() as i8)).abs() == 16 &&
+            pos.piece_at(m.to().pawn_push(pos.them())) != Piece::NoPiece {
             return false;
         }
     }
@@ -454,8 +454,7 @@ impl MoveSelector {
                 if tt_move != NO_MOVE {
                     let move_ok = pos.tt_move_is_plausible(tt_move);
                     if move_ok != move_is_pseudo_legal(pos, tt_move, false) {
-                        panic!("failed pseudolegality check in position {} for move {}-{}",
-                               pos, tt_move.from(), tt_move.to());
+                        panic!("failed pseudolegality check ({} != {}) in position {} for move from:{} to:{} piece:{} capture:{} promote:{} en_passant:{} castle:{}", move_ok, move_is_pseudo_legal(pos, tt_move, false), pos.debug_string(), tt_move.from(), tt_move.to(), tt_move.piece().glyph(), tt_move.capture().glyph(), tt_move.promote().glyph(), tt_move.is_en_passant(), tt_move.is_castle());
                     }
                     if move_ok {
                         tt_move
@@ -678,6 +677,8 @@ mod tests {
         test_case("8/2k5/1B6/qp3P2/8/6b1/4R3/4K3 w K -", Move::new(E1, D2, WK, NoPiece), false);
         test_case("4k3/8/8/8/8/8/4P3/4K3 w - -", Move::new(E2, E4, WP, NoPiece), true);
         test_case("4k3/8/8/8/8/4p3/4P3/4K3 w - -", Move::new(E2, E4, WP, NoPiece), false);
+        test_case("r1bqk2r/pppp1ppp/2nbpn2/3N4/4P3/3B1N2/PPPP1PPP/R1BQK2R b KQkq -",
+                  Move::new(E6, D5, BP, WN), true);
     });
 
     chess_test!(test_legal_generation, {
