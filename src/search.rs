@@ -20,6 +20,8 @@ const NULL_MOVE_ENABLED: bool = true;
 const NULL_EVAL_MARGIN: Score = 200;
 
 const TT_ENABLED: bool = true;
+// All transposition entries generated in quiesce() are considered equally deep.
+const QDEPTH: SearchDepth = 0.;
 
 const RAZORING_ENABLED: bool = true;
 const RAZOR_DEPTH: SearchDepth = 3.5;
@@ -820,19 +822,50 @@ fn quiesce(data: &mut SearchData, ply: usize,
     if data.pos.is_draw() { return score::DRAW_SCORE }
     if ply >= MAX_PLY { return score::DRAW_SCORE }
     data.init_ply(ply);
+    let open_window = beta - alpha > 1;
+    let orig_alpha = alpha;
 
-    let mut best_score = score::MIN_SCORE;
+    let (mut tt_move, mut tt_score, mut tt_score_type) = (NO_MOVE, score::MIN_SCORE, 0);
+    if TT_ENABLED {
+        if let Some(entry) = data.tt.get(data.pos.hash()) {
+            //println!("{:ply$}tt hit: m={}, depth={}, score={}", ' ', entry.m, entry.depth, entry.score, ply = ply);
+            tt_move = entry.m;
+            tt_score_type = entry.score_type;
+            if depth as u8 <= entry.depth {
+                if (entry.score >= beta as i16 && tt_score_type & score::AT_LEAST != 0) ||
+                    (entry.score <= alpha as i16 && tt_score_type & score::AT_MOST != 0) {
+                    tt_score = entry.score as Score;
+                }
+            }
+        } else {
+            //println!("{:ply$}tt miss", ' ', ply = ply);
+        }
+        if !open_window && tt_score != score::MIN_SCORE {
+            if open_window {
+                data.init_ply(ply + 1);
+                data.update_pv(ply, tt_move);
+            }
+            return tt_score;
+        }
+    }
+
+
+    let (mut best_move, mut best_score) = (NO_MOVE, score::MIN_SCORE);
     let static_eval = data.pos.psqt_score();
     if data.pos.checkers() == 0 {
         best_score = static_eval;
         if best_score >= alpha {
             alpha = best_score;
             debug_assert!(score_is_valid(best_score));
+            if tt_move != NO_MOVE &&
+                ((best_score > tt_score && tt_score_type & score::AT_MOST != 0) ||
+                    (best_score < tt_score && tt_score_type & score::AT_LEAST != 0)) {
+                best_score = tt_score;
+            }
             if best_score >= beta { return best_score }
         }
     }
 
-    let open_window = beta - alpha > 1;
     let ad = AttackData::new(&data.pos);
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
@@ -840,6 +873,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let allow_futility = !open_window  && data.pos.checkers() == 0;
 
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], NO_MOVE);
+
     // TODO: quiescence should have its own move selection type that doesn't do
     // SEE scoring. We can test in search after doing futility and save some work.
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
@@ -867,16 +901,24 @@ fn quiesce(data: &mut SearchData, ply: usize,
         if data.should_stop() { return score::DRAW_SCORE; }
         if score > best_score {
             best_score = score;
+            best_move = m;
             if score > alpha {
                 alpha = score;
                 if open_window { data.update_pv(ply, m) }
             }
-            if score >= beta { break }
+            if score >= beta {
+                data.tt.put(data.pos.hash(), m, QDEPTH, beta, score::AT_LEAST);
+                return score;
+            }
         }
     }
     // Detect checkmate. We can't find stalemate because we don't reliably generate
     // quiet moves, but evasion movegen is always exhaustive.
-    if num_moves == 0 && data.pos.checkers() != 0 { return score::mated_in(ply) }
+    if num_moves == 0 && data.pos.checkers() != 0 {
+        best_score = score::mated_in(ply);
+    }
     debug_assert!(score_is_valid(best_score));
+    data.tt.put(data.pos.hash(), best_move, QDEPTH, best_score,
+                if best_score <= orig_alpha { score::AT_MOST } else { score::EXACT });
     best_score
 }
