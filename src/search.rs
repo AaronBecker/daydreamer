@@ -791,9 +791,8 @@ fn search(data: &mut SearchData, ply: usize,
                         data.record_failure(searched_quiets[i], depth);
                     }
                 }
-                // TODO: should we be using score rather than beta here?
-                debug_assert!(score_is_valid(beta));
-                data.tt.put(data.pos.hash(), m, depth, beta, score::AT_LEAST);
+                debug_assert!(score_is_valid(score));
+                data.tt.put(data.pos.hash(), m, depth, score, score::AT_LEAST);
                 return beta;
             }
         }
@@ -909,10 +908,8 @@ fn quiesce(data: &mut SearchData, ply: usize,
                 if open_window { data.update_pv(ply, m) }
             }
             if score >= beta {
-                // TODO: reconcile all the cutoff tt score handling
-                debug_assert!(score_is_valid(beta));
-                data.tt.put(data.pos.hash(), m, QDEPTH, beta, score::AT_LEAST);
                 debug_assert!(score_is_valid(score));
+                data.tt.put(data.pos.hash(), m, QDEPTH, score, score::AT_LEAST);
                 return score;
             }
         }
