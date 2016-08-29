@@ -864,7 +864,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
 
     let allow_futility = !open_window  && data.pos.checkers() == 0;
 
-    let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], NO_MOVE);
+    let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
 
     // TODO: quiescence should have its own move selection type that doesn't do
     // SEE scoring. We can test in search after doing futility and save some work.
@@ -876,6 +876,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
         }
 
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
+        if data.pos.static_exchange_sign(m) < 0 { continue }
         data.pos.do_move(m, &ad);
         //println!("{:ply$}ply {} qsearch, do_move {}", ' ', ply, m, ply = ply);
         data.stats.nodes += 1;

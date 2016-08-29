@@ -406,6 +406,7 @@ enum SelectionPhase {
     Legal,
     TT,
     Loud,
+    Quiescence,
     Killers,
     Quiet,
     BadCaptures,
@@ -428,7 +429,8 @@ const EVASION_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
                                                     SelectionPhase::Evasions,
                                                     SelectionPhase::Done];
 const QUIESCENCE_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
-                                                       SelectionPhase::Loud,
+                                                       SelectionPhase::TT,
+                                                       SelectionPhase::Quiescence,
                                                        SelectionPhase::Done];
 
 pub struct MoveSelector {
@@ -491,7 +493,7 @@ impl MoveSelector {
                 }
             },
             SelectionPhase::Legal => gen_legal(pos, ad, &mut self.moves),
-            SelectionPhase::Loud => gen_loud(pos, &mut self.moves),
+            SelectionPhase::Loud | SelectionPhase::Quiescence => gen_loud(pos, &mut self.moves),
             SelectionPhase::Killers => {
                 if self.killers[1] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[1], false) {
                     self.moves.push(ScoredMove { m: self.killers[1], s: search::MAX_HISTORY + 1 });
@@ -519,7 +521,7 @@ impl MoveSelector {
                 return;
             },
             SelectionPhase::Legal => { return },
-            SelectionPhase::Loud => {
+            SelectionPhase::Loud | SelectionPhase::Quiescence => {
                 // MVV/LVA
                 for m in self.moves.iter_mut() {
                     m.s = score::mg_material(m.m.capture().piece_type()) -
