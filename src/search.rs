@@ -589,10 +589,6 @@ fn search(data: &mut SearchData, ply: usize,
             //println!("{:ply$}tt miss", ' ', ply = ply);
         }
         if !open_window && tt_score != score::MIN_SCORE {
-            if open_window {
-                data.init_ply(ply + 1);
-                data.update_pv(ply, tt_move);
-            }
             return tt_score;
         }
     }
@@ -831,7 +827,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
             //println!("{:ply$}tt hit: m={}, depth={}, score={}", ' ', entry.m, entry.depth, entry.score, ply = ply);
             tt_move = entry.m;
             tt_score_type = entry.score_type;
-            if depth as u8 <= entry.depth {
+            if depth as i8 <= entry.depth as i8 {
                 if (entry.score >= beta as i16 && tt_score_type & score::AT_LEAST != 0) ||
                     (entry.score <= alpha as i16 && tt_score_type & score::AT_MOST != 0) {
                     tt_score = entry.score as Score;
@@ -841,10 +837,6 @@ fn quiesce(data: &mut SearchData, ply: usize,
             //println!("{:ply$}tt miss", ' ', ply = ply);
         }
         if !open_window && tt_score != score::MIN_SCORE {
-            if open_window {
-                data.init_ply(ply + 1);
-                data.update_pv(ply, tt_move);
-            }
             return tt_score;
         }
     }
