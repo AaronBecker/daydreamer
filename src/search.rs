@@ -822,8 +822,9 @@ fn quiesce(data: &mut SearchData, ply: usize,
     data.init_ply(ply);
 
     let mut best_score = score::MIN_SCORE;
+    let static_eval = data.pos.psqt_score();
     if data.pos.checkers() == 0 {
-        best_score = data.pos.psqt_score();
+        best_score = static_eval;
         if best_score >= alpha {
             alpha = best_score;
             debug_assert!(score_is_valid(best_score));
@@ -836,8 +837,18 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
 
+    let allow_futility = !open_window  && data.pos.checkers() == 0;
+
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], NO_MOVE);
+    // TODO: quiescence should have its own move selection type that doesn't do
+    // SEE scoring. We can test in search after doing futility and save some work.
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
+        if allow_futility &&
+            m.promote() != PieceType::Queen &&
+            static_eval + score::mg_material(m.capture()) + 65 < alpha {
+            continue
+        }
+
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
         //println!("{:ply$}ply {} qsearch, do_move {}", ' ', ply, m, ply = ply);
