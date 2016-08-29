@@ -620,7 +620,7 @@ fn search(data: &mut SearchData, ply: usize,
             // Mate scores out of null search are untrustworthy.
             null_score = beta;
         }
-        if null_score >= beta { return beta }
+        if null_score >= beta { return null_score }
     } else if RAZORING_ENABLED &&
         !open_window &&
         data.pos.last_move() != NULL_MOVE &&
@@ -793,7 +793,7 @@ fn search(data: &mut SearchData, ply: usize,
                 }
                 debug_assert!(score_is_valid(score));
                 data.tt.put(data.pos.hash(), m, depth, score, score::AT_LEAST);
-                return beta;
+                return score;
             }
         }
     }
