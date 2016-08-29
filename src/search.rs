@@ -614,13 +614,9 @@ fn search(data: &mut SearchData, ply: usize,
         data.pos.do_nullmove();
         let null_r = 2.0 + ((depth + 2.0) / 4.0) +
             clamp!(0.0, 1.5, (lazy_score-beta) as SearchDepth / 100.0);
-        let mut null_score = -search(data, ply + 1, -beta, -beta + 1, depth - null_r);
+        let null_score = -search(data, ply + 1, -beta, -beta + 1, depth - null_r);
         data.pos.undo_nullmove(&undo);
-        if is_mate_score(null_score) {
-            // Mate scores out of null search are untrustworthy.
-            null_score = beta;
-        }
-        if null_score >= beta { return null_score }
+        if null_score >= beta { return beta }
     } else if RAZORING_ENABLED &&
         !open_window &&
         data.pos.last_move() != NULL_MOVE &&
@@ -636,7 +632,7 @@ fn search(data: &mut SearchData, ply: usize,
         let qscore = quiesce(data, ply, qbeta - 1, qbeta, 0.);
         if qscore < qbeta {
             debug_assert!(score_is_valid(qscore));
-            return qscore;
+            return max!(alpha, qscore);
         }
     }
 
@@ -793,7 +789,7 @@ fn search(data: &mut SearchData, ply: usize,
                 }
                 debug_assert!(score_is_valid(score));
                 data.tt.put(data.pos.hash(), m, depth, score, score::AT_LEAST);
-                return score;
+                return beta;
             }
         }
     }
@@ -861,7 +857,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
             }
             if best_score >= beta {
                 debug_assert!(score_is_valid(best_score));
-                return best_score;
+                return beta;
             }
         }
     }
@@ -910,7 +906,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
             if score >= beta {
                 debug_assert!(score_is_valid(score));
                 data.tt.put(data.pos.hash(), m, QDEPTH, score, score::AT_LEAST);
-                return score;
+                return beta;
             }
         }
     }
