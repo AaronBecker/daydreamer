@@ -825,25 +825,28 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let open_window = beta - alpha > 1;
     let orig_alpha = alpha;
 
+    let (mut tt_hit, mut tt_depth) = (false, 0);
     let (mut tt_move, mut tt_score, mut tt_score_type) = (NO_MOVE, score::MIN_SCORE, 0);
     if TT_ENABLED {
         if let Some(entry) = data.tt.get(data.pos.hash()) {
             //println!("{:ply$}tt hit: m={}, depth={}, score={}", ' ', entry.m, entry.depth, entry.score, ply = ply);
+            tt_hit = true;
             tt_move = entry.m;
             tt_score = entry.score as Score;
             tt_score_type = entry.score_type;
+            tt_depth = entry.depth;
             debug_assert!(score_is_valid(tt_score));
         } else {
             //println!("{:ply$}tt miss", ' ', ply = ply);
         }
         if !open_window &&
-            depth as i8 <= entry.depth as i8 &&
-            ((tt_score >= beta as i16 && tt_score_type & score::AT_LEAST != 0) ||
-             (tt_score <= alpha as i16 && tt_score_type & score::AT_MOST != 0)) {
+            tt_hit &&
+            depth as i8 <= tt_depth as i8 &&
+            ((tt_score >= beta && tt_score_type & score::AT_LEAST != 0) ||
+             (tt_score <= alpha && tt_score_type & score::AT_MOST != 0)) {
             return tt_score;
         }
     }
-
 
     let (mut best_move, mut best_score) = (NO_MOVE, score::MIN_SCORE);
     let static_eval = data.pos.psqt_score();
