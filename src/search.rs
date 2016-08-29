@@ -876,7 +876,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
         }
 
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
-        if data.pos.static_exchange_sign(m) < 0 { continue }
+        if m != tt_move && data.pos.static_exchange_sign(m) < 0 { continue }
         data.pos.do_move(m, &ad);
         //println!("{:ply$}ply {} qsearch, do_move {}", ' ', ply, m, ply = ply);
         data.stats.nodes += 1;
