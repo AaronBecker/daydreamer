@@ -564,7 +564,6 @@ fn search(data: &mut SearchData, ply: usize,
         return quiesce(data, ply, alpha, beta, depth);
     }
 
-    debug_assert!(score_is_valid(alpha) && score_is_valid(beta));
     alpha = max!(alpha, score::mated_in(ply));
     beta = min!(beta, score::mate_in(ply + 1));
     if alpha >= beta { return alpha }
@@ -589,6 +588,7 @@ fn search(data: &mut SearchData, ply: usize,
             //println!("{:ply$}tt miss", ' ', ply = ply);
         }
         if !open_window && tt_score != score::MIN_SCORE {
+            debug_assert!(score_is_valid(tt_score));
             return tt_score;
         }
     }
@@ -634,7 +634,10 @@ fn search(data: &mut SearchData, ply: usize,
         }
         let qbeta = beta - RAZOR_MARGIN[depth_index];
         let qscore = quiesce(data, ply, qbeta - 1, qbeta, 0.);
-        if qscore < qbeta { return qscore }
+        if qscore < qbeta {
+            debug_assert!(score_is_valid(qscore));
+            return qscore;
+        }
     }
 
     if IID_ENABLED && tt_move == NO_MOVE &&
@@ -788,6 +791,8 @@ fn search(data: &mut SearchData, ply: usize,
                         data.record_failure(searched_quiets[i], depth);
                     }
                 }
+                // TODO: should we be using score rather than beta here?
+                debug_assert!(score_is_valid(beta));
                 data.tt.put(data.pos.hash(), m, depth, beta, score::AT_LEAST);
                 return beta;
             }
@@ -811,7 +816,6 @@ fn search(data: &mut SearchData, ply: usize,
 
 fn quiesce(data: &mut SearchData, ply: usize,
            mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
-    debug_assert!(score_is_valid(alpha) && score_is_valid(beta));
     alpha = max!(alpha, score::mated_in(ply));
     beta = min!(beta, score::mate_in(ply + 1));
     if alpha >= beta { return alpha }
@@ -826,17 +830,16 @@ fn quiesce(data: &mut SearchData, ply: usize,
         if let Some(entry) = data.tt.get(data.pos.hash()) {
             //println!("{:ply$}tt hit: m={}, depth={}, score={}", ' ', entry.m, entry.depth, entry.score, ply = ply);
             tt_move = entry.m;
+            tt_score = entry.score as Score;
             tt_score_type = entry.score_type;
-            if depth as i8 <= entry.depth as i8 {
-                if (entry.score >= beta as i16 && tt_score_type & score::AT_LEAST != 0) ||
-                    (entry.score <= alpha as i16 && tt_score_type & score::AT_MOST != 0) {
-                    tt_score = entry.score as Score;
-                }
-            }
+            debug_assert!(score_is_valid(tt_score));
         } else {
             //println!("{:ply$}tt miss", ' ', ply = ply);
         }
-        if !open_window && tt_score != score::MIN_SCORE {
+        if !open_window &&
+            depth as i8 <= entry.depth as i8 &&
+            ((tt_score >= beta as i16 && tt_score_type & score::AT_LEAST != 0) ||
+             (tt_score <= alpha as i16 && tt_score_type & score::AT_MOST != 0)) {
             return tt_score;
         }
     }
@@ -844,17 +847,20 @@ fn quiesce(data: &mut SearchData, ply: usize,
 
     let (mut best_move, mut best_score) = (NO_MOVE, score::MIN_SCORE);
     let static_eval = data.pos.psqt_score();
+    debug_assert!(score_is_valid(static_eval));
     if data.pos.checkers() == 0 {
         best_score = static_eval;
         if best_score >= alpha {
             alpha = best_score;
-            debug_assert!(score_is_valid(best_score));
-            if tt_move != NO_MOVE &&
-                ((best_score > tt_score && tt_score_type & score::AT_MOST != 0) ||
-                    (best_score < tt_score && tt_score_type & score::AT_LEAST != 0)) {
+            if tt_score != score::MIN_SCORE &&
+                ((tt_score > best_score && tt_score_type & score::AT_LEAST != 0) ||
+                    (tt_score < best_score && tt_score_type & score::AT_MOST != 0)) {
                 best_score = tt_score;
             }
-            if best_score >= beta { return best_score }
+            if best_score >= beta {
+                debug_assert!(score_is_valid(best_score));
+                return best_score;
+            }
         }
     }
 
@@ -900,7 +906,10 @@ fn quiesce(data: &mut SearchData, ply: usize,
                 if open_window { data.update_pv(ply, m) }
             }
             if score >= beta {
+                // TODO: reconcile all the cutoff tt score handling
+                debug_assert!(score_is_valid(beta));
                 data.tt.put(data.pos.hash(), m, QDEPTH, beta, score::AT_LEAST);
+                debug_assert!(score_is_valid(score));
                 return score;
             }
         }

@@ -1,6 +1,6 @@
 use movement::{Move, NO_MOVE};
 use position::HashKey;
-use score::{Score, ScoreType};
+use score::{Score, ScoreType, score_is_valid};
 use search::SearchDepth;
 
 
@@ -87,6 +87,7 @@ impl<'a> Table {
         let short_key = (key >> 32) as u32;
         for i in 0..BUCKET_SIZE {
             if short_key == bucket.entries[i].key {
+                debug_assert!(score_is_valid(bucket.entries[i].score as Score));
                 return Some(&mut bucket.entries[i]);
             }
         }
@@ -94,6 +95,7 @@ impl<'a> Table {
     }
 
     pub fn put(&mut self, key: HashKey, m: Move, d: SearchDepth, s: Score, st: ScoreType) {
+        debug_assert!(score_is_valid(s));
         let bucket: &mut Bucket = &mut self.table[key as usize & (self.buckets - 1)];
         let short_key = (key >> 32) as u32;
         let mut index = BUCKET_SIZE;
