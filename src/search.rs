@@ -845,7 +845,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
         if allow_futility &&
             m.promote() != PieceType::Queen &&
-            static_eval + score::mg_material(m.capture()) + 65 < alpha {
+            static_eval + score::mg_material(m.capture().piece_type()) + 65 < alpha {
             continue
         }
 
