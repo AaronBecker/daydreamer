@@ -413,8 +413,8 @@ fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Scor
      } else {
          format!("cp {}", rm.score)
      };
-     println!("info multipv {} depth {} score {} {}time {} nodes {} {}pv {}",
-              ordinal, data.current_depth, score, bound, ms, data.stats.nodes, nps, pv);
+     println!("info multipv {} depth {} score {} {} alpha {} beta {} time {} nodes {} {}pv {}",
+              ordinal, data.current_depth, score, bound, alpha, beta, ms, data.stats.nodes, nps, pv);
 }
 
 // print_pv prints out the most up-to-date information about the current
@@ -461,6 +461,7 @@ fn deepening_search(data: &mut SearchData) {
             data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
             print_pv(data, alpha, beta);
             let last_score = data.root_moves[0].score;
+            debug_assert!(score_is_valid(last_score));
             if last_score <= alpha {
                 consecutive_fail_lows += 1;
                 consecutive_fail_highs = 0;
@@ -543,6 +544,7 @@ fn root_search(data: &mut SearchData, mut alpha: Score, beta: Score) -> SearchRe
             alpha = score;
             if score > best_alpha { best_alpha = score }
         }
+        debug_assert!(score_is_valid(data.root_moves[i].score) || i > 0);
         //println!("******* ROOT MOVE {} alpha {} beta {} score {}", m, alpha, beta, data.root_moves[i].score);
         if score >= beta { break }
         move_number += 1;
