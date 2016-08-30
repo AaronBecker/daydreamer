@@ -122,6 +122,18 @@ impl SearchConstraints {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.infinite = false;
+        self.ponder = false;
+        self.searchmoves.clear();
+        self.node_limit = u64::max_value();
+        self.depth_limit = MAX_PLY;
+        self.use_timer = false;
+        self.hard_limit = Duration::new(0, 0);
+        self.soft_limit = Duration::new(0, 0);
+        self.start_time = time::Instant::now();
+    }
+
     pub fn set_timer(&mut self, us: board::Color, wtime: u32, btime: u32,
                      winc: u32, binc: u32, movetime: u32, movestogo: u32) {
         self.start_time = time::Instant::now();
@@ -397,7 +409,6 @@ fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Scor
      for m in rm.pv.iter() {
          pv.push_str(&format!("{} ", *m));
      }
-     debug_assert!(score_is_valid(rm.score));
      let bound = if rm.score <= alpha {
          String::from("upperbound ")
      } else if rm.score >= beta {
@@ -414,6 +425,7 @@ fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Scor
      };
      println!("info multipv {} depth {} score {} {} alpha {} beta {} time {} nodes {} {}pv {}",
               ordinal, data.current_depth, score, bound, alpha, beta, ms, data.stats.nodes, nps, pv);
+     debug_assert!(score_is_valid(rm.score));
 }
 
 // print_pv prints out the most up-to-date information about the current
