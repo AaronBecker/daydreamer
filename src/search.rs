@@ -464,8 +464,8 @@ fn deepening_search(data: &mut SearchData) {
         let mut consecutive_fail_lows = 0;
         const ASPIRE_MARGIN: [Score; 6] = [10, 35, 75, 300, 500, score::MAX_SCORE];
         if data.current_depth > 5 && options::multi_pv() == 1 {
-            alpha = data.root_moves[0].score - ASPIRE_MARGIN[0];
-            beta = data.root_moves[0].score + ASPIRE_MARGIN[0];
+            alpha = max!(data.root_moves[0].score - ASPIRE_MARGIN[0], score::MIN_SCORE);
+            beta = min!(data.root_moves[0].score + ASPIRE_MARGIN[0], score::MAX_SCORE);
         }
 
         loop {
