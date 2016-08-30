@@ -190,6 +190,7 @@ impl SearchStats {
 pub struct RootMove {
     m: Move,
     score: Score,
+    depth: Depth,
     pv: Vec<Move>,
 }
 
@@ -198,6 +199,7 @@ impl RootMove {
         RootMove {
             m: m,
             score: score::MIN_SCORE,
+            depth: 0,
             pv: Vec::with_capacity(MAX_PLY),
         }
     }
@@ -470,7 +472,13 @@ fn deepening_search(data: &mut SearchData) {
             let sd = data.current_depth as SearchDepth;
             let last_score = search(data, 0, alpha, beta, sd);
             // TODO: try nodes searched under this move as a secondary key.
-            data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
+            data.root_moves.sort_by(|a, b| {
+                if a.depth == b.depth {
+                    b.score.cmp(&a.score)
+                } else {
+                    b.depth.cmp(&a.depth)
+                }
+            });
             if data.should_stop() { return }
             print_pv(data, alpha, beta);
             debug_assert!(data.root_moves[0].score == last_score);
@@ -762,7 +770,7 @@ fn search(data: &mut SearchData, ply: usize,
         num_moves += 1;
         let mut score = score::MIN_SCORE;
         let mut full_search = (open_window && num_moves == 1) ||
-                              (root_node && num_moves < options::multi_pv());
+                              (root_node && num_moves <= options::multi_pv());
         if !full_search {
             let mut lmr_red = 0.;
             if searched_quiet_count > 0 && !m.is_capture() && !m.is_promote() {
@@ -807,6 +815,7 @@ fn search(data: &mut SearchData, ply: usize,
 
         if root_node {
             data.root_moves[root_idx].score = score::MIN_SCORE;
+            data.root_moves[root_idx].depth = depth as Depth;
             if full_search || score > alpha {
                 // We have updated move info for the root.
                 data.root_moves[root_idx].score = score;
