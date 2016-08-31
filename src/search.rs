@@ -454,7 +454,7 @@ fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
 
 fn deepening_search(data: &mut SearchData) {
     data.current_depth = 1;
-    let (mut alpha, mut beta) = (score::MIN_SCORE, score::MAX_SCORE);
+    let (mut alpha, mut beta, last_score) = (score::MIN_SCORE, score::MAX_SCORE, 0);
     while should_deepen(data) {
         if should_print(data) {
             println!("info depth {}", data.current_depth);
@@ -464,13 +464,13 @@ fn deepening_search(data: &mut SearchData) {
         let mut consecutive_fail_lows = 0;
         const ASPIRE_MARGIN: [Score; 6] = [10, 35, 75, 300, 500, score::MAX_SCORE];
         if data.current_depth > 5 && options::multi_pv() == 1 {
-            alpha = max!(data.root_moves[0].score - ASPIRE_MARGIN[0], score::MIN_SCORE);
-            beta = min!(data.root_moves[0].score + ASPIRE_MARGIN[0], score::MAX_SCORE);
+            alpha = max!(last_score - ASPIRE_MARGIN[0], score::MIN_SCORE);
+            beta = min!(last_score + ASPIRE_MARGIN[0], score::MAX_SCORE);
         }
 
         loop {
             let sd = data.current_depth as SearchDepth;
-            let last_score = search(data, 0, alpha, beta, sd);
+            last_score = search(data, 0, alpha, beta, sd);
             // TODO: try nodes searched under this move as a secondary key.
             data.root_moves.sort_by(|a, b| {
                 if a.depth == b.depth {
@@ -481,7 +481,6 @@ fn deepening_search(data: &mut SearchData) {
             });
             if data.should_stop() { return }
             print_pv(data, alpha, beta);
-            debug_assert!(data.root_moves[0].score == last_score);
             debug_assert!(score_is_valid(last_score));
             if last_score <= alpha {
                 consecutive_fail_lows += 1;
@@ -826,7 +825,7 @@ fn search(data: &mut SearchData, ply: usize,
                     data.root_moves[root_idx].pv.push(mv);
                 }
             }
-            if score > alpha && num_moves > options::multi_pv() {
+            if score > alpha && score < beta && num_moves > options::multi_pv() {
                 print_pv(data, alpha, beta)
             }
             debug_assert!(score_is_valid(data.root_moves[root_idx].score) || num_moves > 0);
