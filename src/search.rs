@@ -454,7 +454,7 @@ fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
 
 fn deepening_search(data: &mut SearchData) {
     data.current_depth = 1;
-    let (mut alpha, mut beta, last_score) = (score::MIN_SCORE, score::MAX_SCORE, 0);
+    let (mut alpha, mut beta, mut last_score) = (score::MIN_SCORE, score::MAX_SCORE, 0);
     while should_deepen(data) {
         if should_print(data) {
             println!("info depth {}", data.current_depth);
