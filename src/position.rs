@@ -1176,7 +1176,7 @@ mod tests {
                   true);
     });
 
-    chess_test!(checkers_test, {
+    chess_test!(test_checkers, {
         let test_case = |fen, want| {
             let pos = Position::from_fen(fen);
             assert_eq!(pos.checkers(), want);
@@ -1185,7 +1185,7 @@ mod tests {
         test_case("8/4k3/2N1r3/4n3/8/B7/4K3/8 b - - 0 1", bb!(A3, C6));
     });
 
-    chess_test!(occlusion_test, {
+    chess_test!(test_occlusion, {
         let test_case = |fen, c, pin, discover| {
             let pos = Position::from_fen(fen);
             assert_eq!(pos.pinned(c), pin);
@@ -1274,7 +1274,7 @@ mod tests {
                   Move::new(C7, C5, Piece::BP, Piece::NoPiece), true);
     });
 
-    chess_test!(static_exchange_eval, {
+    chess_test!(test_static_exchange_eval, {
         use score::mg_material;
         let test_case = |fen, uci, want| {
             let pos = Position::from_fen(fen);
@@ -1308,7 +1308,7 @@ mod tests {
         test_case("8/8/8/4k3/r3P1R1/4K3/8/8 b - - 0 1", "a4e4", p - r);
     });
 
-    chess_test!(is_draw, {
+    chess_test!(test_is_draw, {
         let test_case = |fen, moves: Vec<&str>, want| {
             let mut pos = Position::from_fen(fen);
             for uci in moves.iter() {

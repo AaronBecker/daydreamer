@@ -487,143 +487,80 @@ pub fn queen_attacks(sq: Square, occ: Bitboard) -> Bitboard {
     rook_attacks(sq, occ) | bishop_attacks(sq, occ)
 }
 
-// FIXME: switch to chess_test!
 #[cfg(test)]
 mod tests {
     use super::*;
     use board::*;
     use board::Square::*;
 
-    struct BBStrTest {
-        x: Bitboard,
-        s: &'static str,
-    }
+    chess_test!(test_bb_str, {
+        let test_case = |x, s| {
+            assert_eq!(x, bb_from_str(s));
+            assert_eq!(s, bb_to_str(x));
+        };
 
-    fn test_one_bb_str(t: BBStrTest) {
-        initialize();
-        assert_eq!(t.x, bb_from_str(t.s));
-        assert_eq!(t.s, bb_to_str(t.x));
-    }
+        test_case(0,
+                  "\n........\n........\n........\n........\n........\n........\n........\n........\n");
+        test_case(bb!(E4, E5, D4, D5),
+                  "\n........\n........\n........\n...xx...\n...xx...\n........\n........\n........\n");
+        test_case(bb!(A1, B2, A8, B7),
+                  "\nx.......\n.x......\n........\n........\n........\n........\n.x......\nx.......\n");
+    });
 
-    #[test]
-    fn test_bb_str_tests() {
-        test_one_bb_str(BBStrTest {
-            x: 0,
-            s: "\n........\n........\n........\n........\n........\n........\n........\n........\n",
-        });
-        test_one_bb_str(BBStrTest {
-            x: bb!(E4, E5, D4, D5),
-            s: "\n........\n........\n........\n...xx...\n...xx...\n........\n........\n........\n",
-        });
-        test_one_bb_str(BBStrTest {
-            x: bb!(A1, B2, A8, B7),
-            s: "\nx.......\n.x......\n........\n........\n........\n........\n.x......\nx.......\n",
-        });
+    chess_test!(test_pop_square, {
+        let test_case = |mut x, want, popped| {
+            assert_eq!(want, lsb(x));
+            let got = pop_square(&mut x);
+            assert_eq!(want, got);
+            assert_eq!(popped, x);
+        };
+        test_case(1, A1, 0);
+        test_case(2, B1, 0);
+        test_case(0xff, A1, 0xfe);
+        test_case(bb(H8), H8, 0);
+        test_case(bb(A1), A1, 0);
+        test_case(bb!(E4, E5, D4, D5), D4, bb!(E4, E5, D5));
+    });
 
-    }
-
-    struct PopSquareTest {
-        x: Bitboard,
-        want: Square,
-        popped: Bitboard,
-    }
-
-    fn test_one_pop_square(t: PopSquareTest) {
-        assert_eq!(t.want, lsb(t.x));
-        let mut x = t.x;
-        let got = pop_square(&mut x);
-        assert_eq!(t.want, got);
-        assert_eq!(t.popped, x);
-    }
-
-    #[test]
-    fn test_pop_square() {
-        initialize();
-        test_one_pop_square(PopSquareTest {
-            x: 1,
-            want: A1,
-            popped: 0,
-        });
-        test_one_pop_square(PopSquareTest {
-            x: 2,
-            want: B1,
-            popped: 0,
-        });
-        test_one_pop_square(PopSquareTest {
-            x: 0xff,
-            want: A1,
-            popped: 0xfe,
-        });
-        test_one_pop_square(PopSquareTest {
-            x: bb(H8),
-            want: H8,
-            popped: 0,
-        });
-        test_one_pop_square(PopSquareTest {
-            x: bb(A1),
-            want: A1,
-            popped: 0,
-        });
-        test_one_pop_square(PopSquareTest {
-            x: bb!(E4, E5, D4, D5),
-            want: D4,
-            popped: bb!(E4, E5, D5),
-        });
-    }
-
-    #[test]
-    fn test_king_attacks() {
-        initialize();
+    chess_test!(test_king_attacks, {
         assert_eq!(king_attacks(A1), bb!(B1, A2, B2));
         assert_eq!(king_attacks(F6), bb!(E5, E6, E7, F5, F7, G5, G6, G7));
-    }
+    });
 
-    #[test]
-    fn test_knight_attacks() {
-        initialize();
+    chess_test!(test_knight_attacks, {
         assert_eq!(knight_attacks(A1), bb!(B3, C2));
         assert_eq!(knight_attacks(F6), bb!(D5, D7, E4, E8, G4, G8, H5, H7));
-    }
+    });
 
-    #[test]
-    fn test_pawn_attacks() {
-        initialize();
+    chess_test!(test_pawn_attacks, {
         assert_eq!(white_pawn_attacks(B2), bb!(A3, C3));
         assert_eq!(black_pawn_attacks(B2), bb!(A1, C1));
         assert_eq!(white_pawn_attacks(H4), bb(G5));
         assert_eq!(black_pawn_attacks(H4), bb(G3));
-    }
+    });
 
-    #[test]
-    fn test_bishop_attacks() {
-        initialize();
+    chess_test!(test_bishop_attacks, {
         assert_eq!(bishop_attacks(A1, bb!(A1, A8, B3, B6, C6, G3, H1)),
                    bb!(B2, C3, D4, E5, F6, G7, H8));
         assert_eq!(bishop_attacks(F6, bb!(B3, C2, C3, C6, D5, D7, F5)),
                    bb!(C3, D4, D8, E5, E7, G5, G7, H4, H8));
-    }
+    });
 
-    #[test]
-    fn test_rook_attacks() {
-        initialize();
+    chess_test!(test_rook_attacks, {
         assert_eq!(rook_attacks(A1, bb!(A1, A6, A8, B3, B6, C6, G3, H1)),
                    bb!(A2, A3, A4, A5, A6, B1, C1, D1, E1, F1, G1, H1));
         assert_eq!(rook_attacks(F6, bb!(B3, C2, C3, C6, D5, D7, F6)),
                    bb!(C6, D6, E6, G6, H6, F1, F2, F3, F4, F5, F7, F8));
-    }
+    });
     
-    #[test]
-    fn test_queen_attacks() {
-        initialize();
+    chess_test!(test_queen_attacks, {
         assert_eq!(queen_attacks(A1, bb_from_str("x......x\n........\nxxx.....\n........\n........\n.x....x.\n........\nx......x\n")),
                    bb_from_str(".......x\n......x.\nx....x..\nx...x...\nx..x....\nx.x.....\nxx......\n.xxxxxxx\n"));
         assert_eq!(queen_attacks(F6, bb_from_str("........\n...x....\n..x..x..\n...x....\n........\n.xx.....\n..x.....\n........\n")),
                    bb_from_str("...x.x.x\n....xxx.\n..xxx.xx\n....xxx.\n...x.x.x\n..x..x..\n.....x..\n.....x..\n"));
-    }
+    });
 
-    #[test]
-    fn test_directional_bitboards() {
-        initialize();
+    chess_test!(test_directional_bitboards, {
         assert_eq!(between(C3, E3), bb(D3));
         assert_eq!(between(E3, C3), bb(D3));
         assert_eq!(ray(C3, E3), bb(Rank::_3));
@@ -636,5 +573,5 @@ mod tests {
         assert_eq!(between(B3, A1), 0);
         assert_eq!(ray(A1, B3), 0);
         assert_eq!(ray(B3, A1), 0);
-    }
+    });
 }
