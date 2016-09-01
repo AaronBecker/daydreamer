@@ -403,6 +403,7 @@ pub fn move_is_pseudo_legal(pos: &Position, m: Move, loose: bool) -> bool {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum SelectionPhase {
     Start,
+    Root,
     Legal,
     TT,
     Loud,
@@ -417,6 +418,9 @@ enum SelectionPhase {
 const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
                                                   SelectionPhase::Legal,
                                                   SelectionPhase::Done];
+const ROOT_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
+                                                 SelectionPhase::Root,
+                                                 SelectionPhase::Done];
 const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
                                                    SelectionPhase::TT,
                                                    SelectionPhase::Loud,
@@ -482,6 +486,22 @@ impl MoveSelector {
         }
     }
 
+    pub fn root(sd: &search::SearchData) -> MoveSelector {
+        let mut v = Vec::new();
+        for rm in sd.root_moves.iter() {
+            v.push(ScoredMove::new(rm.m));
+        }
+        MoveSelector {
+            moves: v,
+            bad_captures: Vec::new(),
+            phases: ROOT_PHASES,
+            phase_index: 0,
+            tt_move: NO_MOVE,
+            killers: [NO_MOVE; 2],
+            last_score: 0,
+        }
+    }
+
     fn gen(&mut self, pos: &Position, ad: &position::AttackData) {
         match self.phases[self.phase_index] {
             SelectionPhase::Start | SelectionPhase::Done => {
@@ -492,6 +512,7 @@ impl MoveSelector {
                     self.moves.push(ScoredMove { m: self.tt_move, s: 1 });
                 }
             },
+            SelectionPhase::Root => {},
             SelectionPhase::Legal => gen_legal(pos, ad, &mut self.moves),
             SelectionPhase::Loud | SelectionPhase::Quiescence => gen_loud(pos, &mut self.moves),
             SelectionPhase::Killers => {
@@ -520,6 +541,7 @@ impl MoveSelector {
             SelectionPhase::TT => {
                 return;
             },
+            SelectionPhase::Root => { return },
             SelectionPhase::Legal => { return },
             SelectionPhase::Loud | SelectionPhase::Quiescence => {
                 // MVV/LVA

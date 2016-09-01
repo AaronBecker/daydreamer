@@ -188,7 +188,7 @@ impl SearchStats {
 }
 
 pub struct RootMove {
-    m: Move,
+    pub m: Move,
     score: Score,
     depth: Depth,
     pv: Vec<Move>,
@@ -683,7 +683,11 @@ fn search(data: &mut SearchData, ply: usize,
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
 
-    let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
+    let mut selector = if root_node {
+        MoveSelector::root(&data)
+    } else {
+        MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move)
+    };
     let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 128], 0);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
         let mut root_idx = 0;
