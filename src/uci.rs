@@ -269,3 +269,11 @@ fn handle_print<'a, I>(search_data: &mut SearchData, _tokens: &mut I) -> Result<
     println!("{}", search_data.pos.debug_string());
     Ok(())
 }
+
+
+// Options to support:
+// option name Hash type spin default 64 min 1 max 64448
+// option name UCI_Chess960 type check default false
+// option name Arena-style 960 castling type check default false
+// option name MultiPV type spin default 1 min 1 max 256
+// maybe a debugging log file and verbosity control

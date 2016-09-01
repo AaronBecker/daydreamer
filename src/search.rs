@@ -649,7 +649,6 @@ fn search(data: &mut SearchData, ply: usize,
 
         if FUTILITY_ENABLED &&
             !root_node &&
-            !open_window &&
             ext == 0. &&
             depth <= 5. &&
             data.pos.checkers() == 0 &&
