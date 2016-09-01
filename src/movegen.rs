@@ -488,7 +488,7 @@ impl MoveSelector {
 
     pub fn root(sd: &search::SearchData) -> MoveSelector {
         let mut v = Vec::new();
-        for rm in sd.root_moves.iter() {
+        for rm in sd.root_moves.iter().rev() {
             v.push(ScoredMove::new(rm.m));
         }
         MoveSelector {
