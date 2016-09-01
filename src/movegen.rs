@@ -542,9 +542,13 @@ impl MoveSelector {
                 return;
             },
             SelectionPhase::Root => { 
-                self.moves[0].s = score::MAX_SCORE;
-                for m in self.moves.iter_mut() {
-                    if m.s != score::MIN_SCORE { continue }
+                let mut nth_move = 0;
+                for m in self.moves.iter_mut().rev() {
+                    nth_move += 1;
+                    if m.s != score::MIN_SCORE {
+                        m.s = score::MAX_SCORE - nth_move;
+                        continue;
+                    }
                     if m.m.is_capture() || m.m.is_promote() {
                         let see = pos.static_exchange_sign(m.m);
                         if see < 0 {
