@@ -672,7 +672,7 @@ fn search(data: &mut SearchData, ply: usize,
                               (root_node && num_moves <= options::multi_pv());
         if !full_search {
             let mut lmr_red = 0.;
-            if searched_quiet_count > 0 && !m.is_capture() && !m.is_promote() {
+            if searched_quiet_count > 0 {
                 lmr_red = 1.;
                 if selector.bad_move() {
                     lmr_red += 1.;
