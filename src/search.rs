@@ -69,11 +69,11 @@ impl EngineState {
     }
 
     pub fn enter(&self, state: usize) {
-        self.state.store(state, Ordering::Release);
+        self.state.store(state, Ordering::SeqCst);
     }
 
     pub fn load(&self) -> usize {
-        self.state.load(Ordering::Acquire)
+        self.state.load(Ordering::SeqCst)
     }
 }
 
@@ -316,7 +316,7 @@ pub fn go(data: &mut SearchData) {
     // our state to STOPPING if the search hasn't terminated yet. This lets
     // us avoid checking the timer in the search thread.
     {
-        let current_gen = 1 + data.state.generation.fetch_add(1, Ordering::AcqRel);
+        let current_gen = 1 + data.state.generation.fetch_add(1, Ordering::SeqCst);
         if data.constraints.use_timer && !data.constraints.infinite {
             let sleep_time = data.constraints.hard_limit;
             let engine_state = data.state.clone();
@@ -326,7 +326,7 @@ pub fn go(data: &mut SearchData) {
                     thread::sleep(sleep_time);
                 }
                 if engine_state.load() != SEARCHING_STATE ||
-                    engine_state.generation.load(Ordering::Acquire) != current_gen {
+                    engine_state.generation.load(Ordering::SeqCst) != current_gen {
                     return;
                 }
                 engine_state.enter(STOPPING_STATE);
