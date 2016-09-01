@@ -122,6 +122,18 @@ impl SearchConstraints {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.infinite = false;
+        self.ponder = false;
+        self.searchmoves.clear();
+        self.node_limit = u64::max_value();
+        self.depth_limit = MAX_PLY;
+        self.use_timer = false;
+        self.hard_limit = Duration::new(0, 0);
+        self.soft_limit = Duration::new(0, 0);
+        self.start_time = time::Instant::now();
+    }
+
     pub fn set_timer(&mut self, us: board::Color, wtime: u32, btime: u32,
                      winc: u32, binc: u32, movetime: u32, movestogo: u32) {
         self.start_time = time::Instant::now();
@@ -176,8 +188,9 @@ impl SearchStats {
 }
 
 pub struct RootMove {
-    m: Move,
+    pub m: Move,
     score: Score,
+    depth: Depth,
     pv: Vec<Move>,
 }
 
@@ -186,6 +199,7 @@ impl RootMove {
         RootMove {
             m: m,
             score: score::MIN_SCORE,
+            depth: 0,
             pv: Vec::with_capacity(MAX_PLY),
         }
     }
@@ -323,19 +337,18 @@ pub fn go(data: &mut SearchData) {
     data.reset();
  
     let ad = AttackData::new(&data.pos);
-    let mut moves = data.constraints.searchmoves.clone();
-    if moves.len() == 0 {
+    if data.constraints.searchmoves.len() == 0 {
         let mut ms = MoveSelector::legal();
         while let Some(m) = ms.next(&data.pos, &ad, &data.history) {
-            moves.push(m);
+            data.constraints.searchmoves.push(m);
         }
     }
-    if moves.len() == 0 {
+    if data.constraints.searchmoves.len() == 0 {
         println!("info string no moves to search");
         println!("bestmove (none)");
         return
     }
-    for m in moves.iter() {
+    for m in data.constraints.searchmoves.iter() {
         data.root_moves.push(RootMove::new(*m));
     }
     data.tt.new_generation();
@@ -398,7 +411,6 @@ fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Scor
      for m in rm.pv.iter() {
          pv.push_str(&format!("{} ", *m));
      }
-     debug_assert!(score_is_valid(rm.score));
      let bound = if rm.score <= alpha {
          String::from("upperbound ")
      } else if rm.score >= beta {
@@ -415,6 +427,7 @@ fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Scor
      };
      println!("info multipv {} depth {} score {} {} alpha {} beta {} time {} nodes {} {}pv {}",
               ordinal, data.current_depth, score, bound, alpha, beta, ms, data.stats.nodes, nps, pv);
+     debug_assert!(score_is_valid(rm.score));
 }
 
 // print_pv prints out the most up-to-date information about the current
@@ -441,7 +454,7 @@ fn print_pv(data: &SearchData, alpha: Score, beta: Score) {
 
 fn deepening_search(data: &mut SearchData) {
     data.current_depth = 1;
-    let (mut alpha, mut beta) = (score::MIN_SCORE, score::MAX_SCORE);
+    let (mut alpha, mut beta, mut last_score) = (score::MIN_SCORE, score::MAX_SCORE, 0);
     while should_deepen(data) {
         if should_print(data) {
             println!("info depth {}", data.current_depth);
@@ -451,16 +464,23 @@ fn deepening_search(data: &mut SearchData) {
         let mut consecutive_fail_lows = 0;
         const ASPIRE_MARGIN: [Score; 5] = [10, 35, 75, 300, 500];
         if data.current_depth > 5 && options::multi_pv() == 1 {
-            alpha = max!(data.root_moves[0].score - ASPIRE_MARGIN[0], score::MIN_SCORE);
-            beta = min!(data.root_moves[0].score + ASPIRE_MARGIN[0], score::MAX_SCORE);
+            alpha = max!(last_score - ASPIRE_MARGIN[0], score::MIN_SCORE);
+            beta = min!(last_score + ASPIRE_MARGIN[0], score::MAX_SCORE);
         }
 
         loop {
-            root_search(data, alpha, beta);
+            let sd = data.current_depth as SearchDepth;
+            last_score = search(data, 0, alpha, beta, sd);
             // TODO: try nodes searched under this move as a secondary key.
-            data.root_moves.sort_by(|a, b| b.score.cmp(&a.score));
+            data.root_moves.sort_by(|a, b| {
+                if a.depth == b.depth {
+                    b.score.cmp(&a.score)
+                } else {
+                    b.depth.cmp(&a.depth)
+                }
+            });
+            if data.should_stop() { return }
             print_pv(data, alpha, beta);
-            let last_score = data.root_moves[0].score;
             debug_assert!(score_is_valid(last_score));
             if last_score <= alpha {
                 consecutive_fail_lows += 1;
@@ -574,17 +594,21 @@ fn search(data: &mut SearchData, ply: usize,
         return quiesce(data, ply, alpha, beta, depth);
     }
 
-    alpha = max!(alpha, score::mated_in(ply));
-    beta = min!(beta, score::mate_in(ply + 1));
-    if alpha >= beta { return alpha }
-    if data.pos.is_draw() { return score::DRAW_SCORE }
+    let root_node = ply == 0;
+    if !root_node {
+        alpha = max!(alpha, score::mated_in(ply));
+        beta = min!(beta, score::mate_in(ply + 1));
+        if alpha >= beta { return alpha }
+        if data.pos.is_draw() { return score::DRAW_SCORE }
+    }
 
     let orig_alpha = alpha;
     let open_window = beta - alpha > 1;
 
-    // Do cutoff based on transposition table.
     let (mut tt_move, mut tt_score) = (NO_MOVE, score::MIN_SCORE);
-    if TT_ENABLED {
+    if root_node {
+        tt_move = data.root_moves[0].m;
+    } else {
         if let Some(entry) = data.tt.get(data.pos.hash()) {
             //println!("{:ply$}tt hit: m={}, depth={}, score={}", ' ', entry.m, entry.depth, entry.score, ply = ply);
             tt_move = entry.m;
@@ -667,9 +691,24 @@ fn search(data: &mut SearchData, ply: usize,
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
 
-    let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
+    let mut selector = if root_node {
+        MoveSelector::root(&data)
+    } else {
+        MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move)
+    };
     let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 128], 0);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
+        let mut root_idx = 0;
+        if root_node {
+            if !data.constraints.searchmoves.contains(&m) {
+                continue
+            }
+            if should_print(data) {
+                println!("info currmove {} currmovenumber {}", m, num_moves + 1);
+            }
+            root_idx = data.root_moves.iter().position(|x| x.m == m).unwrap();
+        }
+
         // gives_check is not precise, but it's just used for heuristic extensions.
         let gives_check = !m.is_castle() && !m.is_en_passant() &&
             ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
@@ -683,6 +722,7 @@ fn search(data: &mut SearchData, ply: usize,
         };
 
         if FUTILITY_ENABLED &&
+            !root_node &&
             !open_window &&
             ext == 0. &&
             depth <= 5. &&
@@ -740,7 +780,8 @@ fn search(data: &mut SearchData, ply: usize,
         data.stats.nodes += 1;
         num_moves += 1;
         let mut score = score::MIN_SCORE;
-        let mut full_search = open_window && num_moves == 1;
+        let mut full_search = (open_window && num_moves == 1) ||
+                              (root_node && num_moves <= options::multi_pv());
         if !full_search {
             let mut lmr_red = 0.;
             if searched_quiet_count > 0 && !m.is_capture() && !m.is_promote() {
@@ -757,16 +798,19 @@ fn search(data: &mut SearchData, ply: usize,
             }
             if lmr_red > 0. {
                 score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - lmr_red - ONE_PLY_F);
+                debug_assert!(score_is_valid(score));
             } else {
                 score = alpha + 1;
             }
             if score > alpha {
                 score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - ONE_PLY_F);
+                debug_assert!(score_is_valid(score));
                 if open_window && score > alpha { full_search = true; }
             }
         }
         if full_search {
             score = -search(data, ply + 1, -beta, -alpha, depth + ext - ONE_PLY_F);
+            debug_assert!(score_is_valid(score));
         }
         debug_assert!(score_is_valid(score));
         data.pos.undo_move(m, &undo);
@@ -779,6 +823,26 @@ fn search(data: &mut SearchData, ply: usize,
         // pv, bounds, etc.
         if data.should_stop() { return score::DRAW_SCORE; }
         //if ply < 5 { println!("{:ply$}ply {}, un_move {} score = {}", ' ', ply, m, score, ply = ply); }
+
+        if root_node {
+            data.root_moves[root_idx].score = score::MIN_SCORE;
+            data.root_moves[root_idx].depth = depth as Depth;
+            if full_search || score > alpha {
+                // We have updated move info for the root.
+                data.root_moves[root_idx].score = score;
+                data.root_moves[root_idx].pv.clear();
+                for ply in 1..MAX_PLY {
+                    let mv = data.pv_stack[1][ply];
+                    if mv == NO_MOVE { break }
+                    data.root_moves[root_idx].pv.push(mv);
+                }
+            }
+            if score > alpha && score < beta && num_moves > options::multi_pv() {
+                print_pv(data, alpha, beta)
+            }
+            debug_assert!(score_is_valid(data.root_moves[root_idx].score) || num_moves > 0);
+        }
+
         if score > best_score {
             best_score = score;
             best_move = m;
