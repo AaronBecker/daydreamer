@@ -829,7 +829,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
 
-    let allow_futility = !open_window && data.pos.checkers() == 0;
+    let allow_futility = data.pos.checkers() == 0;
 
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
