@@ -189,7 +189,7 @@ impl SearchStats {
 
 pub struct RootMove {
     pub m: Move,
-    score: Score,
+    pub score: Score,
     depth: Depth,
     pv: Vec<Move>,
 }
@@ -832,9 +832,6 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let allow_futility = !open_window && data.pos.checkers() == 0;
 
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
-
-    // TODO: quiescence should have its own move selection type that doesn't do
-    // SEE scoring. We can test in search after doing futility and save some work.
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
         if allow_futility &&
             m.promote() != PieceType::Queen &&
@@ -849,7 +846,6 @@ fn quiesce(data: &mut SearchData, ply: usize,
         data.stats.nodes += 1;
         num_moves += 1;
 
-        // TODO: pruning
         let score = -quiesce(data, ply + 1, -beta, -alpha, depth - ONE_PLY_F);
         debug_assert!(score_is_valid(score));
         data.pos.undo_move(m, &undo);

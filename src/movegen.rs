@@ -489,7 +489,7 @@ impl MoveSelector {
     pub fn root(sd: &search::SearchData) -> MoveSelector {
         let mut v = Vec::new();
         for rm in sd.root_moves.iter().rev() {
-            v.push(ScoredMove::new(rm.m));
+            v.push(ScoredMove{ m: rm.m, s: rm.score });
         }
         MoveSelector {
             moves: v,
@@ -541,7 +541,25 @@ impl MoveSelector {
             SelectionPhase::TT => {
                 return;
             },
-            SelectionPhase::Root => { return },
+            SelectionPhase::Root => { 
+                self.moves[0].s = score::MAX_SCORE;
+                for m in self.moves.iter_mut() {
+                    if m.s != score::MIN_SCORE { continue }
+                    if m.m.is_capture() || m.m.is_promote() {
+                        let see = pos.static_exchange_sign(m.m);
+                        if see < 0 {
+                            // SEE values less than zero are actually calculated
+                            // out, so the value is meaningful.
+                            m.s = search::MIN_HISTORY + see;
+                        } else {
+                            m.s = score::mg_material(m.m.capture().piece_type()) -
+                                m.m.piece().piece_type().index() as Score + search::MAX_HISTORY;
+                        }
+                    } else {
+                        m.s = history[search::SearchData::history_index(m.m)];
+                    }
+                }
+            },
             SelectionPhase::Legal => { return },
             SelectionPhase::Loud | SelectionPhase::Quiescence => {
                 // MVV/LVA
