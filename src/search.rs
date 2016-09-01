@@ -662,45 +662,8 @@ fn search(data: &mut SearchData, ply: usize,
                 continue;
             }
         }
-        /*
-        const bool prune_futile = futility_enabled &&
-             !full_window &&
-             !ext &&
-             !mate_threat &&
-             depth <= futility_depth_limit &&
-             !is_check(pos) &&
-             num_legal_moves >= depth_index + 2 &&
-             should_try_prune(&selector, move);
-         if (prune_futile) {
-             // History pruning.
-             // TODO: try more stringent depth requirements
-             // TODO: try pruning based on pure move ordering, or work
-             // move order into the history count
-             // TODO: experiment with pruning inside pv
-             if (history_prune_enabled && depth <= 3.0 &&
-                     is_history_prune_allowed(&root_data.history,
-                         move, depth)) {
-                 num_futile_moves++;
-                 undo_move(pos, move, &undo);
-                 if (full_window) add_pv_move(&selector, move, 0);
-                 continue;
-             }
-             // Value pruning.
-             if (value_prune_enabled &&
-                     lazy_score +
-                     material_value(get_move_capture(move)) +
-                     85 + 15*depth + 2*depth*depth <
-                     beta + 2*num_legal_moves) {
-                 num_futile_moves++;
-                 undo_move(pos, move, &undo);
-                 if (full_window) add_pv_move(&selector, move, 0);
-                 continue;
-             }
-         }*/
-        // TODO: pruning, futility, depth extension
+
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
-
-
         data.pos.do_move(m, &ad);
         //if ply < 5 { println!("{:ply$}ply {}, do_move {}", ' ', ply, m, ply = ply); }
         data.stats.nodes += 1;
