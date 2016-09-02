@@ -112,6 +112,7 @@ pub struct State {
     us: Color,
     phase: Phase,
     psqt_score: PhaseScore,
+    non_pawn_material: [Score; 2],
     hash: HashKey,
 }
 
@@ -127,6 +128,7 @@ impl State {
             us: Color::NoColor,
             phase: 0,
             psqt_score: score::NONE,
+            non_pawn_material: [0; 2],
             hash: 0,
         }
     }
@@ -359,8 +361,24 @@ impl Position {
         self.state.last_move
     }
 
-    pub fn psqt_score(&self) -> Score {
-        self.state.psqt_score.interpolate(self)
+    pub fn non_pawn_material(&self, c: Color) -> Score {
+        self.state.non_pawn_material[c.index()]
+    }
+
+    pub fn computed_non_pawn_material(&self) -> [Score; 2] {
+        let mut s = [0; 2];
+        for sq in each_square() {
+            let p = self.board[sq.index()];
+            if p == Piece::NoPiece {
+                continue
+            }
+            s[p.color().index()] += score::non_pawn_material(p.piece_type());
+        }
+        s
+    }
+
+    pub fn psqt_score(&self) -> PhaseScore {
+        self.state.psqt_score
     }
 
     pub fn computed_psqt_score(&self) -> PhaseScore {
@@ -441,11 +459,12 @@ impl Position {
             s.push_str(m.to_string().as_str());
             s.push(' ');
         }
-        s.push_str(format!("\npsqt score: {} ({})\n", self.psqt_score(), self.state.psqt_score).as_str());
-        s.push_str(format!("computed psqt score: {}\n", self.computed_psqt_score()).as_str());
+        s.push_str(format!("\npsqt score: {} ({})\n",
+            self.psqt_score().interpolate(self), self.state.psqt_score).as_str());
+        s.push_str(format!("\nnon pawn material: ({}, {})\n",
+            self.non_pawn_material(Color::White), self.non_pawn_material(Color::Black)).as_str());
         s.push_str(format!("phase: {}\n", self.state.phase).as_str());
         s.push_str(format!("hash:          {}\n", self.state.hash).as_str());
-        s.push_str(format!("computed_hash: {}\n", self.computed_hash()).as_str());
         s
     }
 
@@ -504,6 +523,7 @@ impl Position {
         self.state.hash = self.computed_hash();
         self.state.phase = self.computed_phase();
         self.state.psqt_score = self.computed_psqt_score();
+        self.state.non_pawn_material = self.computed_non_pawn_material();
         self.hash_history.push(self.state.hash);
 
         if pieces.len() <= 4 {
@@ -618,6 +638,7 @@ impl Position {
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
         debug_assert!(self.state.psqt_score == self.computed_psqt_score());
+        debug_assert!(self.state.non_pawn_material == self.computed_non_pawn_material());
 
         let (us, them) = (self.us(), self.them());
         let (from, mut to) = (m.from(), m.to()); // note: we update 'to' for castling moves
@@ -647,6 +668,8 @@ impl Position {
             self.state.hash ^= piece_hash(capture, to);
             self.state.phase -= PhaseScore::phase(capture.piece_type());
             self.state.psqt_score -= score::PSQT[capture.index()][to.index()];
+            self.state.non_pawn_material[them.index()] -=
+                score::non_pawn_material(capture.piece_type());
         }
         self.state.hash ^= castle_hash(self.state.castle_rights);
         self.state.castle_rights = self.remove_rights(self.state.castle_rights, from, to);
@@ -686,6 +709,7 @@ impl Position {
                     score::PSQT[piece.index()][to.index()];
                 self.state.hash ^= piece_hash(new_piece, to) ^ piece_hash(piece, to);
                 self.state.phase += PhaseScore::phase(promote);
+                self.state.non_pawn_material[us.index()] += score::non_pawn_material(promote);
                 self.state.checkers = self.attackers(ad.their_king) & self.our_pieces()
             }
         }
@@ -722,12 +746,14 @@ impl Position {
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
         debug_assert!(self.state.psqt_score == self.computed_psqt_score());
+        debug_assert!(self.state.non_pawn_material == self.computed_non_pawn_material());
     }
 
     pub fn undo_move(&mut self, mv: Move, undo: &UndoState) {
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
         debug_assert!(self.state.psqt_score == self.computed_psqt_score());
+        debug_assert!(self.state.non_pawn_material == self.computed_non_pawn_material());
 
         self.copy_state(undo);
         let (us, them) = (self.us(), self.them());
@@ -761,6 +787,7 @@ impl Position {
         debug_assert!(self.state.hash == self.computed_hash());
         debug_assert!(self.state.phase == self.computed_phase());
         debug_assert!(self.state.psqt_score == self.computed_psqt_score());
+        debug_assert!(self.state.non_pawn_material == self.computed_non_pawn_material());
     }
 
     pub fn do_nullmove(&mut self) {
@@ -1232,8 +1259,8 @@ mod tests {
         test_case("3k4/8/8/8/8/8/8/R3K3 w Q - 0 1",
                   "3k4/8/8/8/8/8/8/2KR4 b - - 1 1",
                   Move::new_castle(E1, A1, Piece::WK));
-        test_case("r3k2r/8/8/8/4b3/8/8/R3K2R w KQkq - 0 1",
-                  "r3k2r/8/8/8/8/8/8/R3K2b b Qkq - 0 1",
+        test_case("r3k2r/8/8/8/4b3/8/8/R3K2R b KQkq - 0 1",
+                  "r3k2r/8/8/8/8/8/8/R3K2b w Qkq - 0 2",
                   Move::new(E4, H1, Piece::BB, Piece::WR));
         test_case("r3k3/2p5/8/8/8/8/8/4K2R w Kq - 0 1",
                   "r3k3/2p5/8/8/8/8/3K4/7R b q - 1 1",

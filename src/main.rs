@@ -8,6 +8,7 @@ extern crate time;
 #[macro_use] pub mod macros;
 pub mod board;
 pub mod bitboard;
+pub mod eval;
 pub mod movement;
 pub mod movegen;
 pub mod options;

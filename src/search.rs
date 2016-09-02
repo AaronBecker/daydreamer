@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 use bitboard;
 use board;
 use board::{Rank, PieceType};
+use eval;
 use movegen::MoveSelector;
 use movement::{Move, NO_MOVE, NULL_MOVE};
 use options;
@@ -556,7 +557,7 @@ fn search(data: &mut SearchData, ply: usize,
         }
     }
 
-    let lazy_score = data.pos.psqt_score();
+    let lazy_score = data.pos.psqt_score().interpolate(&data.pos);
     let margin = beta - lazy_score;
     let depth_index = depth as usize;
 
@@ -567,11 +568,7 @@ fn search(data: &mut SearchData, ply: usize,
         lazy_score + NULL_EVAL_MARGIN > beta &&
         !is_mate_score(beta) &&
         data.pos.checkers() == 0 &&
-        // We have some non-pawn material.
-        // FIXME: we should really have something pre-calculated here.
-        (data.pos.our_pieces() ^
-            data.pos.pieces_of_color_and_type(data.pos.us(), PieceType::Pawn) ^
-            data.pos.pieces_of_color_and_type(data.pos.us(), PieceType::King)) != 0 {
+        data.pos.non_pawn_material(pos.us()) != 0 {
         // Nullmove search.
         let undo = UndoState::undo_state(&data.pos);
         data.pos.do_nullmove();
@@ -811,7 +808,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     }
 
     let (mut best_move, mut best_score) = (NO_MOVE, score::MIN_SCORE);
-    let static_eval = data.pos.psqt_score();
+    let static_eval = eval::full(&data.pos);
     debug_assert!(score_is_valid(static_eval));
     if data.pos.checkers() == 0 {
         best_score = static_eval;

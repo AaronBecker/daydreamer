@@ -55,6 +55,8 @@ const BQUEEN: PhaseScore = PhaseScore{ mg: -1000, eg: -1200 };
 
 const PIECE_SCORE: [PhaseScore; 16] = [NONE,  PAWN,  KNIGHT,  BISHOP,  ROOK,  QUEEN, NONE, NONE,
                                        NONE, BPAWN, BKNIGHT, BBISHOP, BROOK, BQUEEN, NONE, NONE];
+// TODO: consider consolidating phase and non_pawn_material--phase is just the sum of black
+// and white non-pawn material.
 const PT_PHASE: [Phase; 8] = [
     NONE.mg as Phase, NONE.mg as Phase, KNIGHT.mg as Phase,
     BISHOP.mg as Phase, ROOK.mg as Phase, QUEEN.mg as Phase,
@@ -64,6 +66,11 @@ const MAX_PHASE: Phase = 2 * (2 * (KNIGHT.mg + BISHOP.mg + ROOK.mg) + QUEEN.mg) 
 const MG_MATERIAL: [Score; 8] = [NONE.mg, PAWN.mg, KNIGHT.mg, BISHOP.mg, ROOK.mg, QUEEN.mg, NONE.mg, NONE.mg];
 pub fn mg_material(pt: PieceType) -> Score {
     MG_MATERIAL[pt.index()]
+}
+
+const NON_PAWN_MATERIAL: [Score; 8] = [NONE.mg, NONE.mg, KNIGHT.mg, BISHOP.mg, ROOK.mg, QUEEN.mg, NONE.mg, NONE.mg];
+pub fn non_pawn_material(pt: PieceType) -> Score {
+    NON_PAWN_MATERIAL[pt.index()]
 }
 
 // FIXME: improve the names so that it's not confusing whether or not the
