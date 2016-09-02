@@ -494,6 +494,7 @@ fn deepening_search(data: &mut SearchData) {
                 break;
             }
  
+            // TODO: allow more time to resolve the search on multiple consecutive failures.
             if consecutive_fail_lows > 0 {
                 if consecutive_fail_lows >= ASPIRE_MARGIN.len() {
                     alpha = score::MIN_SCORE;
@@ -560,8 +561,7 @@ fn search(data: &mut SearchData, ply: usize,
     let depth_index = depth as usize;
 
     if NULL_MOVE_ENABLED &&
-        !open_window &&
-        depth > 1.0 &&
+        !root_node &&
         data.pos.last_move() != NULL_MOVE &&
         lazy_score + NULL_EVAL_MARGIN > beta &&
         !is_mate_score(beta) &&
@@ -580,7 +580,7 @@ fn search(data: &mut SearchData, ply: usize,
         data.pos.undo_nullmove(&undo);
         if null_score >= beta { return beta }
     } else if RAZORING_ENABLED &&
-        !open_window &&
+        !root_node &&
         data.pos.last_move() != NULL_MOVE &&
         depth <= RAZOR_DEPTH &&
         tt_move == NO_MOVE &&
