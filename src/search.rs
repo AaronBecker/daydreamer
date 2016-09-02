@@ -677,7 +677,7 @@ fn search(data: &mut SearchData, ply: usize,
 
             // History pruning.
             // TODO: clean up the history interface; this is kind of ugly.
-            if quiet_move && depth <= 3. && data.history[SearchData::history_index(m)] < 0 {
+            if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
                 continue
             }
         }
