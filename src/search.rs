@@ -330,12 +330,10 @@ pub fn go(data: &mut SearchData) {
                     return;
                 }
                 engine_state.enter(STOPPING_STATE);
-                println!("info string entered stopping state");
             });
         }
     }
     data.state.enter(if data.constraints.ponder { PONDERING_STATE } else { SEARCHING_STATE });
-    println!("info string entered searching state");
     data.reset();
  
     let ad = AttackData::new(&data.pos);
@@ -379,7 +377,6 @@ pub fn go(data: &mut SearchData) {
     }
     println!("");
     data.state.enter(WAITING_STATE);
-    println!("info string entered waiting state");
 }
 
 fn should_deepen(data: &SearchData) -> bool {

@@ -59,14 +59,10 @@ fn consume_stream<T: BufRead>(stream: T, chan: mpsc::Sender<String>, state: sear
                 match s.split_whitespace().next() {
                     Some("isready") => println!("readyok"),
                     Some("sleep") => thread::sleep(time::Duration::from_secs(1)),
-                    Some("stop") => {
-                        state.enter(search::STOPPING_STATE);
-                        println!("info string entered stopping state (via command)");
-                    },
+                    Some("stop") => state.enter(search::STOPPING_STATE),
                     Some("ponderhit") => {
                         if state.load() == search::PONDERING_STATE {
-                            state.enter(search::SEARCHING_STATE);
-                            println!("info string entered stopping state (via ponderhit)");
+                            state.enter(search::SEARCHING_STATE)
                         }
                     },
                     Some("quit") => ::std::process::exit(0),
@@ -79,7 +75,6 @@ fn consume_stream<T: BufRead>(stream: T, chan: mpsc::Sender<String>, state: sear
                             // search thread.
                             search::SEARCHING_STATE | search::PONDERING_STATE => {
                                 println!("info string busy searching, ignoring command '{}'", s);
-                                panic!("debug, unexpected command");
                             },
                             // If we're not actively searching, the main thread
                             // will handle the command.
