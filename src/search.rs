@@ -568,7 +568,7 @@ fn search(data: &mut SearchData, ply: usize,
         lazy_score + NULL_EVAL_MARGIN > beta &&
         !is_mate_score(beta) &&
         data.pos.checkers() == 0 &&
-        data.pos.non_pawn_material(pos.us()) != 0 {
+        data.pos.non_pawn_material(data.pos.us()) != 0 {
         // Nullmove search.
         let undo = UndoState::undo_state(&data.pos);
         data.pos.do_nullmove();
