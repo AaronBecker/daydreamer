@@ -8,10 +8,10 @@ pub fn full(pos: &Position) -> Score {
 
     let mut s = ps.interpolate(pos);
     if !can_win(pos.us(), pos) {
-        s = max!(s, score::DRAW_SCORE);
+        s = min!(s, score::DRAW_SCORE);
     }
     if !can_win(pos.them(), pos) {
-        s = min!(s, score::DRAW_SCORE);
+        s = max!(s, score::DRAW_SCORE);
     }
     s
 }
