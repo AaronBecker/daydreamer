@@ -652,6 +652,7 @@ fn search(data: &mut SearchData, ply: usize,
               bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
         let deep_pawn = m.piece().piece_type() == PieceType::Pawn &&
             m.to().relative_to(data.pos.us()).rank().index() == Rank::_7.index();
+        let quiet_move = !m.is_capture() && !m.is_promote();
 
         let ext = if (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >=0 {
             1.
@@ -667,11 +668,17 @@ fn search(data: &mut SearchData, ply: usize,
             num_moves >= depth_index + 2 &&
             m.promote() != PieceType::Queen &&
             best_score > score::mated_in(MAX_PLY) {
-            // TODO: try history pruning
+            // Value pruning.
             if lazy_score + score::mg_material(m.capture().piece_type()) +
                 ((85. + 15. * depth + 2. * depth * depth) as Score) <
                 beta + 2 * num_moves as Score {
-                continue;
+                continue
+            }
+
+            // History pruning.
+            // TODO: clean up the history interface; this is kind of ugly.
+            if quiet_move && depth <= 3. && data.history[SearchData::history_index(m)] < 0 {
+                continue
             }
         }
 
@@ -715,7 +722,7 @@ fn search(data: &mut SearchData, ply: usize,
         }
         debug_assert!(score_is_valid(score));
         data.pos.undo_move(m, &undo);
-        if !m.is_capture() && !m.is_promote() && searched_quiet_count < 127 {
+        if quiet_move && searched_quiet_count < 127 {
             searched_quiets[searched_quiet_count] = m;
             searched_quiet_count += 1;
         }
