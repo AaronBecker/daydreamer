@@ -18,7 +18,7 @@ use score::{Score, score_is_valid, is_mate_score};
 use transposition;
 
 const NULL_MOVE_ENABLED: bool = true;
-const NULL_EVAL_MARGIN: Score = 100;
+const NULL_EVAL_MARGIN: Score = 200;
 
 const TT_ENABLED: bool = true;
 // All transposition entries generated in quiesce() are considered equally deep.
@@ -563,7 +563,7 @@ fn search(data: &mut SearchData, ply: usize,
 
     if FUTILITY_ENABLED &&
         !root_node &&
-        depth <= 5. &&
+        depth <= 6. &&
         data.pos.checkers() == 0 &&
         data.pos.non_pawn_material(data.pos.us()) != 0 &&
         lazy_score - (2 * (85. + 15. * depth + 2. * depth * depth) as Score) > beta {
@@ -661,7 +661,7 @@ fn search(data: &mut SearchData, ply: usize,
         if FUTILITY_ENABLED &&
             !root_node &&
             ext == 0. &&
-            depth <= 5. &&
+            depth <= 6. &&
             data.pos.checkers() == 0 &&
             num_moves >= depth_index + 2 &&
             m.promote() != PieceType::Queen {
