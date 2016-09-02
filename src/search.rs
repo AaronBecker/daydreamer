@@ -561,6 +561,15 @@ fn search(data: &mut SearchData, ply: usize,
     let margin = beta - lazy_score;
     let depth_index = depth as usize;
 
+    if FUTILITY_ENABLED &&
+        !root_node &&
+        depth <= 5. &&
+        data.pos.checkers() == 0 &&
+        data.pos.non_pawn_material(data.pos.us()) != 0 &&
+        lazy_score - (2 * (85. + 15. * depth + 2. * depth * depth) as Score) > beta {
+            return lazy_score - (2 * (85. + 15. * depth + 2. * depth * depth) as Score)
+    }
+
     if NULL_MOVE_ENABLED &&
         !open_window &&
         depth > 1. &&
