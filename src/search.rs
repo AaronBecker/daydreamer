@@ -18,7 +18,7 @@ use score::{Score, score_is_valid, is_mate_score};
 use transposition;
 
 const NULL_MOVE_ENABLED: bool = true;
-const NULL_EVAL_MARGIN: Score = 200;
+const NULL_EVAL_MARGIN: Score = 100;
 
 const TT_ENABLED: bool = true;
 // All transposition entries generated in quiesce() are considered equally deep.
