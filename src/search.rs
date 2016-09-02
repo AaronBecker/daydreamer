@@ -464,7 +464,7 @@ fn deepening_search(data: &mut SearchData) {
         // Calculate aspiration search window.
         let mut consecutive_fail_highs = 0;
         let mut consecutive_fail_lows = 0;
-        const ASPIRE_MARGIN: [Score; 4] = [10, 35, 75, 300, 600];
+        const ASPIRE_MARGIN: [Score; 5] = [10, 35, 75, 300, 600];
         if data.current_depth > 5 && options::multi_pv() == 1 {
             alpha = max!(last_score - ASPIRE_MARGIN[0], score::MIN_SCORE);
             beta = min!(last_score + ASPIRE_MARGIN[0], score::MAX_SCORE);
