@@ -643,7 +643,7 @@ fn search(data: &mut SearchData, ply: usize,
              (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
               bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
         let deep_pawn = m.piece().piece_type() == PieceType::Pawn &&
-            m.to().relative_to(data.pos.us()).rank().index() >= Rank::_6.index();
+            m.to().relative_to(data.pos.us()).rank().index() == Rank::_7.index();
 
         let ext = if (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >=0 {
             1.
