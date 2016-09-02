@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 
 use bitboard;
 use board;
-use board::PieceType;
+use board::{Rank, PieceType};
 use movegen::MoveSelector;
 use movement::{Move, NO_MOVE, NULL_MOVE};
 use options;
@@ -642,8 +642,10 @@ fn search(data: &mut SearchData, ply: usize,
             ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
              (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
               bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
+        let deep_pawn = m.piece().piece_type() == PieceType::Pawn &&
+            m.to().relative_to(data.pos.us()).rank().index() >= Rank::_6.index();
 
-        let ext = if gives_check && data.pos.static_exchange_sign(m) >=0 {
+        let ext = if (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >=0 {
             1.
         } else {
             0.
@@ -651,7 +653,7 @@ fn search(data: &mut SearchData, ply: usize,
 
         if FUTILITY_ENABLED &&
             !root_node &&
-            ext == 0. &&
+            (gives_check || deep_pawn) &&
             depth <= 5. &&
             data.pos.checkers() == 0 &&
             num_moves >= depth_index + 2 &&

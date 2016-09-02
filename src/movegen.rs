@@ -620,9 +620,9 @@ impl MoveSelector {
             },
         }
 
-        // TODO: this is probably pretty inefficient because it does an
-        // allocation and this is a very small list. Consider writing a
-        // small insertion sort implementation.
+        // In principle this is less efficient than writing an insertion sort,
+        // but in practice the difference seems to be small enough that it
+        // doesn't matter.
         self.moves.sort_by_key(|x| x.s);
     }
 
