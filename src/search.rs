@@ -26,7 +26,7 @@ const QDEPTH: SearchDepth = 0.;
 
 const RAZORING_ENABLED: bool = true;
 const RAZOR_DEPTH: SearchDepth = 3.5;
-const RAZOR_MARGIN: [Score; 4] = [0 /* unused */, 300, 300, 325];
+const RAZOR_MARGIN: [Score; 4] = [0 /* unused */, 250, 300, 325];
 
 const IID_ENABLED: bool = true;
 const FUTILITY_ENABLED: bool = true;
