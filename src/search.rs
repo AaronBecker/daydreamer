@@ -563,9 +563,10 @@ fn search(data: &mut SearchData, ply: usize,
 
     if FUTILITY_ENABLED &&
         !root_node &&
-        depth <= 6. &&
+        depth <= 5. &&
         data.pos.checkers() == 0 &&
         data.pos.non_pawn_material(data.pos.us()) != 0 &&
+        (tt_move == NO_MOVE || tt_score > score::mated_in(MAX_PLY)) &&
         lazy_score - (2 * (85. + 15. * depth + 2. * depth * depth) as Score) > beta {
             return lazy_score - (2 * (85. + 15. * depth + 2. * depth * depth) as Score)
     }
@@ -661,10 +662,11 @@ fn search(data: &mut SearchData, ply: usize,
         if FUTILITY_ENABLED &&
             !root_node &&
             ext == 0. &&
-            depth <= 6. &&
+            depth <= 5. &&
             data.pos.checkers() == 0 &&
             num_moves >= depth_index + 2 &&
-            m.promote() != PieceType::Queen {
+            m.promote() != PieceType::Queen &&
+            best_score > score::mated_in(MAX_PLY) {
             // TODO: try history pruning
             if lazy_score + score::mg_material(m.capture().piece_type()) +
                 ((85. + 15. * depth + 2. * depth * depth) as Score) <
