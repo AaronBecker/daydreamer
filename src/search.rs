@@ -561,7 +561,8 @@ fn search(data: &mut SearchData, ply: usize,
     let depth_index = depth as usize;
 
     if NULL_MOVE_ENABLED &&
-        !root_node &&
+        !open_window &&
+        depth > 1. &&
         data.pos.last_move() != NULL_MOVE &&
         lazy_score + NULL_EVAL_MARGIN > beta &&
         !is_mate_score(beta) &&
@@ -580,7 +581,7 @@ fn search(data: &mut SearchData, ply: usize,
         data.pos.undo_nullmove(&undo);
         if null_score >= beta { return beta }
     } else if RAZORING_ENABLED &&
-        !root_node &&
+        !open_window &&
         data.pos.last_move() != NULL_MOVE &&
         depth <= RAZOR_DEPTH &&
         tt_move == NO_MOVE &&
@@ -653,7 +654,7 @@ fn search(data: &mut SearchData, ply: usize,
 
         if FUTILITY_ENABLED &&
             !root_node &&
-            (gives_check || deep_pawn) &&
+            ext == 0. &&
             depth <= 5. &&
             data.pos.checkers() == 0 &&
             num_moves >= depth_index + 2 &&
