@@ -365,6 +365,9 @@ pub fn go(data: &mut SearchData) {
         }
     }
  
+    // Note: we enter the waiting state before outputting to ensure that we
+    // aren't still in a searching state when a followup command arrives.
+    data.state.enter(WAITING_STATE);
     if data.constraints.use_timer {
         println!("info string time {} soft limit {} hard limit {}",
                  in_millis(&data.constraints.start_time.elapsed()),
@@ -376,7 +379,6 @@ pub fn go(data: &mut SearchData) {
         print!(" ponder {}", data.root_moves[0].pv[0]);
     }
     println!("");
-    data.state.enter(WAITING_STATE);
 }
 
 fn should_deepen(data: &SearchData) -> bool {
