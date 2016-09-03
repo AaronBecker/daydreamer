@@ -696,10 +696,10 @@ fn search(data: &mut SearchData, ply: usize,
                 lmr_red = 1.;
                 if selector.bad_move() {
                     lmr_red += 1.;
-                    if num_moves > 8 {
+                    if num_moves > 6 {
                         lmr_red += 0.5;
                     }
-                    if searched_quiet_count > 8 {
+                    if searched_quiet_count > 6 {
                         lmr_red += 0.5;
                     }
                 }
@@ -836,7 +836,9 @@ fn quiesce(data: &mut SearchData, ply: usize,
                 ((tt_score > best_score && tt_score_type & score::AT_LEAST != 0) ||
                     (tt_score < best_score && tt_score_type & score::AT_MOST != 0)) {
                 best_score = tt_score;
-                static_eval = tt_score;
+                if !score::is_mate_score(tt_score) {
+                    static_eval = tt_score;
+                }
             }
             if best_score >= beta {
                 debug_assert!(score_is_valid(best_score));
