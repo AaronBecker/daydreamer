@@ -836,12 +836,21 @@ fn quiesce(data: &mut SearchData, ply: usize,
                 ((tt_score > best_score && tt_score_type & score::AT_LEAST != 0) ||
                     (tt_score < best_score && tt_score_type & score::AT_MOST != 0)) {
                 best_score = tt_score;
-                static_eval = tt_score;
+                if !score::is_mate_score(tt_score) {
+                    static_eval = tt_score;
+                }
             }
             if best_score >= beta {
                 debug_assert!(score_is_valid(best_score));
                 return beta;
             }
+        }
+
+        if FUTILITY_ENABLED &&
+            data.pos.non_pawn_material(data.pos.us()) != 0 &&
+            (tt_move == NO_MOVE || tt_score > score::mated_in(MAX_PLY)) &&
+            static_eval - 65 > beta {
+            return static_eval - 64
         }
     }
 
