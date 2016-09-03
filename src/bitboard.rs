@@ -132,6 +132,10 @@ static mut rank_bb: [Bitboard; 8] = [0; 8];
 static mut file_bb: [Bitboard; 8] = [0; 8];
 static mut distance: [[u8; 64]; 64] = [[0; 64]; 64];
 
+static mut neighbor_files_bb: [Bitboard; 8] = [0; 8];
+static mut in_front_bb: [Bitboard; 64] = [0; 64];
+static mut passer_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
+
 fn init_simple_bitboards() {
     for i in 0..8 {
         unsafe {
@@ -139,10 +143,23 @@ fn init_simple_bitboards() {
             file_bb[i] = 0x0101010101010101 << i;
         }
     }
+    for i in 0..8 {
+        unsafe {
+            if i > 0 {
+                neighbor_files_bb[i] |= file_bb[i - 1];
+            }
+            if i < 7 {
+                neighbor_files_bb[i] |= file_bb[i + 1];
+            }
+        }
+    }
+
     for sq1 in each_square() {
         let i = sq1.index();
         unsafe {
             square_bb[i] = 1 << i;
+            passer_bb[0][i] = 0;
+            passer_bb[1][i] = 0;
         }
         for sq2 in each_square() {
             let j = sq2.index();
