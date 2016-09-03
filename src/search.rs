@@ -654,7 +654,7 @@ fn search(data: &mut SearchData, ply: usize,
             m.to().relative_to(data.pos.us()).rank().index() == Rank::_7.index();
         let quiet_move = !m.is_capture() && !m.is_promote();
 
-        let ext = if (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >=0 {
+        let ext = if gives_check && data.pos.static_exchange_sign(m) >=0 {
             1.
         } else {
             0.
@@ -663,6 +663,7 @@ fn search(data: &mut SearchData, ply: usize,
         if FUTILITY_ENABLED &&
             !root_node &&
             ext == 0. &&
+            !deep_pawn &&
             depth <= 5. &&
             data.pos.checkers() == 0 &&
             num_moves >= depth_index + 2 &&
