@@ -826,7 +826,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     }
 
     let (mut best_move, mut best_score) = (NO_MOVE, score::MIN_SCORE);
-    let static_eval = eval::full(&data.pos);
+    let mut static_eval = eval::full(&data.pos);
     debug_assert!(score_is_valid(static_eval));
     if data.pos.checkers() == 0 {
         best_score = static_eval;
@@ -836,6 +836,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
                 ((tt_score > best_score && tt_score_type & score::AT_LEAST != 0) ||
                     (tt_score < best_score && tt_score_type & score::AT_MOST != 0)) {
                 best_score = tt_score;
+                static_eval = tt_score;
             }
             if best_score >= beta {
                 debug_assert!(score_is_valid(best_score));
