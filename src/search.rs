@@ -664,7 +664,7 @@ fn search(data: &mut SearchData, ply: usize,
             !root_node &&
             ext == 0. &&
             depth <= 5. &&
-            data.pos.checkers() == 0 &&
+            (data.pos.checkers() == 0 || best_score > score::mated_in(MAX_PLY)) &&
             num_moves >= depth_index + 2 &&
             m.promote() != PieceType::Queen &&
             best_score > score::mated_in(MAX_PLY) {
@@ -848,8 +848,6 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let ad = AttackData::new(&data.pos);
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
-
-    let allow_futility = data.pos.checkers() == 0;
 
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
