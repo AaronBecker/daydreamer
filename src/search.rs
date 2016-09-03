@@ -854,7 +854,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
 
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
-        if allow_futility &&
+        if (data.pos.checkers() == 0 || best_score > score::mated_in(MAX_PLY)) &&
             m.promote() != PieceType::Queen &&
             static_eval + score::mg_material(m.capture().piece_type()) + 65 < alpha {
             continue
