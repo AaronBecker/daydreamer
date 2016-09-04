@@ -84,7 +84,7 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
             // Only pawns that are behind a friendly pawn count as doubled.
             let doubled = bitboard::in_front_mask(us, sq) & our_pawns != 0;
             if doubled {
-                side_score[us.index()] -= sc!(5, 10);
+                side_score[us.index()] -= sc!(10, 20);
             }
         }
     }
@@ -124,7 +124,7 @@ mod tests {
                   sc!(5, 5) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
         // White pawns on A4 and A5, black pawn on C6.
         test_case("4k3/8/2p5/P7/P7/8/8/4K3 w - -",
-                  PASSER_BONUS[_5.index()] - sc!(5, 10) - PASSER_BONUS[_3.index()] +
+                  PASSER_BONUS[_5.index()] - sc!(10, 20) - PASSER_BONUS[_3.index()] +
                   ISOLATION_BONUS[1][A.index()] * 2 - ISOLATION_BONUS[1][C.index()]);
     });
 }
