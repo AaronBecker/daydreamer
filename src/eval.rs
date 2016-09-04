@@ -1,6 +1,6 @@
 use bitboard;
 use board;
-use board::{Color, PieceType};
+use board::{Color, Rank, PieceType};
 use position::Position;
 use score;
 use score::{PhaseScore, Score};
@@ -45,6 +45,16 @@ const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
     [sc!(-14, -16), sc!(-14, -17), sc!(-15, -18), sc!(-16, -20), sc!(-16, -20), sc!(-15, -18), sc!(-14, -17), sc!(-14, -16)],
 ];
 
+const CONNECTION_BONUS: [PhaseScore; 8] = [sc!(0, 0), sc!(2, 2), sc!(4, 4), sc!(8, 8),
+                                           sc!(12, 12), sc!(24, 24), sc!(36, 36), sc!(0, 0)];
+fn connection_bonus(rel_rank: Rank, open: bool) -> PhaseScore {
+    let mut bonus = CONNECTION_BONUS[rel_rank.index()];
+    if open {
+        bonus *= 2;
+    }
+    bonus
+}
+
 fn eval_pawns(pos: &Position) -> PhaseScore {
     use bitboard::IntoBitboard;
     use board::File;
@@ -78,7 +88,7 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
             let connected = ((sq.pawn_push(them).rank().into_bitboard() & our_pawns) |
                              (sq.rank().into_bitboard() & our_pawns)) & neighbor_files != 0;
             if connected {
-                side_score[us.index()] += sc!(5, 5);
+                side_score[us.index()] += connection_bonus(rel_rank, open);
             }
         }
     }
@@ -111,9 +121,11 @@ mod tests {
         test_case("4k3/8/8/8/Pp6/8/8/4K3 w - -", PASSER_BONUS[_4.index()] - PASSER_BONUS[_5.index()] +
                   ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
         // White pawns on A4 and B4, black pawn on B6.
-        test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -", sc!(5, 5) * 2 - ISOLATION_BONUS[0][B.index()]);
+        test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -",
+                  ::eval::connection_bonus(_4, true) + ::eval::connection_bonus(_4, false) - ISOLATION_BONUS[0][B.index()]);
         // White pawns on A4 and B4, black pawn on C6.
-        test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -", sc!(5, 5) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
+        test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -",
+                  ::eval::connection_bonus(_4, true) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
         // White pawns on A4 and A5, black pawn on C6.
         test_case("4k3/8/2p5/P7/P7/8/8/4K3 w - -",
                   PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()] +
