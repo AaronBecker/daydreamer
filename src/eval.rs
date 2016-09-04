@@ -46,6 +46,7 @@ const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
 ];
 
 fn eval_pawns(pos: &Position) -> PhaseScore {
+    use bitboard::IntoBitboard;
     use board::File;
     use board::PieceType::Pawn;
     // TODO: for now we're calculating from scratch, but this can be made
@@ -63,14 +64,21 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
 
             let passed = bitboard::passer_mask(us, sq) & their_pawns == 0
                 && bitboard::in_front_mask(us, sq) & our_pawns == 0;
-            let open = bitboard::in_front_mask(us, sq) & their_pawns == 0;
-            let isolated = bitboard::neighbor_mask(sq.file()) & our_pawns == 0;
-
             if passed {
                 side_score[us.index()] += PASSER_BONUS[rel_rank.index()];
             }
+
+            let open = bitboard::in_front_mask(us, sq) & their_pawns == 0;
+            let neighbor_files = bitboard::neighbor_mask(sq.file());
+            let isolated = neighbor_files & our_pawns == 0;
             if isolated {
                 side_score[us.index()] += ISOLATION_BONUS[open as usize][sq.file().index()];
+            }
+
+            let connected = ((sq.pawn_push(them).rank().into_bitboard() & our_pawns) |
+                             (sq.rank().into_bitboard() & our_pawns)) & neighbor_files != 0;
+            if connected {
+                side_score[us.index()] += sc!(5, 5);
             }
         }
     }
@@ -79,7 +87,6 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
 
 #[cfg(test)]
 mod tests {
-    use board::File::*;
     use board::Rank::*;
     use position::Position;
     use ::eval::{PASSER_BONUS, ISOLATION_BONUS};
@@ -103,9 +110,9 @@ mod tests {
         test_case("4k3/8/8/8/Pp6/8/8/4K3 w - -", PASSER_BONUS[_4.index()] - PASSER_BONUS[_5.index()] +
                   ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
         // White pawns on A4 and B4, black pawn on B6.
-        test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -", -ISOLATION_BONUS[0][B.index()]);
+        test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -", sc!(10, 10) - ISOLATION_BONUS[0][B.index()]);
         // White pawns on A4 and B4, black pawn on C6.
-        test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -", PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
+        test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -", sc!(10, 10) + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
         // White pawns on A4 and A5, black pawn on C6.
         test_case("4k3/8/2p5/P7/P7/8/8/4K3 w - -",
                   PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()] +
