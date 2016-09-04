@@ -40,10 +40,11 @@ const PASSER_BONUS: [PhaseScore; 8] = [
 // enemy pawn in front of us.
 const ISOLATION_BONUS: [PhaseScore; 2] = [
     sc!(-10, -5),  // Blocked
-    sc!(-15, -10),  // Open
+    sc!(-20, -10),  // Open
 ];
 
 fn eval_pawns(pos: &Position) -> PhaseScore {
+    use board::File;
     use board::PieceType::Pawn;
     // TODO: for now we're calculating from scratch, but this can be made
     // much more efficient with a pawn cache.
@@ -59,6 +60,7 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
             let rel_rank = sq.relative_to(us).rank();
 
             let passed = bitboard::passer_mask(us, sq) & their_pawns == 0;
+            //&& bitboard::in_front_mask(us, sq) & our_pawns == 0;
             let open = bitboard::in_front_mask(us, sq) & their_pawns == 0;
             let isolated = bitboard::neighbor_mask(sq.file()) & our_pawns == 0;
 
@@ -66,7 +68,11 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
                 side_score[us.index()] += PASSER_BONUS[rel_rank.index()];
             }
             if isolated {
-                side_score[us.index()] += ISOLATION_BONUS[open as usize]
+                side_score[us.index()] += ISOLATION_BONUS[open as usize];
+                // Being isolated in the center of the board is worse midgame.
+                if sq.file() == File::D || sq.file() == File::E {
+                    side_score[us.index()] -= sc!(-5, 0);
+                }
             }
         }
     }
@@ -101,7 +107,7 @@ mod tests {
         test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -", PASSER_BONUS[_4.index()] - ISOLATION_BONUS[true as usize]);
         // White pawns on A4 and A5, black pawn on C6.
         test_case("4k3/8/2p5/P7/P7/8/8/4K3 w - -",
-                  PASSER_BONUS[_4.index()] + PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()] +
+                  PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()] +
                   ISOLATION_BONUS[true as usize]);
     });
 }
