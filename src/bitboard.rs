@@ -630,5 +630,4 @@ mod tests {
         assert_eq!(in_front_mask(Color::White, F7), bb!(F8));
         assert_eq!(in_front_mask(Color::Black, F7), bb!(F6, F5, F4, F3, F2, F1));
     });
-
 }
