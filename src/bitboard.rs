@@ -133,7 +133,7 @@ static mut file_bb: [Bitboard; 8] = [0; 8];
 static mut distance: [[u8; 64]; 64] = [[0; 64]; 64];
 
 static mut neighbor_files_bb: [Bitboard; 8] = [0; 8];
-static mut in_front_bb: [Bitboard; 64] = [0; 64];
+static mut in_front_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
 static mut passer_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
 
 fn init_simple_bitboards() {
@@ -158,8 +158,22 @@ fn init_simple_bitboards() {
         let i = sq1.index();
         unsafe {
             square_bb[i] = 1 << i;
+<<<<<<< Updated upstream
             passer_bb[0][i] = 0;
             passer_bb[1][i] = 0;
+=======
+            for r in 0..sq1.rank().index() {
+                passer_bb[1][i] |= rank_bb[r];
+            }
+            for r in (sq1.rank().index() + 1)..8 {
+                passer_bb[0][i] |= rank_bb[r];
+            }
+            let near_files = neighbor_files_bb[sq1.file().index()] | file_bb[sq1.file().index()];
+            passer_bb[0][i] &= near_files; 
+            in_front_bb[0][i] = passer_bb[0][i] & file_bb[sq1.file().index()];
+            passer_bb[1][i] &= near_files;
+            in_front_bb[1][i] = passer_bb[1][i] & file_bb[sq1.file().index()];
+>>>>>>> Stashed changes
         }
         for sq2 in each_square() {
             let j = sq2.index();
@@ -170,6 +184,15 @@ fn init_simple_bitboards() {
             }
         }
     }
+}
+
+pub fn in_front_mask(side: Color, sq: Square) -> Bitboard {
+    debug_assert!(sq != Square::NoSquare);
+    unsafe { in_front_bb[side.index()][sq.index()] }
+}
+
+pub fn neighbor_mask(f: File) -> Bitboard {
+    unsafe { neighbor_files_bb[f.index()] }
 }
 
 fn dist(sq1: Square, sq2: Square) -> u8 {
@@ -591,4 +614,23 @@ mod tests {
         assert_eq!(ray(A1, B3), 0);
         assert_eq!(ray(B3, A1), 0);
     });
+<<<<<<< Updated upstream
+=======
+
+    chess_test!(test_pawn_masks, {
+        assert_eq!(passer_mask(Color::White, A5), bb!(A6, B6, A7, B7, A8, B8));
+        assert_eq!(passer_mask(Color::Black, A5), bb!(A4, B4, A3, B3, A2, B2, A1, B1));
+        assert_eq!(passer_mask(Color::White, F6), bb!(E7, F7, G7, E8, F8, G8));
+        assert_eq!(passer_mask(Color::Black, F6), bb!(E5, F5, G5,
+                                                      E4, F4, G4,
+                                                      E3, F3, G3,
+                                                      E2, F2, G2,
+                                                      E1, F1, G1));
+        assert_eq!(in_front_mask(Color::White, A5), bb!(A6, A7, A8));
+        assert_eq!(in_front_mask(Color::Black, A5), bb!(A4, A3, A2, A1));
+        assert_eq!(in_front_mask(Color::White, F7), bb!(F8));
+        assert_eq!(in_front_mask(Color::Black, F7), bb!(F6, F5, F4, F3, F2, F1));
+    });
+
+>>>>>>> Stashed changes
 }
