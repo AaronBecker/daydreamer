@@ -46,7 +46,7 @@ const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
 ];
 
 const CONNECTION_BONUS: [PhaseScore; 8] = [sc!(0, 0), sc!(2, 2), sc!(4, 4), sc!(8, 8),
-                                           sc!(12, 12), sc!(24, 24), sc!(36, 36), sc!(0, 0)];
+                                           sc!(12, 12), sc!(16, 16), sc!(20, 20), sc!(0, 0)];
 fn connection_bonus(rel_rank: Rank, open: bool) -> PhaseScore {
     let mut bonus = CONNECTION_BONUS[rel_rank.index()];
     if open {
