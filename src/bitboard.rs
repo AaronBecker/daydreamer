@@ -158,11 +158,13 @@ fn init_simple_bitboards() {
         let i = sq1.index();
         unsafe {
             square_bb[i] = 1 << i;
-            for i in (sq1.rank().index() + 1)..8 {
-                passer_bb[0][i] |= rank_bb[i];
-                passer_bb[1][i] |= rank_bb[7 - i];
+            for r in 0..sq1.rank().index() {
+                passer_bb[1][i] |= rank_bb[r];
             }
-            let near_files = neighbor_files_bb[sq1.rank().index()] | rank_bb[sq1.rank().index()];
+            for r in (sq1.rank().index() + 1)..8 {
+                passer_bb[0][i] |= rank_bb[r];
+            }
+            let near_files = neighbor_files_bb[sq1.file().index()] | file_bb[sq1.file().index()];
             passer_bb[0][i] &= near_files; 
             passer_bb[1][i] &= near_files;
         }
@@ -601,5 +603,18 @@ mod tests {
         assert_eq!(between(B3, A1), 0);
         assert_eq!(ray(A1, B3), 0);
         assert_eq!(ray(B3, A1), 0);
+    });
+
+    chess_test!(test_pawn_masks, {
+        println!("{}", bb_to_str(passer_mask(Color::White, F6)));
+        println!("{}", bb_to_str(passer_mask(Color::Black, F6)));
+        assert_eq!(passer_mask(Color::White, A5), bb!(A6, B6, A7, B7, A8, B8));
+        assert_eq!(passer_mask(Color::Black, A5), bb!(A4, B4, A3, B3, A2, B2, A1, B1));
+        assert_eq!(passer_mask(Color::White, F6), bb!(E7, F7, G7, E8, F8, G8));
+        assert_eq!(passer_mask(Color::Black, F6), bb!(E5, F5, G5,
+                                                      E4, F4, G4,
+                                                      E3, F3, G3,
+                                                      E2, F2, G2,
+                                                      E1, F1, G1));
     });
 }

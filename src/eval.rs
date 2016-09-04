@@ -50,7 +50,7 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
             let sq = bitboard::pop_square(&mut pawns_to_score);
             let rel_rank = sq.relative_to(us).rank();
 
-            let passed = bitboard::passer_mask(us, sq) & their_pawns != 0;
+            let passed = bitboard::passer_mask(us, sq) & their_pawns == 0;
             if passed {
                 side_score[us.index()] += PASSER_BONUS[rel_rank.index()];
             }
@@ -59,10 +59,12 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
     side_score[Color::White.index()] - side_score[Color::Black.index()]
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use board::*;
-    use board::Square::*;
-
-}
+//#[cfg(test)]
+//mod tests {
+//    use super::*;
+//    use board::*;
+//    use board::Square::*;
+//
+//    chess_test!(test_passed_pawns, {
+//    });
+//}
