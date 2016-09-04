@@ -158,8 +158,13 @@ fn init_simple_bitboards() {
         let i = sq1.index();
         unsafe {
             square_bb[i] = 1 << i;
-            passer_bb[0][i] = 0;
-            passer_bb[1][i] = 0;
+            for i in (sq1.rank().index() + 1)..8 {
+                passer_bb[0][i] |= rank_bb[i];
+                passer_bb[1][i] |= rank_bb[7 - i];
+            }
+            let near_files = neighbor_files_bb[sq1.rank().index()] | rank_bb[sq1.rank().index()];
+            passer_bb[0][i] &= near_files; 
+            passer_bb[1][i] &= near_files;
         }
         for sq2 in each_square() {
             let j = sq2.index();
@@ -170,6 +175,12 @@ fn init_simple_bitboards() {
             }
         }
     }
+
+}
+
+pub fn passer_mask(side: Color, sq: Square) -> Bitboard {
+    debug_assert!(sq != Square::NoSquare);
+    unsafe { passer_bb[side.index()][sq.index()] }
 }
 
 fn dist(sq1: Square, sq2: Square) -> u8 {
