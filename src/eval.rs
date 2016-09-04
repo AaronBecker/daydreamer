@@ -39,8 +39,8 @@ const PASSER_BONUS: [PhaseScore; 8] = [
 // Penalty for isolated pawns, indexed by whether or not there's an
 // enemy pawn in front of us.
 const ISOLATION_BONUS: [PhaseScore; 2] = [
-    sc!(-20, -15),  // Blocked
-    sc!(-15, -10),  // Open
+    sc!(-15, -10),  // Blocked
+    sc!(-20, -15),  // Open
 ];
 
 fn eval_pawns(pos: &Position) -> PhaseScore {
