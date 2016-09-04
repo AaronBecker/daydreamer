@@ -156,6 +156,24 @@ impl ::std::ops::MulAssign<i32> for PhaseScore {
     }
 }
 
+impl ::std::ops::Div<i32> for PhaseScore {
+    type Output = PhaseScore;
+
+    fn div(self, rhs: i32) -> PhaseScore {
+        PhaseScore {
+            mg: self.mg / rhs,
+            eg: self.eg / rhs,
+        }
+    }
+}
+
+impl ::std::ops::DivAssign<i32> for PhaseScore {
+    fn div_assign(&mut self, rhs: i32) {
+        self.mg /= rhs;
+        self.eg /= rhs;
+    }
+}
+
 impl ::std::ops::Neg for PhaseScore {
     type Output = PhaseScore;
 

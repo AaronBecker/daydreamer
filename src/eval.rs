@@ -50,7 +50,7 @@ const CONNECTION_BONUS: [PhaseScore; 8] = [sc!(0, 0), sc!(2, 2), sc!(4, 4), sc!(
 fn connection_bonus(rel_rank: Rank, open: bool) -> PhaseScore {
     let mut bonus = CONNECTION_BONUS[rel_rank.index()];
     if open {
-        bonus *= 2;
+        bonus = bonus * 3 / 2;
     }
     bonus
 }
