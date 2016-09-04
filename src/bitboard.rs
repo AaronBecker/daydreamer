@@ -179,6 +179,12 @@ fn init_simple_bitboards() {
             }
         }
     }
+
+}
+
+pub fn passer_mask(side: Color, sq: Square) -> Bitboard {
+    debug_assert!(sq != Square::NoSquare);
+    unsafe { passer_bb[side.index()][sq.index()] }
 }
 
 pub fn in_front_mask(side: Color, sq: Square) -> Bitboard {
@@ -624,5 +630,4 @@ mod tests {
         assert_eq!(in_front_mask(Color::White, F7), bb!(F8));
         assert_eq!(in_front_mask(Color::Black, F7), bb!(F6, F5, F4, F3, F2, F1));
     });
-
 }

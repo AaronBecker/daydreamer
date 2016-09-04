@@ -63,6 +63,15 @@ macro_rules! bb {
     };
 }
 
+// Convenience macro for populating tables of phase scores.
+macro_rules! sc {
+    ( $mg:expr, $eg:expr ) => {
+        {
+            use score::PhaseScore;
+            PhaseScore{ mg: $mg, eg: $eg }
+        }
+    };
+}
 
 macro_rules! chess_test {
     ($id:ident, $b:block) => {

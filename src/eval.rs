@@ -1,10 +1,13 @@
+use bitboard;
+use board;
 use board::{Color, PieceType};
 use position::Position;
 use score;
-use score::Score;
+use score::{PhaseScore, Score};
 
 pub fn full(pos: &Position) -> Score {
-    let ps = pos.psqt_score();
+    let mut ps = pos.psqt_score();
+    ps += eval_pawns(pos);
 
     let mut s = ps.interpolate(pos);
     if !can_win(pos.us(), pos) {
@@ -80,4 +83,3 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
 //    chess_test!(test_passed_pawns, {
 //    });
 //}
->>>>>>> Stashed changes
