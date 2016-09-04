@@ -38,9 +38,11 @@ const PASSER_BONUS: [PhaseScore; 8] = [
 
 // Penalty for isolated pawns, indexed by whether or not there's an
 // enemy pawn in front of us.
-const ISOLATION_BONUS: [PhaseScore; 2] = [
-    sc!(-10, -5),  // Blocked
-    sc!(-20, -10),  // Open
+const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
+    // Blocked
+    [sc!(-6, -8), sc!(-6, -8), sc!(-6, -8), sc!(-8, -8), sc!(-8, -8), sc!(-6, -8), sc!(-6, -8), sc!(-6, -8)],
+    // Open
+    [sc!(-14, -16), sc!(-14, -17), sc!(-15, -18), sc!(-16, -20), sc!(-16, -20), sc!(-15, -18), sc!(-14, -17), sc!(-14, -16)],
 ];
 
 fn eval_pawns(pos: &Position) -> PhaseScore {
@@ -59,8 +61,8 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
             let sq = bitboard::pop_square(&mut pawns_to_score);
             let rel_rank = sq.relative_to(us).rank();
 
-            let passed = bitboard::passer_mask(us, sq) & their_pawns == 0;
-            //&& bitboard::in_front_mask(us, sq) & our_pawns == 0;
+            let passed = bitboard::passer_mask(us, sq) & their_pawns == 0
+                && bitboard::in_front_mask(us, sq) & our_pawns == 0;
             let open = bitboard::in_front_mask(us, sq) & their_pawns == 0;
             let isolated = bitboard::neighbor_mask(sq.file()) & our_pawns == 0;
 
@@ -68,11 +70,7 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
                 side_score[us.index()] += PASSER_BONUS[rel_rank.index()];
             }
             if isolated {
-                side_score[us.index()] += ISOLATION_BONUS[open as usize];
-                // Being isolated in the center of the board is worse midgame.
-                if sq.file() == File::D || sq.file() == File::E {
-                    side_score[us.index()] -= sc!(-5, 0);
-                }
+                side_score[us.index()] += ISOLATION_BONUS[open as usize][sq.file().index()];
             }
         }
     }
@@ -81,6 +79,7 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
 
 #[cfg(test)]
 mod tests {
+    use board::File::*;
     use board::Rank::*;
     use position::Position;
     use ::eval::{PASSER_BONUS, ISOLATION_BONUS};
@@ -94,20 +93,23 @@ mod tests {
         // All pawns in starting positions.
         test_case("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - -", sc!(0, 0));
         // Empty board, white pawn on A2.
-        test_case("4k3/8/8/8/8/8/P7/4K3 w - -", PASSER_BONUS[_2.index()] + ISOLATION_BONUS[true as usize]);
+        test_case("4k3/8/8/8/8/8/P7/4K3 w - -", PASSER_BONUS[_2.index()] + ISOLATION_BONUS[1][A.index()]);
         // Empty board, black pawn on A2.
-        test_case("4k3/8/8/8/8/8/p7/4K3 w - -", -(PASSER_BONUS[_7.index()] + ISOLATION_BONUS[true as usize]));
+        test_case("4k3/8/8/8/8/8/p7/4K3 w - -", -(PASSER_BONUS[_7.index()] + ISOLATION_BONUS[1][A.index()]));
         // White pawn on A4, opposed black pawn on B5.
-        test_case("4k3/8/8/1p6/P7/8/8/4K3 w - -", sc!(0, 0));
+        test_case("4k3/8/8/1p6/P7/8/8/4K3 w - -",
+                  ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
         // White pawn on A4, opposed black pawn on B4.
-        test_case("4k3/8/8/8/Pp6/8/8/4K3 w - -", PASSER_BONUS[_4.index()] - PASSER_BONUS[_5.index()]);
+        test_case("4k3/8/8/8/Pp6/8/8/4K3 w - -", PASSER_BONUS[_4.index()] - PASSER_BONUS[_5.index()] +
+                  ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
         // White pawns on A4 and B4, black pawn on B6.
-        test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -", -ISOLATION_BONUS[false as usize]);
+        test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -", -ISOLATION_BONUS[0][B.index()]);
         // White pawns on A4 and B4, black pawn on C6.
-        test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -", PASSER_BONUS[_4.index()] - ISOLATION_BONUS[true as usize]);
+        test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -", PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
         // White pawns on A4 and A5, black pawn on C6.
         test_case("4k3/8/2p5/P7/P7/8/8/4K3 w - -",
                   PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()] +
-                  ISOLATION_BONUS[true as usize]);
+                  // TODO: implement scalar multiplication
+                  ISOLATION_BONUS[1][A.index()] + ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][C.index()]);
     });
 }
