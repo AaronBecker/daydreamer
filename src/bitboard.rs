@@ -158,10 +158,6 @@ fn init_simple_bitboards() {
         let i = sq1.index();
         unsafe {
             square_bb[i] = 1 << i;
-<<<<<<< Updated upstream
-            passer_bb[0][i] = 0;
-            passer_bb[1][i] = 0;
-=======
             for r in 0..sq1.rank().index() {
                 passer_bb[1][i] |= rank_bb[r];
             }
@@ -173,7 +169,6 @@ fn init_simple_bitboards() {
             in_front_bb[0][i] = passer_bb[0][i] & file_bb[sq1.file().index()];
             passer_bb[1][i] &= near_files;
             in_front_bb[1][i] = passer_bb[1][i] & file_bb[sq1.file().index()];
->>>>>>> Stashed changes
         }
         for sq2 in each_square() {
             let j = sq2.index();
@@ -614,8 +609,6 @@ mod tests {
         assert_eq!(ray(A1, B3), 0);
         assert_eq!(ray(B3, A1), 0);
     });
-<<<<<<< Updated upstream
-=======
 
     chess_test!(test_pawn_masks, {
         assert_eq!(passer_mask(Color::White, A5), bb!(A6, B6, A7, B7, A8, B8));
@@ -632,5 +625,4 @@ mod tests {
         assert_eq!(in_front_mask(Color::Black, F7), bb!(F6, F5, F4, F3, F2, F1));
     });
 
->>>>>>> Stashed changes
 }

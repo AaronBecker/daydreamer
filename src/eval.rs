@@ -20,8 +20,6 @@ fn can_win(side: Color, pos: &Position) -> bool {
     !(pos.pieces_of_color_and_type(side, PieceType::Pawn) == 0 &&
       pos.non_pawn_material(side) < score::mg_material(PieceType::Rook))
 }
-<<<<<<< Updated upstream
-=======
 
 const PASSER_BONUS: [PhaseScore; 8] = [
     sc!(0, 0),
