@@ -606,8 +606,6 @@ mod tests {
     });
 
     chess_test!(test_pawn_masks, {
-        println!("{}", bb_to_str(passer_mask(Color::White, F6)));
-        println!("{}", bb_to_str(passer_mask(Color::Black, F6)));
         assert_eq!(passer_mask(Color::White, A5), bb!(A6, B6, A7, B7, A8, B8));
         assert_eq!(passer_mask(Color::Black, A5), bb!(A4, B4, A3, B3, A2, B2, A1, B1));
         assert_eq!(passer_mask(Color::White, F6), bb!(E7, F7, G7, E8, F8, G8));
