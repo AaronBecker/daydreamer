@@ -45,13 +45,6 @@ const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
     [sc!(-14, -16), sc!(-14, -17), sc!(-15, -18), sc!(-16, -20), sc!(-16, -20), sc!(-15, -18), sc!(-14, -17), sc!(-14, -16)],
 ];
 
-const CONNECTION_BONUS: [PhaseScore; 8] = [sc!(0, 0), sc!(2, 2), sc!(4, 4), sc!(8, 8),
-                                           sc!(12, 12), sc!(16, 16), sc!(20, 20), sc!(0, 0)];
-fn connection_bonus(rel_rank: Rank, _: bool) -> PhaseScore {
-    let mut bonus = CONNECTION_BONUS[rel_rank.index()];
-    bonus
-}
-
 fn eval_pawns(pos: &Position) -> PhaseScore {
     use bitboard::IntoBitboard;
     use board::File;
@@ -85,7 +78,13 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
             let connected = ((sq.pawn_push(them).rank().into_bitboard() & our_pawns) |
                              (sq.rank().into_bitboard() & our_pawns)) & neighbor_files != 0;
             if connected {
-                side_score[us.index()] += connection_bonus(rel_rank, open);
+                side_score[us.index()] += sc!(5, 5);
+            }
+
+            // Only pawns that are behind a friendly pawn count as doubled.
+            let doubled = bitboard::in_front_mask(us, sq) & our_pawns != 0;
+            if doubled {
+                side_score[us.index()] -= sc!(5, 10);
             }
         }
     }
@@ -119,13 +118,13 @@ mod tests {
                   ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
         // White pawns on A4 and B4, black pawn on B6.
         test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -",
-                  ::eval::connection_bonus(_4, true) + ::eval::connection_bonus(_4, false) - ISOLATION_BONUS[0][B.index()]);
+                  sc!(5, 5) * 2 - ISOLATION_BONUS[0][B.index()]);
         // White pawns on A4 and B4, black pawn on C6.
         test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -",
-                  ::eval::connection_bonus(_4, true) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
+                  sc!(5, 5) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
         // White pawns on A4 and A5, black pawn on C6.
         test_case("4k3/8/2p5/P7/P7/8/8/4K3 w - -",
-                  PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()] +
+                  PASSER_BONUS[_5.index()] - sc!(5, 10) - PASSER_BONUS[_3.index()] +
                   ISOLATION_BONUS[1][A.index()] * 2 - ISOLATION_BONUS[1][C.index()]);
     });
 }
