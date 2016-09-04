@@ -138,6 +138,24 @@ impl ::std::ops::SubAssign for PhaseScore {
     }
 }
 
+impl ::std::ops::Mul<i32> for PhaseScore {
+    type Output = PhaseScore;
+
+    fn mul(self, rhs: i32) -> PhaseScore {
+        PhaseScore {
+            mg: self.mg * rhs,
+            eg: self.eg * rhs,
+        }
+    }
+}
+
+impl ::std::ops::MulAssign<i32> for PhaseScore {
+    fn mul_assign(&mut self, rhs: i32) {
+        self.mg *= rhs;
+        self.eg *= rhs;
+    }
+}
+
 impl ::std::ops::Neg for PhaseScore {
     type Output = PhaseScore;
 

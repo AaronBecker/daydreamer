@@ -88,6 +88,7 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
 #[cfg(test)]
 mod tests {
     use board::Rank::*;
+    use board::File::*;
     use position::Position;
     use ::eval::{PASSER_BONUS, ISOLATION_BONUS};
 
@@ -110,13 +111,12 @@ mod tests {
         test_case("4k3/8/8/8/Pp6/8/8/4K3 w - -", PASSER_BONUS[_4.index()] - PASSER_BONUS[_5.index()] +
                   ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
         // White pawns on A4 and B4, black pawn on B6.
-        test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -", sc!(10, 10) - ISOLATION_BONUS[0][B.index()]);
+        test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -", sc!(5, 5) * 2 - ISOLATION_BONUS[0][B.index()]);
         // White pawns on A4 and B4, black pawn on C6.
-        test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -", sc!(10, 10) + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
+        test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -", sc!(5, 5) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
         // White pawns on A4 and A5, black pawn on C6.
         test_case("4k3/8/2p5/P7/P7/8/8/4K3 w - -",
                   PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()] +
-                  // TODO: implement scalar multiplication
-                  ISOLATION_BONUS[1][A.index()] + ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][C.index()]);
+                  ISOLATION_BONUS[1][A.index()] * 2 - ISOLATION_BONUS[1][C.index()]);
     });
 }
