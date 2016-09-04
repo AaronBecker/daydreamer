@@ -24,6 +24,7 @@ fn can_win(side: Color, pos: &Position) -> bool {
       pos.non_pawn_material(side) < score::mg_material(PieceType::Rook))
 }
 
+// Bonus for passed pawns, indexed by rank.
 const PASSER_BONUS: [PhaseScore; 8] = [
     sc!(0, 0),
     sc!(5, 10), 
@@ -35,13 +36,11 @@ const PASSER_BONUS: [PhaseScore; 8] = [
     sc!(0, 0),
 ];
 
-// Penalty for isolated pawns, indexed by file and by whether or not there an
+// Penalty for isolated pawns, indexed by whether or not there's an
 // enemy pawn in front of us.
-const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
-    // Blocked
-    [sc!(-6, -8), sc!(-6, -8), sc!(-6, -8), sc!(-8, -8), sc!(-8, -8), sc!(-6, -8), sc!(-6, -8), sc!(-6, -8)],
-    // Open
-    [sc!(-14, -16), sc!(-14, -17), sc!(-15, -18), sc!(-16, -20), sc!(-16, -20), sc!(-15, -18), sc!(-14, -17), sc!(-14, -16)],
+const ISOLATION_BONUS: [PhaseScore; 2] = [
+    sc!(-8, -8),  // Blocked
+    sc!(-16, -20),  // Open
 ];
 
 fn eval_pawns(pos: &Position) -> PhaseScore {
@@ -67,7 +66,7 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
                 side_score[us.index()] += PASSER_BONUS[rel_rank.index()];
             }
             if isolated {
-                side_score[us.index()] += ISOLATION_BONUS[open as usize][sq.file().index()]
+                side_score[us.index()] += ISOLATION_BONUS[open as usize]
             }
         }
     }
