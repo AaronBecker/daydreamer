@@ -174,23 +174,23 @@ fn analyze_pawns(pos: &Position) -> PawnData {
                     }
                 }
             }
+        }
 
-            // Penalize multiple pawn islands.
-            let mut islands = 0;
-            let mut on_island = false;
-            for f in board::each_file() {
-                if bb!(f) & our_pawns != 0 {
-                    if !on_island {
-                        on_island = true;
-                        islands += 1;
-                    }
-                } else {
-                    on_island = false;
+        // Penalize multiple pawn islands.
+        let mut islands = 0;
+        let mut on_island = false;
+        for f in board::each_file() {
+            if bb!(f) & our_pawns != 0 {
+                if !on_island {
+                    on_island = true;
+                    islands += 1;
                 }
+            } else {
+                on_island = false;
             }
-            if islands > 1 {
-                pd.score[us.index()] -= sc!(2 * (islands - 1), 4 * (islands - 1));
-            }
+        }
+        if islands > 1 {
+            pd.score[us.index()] -= sc!(2 * (islands - 1), 4 * (islands - 1));
         }
     }
 
