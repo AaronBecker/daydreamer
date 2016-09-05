@@ -134,6 +134,12 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
                 side_score[us.index()] += ISOLATION_BONUS[open as usize][sq.file().index()];
             }
 
+            // Only pawns that are behind a friendly pawn count as doubled.
+            let doubled = bitboard::in_front_mask(us, sq) & our_pawns != 0;
+            if doubled {
+                side_score[us.index()] -= sc!(6, 9);
+            }
+
             let connected = ((sq.pawn_push(them).rank().into_bitboard() & our_pawns) |
                              (sq.rank().into_bitboard() & our_pawns)) & neighbor_files != 0;
             if connected {
