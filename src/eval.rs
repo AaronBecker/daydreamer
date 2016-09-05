@@ -47,7 +47,6 @@ const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
 
 fn eval_pawns(pos: &Position) -> PhaseScore {
     use bitboard::IntoBitboard;
-    use board::File;
     use board::PieceType::Pawn;
     // TODO: for now we're calculating from scratch, but this can be made
     // much more efficient with a pawn cache.
@@ -62,7 +61,8 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
             let sq = bitboard::pop_square(&mut pawns_to_score);
             let rel_rank = sq.relative_to(us).rank();
 
-            let passed = bitboard::passer_mask(us, sq) & their_pawns == 0
+            let our_passer_mask = bitboard::passer_mask(us, sq);
+            let passed = our_passer_mask & their_pawns == 0
                 && bitboard::in_front_mask(us, sq) & our_pawns == 0;
             if passed {
                 side_score[us.index()] += PASSER_BONUS[rel_rank.index()];
@@ -81,10 +81,21 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
                 side_score[us.index()] += sc!(5, 5);
             }
 
-            // Only pawns that are behind a friendly pawn count as doubled.
-            let doubled = bitboard::in_front_mask(us, sq) & our_pawns != 0;
-            if doubled {
-                side_score[us.index()] += sc!(-4, -8);
+            if !passed && !isolated && !connected &&
+                bitboard::pawn_attacks(us, sq) & their_pawns == 0 &&
+                bitboard::passer_mask(them, sq) & our_pawns == 0 {
+                let mut adv = sq.pawn_push(us).pawn_push(us);
+                loop {
+                    if adv.rank().into_bitboard() & our_passer_mask & their_pawns != 0 {
+                        side_score[us.index()] -= sc!(6, 9);
+                        break;
+                    }
+                    if adv.rank().into_bitboard() & our_passer_mask & our_pawns != 0 ||
+                        adv.relative_to(us).rank().index() >= Rank::_7.index() {
+                        break;
+                    }
+                    adv = adv.pawn_push(us);
+                }
             }
         }
     }
@@ -124,7 +135,11 @@ mod tests {
                   sc!(5, 5) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
         // White pawns on A4 and A5, black pawn on C6.
         test_case("4k3/8/2p5/P7/P7/8/8/4K3 w - -",
-                  PASSER_BONUS[_5.index()] - sc!(4, 8) - PASSER_BONUS[_3.index()] +
+                  PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()] +
                   ISOLATION_BONUS[1][A.index()] * 2 - ISOLATION_BONUS[1][C.index()]);
+        // White pawns on D3, E4, black pawns on C5, E6, D6
+        test_case("4k3/8/3pp3/2p5/4P3/3P4/8/4K3 w - -",
+                  -sc!(5, 5) * 2 // net two connected bonus for black
+                  -sc!(6, 9));   // one backward pawn for white
     });
 }
