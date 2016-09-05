@@ -196,7 +196,7 @@ pub fn neighbor_mask(f: File) -> Bitboard {
     unsafe { neighbor_files_bb[f.index()] }
 }
 
-fn dist(sq1: Square, sq2: Square) -> u8 {
+pub fn dist(sq1: Square, sq2: Square) -> u8 {
     debug_assert!(sq1 != Square::NoSquare && sq2 != Square::NoSquare);
     unsafe { distance[sq1.index()][sq2.index()] }
 }

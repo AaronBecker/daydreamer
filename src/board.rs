@@ -215,6 +215,10 @@ impl Rank {
         debug_assert!(x <= Rank::NoRank as u8);
         unsafe { mem::transmute(x) }
     }
+
+    pub fn relative_to(self, c: Color) -> Rank {
+        unsafe { mem::transmute((self as u8) ^ (c as u8 * 7)) }
+    }
 }
 
 pub fn each_rank() -> EachElement<Rank> {

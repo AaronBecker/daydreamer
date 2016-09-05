@@ -1,8 +1,9 @@
 use std::sync::Mutex;
 
 use bitboard;
+use bitboard::{Bitboard};
 use board;
-use board::{Color, Rank, PieceType};
+use board::{Color, PieceType, Rank, Square};
 use position::{HashKey, Position};
 use score;
 use score::{PhaseScore, Score};
@@ -50,14 +51,16 @@ const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
 #[derive(Clone, Copy)]
 struct PawnData {
     key: u32,
-    score: PhaseScore, 
+    score: [PhaseScore; 2], 
+    passers: [Bitboard; 2],
 }
 
 impl PawnData {
     pub fn new() -> PawnData {
         PawnData {
             key: 0,
-            score: sc!(0, 0),
+            score: [sc!(0, 0), sc!(0, 0)],
+            passers: [0, 0],
         }
     }
 }
@@ -112,7 +115,6 @@ fn analyze_pawns(pos: &Position) -> PawnData {
     let mut pd = PawnData::new();
     pd.key = (pos.pawn_hash() >> 32) as u32;
 
-    let mut side_score = [sc!(0, 0), sc!(0, 0)];
     for us in board::each_color() {
         let them = us.flip();
         let our_pawns = pos.pieces_of_color_and_type(us, Pawn);
@@ -127,26 +129,27 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             let passed = our_passer_mask & their_pawns == 0
                 && bitboard::in_front_mask(us, sq) & our_pawns == 0;
             if passed {
-                side_score[us.index()] += PASSER_BONUS[rel_rank.index()];
+                pd.passers[us.index()] |= bb!(sq);
+                pd.score[us.index()] += PASSER_BONUS[rel_rank.index()];
             }
 
             let open = bitboard::in_front_mask(us, sq) & their_pawns == 0;
             let neighbor_files = bitboard::neighbor_mask(sq.file());
             let isolated = neighbor_files & our_pawns == 0;
             if isolated {
-                side_score[us.index()] += ISOLATION_BONUS[open as usize][sq.file().index()];
+                pd.score[us.index()] += ISOLATION_BONUS[open as usize][sq.file().index()];
             }
 
             // Only pawns that are behind a friendly pawn count as doubled.
             let doubled = bitboard::in_front_mask(us, sq) & our_pawns != 0;
             if doubled {
-                side_score[us.index()] -= sc!(6, 9);
+                pd.score[us.index()] -= sc!(6, 9);
             }
 
             let connected = ((sq.pawn_push(them).rank().into_bitboard() & our_pawns) |
                              (sq.rank().into_bitboard() & our_pawns)) & neighbor_files != 0;
             if connected {
-                side_score[us.index()] += sc!(5, 5);
+                pd.score[us.index()] += sc!(5, 5);
             }
 
             if !passed && !isolated && !connected &&
@@ -155,12 +158,12 @@ fn analyze_pawns(pos: &Position) -> PawnData {
                 rel_rank.index() < Rank::_6.index(){
                 let mut adv = sq.pawn_push(us);
                 if adv.rank().into_bitboard() & our_passer_mask & their_pawns != 0 {
-                    side_score[us.index()] -= sc!(6, 9);
+                    pd.score[us.index()] -= sc!(6, 9);
                 } else {
                     loop {
                         let adv2 = adv.pawn_push(us);
                         if adv2.rank().into_bitboard() & our_passer_mask & their_pawns != 0 {
-                            side_score[us.index()] -= sc!(6, 9);
+                            pd.score[us.index()] -= sc!(6, 9);
                             break;
                         }
                         if adv.rank().into_bitboard() & our_passer_mask & our_pawns != 0 ||
@@ -173,7 +176,6 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             }
         }
     }
-    pd.score = side_score[Color::White.index()] - side_score[Color::Black.index()];
 
     GLOBAL_PAWN_CACHE.lock().unwrap().put(&pd, pos.pawn_hash());
     pd
@@ -181,7 +183,35 @@ fn analyze_pawns(pos: &Position) -> PawnData {
 
 fn eval_pawns(pos: &Position) -> PhaseScore {
     let pd = analyze_pawns(pos);
-    pd.score
+    let mut side_score = pd.score;
+
+    for us in board::each_color() {
+        let them = us.flip();
+        
+        let mut passers_to_score = pd.passers[us.index()];
+        while passers_to_score != 0 {
+            let sq = bitboard::pop_square(&mut passers_to_score);
+            let target = sq.pawn_push(us);
+            let rel_rank = sq.relative_to(us).rank();
+            let promote_sq = Square::new(sq.file(), Rank::_8.relative_to(us));
+
+            if pos.non_pawn_material(them) == 0 {
+                // Other side is down to king and pawns. Can the king reach us?
+                // This measure is conservative, which is fine.
+                let prom_dist: i32 = (Rank::_8.index() - rel_rank.index() -
+                    if us == pos.us() { 1 } else { 0 } -
+                    if rel_rank.index() == Rank::_2.index() { 1 } else { 0 }) as i32;
+                if prom_dist < bitboard::dist(pos.king_sq(them), promote_sq) as i32 {
+                    // Give partial credit for the queen based on how long
+                    // it'll take us to convert.
+                    side_score[us.index()] +=
+                        sc!(0, (score::QUEEN.eg - score::PAWN.eg) * (5 - prom_dist) / 6);
+                }
+            }
+        }
+    }
+
+    side_score[Color::White.index()] - side_score[Color::Black.index()]
 }
 
 #[cfg(test)]
@@ -202,21 +232,22 @@ mod tests {
         // Empty board, white pawn on A2.
         test_case("4k3/8/8/8/8/8/P7/4K3 w - -", PASSER_BONUS[_2.index()] + ISOLATION_BONUS[1][A.index()]);
         // Empty board, black pawn on A2.
-        test_case("4k3/8/8/8/8/8/p7/4K3 w - -", -(PASSER_BONUS[_7.index()] + ISOLATION_BONUS[1][A.index()]));
+        test_case("4k3/8/8/8/8/8/p7/K7 w - -", -(PASSER_BONUS[_7.index()] + ISOLATION_BONUS[1][A.index()]));
         // White pawn on A4, opposed black pawn on B5.
         test_case("4k3/8/8/1p6/P7/8/8/4K3 w - -",
                   ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
         // White pawn on A4, opposed black pawn on B4.
-        test_case("4k3/8/8/8/Pp6/8/8/4K3 w - -", PASSER_BONUS[_4.index()] - PASSER_BONUS[_5.index()] +
+        test_case("3k4/8/8/8/Pp6/8/8/2K5 w - -",
+                  PASSER_BONUS[_4.index()] - PASSER_BONUS[_5.index()] +
                   ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
         // White pawns on A4 and B4, black pawn on B6.
         test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -",
                   sc!(5, 5) * 2 - ISOLATION_BONUS[0][B.index()]);
         // White pawns on A4 and B4, black pawn on C6.
-        test_case("4k3/8/2p5/8/PP6/8/8/4K3 w - -",
+        test_case("3k4/8/2p5/8/PP6/8/8/4K3 w - -",
                   sc!(5, 5) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
         // White pawns on A4 and A5, black pawn on C6.
-        test_case("4k3/8/2p5/P7/P7/8/8/4K3 w - -",
+        test_case("2k5/8/2p5/P7/P7/8/8/4K3 w - -",
                   PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()]  // passed pawns
                   - sc!(6, 9)  // doubled pawns
                   + ISOLATION_BONUS[1][A.index()] * 2 - ISOLATION_BONUS[1][C.index()]);  // isolated pawns
