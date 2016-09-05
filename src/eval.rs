@@ -175,23 +175,6 @@ fn analyze_pawns(pos: &Position) -> PawnData {
                 }
             }
         }
-
-        // Penalize multiple pawn islands.
-        let mut islands = 0;
-        let mut on_island = false;
-        for f in board::each_file() {
-            if bb!(f) & our_pawns != 0 {
-                if !on_island {
-                    on_island = true;
-                    islands += 1;
-                }
-            } else {
-                on_island = false;
-            }
-        }
-        if islands > 1 {
-            pd.score[us.index()] -= sc!(2 * (islands - 1), 4 * (islands - 1));
-        }
     }
 
     GLOBAL_PAWN_CACHE.lock().unwrap().put(&pd, pos.pawn_hash());
@@ -199,6 +182,7 @@ fn analyze_pawns(pos: &Position) -> PawnData {
 }
 
 fn eval_pawns(pos: &Position) -> PhaseScore {
+    use bitboard::dist;
     let pd = analyze_pawns(pos);
     let mut side_score = pd.score;
 
@@ -212,29 +196,34 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
             let rel_rank = sq.relative_to(us).rank();
             let promote_sq = Square::new(sq.file(), Rank::_8.relative_to(us));
 
+            let mut passer_score = sc!(0, 0);
             if pos.non_pawn_material(them) == 0 {
                 // Other side is down to king and pawns. Can the king reach us?
                 // This measure is conservative, which is fine.
                 let prom_dist: i32 = (Rank::_8.index() - rel_rank.index() -
                     if us == pos.us() { 1 } else { 0 } -
                     if rel_rank.index() == Rank::_2.index() { 1 } else { 0 }) as i32;
-                if prom_dist < bitboard::dist(pos.king_sq(them), promote_sq) as i32 {
+                if prom_dist < dist(pos.king_sq(them), promote_sq) as i32 {
                     // Give partial credit for the queen based on how long
                     // it'll take us to convert.
-                    side_score[us.index()].eg +=
+                    passer_score.eg +=
                         (score::QUEEN.eg - score::PAWN.eg) * (5 - prom_dist) / 6;
                 }
             } else {
-                let mut passer_score = PASSER_BONUS[rel_rank.index()];
-
+                passer_score = PASSER_BONUS[rel_rank.index()];
                 // If the square in front of us is blocked, scale back the bonus.
-                if pos.piece_at(target) != Piece::NoPiece {
-                    passer_score = passer_score * 3 / 4;
-                }
 
                 // TODO: bonus/penalty for major pieces on this file.
-                side_score[us.index()] += passer_score;
             }
+
+            if pos.piece_at(target) != Piece::NoPiece {
+                passer_score = passer_score * 3 / 4;
+            }
+            // Adjust endgame bonus based on king proximity.
+            passer_score.eg += 5 * (dist(pos.king_sq(them), target) as i32 -
+                                    dist(pos.king_sq(us), target) as i32);
+            
+            side_score[us.index()] += passer_score;
         }
     }
 
