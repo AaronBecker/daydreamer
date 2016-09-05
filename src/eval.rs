@@ -142,22 +142,22 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
                 side_score[us.index()] += sc!(5, 5);
             }
 
-            //if !passed && !isolated && !connected &&
-            //    bitboard::pawn_attacks(us, sq) & their_pawns == 0 &&
-            //    bitboard::passer_mask(them, sq) & our_pawns == 0 {
-            //    let mut adv = sq.pawn_push(us).pawn_push(us);
-            //    loop {
-            //        if adv.rank().into_bitboard() & our_passer_mask & their_pawns != 0 {
-            //            side_score[us.index()] -= sc!(6, 9);
-            //            break;
-            //        }
-            //        if adv.rank().into_bitboard() & our_passer_mask & our_pawns != 0 ||
-            //            adv.relative_to(us).rank().index() >= Rank::_7.index() {
-            //            break;
-            //        }
-            //        adv = adv.pawn_push(us);
-            //    }
-            //}
+            if !passed && !isolated && !connected &&
+                bitboard::pawn_attacks(us, sq) & their_pawns == 0 &&
+                bitboard::passer_mask(them, sq) & our_pawns == 0 {
+                let mut adv = sq.pawn_push(us).pawn_push(us);
+                loop {
+                    if adv.rank().into_bitboard() & our_passer_mask & their_pawns != 0 {
+                        side_score[us.index()] -= sc!(6, 9);
+                        break;
+                    }
+                    if adv.rank().into_bitboard() & our_passer_mask & our_pawns != 0 ||
+                        adv.relative_to(us).rank().index() >= Rank::_7.index() {
+                        break;
+                    }
+                    adv = adv.pawn_push(us);
+                }
+            }
         }
     }
     pd.score = side_score[Color::White.index()] - side_score[Color::Black.index()];
@@ -204,6 +204,6 @@ mod tests {
         // White pawns on D3, E4, black pawns on C5, E6, D6
         test_case("4k3/8/3pp3/2p5/4P3/3P4/8/4K3 w - -",
                   -sc!(5, 5) * 2 // net two connected bonus for black
-                  /*-sc!(6, 9)*/);   // one backward pawn for white
+                  -sc!(6, 9));   // one backward pawn for white
     });
 }
