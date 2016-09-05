@@ -221,7 +221,7 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
             }
             // Adjust endgame bonus based on king proximity.
             passer_score.eg += 5 * (dist(pos.king_sq(them), target) as i32 -
-                                    dist(pos.king_sq(us), target) as i32);
+                                    dist(pos.king_sq(us), target) as i32) * rel_rank.index() as i32;
             
             side_score[us.index()] += passer_score;
         }
