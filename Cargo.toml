@@ -11,6 +11,6 @@ time = "*"
 
 [profile.release]
 opt-level = 3
-debug = true
+#debug = true
 debug-assertions = false
 # TODO: experiment with lto = true and panic = 'abort'

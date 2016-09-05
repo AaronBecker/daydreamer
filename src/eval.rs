@@ -155,7 +155,7 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             if !passed && !isolated && !connected &&
                 bitboard::pawn_attacks(us, sq) & their_pawns == 0 &&
                 bitboard::passer_mask(them, sq) & our_pawns == 0 &&
-                rel_rank.index() < Rank::_6.index(){
+                rel_rank.index() < Rank::_6.index() {
                 let mut adv = sq.pawn_push(us);
                 if adv.rank().into_bitboard() & our_passer_mask & their_pawns != 0 {
                     pd.score[us.index()] -= sc!(6, 9);
@@ -173,6 +173,23 @@ fn analyze_pawns(pos: &Position) -> PawnData {
                         adv = adv2;
                     }
                 }
+            }
+
+            // Penalize multiple pawn islands.
+            let mut islands = 0;
+            let mut on_island = false;
+            for f in board::each_file() {
+                if bb!(f) & our_pawns != 0 {
+                    if !on_island {
+                        on_island = true;
+                        islands += 1;
+                    }
+                } else {
+                    on_island = false;
+                }
+            }
+            if islands > 1 {
+                pd.score[us.index()] -= sc!(2 * (islands - 1), 4 * (islands - 1));
             }
         }
     }
