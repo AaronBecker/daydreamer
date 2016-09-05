@@ -101,14 +101,17 @@ lazy_static! {
     static ref GLOBAL_PAWN_CACHE: Mutex<PawnCache> = Mutex::new(PawnCache::new(1 << 20));
 }
 
-fn eval_pawns(pos: &Position) -> PhaseScore {
+fn analyze_pawns(pos: &Position) -> PawnData {
     use bitboard::IntoBitboard;
     use board::PieceType::Pawn;
 
     if let Some(entry) = GLOBAL_PAWN_CACHE.lock().unwrap().get(pos.pawn_hash()) {
-        return entry.score;
+        return *entry;
     }
+
     let mut pd = PawnData::new();
+    pd.key = (pos.pawn_hash() >> 32) as u32;
+
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
     for us in board::each_color() {
         let them = us.flip();
@@ -171,8 +174,13 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
         }
     }
     pd.score = side_score[Color::White.index()] - side_score[Color::Black.index()];
-    pd.key = (pos.pawn_hash() >> 32) as u32;
+
     GLOBAL_PAWN_CACHE.lock().unwrap().put(&pd, pos.pawn_hash());
+    pd
+}
+
+fn eval_pawns(pos: &Position) -> PhaseScore {
+    let pd = analyze_pawns(pos);
     pd.score
 }
 
@@ -209,8 +217,9 @@ mod tests {
                   sc!(5, 5) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
         // White pawns on A4 and A5, black pawn on C6.
         test_case("4k3/8/2p5/P7/P7/8/8/4K3 w - -",
-                  PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()] +
-                  ISOLATION_BONUS[1][A.index()] * 2 - ISOLATION_BONUS[1][C.index()]);
+                  PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()]  // passed pawns
+                  - sc!(6, 9)  // doubled pawns
+                  + ISOLATION_BONUS[1][A.index()] * 2 - ISOLATION_BONUS[1][C.index()]);  // isolated pawns
         // White pawns on D3, E4, black pawns on C5, E6, D6
         test_case("4k3/8/3pp3/2p5/4P3/3P4/8/4K3 w - -",
                   sc!(-5, -5) * 2 // net two connected bonus for black
