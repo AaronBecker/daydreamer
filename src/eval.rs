@@ -1,7 +1,9 @@
+use std::sync::Mutex;
+
 use bitboard;
 use board;
 use board::{Color, Rank, PieceType};
-use position::Position;
+use position::{HashKey, Position};
 use score;
 use score::{PhaseScore, Score};
 
@@ -45,11 +47,70 @@ const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
     [sc!(-14, -16), sc!(-14, -17), sc!(-15, -18), sc!(-16, -20), sc!(-16, -20), sc!(-15, -18), sc!(-14, -17), sc!(-14, -16)],
 ];
 
+#[derive(Clone, Copy)]
+struct PawnData {
+    key: u32,
+    score: PhaseScore, 
+}
+
+impl PawnData {
+    pub fn new() -> PawnData {
+        PawnData {
+            key: 0,
+            score: sc!(0, 0),
+        }
+    }
+}
+
+struct PawnCache {
+    table: Vec<PawnData>,
+}
+
+impl<'a> PawnCache {
+    pub fn new(bytes: usize) -> PawnCache {
+        let mut buckets = 1;
+        while (buckets << 1) * ::std::mem::size_of::<PawnData>() < bytes {
+            buckets = buckets << 1;
+        }
+        PawnCache {
+            table: vec![PawnData::new(); buckets],
+        }
+    }
+
+    pub fn get(&'a mut self, key: HashKey) -> Option<&'a PawnData> {
+        let idx = key as usize & (self.table.len() - 1);
+        let short_key = (key >> 32) as u32;
+        if short_key == self.table[idx].key {
+            return Some(&mut self.table[idx]);
+        }
+        None
+    }
+
+    pub fn put(&mut self, pd: &PawnData, key: HashKey) {
+        let idx = key as usize & (self.table.len() - 1);
+        let entry: &mut PawnData = &mut self.table[idx];
+        let short_key = (key >> 32) as u32;
+        if short_key == entry.key {
+            return;
+        }
+        *entry = pd.clone();
+    }
+}
+
+lazy_static! {
+    static ref GLOBAL_PAWN_CACHE: Mutex<PawnCache> = Mutex::new(PawnCache::new(1 << 20));
+}
+
 fn eval_pawns(pos: &Position) -> PhaseScore {
     use bitboard::IntoBitboard;
     use board::PieceType::Pawn;
+
+    if let Some(entry) = GLOBAL_PAWN_CACHE.lock().unwrap().get(pos.pawn_hash()) {
+        return entry.score;
+    }
     // TODO: for now we're calculating from scratch, but this can be made
     // much more efficient with a pawn cache.
+    let mut pd = PawnData::new();
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
     for us in board::each_color() {
         let them = us.flip();
@@ -99,7 +160,10 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
             }
         }
     }
-    side_score[Color::White.index()] - side_score[Color::Black.index()]
+    pd.score = side_score[Color::White.index()] - side_score[Color::Black.index()];
+    pd.key = (pos.pawn_hash() >> 32) as u32;
+    GLOBAL_PAWN_CACHE.lock().unwrap().put(&pd, pos.pawn_hash());
+    pd.score
 }
 
 #[cfg(test)]
