@@ -211,14 +211,24 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
                 }
             } else {
                 passer_score = PASSER_BONUS[rel_rank.index()];
-                // If the square in front of us is blocked, scale back the bonus.
 
-                // TODO: bonus/penalty for major pieces on this file.
+                // Bonus/penalty for major pieces on this file.
+                // Our pieces only get a bonus if they're behind the pawn, but
+                // opposing pieces can be on either side.
+                let our_majors = (pos.pieces_of_color_and_type(us, PieceType::Rook) |
+                                  pos.pieces_of_color_and_type(us, PieceType::Queen)) &
+                                 bitboard::in_front_mask(them, sq);
+                let their_majors = (pos.pieces_of_color_and_type(them, PieceType::Rook) |
+                                    pos.pieces_of_color_and_type(them, PieceType::Queen)) & bb!(sq.file());
+                passer_score += sc!(5, 15) * (our_majors.count_ones() as i32 -
+                                              their_majors.count_ones() as i32);
             }
 
+            // If the square in front of us is blocked, scale back the bonus.
             if pos.piece_at(target) != Piece::NoPiece {
                 passer_score = passer_score * 3 / 4;
             }
+
             // Adjust endgame bonus based on king proximity.
             passer_score.eg += 5 * (dist(pos.king_sq(them), target) as i32 -
                                     dist(pos.king_sq(us), target) as i32) * rel_rank.index() as i32;
