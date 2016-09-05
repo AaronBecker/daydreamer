@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use bitboard;
 use bitboard::{Bitboard};
 use board;
-use board::{Color, PieceType, Rank, Square};
+use board::{Color, Piece, PieceType, Rank, Square};
 use position::{HashKey, Position};
 use score;
 use score::{PhaseScore, Score};
@@ -129,8 +129,8 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             let passed = our_passer_mask & their_pawns == 0
                 && bitboard::in_front_mask(us, sq) & our_pawns == 0;
             if passed {
+                // Passed pawn score is computed in eval_pawns.
                 pd.passers[us.index()] |= bb!(sq);
-                pd.score[us.index()] += PASSER_BONUS[rel_rank.index()];
             }
 
             let open = bitboard::in_front_mask(us, sq) & their_pawns == 0;
@@ -204,9 +204,19 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
                 if prom_dist < bitboard::dist(pos.king_sq(them), promote_sq) as i32 {
                     // Give partial credit for the queen based on how long
                     // it'll take us to convert.
-                    side_score[us.index()] +=
-                        sc!(0, (score::QUEEN.eg - score::PAWN.eg) * (5 - prom_dist) / 6);
+                    side_score[us.index()].eg +=
+                        (score::QUEEN.eg - score::PAWN.eg) * (5 - prom_dist) / 6;
                 }
+            } else {
+                let mut passer_score = PASSER_BONUS[rel_rank.index()];
+
+                // If the square in front of us is blocked, scale back the bonus.
+                if pos.piece_at(target) != Piece::NoPiece {
+                    passer_score = passer_score * 3 / 4;
+                }
+
+                // TODO: bonus/penalty for major pieces on this file.
+                side_score[us.index()] += passer_score;
             }
         }
     }
