@@ -108,8 +108,6 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
     if let Some(entry) = GLOBAL_PAWN_CACHE.lock().unwrap().get(pos.pawn_hash()) {
         return entry.score;
     }
-    // TODO: for now we're calculating from scratch, but this can be made
-    // much more efficient with a pawn cache.
     let mut pd = PawnData::new();
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
     for us in board::each_color() {
@@ -144,18 +142,24 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
 
             if !passed && !isolated && !connected &&
                 bitboard::pawn_attacks(us, sq) & their_pawns == 0 &&
-                bitboard::passer_mask(them, sq) & our_pawns == 0 {
-                let mut adv = sq.pawn_push(us).pawn_push(us);
-                loop {
-                    if adv.rank().into_bitboard() & our_passer_mask & their_pawns != 0 {
-                        side_score[us.index()] -= sc!(6, 9);
-                        break;
+                bitboard::passer_mask(them, sq) & our_pawns == 0 &&
+                rel_rank.index() < Rank::_6.index(){
+                let mut adv = sq.pawn_push(us);
+                if adv.rank().into_bitboard() & our_passer_mask & their_pawns != 0 {
+                    side_score[us.index()] -= sc!(6, 9);
+                } else {
+                    loop {
+                        let adv2 = adv.pawn_push(us);
+                        if adv2.rank().into_bitboard() & our_passer_mask & their_pawns != 0 {
+                            side_score[us.index()] -= sc!(6, 9);
+                            break;
+                        }
+                        if adv.rank().into_bitboard() & our_passer_mask & our_pawns != 0 ||
+                            adv2.relative_to(us).rank().index() >= Rank::_7.index() {
+                            break;
+                        }
+                        adv = adv2;
                     }
-                    if adv.rank().into_bitboard() & our_passer_mask & our_pawns != 0 ||
-                        adv.relative_to(us).rank().index() >= Rank::_7.index() {
-                        break;
-                    }
-                    adv = adv.pawn_push(us);
                 }
             }
         }
@@ -203,7 +207,11 @@ mod tests {
                   ISOLATION_BONUS[1][A.index()] * 2 - ISOLATION_BONUS[1][C.index()]);
         // White pawns on D3, E4, black pawns on C5, E6, D6
         test_case("4k3/8/3pp3/2p5/4P3/3P4/8/4K3 w - -",
-                  -sc!(5, 5) * 2 // net two connected bonus for black
+                  sc!(-5, -5) * 2 // net two connected bonus for black
+                  - sc!(6, 9));   // one backward pawn for white
+        // White pawns on D2, E4, black pawns on C5, E6, D6
+        test_case("4k3/8/3pp3/2p5/4P3/8/3P4/4K3 w - -",
+                  -sc!(5, 5) * 3 // net three connected bonus for black
                   -sc!(6, 9));   // one backward pawn for white
     });
 }
