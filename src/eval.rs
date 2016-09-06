@@ -273,6 +273,7 @@ const MOBILITY_BONUS: [[PhaseScore; 32]; 8] = [
 
 fn eval_pieces(pos: &Position) -> PhaseScore {
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
+    let all_pieces = pos.all_pieces(); 
     for us in board::each_color() {
         // TODO: take piece type and attacks into account here.
         let available_squares = !pos.pieces_of_color(us);
@@ -286,9 +287,9 @@ fn eval_pieces(pos: &Position) -> PhaseScore {
                     PieceType::Pawn => (bitboard::pawn_attacks(us, sq) & available_squares).count_ones() +
                         if pos.piece_at(sq.pawn_push(us)) == Piece::NoPiece { 1 } else { 0 },
                     PieceType::Knight => (bitboard::knight_attacks(sq) & available_squares).count_ones(),
-                    PieceType::Bishop => bitboard::bishop_attacks(sq, available_squares).count_ones(),
-                    PieceType::Rook => bitboard::rook_attacks(sq, available_squares).count_ones(),
-                    PieceType::Queen => bitboard::queen_attacks(sq, available_squares).count_ones(),
+                    PieceType::Bishop => (bitboard::bishop_attacks(sq, all_pieces) & available_squares).count_ones(),
+                    PieceType::Rook => (bitboard::rook_attacks(sq, all_pieces) & available_squares).count_ones(),
+                    PieceType::Queen => (bitboard::queen_attacks(sq, all_pieces) & available_squares).count_ones(),
                     _ => 0,
                 };
                 side_score[us.index()] += MOBILITY_BONUS[pt.index()][mob as usize];
