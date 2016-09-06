@@ -11,6 +11,7 @@ use score::{PhaseScore, Score};
 pub fn full(pos: &Position) -> Score {
     let mut ps = pos.psqt_score();
     ps += eval_pawns(pos);
+    ps += eval_pieces(pos);
 
     let mut s = ps.interpolate(pos);
     if !can_win(pos.us(), pos) {
@@ -225,6 +226,73 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
                                     dist(pos.king_sq(us), target) as i32) * rel_rank.index() as i32;
             
             side_score[us.index()] += passer_score;
+        }
+    }
+
+    side_score[Color::White.index()] - side_score[Color::Black.index()]
+}
+
+// Mobility bonus tables, indexed by piece type and available squares.
+// TODO: come up with some formula for these instead of a giant table.
+const MOBILITY_BONUS: [[PhaseScore; 32]; 8] = [
+    [sc!(0, 0); 32],
+
+    // Pawn
+    [sc!(0, 0), sc!(4, 12), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
+     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
+     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
+     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0)],
+
+    // Knight
+    [sc!(-8, -8), sc!(-4, -4), sc!(0, 0), sc!(4, 4), sc!(8, 8), sc!(12, 12), sc!(16, 16), sc!(18, 18),
+     sc!(20, 20), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
+     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
+     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0)],
+
+    // Bishop
+    [sc!(-15, -15), sc!(-10, -10), sc!(-5, -5), sc!(0, 0), sc!(5, 5), sc!(10, 10), sc!(15, 15), sc!(20, 20),
+     sc!(25, 25), sc!(30, 30), sc!(35, 35), sc!(40, 40), sc!(40, 40), sc!(40, 40), sc!(40, 40), sc!(40, 40),
+     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
+     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0)],
+
+    // Rook
+    [sc!(-10, -10), sc!(-8, -6), sc!(-6, -2), sc!(-4, 2), sc!(-2, 6), sc!(0, 10), sc!(2, 14), sc!(4, 18),
+     sc!(6, 22), sc!(8, 26), sc!(10, 30), sc!(12, 34), sc!(14, 38), sc!(16, 42), sc!(18, 46), sc!(20, 50),
+     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
+     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0)],
+
+    // Queen
+    [sc!(-20, -20), sc!(-19, -18), sc!(-18, -16), sc!(-17, -14), sc!(-16, -12), sc!(-15, -10), sc!(-14, -8), sc!(-13, -6),
+     sc!(-12, -4), sc!(-11, -2), sc!(-10, 0), sc!(-9, 2), sc!(-8, 4), sc!(-7, 6), sc!(-6, 8), sc!(-5, 10),
+     sc!(-4, 12), sc!(-3, 14), sc!(-2, 16), sc!(-1, 18), sc!(0, 20), sc!(1, 22), sc!(2, 24), sc!(3, 26),
+     sc!(4, 28), sc!(5, 30), sc!(6, 32), sc!(7, 34), sc!(8, 36), sc!(9, 38), sc!(10, 40), sc!(11, 42)],
+
+    [sc!(0, 0); 32],
+    [sc!(0, 0); 32],
+];
+
+fn eval_pieces(pos: &Position) -> PhaseScore {
+    let mut side_score = [sc!(0, 0), sc!(0, 0)];
+    for us in board::each_color() {
+        // TODO: take piece type and attacks into account here.
+        let available_squares = !pos.pieces_of_color(us);
+        for pt in board::each_piece_type() {
+            if pt == PieceType::King { break }
+
+            let mut pieces_to_score = pos.pieces_of_color_and_type(us, pt);
+            while pieces_to_score != 0 {
+                let sq = bitboard::pop_square(&mut pieces_to_score);
+                let mob = match pt {
+                    PieceType::Pawn => (bitboard::pawn_attacks(us, sq) & available_squares).count_ones() +
+                        if pos.piece_at(sq.pawn_push(us)) == Piece::NoPiece { 1 } else { 0 },
+                    PieceType::Knight => (bitboard::knight_attacks(sq) & available_squares).count_ones(),
+                    PieceType::Bishop => bitboard::bishop_attacks(sq, available_squares).count_ones(),
+                    PieceType::Rook => bitboard::rook_attacks(sq, available_squares).count_ones(),
+                    PieceType::Queen => bitboard::queen_attacks(sq, available_squares).count_ones(),
+                    _ => 0,
+                };
+                side_score[us.index()] += MOBILITY_BONUS[pt.index()][mob as usize];
+            }
         }
     }
 
