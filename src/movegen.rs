@@ -32,11 +32,16 @@ impl ScoredMove {
 //
 // Quiet moves are everything else: non-capturing moves that aren't
 // promotion to queen, plus all underpromotions.
+//
+// Quiet checks are the subset of quiet moves that give check. The current
+// implementation doesn't generate underpromotions that give check, but
+// this is a matter of expediency rather than principle.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum GenerationType {
     Loud,
     Quiet,
     Both,
+    QuietChecks,
 }
 
 fn add_moves(pos: &Position, from: Square, mut bb: Bitboard, moves: &mut Vec<ScoredMove>) {
@@ -99,8 +104,8 @@ fn add_piece_moves(pos: &Position, targets: Bitboard, moves: &mut Vec<ScoredMove
                      bitboard::queen_attacks);
 }
 
-fn add_piece_quiet_checks(pos: &Position, ad: &AttackData, moves: &mut Vec<ScoredMove>) {
-}
+//fn add_piece_quiet_checks(pos: &Position, ad: &AttackData, moves: &mut Vec<ScoredMove>) {
+//}
 
 fn add_piece_captures(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_moves(pos, pos.their_pieces(), moves);
@@ -148,6 +153,7 @@ fn add_pawn_promotions(pos: &Position,
                        d: Delta,
                        gt: GenerationType,
                        moves: &mut Vec<ScoredMove>) {
+    if gt == GenerationType::QuietChecks { return }
     mask &= bitboard::shift(pawns, d);
     while mask != 0 {
         let to = bitboard::pop_square(&mut mask);
@@ -176,26 +182,35 @@ fn add_pawn_non_promotions(pos: &Position,
     }
 }
 
-fn add_pawn_quiet_checks(pos: &Position,
-                         ad: &AttackData,
-                         moves: &mut Vec<ScoredMove>) {
-}
-
 fn add_masked_pawn_moves(pos: &Position,
                          mask: Bitboard,
+                         check_discoverers: Bitboard,
                          gt: GenerationType,
                          moves: &mut Vec<ScoredMove>) {
     let (us, them) = (pos.us(), pos.them());
     let up = if us == Color::White { NORTH } else { SOUTH };
     let pawns = pos.pieces_of_color_and_type(us, PieceType::Pawn);
     let empty = !pos.all_pieces();
-    let push_once_mask = bitboard::shift(pawns, up) & empty & mask;
-    let push_twice_mask = bitboard::shift(bitboard::shift(pawns, up) & empty, up) &
+    let mut push_once_mask = bitboard::shift(pawns, up) & empty & mask;
+    let mut push_twice_mask = bitboard::shift(bitboard::shift(pawns, up) & empty, up) &
         empty & bitboard::relative_rank_bb(us, Rank::_4) & mask;
     let our_2 = bitboard::relative_rank_bb(us, Rank::_2);
     let our_7 = bitboard::relative_rank_bb(us, Rank::_7);
 
     if gt != GenerationType::Loud {
+        if gt == GenerationType::QuietChecks {
+            let their_king = pos.king_sq(them);
+            push_once_mask &= bitboard::pawn_attacks(them, their_king);
+            push_twice_mask &= bitboard::pawn_attacks(them, their_king);
+
+            let dc_pawns = check_discoverers & pawns & !our_7 & !(bb!(their_king.file()));
+            if dc_pawns != 0 {
+                push_once_mask |= bitboard::shift(dc_pawns, up) & empty & mask;
+                push_twice_mask |= bitboard::shift(push_once_mask &
+                                                   bitboard::relative_rank_bb(us, Rank::_3),
+                                                   up) & empty & mask;
+            }
+        }
         add_pawn_non_promotions(pos, pawns & !our_7, push_once_mask, up, moves);
         add_pawn_non_promotions(pos, pawns & our_2, push_twice_mask, up + up, moves);
     }
@@ -230,7 +245,7 @@ fn add_masked_pawn_moves(pos: &Position,
 }
 
 fn add_pawn_moves(pos: &Position, moves: &mut Vec<ScoredMove>) {
-    add_masked_pawn_moves(pos, !0, GenerationType::Both, moves);
+    add_masked_pawn_moves(pos, !0, 0, GenerationType::Both, moves);
 }
 
 // gen_evasions appends all available pseudo-legal moves to moves. It is only
@@ -283,7 +298,7 @@ fn gen_evasions(pos: &Position, moves: &mut Vec<ScoredMove>) {
                      mask,
                      moves,
                      bitboard::queen_attacks);
-    add_masked_pawn_moves(pos, mask, GenerationType::Both, moves);
+    add_masked_pawn_moves(pos, mask, 0, GenerationType::Both, moves);
 }
 
 fn gen_legal(pos: &Position, ad: &AttackData, moves: &mut Vec<ScoredMove>) {
@@ -307,17 +322,17 @@ fn gen_legal(pos: &Position, ad: &AttackData, moves: &mut Vec<ScoredMove>) {
 
 fn gen_loud(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_captures(pos, moves);
-    add_masked_pawn_moves(pos, !0, GenerationType::Loud, moves);
+    add_masked_pawn_moves(pos, !0, 0, GenerationType::Loud, moves);
 }
 
 fn gen_quiet(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_non_captures(pos, moves);
-    add_masked_pawn_moves(pos, !0, GenerationType::Quiet, moves);
+    add_masked_pawn_moves(pos, !0, 0, GenerationType::Quiet, moves);
 }
 
 fn gen_quiet_checks(pos: &Position, ad: &AttackData, moves: &mut Vec<ScoredMove>) {
-    add_piece_quiet_checks(pos, ad, moves);
-    add_pawn_quiet_checks(pos, ad, moves);
+    //add_piece_quiet_checks(pos, ad, moves);
+    add_masked_pawn_moves(pos, !0, ad.check_discoverers, GenerationType::QuietChecks, moves);
 }
 
 // Check a move *that was pseudo-legal in some position* to see if it's
@@ -797,6 +812,29 @@ mod tests {
 
     });
 
+    chess_test!(test_quiet_checks, {
+        let test_case = |fen, expect_moves: &Vec<&str>| {
+            let pos = Position::from_fen(fen);
+            let ad = AttackData::new(&pos);
+            let mut moves = Vec::new();
+            for uci in expect_moves.iter() {
+                moves.push(Move::from_uci(&pos, &ad, *uci));
+            }
+            moves.sort_by_key(|m| { m.as_u32() });
+
+            let mut sms = Vec::new();
+            ::movegen::gen_quiet_checks(&pos, &ad, &mut sms);
+            let mut got = Vec::new();
+            for m in sms.iter() {
+                got.push(m.m);
+            }
+            got.sort_by_key(|m| { m.as_u32() });
+            assert_eq!(moves, got);
+        };
+        test_case("8/8/8/8/8/8/1R2P1k1/4K3 w - -", &mut vec!("e2e3", "e2e4"));
+        test_case("8/8/8/8/8/8/1R2PPk1/4K3 w - -", &mut vec!());
+        test_case("8/8/8/8/6k1/8/1R2PP2/4K3 w - -", &mut vec!("f2f3"));
+    });
     // TODO: some tests for ordering, to be added after I implement,
     // at a minimum, bad capture deferment.
 }

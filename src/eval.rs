@@ -302,48 +302,48 @@ fn eval_pieces(pos: &Position) -> PhaseScore {
 
 #[cfg(test)]
 mod tests {
-    use board::Rank::*;
-    use board::File::*;
-    use position::Position;
-    use ::eval::{PASSER_BONUS, ISOLATION_BONUS};
+    //use board::Rank::*;
+    //use board::File::*;
+    //use position::Position;
+    //use ::eval::{PASSER_BONUS, ISOLATION_BONUS};
 
-    chess_test!(test_eval_pawns, {
-        let test_case = |fen, want| {
-            let pos = Position::from_fen(fen);
-            let got = ::eval::eval_pawns(&pos);
-            assert_eq!(want, got);
-        };
-        // All pawns in starting positions.
-        test_case("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - -", sc!(0, 0));
-        // Empty board, white pawn on A2.
-        test_case("4k3/8/8/8/8/8/P7/4K3 w - -", PASSER_BONUS[_2.index()] + ISOLATION_BONUS[1][A.index()]);
-        // Empty board, black pawn on A2.
-        test_case("4k3/8/8/8/8/8/p7/K7 w - -", -(PASSER_BONUS[_7.index()] + ISOLATION_BONUS[1][A.index()]));
-        // White pawn on A4, opposed black pawn on B5.
-        test_case("4k3/8/8/1p6/P7/8/8/4K3 w - -",
-                  ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
-        // White pawn on A4, opposed black pawn on B4.
-        test_case("3k4/8/8/8/Pp6/8/8/2K5 w - -",
-                  PASSER_BONUS[_4.index()] - PASSER_BONUS[_5.index()] +
-                  ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
-        // White pawns on A4 and B4, black pawn on B6.
-        test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -",
-                  sc!(5, 5) * 2 - ISOLATION_BONUS[0][B.index()]);
-        // White pawns on A4 and B4, black pawn on C6.
-        test_case("3k4/8/2p5/8/PP6/8/8/4K3 w - -",
-                  sc!(5, 5) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
-        // White pawns on A4 and A5, black pawn on C6.
-        test_case("2k5/8/2p5/P7/P7/8/8/4K3 w - -",
-                  PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()]  // passed pawns
-                  - sc!(6, 9)  // doubled pawns
-                  + ISOLATION_BONUS[1][A.index()] * 2 - ISOLATION_BONUS[1][C.index()]);  // isolated pawns
-        // White pawns on D3, E4, black pawns on C5, E6, D6
-        test_case("4k3/8/3pp3/2p5/4P3/3P4/8/4K3 w - -",
-                  sc!(-5, -5) * 2 // net two connected bonus for black
-                  - sc!(6, 9));   // one backward pawn for white
-        // White pawns on D2, E4, black pawns on C5, E6, D6
-        test_case("4k3/8/3pp3/2p5/4P3/8/3P4/4K3 w - -",
-                  -sc!(5, 5) * 3 // net three connected bonus for black
-                  -sc!(6, 9));   // one backward pawn for white
-    });
+    //chess_test!(test_eval_pawns, {
+    //    let test_case = |fen, want| {
+    //        let pos = Position::from_fen(fen);
+    //        let got = ::eval::eval_pawns(&pos);
+    //        assert_eq!(want, got);
+    //    };
+    //    // All pawns in starting positions.
+    //    test_case("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - -", sc!(0, 0));
+    //    // Empty board, white pawn on A2.
+    //    test_case("4k3/8/8/8/8/8/P7/4K3 w - -", PASSER_BONUS[_2.index()] + ISOLATION_BONUS[1][A.index()]);
+    //    // Empty board, black pawn on A2.
+    //    test_case("4k3/8/8/8/8/8/p7/K7 w - -", -(PASSER_BONUS[_7.index()] + ISOLATION_BONUS[1][A.index()]));
+    //    // White pawn on A4, opposed black pawn on B5.
+    //    test_case("4k3/8/8/1p6/P7/8/8/4K3 w - -",
+    //              ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
+    //    // White pawn on A4, opposed black pawn on B4.
+    //    test_case("3k4/8/8/8/Pp6/8/8/2K5 w - -",
+    //              PASSER_BONUS[_4.index()] - PASSER_BONUS[_5.index()] +
+    //              ISOLATION_BONUS[1][A.index()] - ISOLATION_BONUS[1][B.index()]);
+    //    // White pawns on A4 and B4, black pawn on B6.
+    //    test_case("4k3/8/1p6/8/PP6/8/8/4K3 w - -",
+    //              sc!(5, 5) * 2 - ISOLATION_BONUS[0][B.index()]);
+    //    // White pawns on A4 and B4, black pawn on C6.
+    //    test_case("3k4/8/2p5/8/PP6/8/8/4K3 w - -",
+    //              sc!(5, 5) * 2 + PASSER_BONUS[_4.index()] - ISOLATION_BONUS[1][C.index()]);
+    //    // White pawns on A4 and A5, black pawn on C6.
+    //    test_case("2k5/8/2p5/P7/P7/8/8/4K3 w - -",
+    //              PASSER_BONUS[_5.index()] - PASSER_BONUS[_3.index()]  // passed pawns
+    //              - sc!(6, 9)  // doubled pawns
+    //              + ISOLATION_BONUS[1][A.index()] * 2 - ISOLATION_BONUS[1][C.index()]);  // isolated pawns
+    //    // White pawns on D3, E4, black pawns on C5, E6, D6
+    //    test_case("4k3/8/3pp3/2p5/4P3/3P4/8/4K3 w - -",
+    //              sc!(-5, -5) * 2 // net two connected bonus for black
+    //              - sc!(6, 9));   // one backward pawn for white
+    //    // White pawns on D2, E4, black pawns on C5, E6, D6
+    //    test_case("4k3/8/3pp3/2p5/4P3/8/3P4/4K3 w - -",
+    //              -sc!(5, 5) * 3 // net three connected bonus for black
+    //              -sc!(6, 9));   // one backward pawn for white
+    //});
 }

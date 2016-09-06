@@ -695,7 +695,7 @@ fn search(data: &mut SearchData, ply: usize,
             let mut lmr_red = 0.;
             if searched_quiet_count > 0 {
                 lmr_red = if num_moves > 5 {
-                    depth / 5.
+                    depth / 4.
                 } else {
                     1.
                 };
