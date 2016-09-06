@@ -208,20 +208,11 @@ fn eval_pawns(pos: &Position) -> PhaseScore {
                     // it'll take us to convert.
                     passer_score.eg +=
                         (score::QUEEN.eg - score::PAWN.eg) * (5 - prom_dist) / 6;
+                } else {
+                    passer_score = PASSER_BONUS[rel_rank.index()];
                 }
             } else {
                 passer_score = PASSER_BONUS[rel_rank.index()];
-
-                // Bonus/penalty for major pieces on this file.
-                // Our pieces only get a bonus if they're behind the pawn, but
-                // opposing pieces can be on either side.
-                let our_majors = (pos.pieces_of_color_and_type(us, PieceType::Rook) |
-                                  pos.pieces_of_color_and_type(us, PieceType::Queen)) &
-                                 bitboard::in_front_mask(them, sq);
-                let their_majors = (pos.pieces_of_color_and_type(them, PieceType::Rook) |
-                                    pos.pieces_of_color_and_type(them, PieceType::Queen)) & bb!(sq.file());
-                passer_score += sc!(5, 15) * (our_majors.count_ones() as i32 -
-                                              their_majors.count_ones() as i32);
             }
 
             // If the square in front of us is blocked, scale back the bonus.
