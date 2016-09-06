@@ -652,7 +652,7 @@ fn search(data: &mut SearchData, ply: usize,
               bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
         let deep_pawn = m.piece().piece_type() == PieceType::Pawn &&
             (m.to().relative_to(data.pos.us()).rank().index() >= Rank::_7.index() &&
-             m.promote() == PieceType::NoPieceType || m.promote() == PieceType::Queen);
+             (m.promote() == PieceType::NoPieceType || m.promote() == PieceType::Queen));
         let quiet_move = !m.is_capture() && !m.is_promote();
 
         let ext = if (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >=0 {
@@ -694,7 +694,11 @@ fn search(data: &mut SearchData, ply: usize,
         if !full_search {
             let mut lmr_red = 0.;
             if searched_quiet_count > 0 {
-                lmr_red = 1.;
+                lmr_red = if num_moves > 5 {
+                    depth / 5.
+                } else {
+                    1.
+                };
                 if selector.bad_move() {
                     lmr_red += 1.;
                     if num_moves > 8 {

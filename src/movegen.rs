@@ -4,7 +4,7 @@ use board;
 use board::*;
 use movement::{Move, NO_MOVE};
 use position;
-use position::Position;
+use position::{AttackData, Position};
 use score;
 use score::Score;
 use search;
@@ -99,6 +99,9 @@ fn add_piece_moves(pos: &Position, targets: Bitboard, moves: &mut Vec<ScoredMove
                      bitboard::queen_attacks);
 }
 
+fn add_piece_quiet_checks(pos: &Position, ad: &AttackData, moves: &mut Vec<ScoredMove>) {
+}
+
 fn add_piece_captures(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_moves(pos, pos.their_pieces(), moves);
 }
@@ -171,6 +174,11 @@ fn add_pawn_non_promotions(pos: &Position,
         let from = board::shift_sq(to, -d);
         moves.push(ScoredMove::new(Move::new(from, to, pos.piece_at(from), pos.piece_at(to))));
     }
+}
+
+fn add_pawn_quiet_checks(pos: &Position,
+                         ad: &AttackData,
+                         moves: &mut Vec<ScoredMove>) {
 }
 
 fn add_masked_pawn_moves(pos: &Position,
@@ -278,7 +286,7 @@ fn gen_evasions(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_masked_pawn_moves(pos, mask, GenerationType::Both, moves);
 }
 
-fn gen_legal(pos: &Position, ad: &position::AttackData, moves: &mut Vec<ScoredMove>) {
+fn gen_legal(pos: &Position, ad: &AttackData, moves: &mut Vec<ScoredMove>) {
     if pos.checkers() != 0 {
         gen_evasions(pos, moves);
     } else {
@@ -305,6 +313,11 @@ fn gen_loud(pos: &Position, moves: &mut Vec<ScoredMove>) {
 fn gen_quiet(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_non_captures(pos, moves);
     add_masked_pawn_moves(pos, !0, GenerationType::Quiet, moves);
+}
+
+fn gen_quiet_checks(pos: &Position, ad: &AttackData, moves: &mut Vec<ScoredMove>) {
+    add_piece_quiet_checks(pos, ad, moves);
+    add_pawn_quiet_checks(pos, ad, moves);
 }
 
 // Check a move *that was pseudo-legal in some position* to see if it's
@@ -502,7 +515,7 @@ impl MoveSelector {
         }
     }
 
-    fn gen(&mut self, pos: &Position, ad: &position::AttackData) {
+    fn gen(&mut self, pos: &Position, ad: &AttackData) {
         match self.phases[self.phase_index] {
             SelectionPhase::Start | SelectionPhase::Done => {
                 panic!("move selection phase error");
@@ -628,7 +641,7 @@ impl MoveSelector {
 
     pub fn next(&mut self,
                 pos: &Position,
-                ad: &position::AttackData,
+                ad: &AttackData,
                 history: &[Score; 64 * 16]) -> Option<Move> {
         loop {
             while self.moves.len() == 0 {
