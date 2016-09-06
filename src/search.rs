@@ -693,18 +693,18 @@ fn search(data: &mut SearchData, ply: usize,
                               (root_node && num_moves <= options::multi_pv());
         if !full_search {
             let mut lmr_red = 0.;
-            if searched_quiet_count > 0 {
-                lmr_red = if num_moves > 5 {
-                    depth / 4.
+            if num_moves > 2 || searched_quiet_count > 0 {
+                lmr_red = if num_moves > 4 {
+                    depth / 6.
                 } else {
                     1.
                 };
                 if selector.bad_move() {
                     lmr_red += 1.;
-                    if num_moves > 8 {
+                    if num_moves > 6 {
                         lmr_red += 0.5;
                     }
-                    if searched_quiet_count > 8 {
+                    if searched_quiet_count > 6 {
                         lmr_red += 0.5;
                     }
                 }

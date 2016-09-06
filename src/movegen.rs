@@ -104,8 +104,61 @@ fn add_piece_moves(pos: &Position, targets: Bitboard, moves: &mut Vec<ScoredMove
                      bitboard::queen_attacks);
 }
 
-//fn add_piece_quiet_checks(pos: &Position, ad: &AttackData, moves: &mut Vec<ScoredMove>) {
-//}
+fn add_slider_quiet_checks(pos: &Position,
+                    mut source_bb: Bitboard,
+                    mask: Bitboard,
+                    moves: &mut Vec<ScoredMove>,
+                    attack_fn: fn(Square, Bitboard) -> Bitboard) {
+    while source_bb != 0 {
+        let from = bitboard::pop_square(&mut source_bb);
+        let bb = attack_fn(from, pos.all_pieces()) & mask;
+        add_moves(pos, from, bb, moves);
+    }
+}
+
+fn add_non_slider_quiet_checks(pos: &Position,
+                        mut source_bb: Bitboard,
+                        mask: Bitboard,
+                        moves: &mut Vec<ScoredMove>,
+                        attack_fn: fn(Square) -> Bitboard) {
+    while source_bb != 0 {
+        let from = bitboard::pop_square(&mut source_bb);
+        let bb = attack_fn(from) & mask;
+        add_moves(pos, from, bb, moves);
+    }
+}
+
+fn add_piece_quiet_checks(pos: &Position,
+                          check_discoverers: Bitboard,
+                          targets: Bitboard,
+                          moves: &mut Vec<ScoredMove>) {
+    let our_pieces = pos.our_pieces();
+    add_non_slider_moves(pos,
+                         our_pieces & pos.pieces_of_type(PieceType::Knight),
+                         targets,
+                         moves,
+                         bitboard::knight_attacks);
+    add_non_slider_moves(pos,
+                         our_pieces & pos.pieces_of_type(PieceType::King),
+                         targets,
+                         moves,
+                         bitboard::king_attacks);
+    add_slider_moves(pos,
+                     our_pieces & pos.pieces_of_type(PieceType::Bishop),
+                     targets,
+                     moves,
+                     bitboard::bishop_attacks);
+    add_slider_moves(pos,
+                     our_pieces & pos.pieces_of_type(PieceType::Rook),
+                     targets,
+                     moves,
+                     bitboard::rook_attacks);
+    add_slider_moves(pos,
+                     our_pieces & pos.pieces_of_type(PieceType::Queen),
+                     targets,
+                     moves,
+                     bitboard::queen_attacks);
+}
 
 fn add_piece_captures(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_moves(pos, pos.their_pieces(), moves);
