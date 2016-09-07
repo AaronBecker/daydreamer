@@ -104,62 +104,6 @@ fn add_piece_moves(pos: &Position, targets: Bitboard, moves: &mut Vec<ScoredMove
                      bitboard::queen_attacks);
 }
 
-fn add_slider_quiet_checks(pos: &Position,
-                    mut source_bb: Bitboard,
-                    mask: Bitboard,
-                    moves: &mut Vec<ScoredMove>,
-                    attack_fn: fn(Square, Bitboard) -> Bitboard) {
-    while source_bb != 0 {
-        let from = bitboard::pop_square(&mut source_bb);
-        let bb = attack_fn(from, pos.all_pieces()) & mask;
-        add_moves(pos, from, bb, moves);
-    }
-}
-
-fn add_non_slider_quiet_checks(pos: &Position,
-                        mut source_bb: Bitboard,
-                        mask: Bitboard,
-                        moves: &mut Vec<ScoredMove>,
-                        attack_fn: fn(Square) -> Bitboard) {
-    while source_bb != 0 {
-        let from = bitboard::pop_square(&mut source_bb);
-        let bb = attack_fn(from) & mask;
-        add_moves(pos, from, bb, moves);
-    }
-}
-
-fn add_piece_quiet_checks(pos: &Position,
-                          check_discoverers: Bitboard,
-                          targets: Bitboard,
-                          moves: &mut Vec<ScoredMove>) {
-    let our_pieces = pos.our_pieces();
-    add_non_slider_moves(pos,
-                         our_pieces & pos.pieces_of_type(PieceType::Knight),
-                         targets,
-                         moves,
-                         bitboard::knight_attacks);
-    add_non_slider_moves(pos,
-                         our_pieces & pos.pieces_of_type(PieceType::King),
-                         targets,
-                         moves,
-                         bitboard::king_attacks);
-    add_slider_moves(pos,
-                     our_pieces & pos.pieces_of_type(PieceType::Bishop),
-                     targets,
-                     moves,
-                     bitboard::bishop_attacks);
-    add_slider_moves(pos,
-                     our_pieces & pos.pieces_of_type(PieceType::Rook),
-                     targets,
-                     moves,
-                     bitboard::rook_attacks);
-    add_slider_moves(pos,
-                     our_pieces & pos.pieces_of_type(PieceType::Queen),
-                     targets,
-                     moves,
-                     bitboard::queen_attacks);
-}
-
 fn add_piece_captures(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_moves(pos, pos.their_pieces(), moves);
 }
@@ -206,7 +150,6 @@ fn add_pawn_promotions(pos: &Position,
                        d: Delta,
                        gt: GenerationType,
                        moves: &mut Vec<ScoredMove>) {
-    if gt == GenerationType::QuietChecks { return }
     mask &= bitboard::shift(pawns, d);
     while mask != 0 {
         let to = bitboard::pop_square(&mut mask);
@@ -251,19 +194,6 @@ fn add_masked_pawn_moves(pos: &Position,
     let our_7 = bitboard::relative_rank_bb(us, Rank::_7);
 
     if gt != GenerationType::Loud {
-        if gt == GenerationType::QuietChecks {
-            let their_king = pos.king_sq(them);
-            push_once_mask &= bitboard::pawn_attacks(them, their_king);
-            push_twice_mask &= bitboard::pawn_attacks(them, their_king);
-
-            let dc_pawns = check_discoverers & pawns & !our_7 & !(bb!(their_king.file()));
-            if dc_pawns != 0 {
-                push_once_mask |= bitboard::shift(dc_pawns, up) & empty & mask;
-                push_twice_mask |= bitboard::shift(push_once_mask &
-                                                   bitboard::relative_rank_bb(us, Rank::_3),
-                                                   up) & empty & mask;
-            }
-        }
         add_pawn_non_promotions(pos, pawns & !our_7, push_once_mask, up, moves);
         add_pawn_non_promotions(pos, pawns & our_2, push_twice_mask, up + up, moves);
     }
@@ -381,11 +311,6 @@ fn gen_loud(pos: &Position, moves: &mut Vec<ScoredMove>) {
 fn gen_quiet(pos: &Position, moves: &mut Vec<ScoredMove>) {
     add_piece_non_captures(pos, moves);
     add_masked_pawn_moves(pos, !0, 0, GenerationType::Quiet, moves);
-}
-
-fn gen_quiet_checks(pos: &Position, ad: &AttackData, moves: &mut Vec<ScoredMove>) {
-    //add_piece_quiet_checks(pos, ad, moves);
-    add_masked_pawn_moves(pos, !0, ad.check_discoverers, GenerationType::QuietChecks, moves);
 }
 
 // Check a move *that was pseudo-legal in some position* to see if it's
