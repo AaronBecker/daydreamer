@@ -295,7 +295,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     for us in board::each_color() {
         // TODO: take piece type and attacks into account here.
         let them = us.flip();
-        let available_squares = !pos.pieces_of_color(us) & !ed.attacks_by[them.index()][PieceType::Pawn.index()];
+        let available_squares = !ed.attacks_by[them.index()][PieceType::Pawn.index()];
         for pt in board::each_piece_type() {
             if pt == PieceType::King { break }
 
