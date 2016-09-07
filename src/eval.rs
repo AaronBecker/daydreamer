@@ -295,7 +295,18 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     for us in board::each_color() {
         // TODO: take piece type and attacks into account here.
         let them = us.flip();
-        let available_squares = !pos.pieces_of_color(us) & !ed.attacks_by[them.index()][PieceType::Pawn.index()];
+        let available_squares = !pos.pieces_of_color(us);
+
+        // King safety counters. We only calculate king safety if there's
+        // substantial material left on the board.
+        let king_halo = if pos.non_pawn_material(us) >= score::QUEEN.mg {
+            bitboard::king_attacks(pos.king_sq(them))
+        } else {
+            0
+        };
+        let mut num_king_attackers = 0;
+        let mut king_attack_weight = 0;
+
         for pt in board::each_piece_type() {
             if pt == PieceType::King { break }
 
@@ -304,27 +315,43 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                 let sq = bitboard::pop_square(&mut pieces_to_score);
                 let mob = match pt {
                     PieceType::Pawn => {
-                        (bitboard::pawn_attacks(us, sq) & !pos.pieces_of_color(us)).count_ones() +
+                        (bitboard::pawn_attacks(us, sq) & available_squares).count_ones() +
                             if pos.piece_at(sq.pawn_push(us)) == Piece::NoPiece { 1 } else { 0 }
                     },
                     PieceType::Knight => {
                         let attacks = bitboard::knight_attacks(sq);
                         ed.attacks_by[us.index()][PieceType::Knight.index()] |= attacks;
+                        if attacks & king_halo != 0 {
+                            num_king_attackers += 1;
+                            king_attack_weight += 16;
+                        }
                         (attacks & available_squares).count_ones()
                     },
                     PieceType::Bishop => {
                         let attacks = bitboard::bishop_attacks(sq, all_pieces);
                         ed.attacks_by[us.index()][PieceType::Bishop.index()] |= attacks;
+                        if attacks & king_halo != 0 {
+                            num_king_attackers += 1;
+                            king_attack_weight += 16;
+                        }
                         (attacks & available_squares).count_ones()
                     },
                     PieceType::Rook => {
                         let attacks = bitboard::rook_attacks(sq, all_pieces);
                         ed.attacks_by[us.index()][PieceType::Rook.index()] |= attacks;
+                        if attacks & king_halo != 0 {
+                            num_king_attackers += 1;
+                            king_attack_weight += 32;
+                        }
                         (attacks & available_squares).count_ones()
                     }
                     PieceType::Queen => {
                         let attacks = bitboard::queen_attacks(sq, all_pieces);
                         ed.attacks_by[us.index()][PieceType::Queen.index()] |= attacks;
+                        if attacks & king_halo != 0 {
+                            num_king_attackers += 1;
+                            king_attack_weight += 64;
+                        }
                         (attacks & available_squares).count_ones()
                     }
                     _ => 0,
@@ -332,6 +359,11 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                 side_score[us.index()] += MOBILITY_BONUS[pt.index()][mob as usize];
             }
         }
+
+        const KING_ATTACK_SCALE: [i32; 16] = [
+            0, 0, 640, 800, 1120, 1200, 1280, 1280,
+            1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
+        side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1024;
     }
 
     side_score[Color::White.index()] - side_score[Color::Black.index()]
