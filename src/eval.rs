@@ -295,7 +295,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     for us in board::each_color() {
         // TODO: take piece type and attacks into account here.
         let them = us.flip();
-        let available_squares = !ed.attacks_by[them.index()][PieceType::Pawn.index()];
+        let available_squares = !pos.pieces_of_color(us) & !ed.attacks_by[them.index()][PieceType::Pawn.index()];
         for pt in board::each_piece_type() {
             if pt == PieceType::King { break }
 
@@ -303,12 +303,30 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             while pieces_to_score != 0 {
                 let sq = bitboard::pop_square(&mut pieces_to_score);
                 let mob = match pt {
-                    PieceType::Pawn => (bitboard::pawn_attacks(us, sq) & available_squares).count_ones() +
-                        if pos.piece_at(sq.pawn_push(us)) == Piece::NoPiece { 1 } else { 0 },
-                    PieceType::Knight => (bitboard::knight_attacks(sq) & available_squares).count_ones(),
-                    PieceType::Bishop => (bitboard::bishop_attacks(sq, all_pieces) & available_squares).count_ones(),
-                    PieceType::Rook => (bitboard::rook_attacks(sq, all_pieces) & available_squares).count_ones(),
-                    PieceType::Queen => (bitboard::queen_attacks(sq, all_pieces) & available_squares).count_ones(),
+                    PieceType::Pawn => {
+                        (bitboard::pawn_attacks(us, sq) & !pos.pieces_of_color(us)).count_ones() +
+                            if pos.piece_at(sq.pawn_push(us)) == Piece::NoPiece { 1 } else { 0 }
+                    },
+                    PieceType::Knight => {
+                        let attacks = bitboard::knight_attacks(sq);
+                        ed.attacks_by[us.index()][PieceType::Knight.index()] |= attacks;
+                        (attacks & available_squares).count_ones()
+                    },
+                    PieceType::Bishop => {
+                        let attacks = bitboard::bishop_attacks(sq, all_pieces);
+                        ed.attacks_by[us.index()][PieceType::Bishop.index()] |= attacks;
+                        (attacks & available_squares).count_ones()
+                    },
+                    PieceType::Rook => {
+                        let attacks = bitboard::rook_attacks(sq, all_pieces);
+                        ed.attacks_by[us.index()][PieceType::Rook.index()] |= attacks;
+                        (attacks & available_squares).count_ones()
+                    }
+                    PieceType::Queen => {
+                        let attacks = bitboard::queen_attacks(sq, all_pieces);
+                        ed.attacks_by[us.index()][PieceType::Queen.index()] |= attacks;
+                        (attacks & available_squares).count_ones()
+                    }
                     _ => 0,
                 };
                 side_score[us.index()] += MOBILITY_BONUS[pt.index()][mob as usize];
