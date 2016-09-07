@@ -653,9 +653,10 @@ fn search(data: &mut SearchData, ply: usize,
         let deep_pawn = m.piece().piece_type() == PieceType::Pawn &&
             (m.to().relative_to(data.pos.us()).rank().index() >= Rank::_7.index() &&
              (m.promote() == PieceType::NoPieceType || m.promote() == PieceType::Queen));
+        let recapture = m.to() == data.pos.last_move().to();
         let quiet_move = !m.is_capture() && !m.is_promote();
 
-        let ext = if (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >=0 {
+        let ext = if (gives_check || deep_pawn || recapture) && data.pos.static_exchange_sign(m) >=0 {
             1.
         } else {
             0.
