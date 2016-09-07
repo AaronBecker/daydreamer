@@ -10,8 +10,9 @@ use score::{PhaseScore, Score};
 
 pub fn full(pos: &Position) -> Score {
     let mut ps = pos.psqt_score();
-    ps += eval_pawns(pos);
-    ps += eval_pieces(pos);
+    let mut ed = EvalData::new();
+    ps += eval_pawns(pos, &mut ed);
+    ps += eval_pieces(pos, &mut ed);
 
     let mut s = ps.interpolate(pos);
     if !can_win(pos.us(), pos) {
@@ -49,11 +50,24 @@ const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
     [sc!(-14, -16), sc!(-14, -17), sc!(-15, -18), sc!(-16, -20), sc!(-16, -20), sc!(-15, -18), sc!(-14, -17), sc!(-14, -16)],
 ];
 
+struct EvalData {
+    attacks_by: [[Bitboard; 8]; 2],
+}
+
+impl EvalData {
+    pub fn new() -> EvalData {
+        EvalData {
+            attacks_by: [[0; 8]; 2],
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 struct PawnData {
     key: u32,
     score: [PhaseScore; 2], 
     passers: [Bitboard; 2],
+    attacks: [Bitboard; 2],
 }
 
 impl PawnData {
@@ -62,6 +76,7 @@ impl PawnData {
             key: 0,
             score: [sc!(0, 0), sc!(0, 0)],
             passers: [0, 0],
+            attacks: [0, 0],
         }
     }
 }
@@ -126,6 +141,8 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             let sq = bitboard::pop_square(&mut pawns_to_score);
             let rel_rank = sq.relative_to(us).rank();
 
+            pd.attacks[us.index()] |= bitboard::pawn_attacks(us, sq);
+
             let our_passer_mask = bitboard::passer_mask(us, sq);
             let passed = our_passer_mask & their_pawns == 0
                 && bitboard::in_front_mask(us, sq) & our_pawns == 0;
@@ -182,13 +199,14 @@ fn analyze_pawns(pos: &Position) -> PawnData {
     pd
 }
 
-fn eval_pawns(pos: &Position) -> PhaseScore {
+fn eval_pawns(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     use bitboard::dist;
     let pd = analyze_pawns(pos);
     let mut side_score = pd.score;
 
     for us in board::each_color() {
         let them = us.flip();
+        ed.attacks_by[us.index()][PieceType::Pawn.index()] = pd.attacks[us.index()];
         
         let mut passers_to_score = pd.passers[us.index()];
         while passers_to_score != 0 {
@@ -271,12 +289,13 @@ const MOBILITY_BONUS: [[PhaseScore; 32]; 8] = [
     [sc!(0, 0); 32],
 ];
 
-fn eval_pieces(pos: &Position) -> PhaseScore {
+fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
     let all_pieces = pos.all_pieces(); 
     for us in board::each_color() {
         // TODO: take piece type and attacks into account here.
-        let available_squares = !pos.pieces_of_color(us);
+        let them = us.flip();
+        let available_squares = !pos.pieces_of_color(us) & !ed.attacks_by[them.index()][PieceType::Pawn.index()];
         for pt in board::each_piece_type() {
             if pt == PieceType::King { break }
 
