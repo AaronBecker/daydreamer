@@ -664,22 +664,27 @@ fn search(data: &mut SearchData, ply: usize,
         if FUTILITY_ENABLED &&
             !root_node &&
             ext == 0. &&
-            depth <= 5. &&
-            (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
-            num_moves >= depth_index + 2 &&
+            data.pos.checkers() == 0 &&
             m.promote() != PieceType::Queen &&
             best_score > score::mated_in(MAX_PLY) {
-            // Value pruning.
-            if lazy_score + score::mg_material(m.capture().piece_type()) +
-                ((85. + 15. * depth + 2. * depth * depth) as Score) <
-                beta + 2 * num_moves as Score {
-                continue
+
+            if depth <= 5. && num_moves >= depth_index + 2 {
+                // Value pruning.
+                if lazy_score + score::mg_material(m.capture().piece_type()) +
+                    ((85. + 15. * depth + 2. * depth * depth) as Score) <
+                    beta + 2 * num_moves as Score {
+                    continue
+                }
+
+                // History pruning.
+                // TODO: clean up the history interface; this is kind of ugly.
+                if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
+                    continue
+                }
             }
 
-            // History pruning.
-            // TODO: clean up the history interface; this is kind of ugly.
-            if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
-                continue
+            if depth <= 2. && data.pos.static_exchange_sign(m) < 0 {
+                continue;
             }
         }
 
