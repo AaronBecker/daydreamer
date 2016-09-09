@@ -656,7 +656,7 @@ fn search(data: &mut SearchData, ply: usize,
         let quiet_move = !m.is_capture() && !m.is_promote();
         let late_move = num_moves > (depth * (depth + 1.) + 1.) as usize;
 
-        let ext = if !late_move && (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >=0 {
+        let ext = if !late_move && (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >= 0 {
             1.
         } else {
             0.
@@ -665,28 +665,22 @@ fn search(data: &mut SearchData, ply: usize,
         if FUTILITY_ENABLED &&
             !root_node &&
             ext == 0. &&
-            data.pos.checkers() == 0 &&
+            depth <= 5. &&
+            (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
+            num_moves >= depth_index + 2 &&
             m.promote() != PieceType::Queen &&
             best_score > score::mated_in(MAX_PLY) {
+            // Value pruning.
+            if lazy_score + score::mg_material(m.capture().piece_type()) +
+                ((85. + 15. * depth + 2. * depth * depth) as Score) <
+                beta + 2 * num_moves as Score {
+                continue
+            }
 
-            if late_move && depth <= 10. && !gives_check && !deep_pawn { continue }
-            if depth <= 5. && num_moves >= depth_index - 1 {
-                // Value pruning.
-                if lazy_score + score::mg_material(m.capture().piece_type()) +
-                    ((85. + 15. * depth + 2. * depth * depth) as Score) <
-                    beta + 2 * num_moves as Score {
-                    continue
-                }
-
-                // History pruning.
-                // TODO: clean up the history interface; this is kind of ugly.
-                if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
-                    continue
-                }
-
-                if depth <= 2. && data.pos.static_exchange_sign(m) < 0 {
-                    continue;
-                }
+            // History pruning.
+            // TODO: clean up the history interface; this is kind of ugly.
+            if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
+                continue
             }
         }
 
