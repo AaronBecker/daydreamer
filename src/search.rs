@@ -654,7 +654,7 @@ fn search(data: &mut SearchData, ply: usize,
             (m.to().relative_to(data.pos.us()).rank().index() >= Rank::_7.index() &&
              (m.promote() == PieceType::NoPieceType || m.promote() == PieceType::Queen));
         let quiet_move = !m.is_capture() && !m.is_promote();
-        let late_move = num_moves > (depth * (depth + 1.) + 1.) as usize;
+        let late_move = num_moves > depth * depth + 1. as usize;
 
         let ext = if (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >= 0 {
             1.
@@ -665,6 +665,7 @@ fn search(data: &mut SearchData, ply: usize,
         if FUTILITY_ENABLED &&
             !root_node &&
             ext == 0. &&
+            depth < 10. &&
             (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
             num_moves >= depth_index &&
             m.promote() != PieceType::Queen &&
