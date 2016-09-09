@@ -364,9 +364,22 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             0, 0, 640, 800, 1120, 1200, 1280, 1280,
             1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
         side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1024;
+
+        side_score[us.index()].mg += king_shield_value(us, pos);
     }
 
     side_score[Color::White.index()] - side_score[Color::Black.index()]
+}
+
+fn king_shield_value(c: Color, pos: &Position) -> Score {
+    let ksq = pos.king_sq(c);
+    let big_shield = bitboard::king_attacks(ksq) | bitboard::king_attacks(ksq.pawn_push(c));
+    let far_shield = big_shield ^ bitboard::king_attacks(ksq);
+    let near_shield = bitboard::shift(far_shield, if c == Color::White { board::SOUTH } else { board::NORTH });
+    let pawns = pos.pieces_of_color_and_type(c, PieceType::Pawn);
+    8 * ((big_shield & pawns).count_ones() +
+        (far_shield & pawns).count_ones() * 2 +
+        (near_shield & pawns).count_ones() * 4) as Score
 }
 
 #[cfg(test)]
