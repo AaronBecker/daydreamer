@@ -381,7 +381,7 @@ fn king_shield_value(c: Color, pos: &Position) -> Score {
     let far_shield = big_shield ^ bitboard::king_attacks(ksq);
     let near_shield = bitboard::shift(far_shield, if c == Color::White { board::SOUTH } else { board::NORTH });
     let pawns = pos.pieces_of_color_and_type(c, PieceType::Pawn);
-    6 * ((big_shield & pawns).count_ones() +
+    4 * ((big_shield & pawns).count_ones() +
         (far_shield & pawns).count_ones() * 2 +
         (near_shield & pawns).count_ones() * 4) as Score
 }
