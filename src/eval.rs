@@ -365,9 +365,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             let shield_value = king_shield_value(us, pos);
             side_score[us.index()].mg += shield_value;
             if shield_value < 36 {
-                num_king_attackers += 1;
+                king_attack_weight += 8;
                 if shield_value < 18 {
-                    num_king_attackers += 1;
+                    king_attack_weight += 8;
                 }
             }
 
