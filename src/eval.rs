@@ -365,7 +365,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             const KING_ATTACK_SCALE: [i32; 16] = [
                 0, 0, 640, 800, 1120, 1200, 1280, 1280,
                 1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
-            side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1024;
+            side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1536;
 
             side_score[us.index()].mg += king_shield_value(us, pos);
         }
