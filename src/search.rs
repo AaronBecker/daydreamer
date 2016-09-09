@@ -654,8 +654,9 @@ fn search(data: &mut SearchData, ply: usize,
             (m.to().relative_to(data.pos.us()).rank().index() >= Rank::_7.index() &&
              (m.promote() == PieceType::NoPieceType || m.promote() == PieceType::Queen));
         let quiet_move = !m.is_capture() && !m.is_promote();
+        let late_move = move_index > (depth * (depth + 1.)) as usize;
 
-        let ext = if (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >=0 {
+        let ext = if !late_move && (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >=0 {
             1.
         } else {
             0.
@@ -668,6 +669,7 @@ fn search(data: &mut SearchData, ply: usize,
             m.promote() != PieceType::Queen &&
             best_score > score::mated_in(MAX_PLY) {
 
+            if late_move && depth <= 10. { continue }
             if depth <= 5. && num_moves >= depth_index - 1 {
                 // Value pruning.
                 if lazy_score + score::mg_material(m.capture().piece_type()) +
