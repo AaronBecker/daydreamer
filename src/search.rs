@@ -668,7 +668,7 @@ fn search(data: &mut SearchData, ply: usize,
             m.promote() != PieceType::Queen &&
             best_score > score::mated_in(MAX_PLY) {
 
-            if depth <= 5. && num_moves >= depth_index + 2 {
+            if depth <= 5. && num_moves >= depth_index - 1 {
                 // Value pruning.
                 if lazy_score + score::mg_material(m.capture().piece_type()) +
                     ((85. + 15. * depth + 2. * depth * depth) as Score) <
@@ -681,10 +681,10 @@ fn search(data: &mut SearchData, ply: usize,
                 if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
                     continue
                 }
-            }
 
-            if depth <= 2. && data.pos.static_exchange_sign(m) < 0 {
-                continue;
+                if depth <= 2. && data.pos.static_exchange_sign(m) < 0 {
+                    continue;
+                }
             }
         }
 
