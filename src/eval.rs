@@ -299,8 +299,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
         // King safety counters. We only calculate king safety if there's
         // substantial material left on the board.
-        // FIXME: try looking at their non-pawn material, not ours.
-        let do_safety = pos.non_pawn_material(us) >= score::QUEEN.mg;
+        let do_safety = pos.non_pawn_material(them) >= score::QUEEN.mg;
         let king_halo = if do_safety {
             bitboard::king_attacks(pos.king_sq(them))
         } else {
