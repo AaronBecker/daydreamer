@@ -299,7 +299,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
         // King safety counters. We only calculate king safety if there's
         // substantial material left on the board.
-        let king_halo = if pos.non_pawn_material(us) >= score::QUEEN.mg {
+        // FIXME: try looking at their non-pawn material, not ours.
+        let do_safety = pos.non_pawn_material(us) >= score::QUEEN.mg;
+        let king_halo = if do_safety {
             bitboard::king_attacks(pos.king_sq(them))
         } else {
             0
@@ -360,12 +362,14 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             }
         }
 
-        const KING_ATTACK_SCALE: [i32; 16] = [
-            0, 0, 640, 800, 1120, 1200, 1280, 1280,
-            1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
-        side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1024;
+        if do_safety {
+            const KING_ATTACK_SCALE: [i32; 16] = [
+                0, 0, 640, 800, 1120, 1200, 1280, 1280,
+                1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
+            side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1024;
 
-        side_score[us.index()].mg += king_shield_value(us, pos);
+            side_score[us.index()].mg += king_shield_value(us, pos);
+        }
     }
 
     side_score[Color::White.index()] - side_score[Color::Black.index()]
@@ -373,6 +377,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
 fn king_shield_value(c: Color, pos: &Position) -> Score {
     let ksq = pos.king_sq(c);
+    if ksq.relative_to(c).rank().index() >= Rank::_4.index() { return 0 }
     let big_shield = bitboard::king_attacks(ksq) | bitboard::king_attacks(ksq.pawn_push(c));
     let far_shield = big_shield ^ bitboard::king_attacks(ksq);
     let near_shield = bitboard::shift(far_shield, if c == Color::White { board::SOUTH } else { board::NORTH });
