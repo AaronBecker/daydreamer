@@ -1,6 +1,7 @@
 use board::*;
 use bitboard;
 use bitboard::Bitboard;
+use eval;
 use movegen::MoveSelector;
 use movement::{Move, NO_MOVE, NULL_MOVE};
 use options;
@@ -314,6 +315,10 @@ impl Position {
         &self.possible_castles[c.index()][side]
     }
 
+    pub fn can_castle(&self, c: Color) -> bool {
+        self.can_castle_short(c) || self.can_castle_long(c)
+    }
+
     pub fn can_castle_short(&self, c: Color) -> bool {
         self.state.castle_rights & (WHITE_OO << c.index()) != 0
     }
@@ -487,6 +492,7 @@ impl Position {
             self.psqt_score().interpolate(self), self.state.psqt_score).as_str());
         s.push_str(format!("\nnon pawn material: ({}, {})\n",
             self.non_pawn_material(Color::White), self.non_pawn_material(Color::Black)).as_str());
+        s.push_str(format!("\nfull eval: {}\n", eval::full(&self)).as_str());
         s.push_str(format!("phase: {}\n", self.state.phase).as_str());
         s.push_str(format!("hash:          {}\n", self.state.hash).as_str());
         s.push_str(format!("pawn_hash:     {}\n", self.state.pawn_hash).as_str());

@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use bitboard;
 use bitboard::{Bitboard};
 use board;
-use board::{Color, Piece, PieceType, Rank, Square};
+use board::{Color, File, Piece, PieceType, Rank, Square};
 use position;
 use position::{HashKey, Position};
 use score;
@@ -345,7 +345,16 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             num_king_attackers += 1;
                             king_attack_weight += 32;
                         }
-                        (attacks & available_squares).count_ones()
+                        let m = (attacks & available_squares).count_ones();
+                        if m <= 4 && !pos.can_castle(us) {
+                            let ksq = pos.king_sq(us);
+                            if sq.relative_to(us).rank() == Rank::_1 &&
+                                ((sq.file().index() < ksq.file().index()) ==
+                                (sq.file().index() < File::E.index())) {
+                                side_score[us.index()] -= sc!(45, 0);
+                            }
+                        }
+                        m
                     }
                     PieceType::Queen => {
                         let attacks = bitboard::queen_attacks(sq, all_pieces);
@@ -388,15 +397,13 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
 fn king_shield_score(c: Color, pos: &Position) -> Score {
     let mut score = king_shield_at(pos.king_sq(c), c, pos);
-    if pos.castle_rights() != position::CASTLE_NONE {
-        if pos.can_castle_short(c) {
-            let target = pos.possible_castles(c, 0).kdest;
-            score = max!(score, king_shield_at(target, c, pos));
-        }
-        if pos.can_castle_long(c) {
-            let target = pos.possible_castles(c, 1).kdest;
-            score = max!(score, king_shield_at(target, c, pos));
-        }
+    if pos.can_castle_short(c) {
+        let target = pos.possible_castles(c, 0).kdest;
+        score = max!(score, king_shield_at(target, c, pos));
+    }
+    if pos.can_castle_long(c) {
+        let target = pos.possible_castles(c, 1).kdest;
+        score = max!(score, king_shield_at(target, c, pos));
     }
     score
 }
