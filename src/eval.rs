@@ -44,6 +44,7 @@ const PASSER_BONUS: [PhaseScore; 8] = [
 
 // Penalty for isolated pawns, indexed by whether or not there's an
 // enemy pawn in front of us.
+// TODO: try to condense this down so we don't have big tables.
 const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
     // Blocked
     [sc!(-6, -8), sc!(-6, -8), sc!(-6, -8), sc!(-8, -8), sc!(-8, -8), sc!(-6, -8), sc!(-6, -8), sc!(-6, -8)],
@@ -69,6 +70,8 @@ struct PawnData {
     score: [PhaseScore; 2], 
     passers: [Bitboard; 2],
     attacks: [Bitboard; 2],
+    open_files: u8,
+    half_open_files: [u8; 2],
 }
 
 impl PawnData {
@@ -78,6 +81,8 @@ impl PawnData {
             score: [sc!(0, 0), sc!(0, 0)],
             passers: [0, 0],
             attacks: [0, 0],
+            open_files: 0,
+            half_open_files: [0, 0],
         }
     }
 }
@@ -136,6 +141,16 @@ fn analyze_pawns(pos: &Position) -> PawnData {
         let them = us.flip();
         let our_pawns = pos.pieces_of_color_and_type(us, Pawn);
         let their_pawns = pos.pieces_of_color_and_type(them, Pawn);
+
+        for f in 0..8 {
+            let file_bb = bb!(File::from_u8(f));
+            if our_pawns & file_bb == 0 {
+                pd.half_open_files[us.index()] |= 1 << f;
+            }
+            if (our_pawns | their_pawns) & file_bb == 0 {
+                pd.open_files |= 1 << f;
+            }
+        }
 
         let mut pawns_to_score = our_pawns;
         while pawns_to_score != 0 {
@@ -293,6 +308,9 @@ const MOBILITY_BONUS: [[PhaseScore; 32]; 8] = [
 fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
     let all_pieces = pos.all_pieces(); 
+    // FIXME: should really move this up a level and pass pawn data into eval_* methods.
+    // This is a short-term hack.
+    let pd = analyze_pawns(pos);
     for us in board::each_color() {
         // TODO: take piece type and attacks into account here.
         let them = us.flip();
@@ -351,7 +369,21 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             if sq.relative_to(us).rank() == Rank::_1 &&
                                 ((sq.file().index() < ksq.file().index()) ==
                                 (sq.file().index() < File::E.index())) {
-                                side_score[us.index()] -= sc!(45, 0);
+                                // Figure out if we're actually trapped by looking at half-open
+                                // files.
+                                let mut trapped = true;
+                                let direction: i8 = if sq.file().index() < ksq.file().index() { 1 } else { -1 };
+                                let mut f = sq.file().index() as i8;
+                                while f as usize != ksq.file().index() {
+                                    if (1 << f) & pd.half_open_files[us.index()] != 0 {
+                                        trapped = false;
+                                        break;
+                                    }
+                                    f += direction;
+                                }
+                                if trapped {
+                                    side_score[us.index()] -= sc!(45, 0);
+                                }
                             }
                         }
                         m
