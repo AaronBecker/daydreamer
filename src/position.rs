@@ -314,6 +314,14 @@ impl Position {
         &self.possible_castles[c.index()][side]
     }
 
+    pub fn can_castle_short(&self, c: Color) -> bool {
+        self.state.castle_rights & (WHITE_OO << c.index()) != 0
+    }
+
+    pub fn can_castle_long(&self, c: Color) -> bool {
+        self.state.castle_rights & (WHITE_OOO << c.index()) != 0
+    }
+
     fn insufficient_material(&self) -> bool {
         // Note: this criterion misses some insufficient material scenarios,
         // for example K vs KNN and KB vs KN, but that's ok.
