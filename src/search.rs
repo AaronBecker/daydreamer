@@ -32,7 +32,7 @@ const IID_ENABLED: bool = true;
 const FUTILITY_ENABLED: bool = true;
 
 fn futility_margin(depth: SearchDepth) -> Score {
-    (85. + 20. * depth + 2. * depth * depth) as Score
+    (85. + 15. * depth + 2. * depth * depth) as Score
 }
 
 // Inside the search, we keep the remaining depth to search as a floating point
@@ -867,7 +867,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
         if (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
             m.promote() != PieceType::Queen &&
-            static_eval + score::mg_material(m.capture().piece_type()) + 65 < alpha {
+            static_eval + score::mg_material(m.capture().piece_type()) + futility_margin(depth) < alpha {
             continue
         }
 
