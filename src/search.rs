@@ -31,6 +31,10 @@ const RAZOR_MARGIN: [Score; 4] = [0 /* unused */, 300, 300, 325];
 const IID_ENABLED: bool = true;
 const FUTILITY_ENABLED: bool = true;
 
+fn futility_margin(depth: SearchDepth) -> Score {
+    (75. + 15. * depth + 2. * depth * depth) as Score
+}
+
 // Inside the search, we keep the remaining depth to search as a floating point
 // value to accomodate fractional extensions and reductions better. Elsewhere
 // depths are all integers to accommodate depth-indexed arrays.
@@ -567,8 +571,8 @@ fn search(data: &mut SearchData, ply: usize,
         data.pos.checkers() == 0 &&
         data.pos.non_pawn_material(data.pos.us()) != 0 &&
         (tt_move == NO_MOVE || tt_score > score::mated_in(MAX_PLY)) &&
-        lazy_score - (2 * (85. + 15. * depth + 2. * depth * depth) as Score) > beta {
-            return lazy_score - (2 * (85. + 15. * depth + 2. * depth * depth) as Score)
+        lazy_score - 2 * futility_margin(depth) > beta {
+            return lazy_score - 2 * futility_margin(depth)
     }
 
     if NULL_MOVE_ENABLED &&
@@ -671,9 +675,9 @@ fn search(data: &mut SearchData, ply: usize,
             m.promote() != PieceType::Queen &&
             best_score > score::mated_in(MAX_PLY) {
             // Value pruning.
-            if depth <= 5. && lazy_score + score::mg_material(m.capture().piece_type()) +
-                ((85. + 15. * depth + 2. * depth * depth) as Score) <
-                beta + 2 * num_moves as Score {
+            if depth <= 5. &&
+                lazy_score + score::mg_material(m.capture().piece_type()) + futility_margin(depth) <
+                    beta + 2 * num_moves as Score {
                 continue
             }
 
