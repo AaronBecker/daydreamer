@@ -424,7 +424,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                     }
                     _ => 0,
                 };
-                side_score[us.index()] += MOBILITY_BONUS[pt.index()][mob as usize] * 3 / 4;
+                side_score[us.index()] += MOBILITY_BONUS[pt.index()][mob as usize] * 4 / 3;
             }
         }
 
