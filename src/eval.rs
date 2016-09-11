@@ -412,7 +412,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                         m
                     }
                     PieceType::Queen => {
-                        let attacks = bitboard::queen_attacks(sq, all_pieces);
+                        let attacks = bitboard::queen_attacks(sq,
+                                all_pieces ^ (pos.pieces_of_color_and_type(us, PieceType::Bishop) |
+                                              pos.pieces_of_color_and_type(us, PieceType::Rook)));
                         ed.attacks_by[us.index()][PieceType::Queen.index()] |= attacks;
                         if attacks & king_halo != 0 {
                             num_king_attackers += 1;
