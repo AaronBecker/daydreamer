@@ -335,8 +335,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                 let sq = bitboard::pop_square(&mut pieces_to_score);
                 let mob = match pt {
                     PieceType::Pawn => {
-                        (bitboard::pawn_attacks(us, sq) & available_squares).count_ones() +
-                            if pos.piece_at(sq.pawn_push(us)) == Piece::NoPiece { 1 } else { 0 }
+                        if pos.piece_at(sq.pawn_push(us)) == Piece::NoPiece { 1 } else { 0 }
                     },
                     PieceType::Knight => {
                         let attacks = bitboard::knight_attacks(sq);
@@ -370,10 +369,10 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                         //        side_score[us.index()] += sc!(10, 5);
                         //    }
                         //}
-                        if sq.relative_to(us).rank() == Rank::_7 {
-                            // TODO: try skipping this if the opposing king isn't on 7 or 8
-                            side_score[us.index()] += sc!(10, 10);
-                        }
+                        //if sq.relative_to(us).rank() == Rank::_7 {
+                        //    // TODO: try skipping this if the opposing king isn't on 7 or 8
+                        //    side_score[us.index()] += sc!(10, 10);
+                        //}
 
                         let m = (attacks & available_squares).count_ones();
                         //if m <= 4 {
