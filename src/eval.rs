@@ -145,10 +145,10 @@ fn analyze_pawns(pos: &Position) -> PawnData {
         for f in 0..8 {
             let file_bb = bb!(File::from_u8(f));
             if our_pawns & file_bb == 0 {
-                pd.half_open_files[us.index()] |= (1 << f);
+                pd.half_open_files[us.index()] |= 1 << f;
             }
             if (our_pawns | their_pawns) & file_bb == 0 {
-                pd.open_files |= (1 << f);
+                pd.open_files |= 1 << f;
             }
         }
 
@@ -364,7 +364,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             king_attack_weight += 32;
                         }
                         let m = (attacks & available_squares).count_ones();
-                        if m <= 4 && !pos.can_castle(us) {
+                        if m <= 4 {
                             let ksq = pos.king_sq(us);
                             if sq.relative_to(us).rank() == Rank::_1 &&
                                 ((sq.file().index() < ksq.file().index()) ==
@@ -381,10 +381,19 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                                     }
                                     f += direction;
                                 }
+                                //println!("{} trapped status: {}", sq, trapped);
                                 if trapped {
-                                    side_score[us.index()] -= sc!(45, 0);
+                                    if pos.can_castle(us) {
+                                        side_score[us.index()] -= sc!(25, 0);
+                                    } else {
+                                        side_score[us.index()] -= sc!(50, 0);
+                                    }
                                 }
+                            } else {
+                                //println!("{} trapped status: {}", sq, false);
                             }
+                        } else {
+                            //println!("{} trapped status: {}", sq, false);
                         }
                         m
                     }
