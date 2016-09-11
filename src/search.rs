@@ -31,10 +31,12 @@ const RAZOR_MARGIN: [Score; 4] = [0 /* unused */, 300, 300, 325];
 const IID_ENABLED: bool = true;
 const FUTILITY_ENABLED: bool = true;
 
-fn futility_margin(depth: SearchDepth) -> Score {
-    let d = if depth < -3. { -3. } else { depth };
-    let c = if depth < 1. { 65. } else { 85. };
-    (c + 15. * d + 2. * d * d) as Score
+fn futility_margin(d: SearchDepth) -> Score {
+    if is_quiescence_depth(d) {
+        65.
+    } else {
+        (85. + 15. * d + 2. * d * d) as Score
+    }
 }
 
 // Inside the search, we keep the remaining depth to search as a floating point
