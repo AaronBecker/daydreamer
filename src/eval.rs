@@ -363,38 +363,45 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             num_king_attackers += 1;
                             king_attack_weight += 32;
                         }
-                        let m = (attacks & available_squares).count_ones();
-                        if m <= 4 {
-                            let ksq = pos.king_sq(us);
-                            if sq.relative_to(us).rank() == Rank::_1 &&
-                                ((sq.file().index() < ksq.file().index()) ==
-                                (sq.file().index() < File::E.index())) {
-                                // Figure out if we're actually trapped by looking at half-open
-                                // files.
-                                let mut trapped = true;
-                                let direction = if sq.file().index() < ksq.file().index() { 1 } else { -1 };
-                                let mut f = if sq.file().index() < ksq.file().index() { 0 } else { 7 };
-                                while f as usize != ksq.file().index() {
-                                    if (1 << f) & pd.half_open_files[us.index()] != 0 {
-                                        trapped = false;
-                                        break;
-                                    }
-                                    f += direction;
-                                }
-                                //println!("{} trapped status: {}", sq, trapped);
-                                if trapped {
-                                    if pos.can_castle(us) {
-                                        side_score[us.index()] -= sc!(25, 0);
-                                    } else {
-                                        side_score[us.index()] -= sc!(50, 0);
-                                    }
-                                }
-                            } else {
-                                //println!("{} trapped status: {}", sq, false);
+                        let f = 1 << sq.file().index();
+                        if f & pd.half_open_files[us.index()] != 0 {
+                            side_score[us.index()] += sc!(10, 5);
+                            if f & pd.open_files != 0 {
+                                side_score[us.index()] += sc!(10, 5);
                             }
-                        } else {
-                            //println!("{} trapped status: {}", sq, false);
                         }
+                        let m = (attacks & available_squares).count_ones();
+                        //if m <= 4 {
+                        //    let ksq = pos.king_sq(us);
+                        //    if sq.relative_to(us).rank() == Rank::_1 &&
+                        //        ((sq.file().index() < ksq.file().index()) ==
+                        //        (sq.file().index() < File::E.index())) {
+                        //        // Figure out if we're actually trapped by looking at half-open
+                        //        // files.
+                        //        let mut trapped = true;
+                        //        let direction = if sq.file().index() < ksq.file().index() { 1 } else { -1 };
+                        //        let mut f = if sq.file().index() < ksq.file().index() { 0 } else { 7 };
+                        //        while f as usize != ksq.file().index() {
+                        //            if (1 << f) & pd.half_open_files[us.index()] != 0 {
+                        //                trapped = false;
+                        //                break;
+                        //            }
+                        //            f += direction;
+                        //        }
+                        //        //println!("{} trapped status: {}", sq, trapped);
+                        //        if trapped {
+                        //            if pos.can_castle(us) {
+                        //                side_score[us.index()] -= sc!(25, 0);
+                        //            } else {
+                        //                side_score[us.index()] -= sc!(50, 0);
+                        //            }
+                        //        }
+                        //    } else {
+                        //        //println!("{} trapped status: {}", sq, false);
+                        //    }
+                        //} else {
+                        //    //println!("{} trapped status: {}", sq, false);
+                        //}
                         m
                     }
                     PieceType::Queen => {
