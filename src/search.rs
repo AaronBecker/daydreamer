@@ -32,7 +32,7 @@ const IID_ENABLED: bool = true;
 const FUTILITY_ENABLED: bool = true;
 
 fn futility_margin(depth: SearchDepth) -> Score {
-    (95. + 15. * depth + 2. * depth * depth) as Score
+    (85. + 10. * depth + 2. * depth * depth) as Score
 }
 
 // Inside the search, we keep the remaining depth to search as a floating point
