@@ -310,7 +310,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     let all_pieces = pos.all_pieces(); 
     // FIXME: should really move this up a level and pass pawn data into eval_* methods.
     // This is a short-term hack.
-    let pd = analyze_pawns(pos);
+    //let pd = analyze_pawns(pos);
     for us in board::each_color() {
         // TODO: take piece type and attacks into account here.
         let them = us.flip();
@@ -363,13 +363,18 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             num_king_attackers += 1;
                             king_attack_weight += 32;
                         }
-                        let f = 1 << sq.file().index();
-                        if f & pd.half_open_files[us.index()] != 0 {
-                            side_score[us.index()] += sc!(10, 5);
-                            if f & pd.open_files != 0 {
-                                side_score[us.index()] += sc!(10, 5);
-                            }
+                        //let f = 1 << sq.file().index();
+                        //if f & pd.half_open_files[us.index()] != 0 {
+                        //    side_score[us.index()] += sc!(10, 5);
+                        //    if f & pd.half_open_files[them.index()] != 0 {
+                        //        side_score[us.index()] += sc!(10, 5);
+                        //    }
+                        //}
+                        if sq.relative_to(us).rank() == Rank::_7 {
+                            // TODO: try skipping this if the opposing king isn't on 7 or 8
+                            side_score[us.index()] += sc!(10, 10);
                         }
+
                         let m = (attacks & available_squares).count_ones();
                         //if m <= 4 {
                         //    let ksq = pos.king_sq(us);
