@@ -145,10 +145,10 @@ fn analyze_pawns(pos: &Position) -> PawnData {
         for f in 0..8 {
             let file_bb = bb!(File::from_u8(f));
             if our_pawns & file_bb == 0 {
-                pd.half_open_files[us.index()] |= 1 << f;
+                pd.half_open_files[us.index()] |= (1 << f);
             }
             if (our_pawns | their_pawns) & file_bb == 0 {
-                pd.open_files |= 1 << f;
+                pd.open_files |= (1 << f);
             }
         }
 
@@ -372,8 +372,8 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                                 // Figure out if we're actually trapped by looking at half-open
                                 // files.
                                 let mut trapped = true;
-                                let direction: i8 = if sq.file().index() < ksq.file().index() { 1 } else { -1 };
-                                let mut f = sq.file().index() as i8;
+                                let direction = if sq.file().index() < ksq.file().index() { 1 } else { -1 };
+                                let mut f = if sq.file().index() < ksq.file().index() { 0 } else { 7 };
                                 while f as usize != ksq.file().index() {
                                     if (1 << f) & pd.half_open_files[us.index()] != 0 {
                                         trapped = false;
