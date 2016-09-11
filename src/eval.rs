@@ -314,7 +314,8 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     for us in board::each_color() {
         // TODO: take piece type and attacks into account here.
         let them = us.flip();
-        let available_squares = !pos.pieces_of_color(us);
+        let available_squares = !pos.pieces_of_color(us) &
+            !ed.attacks_by[them.index()][PieceType::Pawn.index()];
 
         // King safety counters. We only calculate king safety if there's
         // substantial material left on the board.
