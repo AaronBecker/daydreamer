@@ -565,9 +565,8 @@ fn search(data: &mut SearchData, ply: usize,
         }
     }
 
-    //let lazy_score = data.pos.psqt_score().interpolate(&data.pos);
-    // FIXME: if this tests well, give it a proper name.
-    let lazy_score = eval::full(&data.pos);
+    // TODO: test with full eval and more aggressive futility.
+    let lazy_score = data.pos.psqt_score().interpolate(&data.pos);
     let margin = beta - lazy_score;
     let depth_index = depth as usize;
 
@@ -716,6 +715,7 @@ fn search(data: &mut SearchData, ply: usize,
                 };
                 if selector.bad_move() {
                     lmr_red += 1.;
+                    // TODO: try reducing by a fraction of depth here
                     if num_moves > 8 {
                         lmr_red += 0.5;
                     }

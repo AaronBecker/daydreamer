@@ -52,6 +52,10 @@ const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
     [sc!(-14, -16), sc!(-14, -17), sc!(-15, -18), sc!(-16, -20), sc!(-16, -20), sc!(-15, -18), sc!(-14, -17), sc!(-14, -16)],
 ];
 
+const CANDIDATE_BONUS: [PhaseScore; 8] = [
+    sc!(0, 0), sc!(5, 5), sc!(5, 10), sc!(10, 15), sc!(20, 30), sc!(30, 45), sc!(0, 0), sc!(0, 0)
+];
+
 struct EvalData {
     attacks_by: [[Bitboard; 8]; 2],
 }
@@ -160,11 +164,17 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             pd.attacks[us.index()] |= bitboard::pawn_attacks(us, sq);
 
             let our_passer_mask = bitboard::passer_mask(us, sq);
-            let passed = our_passer_mask & their_pawns == 0
-                && bitboard::in_front_mask(us, sq) & our_pawns == 0;
+            let their_blockers = our_passer_mask & their_pawns;
+            let our_blockers = bitboard::in_front_mask(us, sq) & our_pawns;
+            let passed = their_blockers == 0 && our_blockers == 0;
             if passed {
                 // Passed pawn score is computed in eval_pawns.
                 pd.passers[us.index()] |= bb!(sq);
+            } else {
+                // Candidate passed pawns (one enemy pawn one file away).
+                if our_blockers == 0 && their_blockers.count_ones() < 2 {
+                    pd.score[us.index()] += CANDIDATE_BONUS[rel_rank.index()];
+                }
             }
 
             let open = bitboard::in_front_mask(us, sq) & their_pawns == 0;
