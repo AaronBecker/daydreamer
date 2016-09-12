@@ -660,7 +660,7 @@ impl MoveSelector {
             if phase == SelectionPhase::Loud {
                 let see = pos.static_exchange_sign(sm.m);
                 if see < 0 {
-                    self.bad_captures.push(ScoredMove{ m: sm.m, s: see });
+                    self.bad_captures.push(sm);
                     continue;
                 }
                 self.last_score = see;
