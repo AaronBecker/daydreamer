@@ -24,14 +24,14 @@ pub trait IntoBitboard {
 impl IntoBitboard for Rank {
     fn into_bitboard(self) -> Bitboard {
         debug_assert!(self != Rank::NoRank);
-        0xff << (8 * self.index())
+        unsafe { rank_bb[self.index()] }
     }
 }
 
 impl IntoBitboard for File {
     fn into_bitboard(self) -> Bitboard {
         debug_assert!(self != File::NoFile);
-        0x0101010101010101 << self.index()
+        unsafe { file_bb[self.index()] }
     }
 }
 
