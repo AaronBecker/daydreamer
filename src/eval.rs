@@ -141,6 +141,7 @@ fn analyze_pawns(pos: &Position) -> PawnData {
     let mut pd = PawnData::new();
     pd.key = (pos.pawn_hash() >> 32) as u32;
 
+    let all_pawns = pos.pieces_of_type(Pawn);
     for us in board::each_color() {
         let them = us.flip();
         let our_pawns = pos.pieces_of_color_and_type(us, Pawn);
@@ -151,7 +152,7 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             if our_pawns & file_bb == 0 {
                 pd.half_open_files[us.index()] |= 1 << f;
             }
-            if (our_pawns | their_pawns) & file_bb == 0 {
+            if all_pawns & file_bb == 0 {
                 pd.open_files |= 1 << f;
             }
         }
@@ -164,21 +165,21 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             pd.attacks[us.index()] |= bitboard::pawn_attacks(us, sq);
 
             let our_passer_mask = bitboard::passer_mask(us, sq);
-            let their_blockers = our_passer_mask & their_pawns;
-            let our_blockers = bitboard::in_front_mask(us, sq) & our_pawns;
-            let passed = their_blockers == 0 && our_blockers == 0;
+            let blockers = our_passer_mask & their_pawns;
+            let in_front = bitboard::in_front_mask(us, sq);
+            let neighbor_files = bitboard::neighbor_mask(sq.file());
+            let passed = blockers == 0 && in_front & our_pawns == 0;
             if passed {
                 // Passed pawn score is computed in eval_pawns.
                 pd.passers[us.index()] |= bb!(sq);
             } else {
                 // Candidate passed pawns (one enemy pawn one file away).
-                if our_blockers == 0 && their_blockers.count_ones() < 2 {
+                if bitboard::in_front_mask(us, sq) & all_pawns == 0 && (blockers & neighbor_files).count_ones() < 2 {
                     pd.score[us.index()] += CANDIDATE_BONUS[rel_rank.index()];
                 }
             }
 
             let open = bitboard::in_front_mask(us, sq) & their_pawns == 0;
-            let neighbor_files = bitboard::neighbor_mask(sq.file());
             let isolated = neighbor_files & our_pawns == 0;
             if isolated {
                 pd.score[us.index()] += ISOLATION_BONUS[open as usize][sq.file().index()];
