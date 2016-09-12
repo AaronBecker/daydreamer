@@ -672,10 +672,10 @@ impl MoveSelector {
                 }
                 let see = pos.static_exchange_sign(sm.m);
                 if see < 0 {
-                    self.bad_quiets.push(ScoredMove{ m: sm.m, s: see });
+                    self.bad_quiets.push(sm);
                     continue;
                 }
-                self.last_score = see;
+                self.last_score = sm.s;
             } else {
                 self.last_score = sm.s;
             }
