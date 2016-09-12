@@ -416,7 +416,6 @@ enum SelectionPhase {
     Killers,
     Quiet,
     BadCaptures,
-    BadQuiets,
     Evasions,
     Done,
 }
@@ -433,7 +432,6 @@ const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
                                                    SelectionPhase::Killers,
                                                    SelectionPhase::Quiet,
                                                    SelectionPhase::BadCaptures,
-                                                   SelectionPhase::BadQuiets,
                                                    SelectionPhase::Done];
 const EVASION_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
                                                     SelectionPhase::TT,
@@ -447,7 +445,6 @@ const QUIESCENCE_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
 pub struct MoveSelector {
     moves: Vec<ScoredMove>,
     bad_captures: Vec<ScoredMove>,
-    bad_quiets: Vec<ScoredMove>,
     phases: &'static [SelectionPhase],
     phase_index: usize,
     tt_move: Move,
@@ -466,7 +463,6 @@ impl MoveSelector {
                                              // Maybe also consider putting everything in a big
                                              // fixed buffer to avoid any allocations at all.
             bad_captures: Vec::with_capacity(32),
-            bad_quiets: Vec::with_capacity(32),
             phases: {
                 if pos.checkers() != 0 {
                     EVASION_PHASES
@@ -487,7 +483,6 @@ impl MoveSelector {
         MoveSelector {
             moves: Vec::with_capacity(128),
             bad_captures: Vec::new(),
-            bad_quiets: Vec::new(),
             phases: LEGAL_PHASES,
             phase_index: 0,
             tt_move: NO_MOVE,
@@ -504,7 +499,6 @@ impl MoveSelector {
         MoveSelector {
             moves: v,
             bad_captures: Vec::new(),
-            bad_quiets: Vec::new(),
             phases: ROOT_PHASES,
             phase_index: 0,
             tt_move: NO_MOVE,
@@ -536,7 +530,6 @@ impl MoveSelector {
             },
             SelectionPhase::Quiet => gen_quiet(pos, &mut self.moves),
             SelectionPhase::BadCaptures => self.moves.append(&mut self.bad_captures),
-            SelectionPhase::BadQuiets=> self.moves.append(&mut self.bad_quiets),
             SelectionPhase::Evasions => gen_evasions(pos, &mut self.moves),
         }
     }
@@ -601,7 +594,7 @@ impl MoveSelector {
                     }
                 }
             },
-            SelectionPhase::BadCaptures | SelectionPhase::BadQuiets => {
+            SelectionPhase::BadCaptures => {
                 // Scoring for bad captures already happended in the loud phase.
                 // We just need to sort.
             },
@@ -664,15 +657,10 @@ impl MoveSelector {
                     continue;
                 }
                 self.last_score = see;
-            } else if phase == SelectionPhase::BadCaptures || phase == SelectionPhase::BadQuiets {
+            } else if phase == SelectionPhase::BadCaptures {
                 self.last_score = -1;
             } else if phase == SelectionPhase::Quiet {
                 if sm.m == self.killers[0] || sm.m == self.killers[1] {
-                    continue;
-                }
-                let see = pos.static_exchange_sign(sm.m);
-                if see < 0 {
-                    self.bad_quiets.push(sm);
                     continue;
                 }
                 self.last_score = sm.s;
