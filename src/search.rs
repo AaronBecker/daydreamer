@@ -565,7 +565,9 @@ fn search(data: &mut SearchData, ply: usize,
         }
     }
 
-    let lazy_score = data.pos.psqt_score().interpolate(&data.pos);
+    //let lazy_score = data.pos.psqt_score().interpolate(&data.pos);
+    // FIXME: if this tests well, give it a proper name.
+    let lazy_score = eval::full(&data.pos);
     let margin = beta - lazy_score;
     let depth_index = depth as usize;
 
