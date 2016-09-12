@@ -197,6 +197,13 @@ fn analyze_pawns(pos: &Position) -> PawnData {
                 pd.score[us.index()] += sc!(5, 5);
             }
 
+            use board::Square::*;
+            if bb!(sq) & bb!(D4, E4, D5, E5) != 0 {
+                pd.score[us.index()].mg += 4;
+            } else if bb!(sq) & bb!(C4, C5, D3, E3, D6, E6, F4, F5) != 0 {
+                pd.score[us.index()].mg += 2;
+            }
+
             if !passed && !isolated && !connected &&
                 bitboard::pawn_attacks(us, sq) & their_pawns == 0 &&
                 bitboard::passer_mask(them, sq) & our_pawns == 0 &&
