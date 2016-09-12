@@ -24,14 +24,14 @@ pub trait IntoBitboard {
 impl IntoBitboard for Rank {
     fn into_bitboard(self) -> Bitboard {
         debug_assert!(self != Rank::NoRank);
-        unsafe { rank_bb[self.index()] }
+        0xff << (8 * self.index())
     }
 }
 
 impl IntoBitboard for File {
     fn into_bitboard(self) -> Bitboard {
         debug_assert!(self != File::NoFile);
-        unsafe { file_bb[self.index()] }
+        0x0101010101010101 << self.index()
     }
 }
 
@@ -74,11 +74,7 @@ pub fn bb_from_str(s: &str) -> Bitboard {
 pub fn relative_rank_bb(c: Color, r: Rank) -> Bitboard {
     debug_assert!(r != Rank::NoRank);
     debug_assert!(c != Color::NoColor);
-    if c == Color::White {
-        unsafe { rank_bb[r.index()] }
-    } else {
-        unsafe { rank_bb[(Rank::_8 as u8 - r as u8) as usize] }
-    }
+    r.relative_to(c).into_bitboard()
 }
 
 fn direction(sq1: Square, sq2: Square) -> Delta {
@@ -127,7 +123,6 @@ pub fn pop_square(b: &mut Bitboard) -> Square {
 }
 
 
-static mut square_bb: [Bitboard; 64] = [0; 64];
 static mut rank_bb: [Bitboard; 8] = [0; 8];
 static mut file_bb: [Bitboard; 8] = [0; 8];
 static mut distance: [[u8; 64]; 64] = [[0; 64]; 64];
@@ -157,7 +152,6 @@ fn init_simple_bitboards() {
     for sq1 in each_square() {
         let i = sq1.index();
         unsafe {
-            square_bb[i] = 1 << i;
             for r in 0..sq1.rank().index() {
                 passer_bb[1][i] |= rank_bb[r];
             }
