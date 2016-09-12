@@ -37,7 +37,7 @@ impl IntoBitboard for File {
 
 impl IntoBitboard for Square {
     fn into_bitboard(self) -> Bitboard {
-        unsafe { square_bb[self.index()] }
+        1 << self.index()
     }
 }
 
