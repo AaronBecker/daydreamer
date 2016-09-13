@@ -74,7 +74,6 @@ pub fn score_from_tt(s: Score, ply: usize) -> Score {
     }
 }
 
-
 // EngineState is an atomic value that tracks engine state. It's atomic so that
 // we can safely signal the search to stop based on external inputs without
 // requiring the search thread to poll input. Logically it should be an enum,
@@ -564,16 +563,17 @@ fn search(data: &mut SearchData, ply: usize,
     let orig_alpha = alpha;
     let open_window = beta - alpha > 1;
 
-    let (mut tt_move, mut tt_score) = (NO_MOVE, score::MIN_SCORE);
+    let (mut tt_move, mut tt_score, mut tt_score_type) = (NO_MOVE, score::MIN_SCORE, score::AT_MOST);
     if root_node {
         tt_move = data.root_moves[0].m;
     } else {
         if let Some(entry) = data.tt.get(data.pos.hash()) {
             //println!("{:ply$}tt hit: m={}, depth={}, score={}", ' ', entry.m, entry.depth, entry.score, ply = ply);
             tt_move = entry.m;
+            tt_score_type = entry.score_type;
             if depth as u8 <= entry.depth {
-                if (entry.score >= beta as i16 && entry.score_type & score::AT_LEAST != 0) ||
-                    (entry.score <= alpha as i16 && entry.score_type & score::AT_MOST != 0) {
+                if (entry.score >= beta as i16 && tt_score_type & score::AT_LEAST != 0) ||
+                    (entry.score <= alpha as i16 && tt_score_type & score::AT_MOST != 0) {
                     tt_score = score_from_tt(entry.score as Score, ply);
                 }
             }
@@ -587,7 +587,12 @@ fn search(data: &mut SearchData, ply: usize,
     }
 
     // TODO: test with full eval and more aggressive futility.
-    let lazy_score = data.pos.psqt_score().interpolate(&data.pos);
+    let mut lazy_score = data.pos.psqt_score().interpolate(&data.pos);
+    if data.pos.checkers() == 0 && tt_score != score::MIN_SCORE &&
+        ((tt_score > lazy_score && tt_score_type & score::AT_LEAST != 0) ||
+         (tt_score < lazy_score && tt_score_type & score::AT_MOST != 0)) {
+        lazy_score = tt_score;
+    }
     let margin = beta - lazy_score;
     let depth_index = depth as usize;
 
