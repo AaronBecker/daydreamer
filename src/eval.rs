@@ -392,9 +392,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                         let f = 1 << sq.file().index();
                         if f & ed.half_open_files[us.index()] != 0 {
                             side_score[us.index()] += sc!(10, 5);
-                        //    if f & pd.half_open_files[them.index()] != 0 {
-                        //        side_score[us.index()] += sc!(10, 5);
-                        //    }
+                            if f & ed.half_open_files[them.index()] != 0 {
+                                side_score[us.index()] += sc!(10, 5);
+                            }
                         }
                         if sq.relative_to(us).rank() == Rank::_7 &&
                             pos.king_sq(them).relative_to(us).rank().index() >= Rank::_7.index() &&
