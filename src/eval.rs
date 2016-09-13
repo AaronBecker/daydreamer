@@ -391,9 +391,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                         //    }
                         //}
                         if sq.relative_to(us).rank() == Rank::_7 &&
-                            pos.king_sq(them).relative_to(us).rank().index() == Rank::_8.index() {
-                            // TODO: try skipping this if the opposing king isn't on 7 or 8
-                            side_score[us.index()] += sc!(10, 10);
+                            pos.king_sq(them).relative_to(us).rank().index() >= Rank::_7.index() &&
+                            pos.pieces_of_color_and_type(them, PieceType::Pawn) & bb!(sq.rank()) != 0 {
+                            side_score[us.index()] += sc!(10, 20);
                         }
 
                         let m = (attacks & available_squares).count_ones();
