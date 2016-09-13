@@ -588,6 +588,7 @@ fn search(data: &mut SearchData, ply: usize,
 
     // TODO: test with full eval and more aggressive futility.
     let mut lazy_score = data.pos.psqt_score().interpolate(&data.pos);
+    // TODO: write separate function to apply tt bounds.
     if data.pos.checkers() == 0 && tt_score != score::MIN_SCORE &&
         ((tt_score > lazy_score && tt_score_type & score::AT_LEAST != 0) ||
          (tt_score < lazy_score && tt_score_type & score::AT_MOST != 0)) {
