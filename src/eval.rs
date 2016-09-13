@@ -447,14 +447,14 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             num_king_attackers += 1;
                             king_attack_weight += 64;
                         }
-                        // Bonus for being on the 7th rank if there are pawns on the 7th and the
-                        // opposing king is on the 7th or 8th.
-                        if sq.relative_to(us).rank() == Rank::_7 &&
-                            pos.king_sq(them).relative_to(us).rank().index() >= Rank::_7.index() &&
-                            pos.pieces_of_color_and_type(them, PieceType::Pawn) & bb!(sq.rank()) != 0 {
-                            side_score[us.index()] += sc!(5, 10);
+                        // Small bonus for being on open or half-open files.
+                        let f = 1 << sq.file().index();
+                        if f & ed.half_open_files[us.index()] != 0 {
+                            side_score[us.index()] += sc!(5, 2);
+                            if f & ed.half_open_files[them.index()] != 0 {
+                                side_score[us.index()] += sc!(5, 2);
+                            }
                         }
-
                         (attacks & available_squares).count_ones()
                     }
                     _ => 0,
