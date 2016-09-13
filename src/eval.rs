@@ -405,37 +405,31 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                         }
 
                         let m = (attacks & available_squares).count_ones();
-                        //if m <= 4 {
-                        //    let ksq = pos.king_sq(us);
-                        //    if sq.relative_to(us).rank() == Rank::_1 &&
-                        //        ((sq.file().index() < ksq.file().index()) ==
-                        //        (sq.file().index() < File::E.index())) {
-                        //        // Figure out if we're actually trapped by looking at half-open
-                        //        // files.
-                        //        let mut trapped = true;
-                        //        let direction = if sq.file().index() < ksq.file().index() { 1 } else { -1 };
-                        //        let mut f = if sq.file().index() < ksq.file().index() { 0 } else { 7 };
-                        //        while f as usize != ksq.file().index() {
-                        //            if (1 << f) & pd.half_open_files[us.index()] != 0 {
-                        //                trapped = false;
-                        //                break;
-                        //            }
-                        //            f += direction;
-                        //        }
-                        //        //println!("{} trapped status: {}", sq, trapped);
-                        //        if trapped {
-                        //            if pos.can_castle(us) {
-                        //                side_score[us.index()] -= sc!(25, 0);
-                        //            } else {
-                        //                side_score[us.index()] -= sc!(50, 0);
-                        //            }
-                        //        }
-                        //    } else {
-                        //        //println!("{} trapped status: {}", sq, false);
-                        //    }
-                        //} else {
-                        //    //println!("{} trapped status: {}", sq, false);
-                        //}
+                        if m < 4 {
+                            let ksq = pos.king_sq(us);
+                            if sq.relative_to(us).rank() == Rank::_1 &&
+                                ((sq.file().index() < ksq.file().index()) ==
+                                (sq.file().index() < File::E.index())) {
+                                // Figure out if we're actually trapped by
+                                // looking for half-open files.
+                                let mut trapped = true;
+                                let direction = if sq.file().index() < ksq.file().index() { 1 } else { -1 };
+                                let mut f = if sq.file().index() < ksq.file().index() { 0 } else { 7 };
+                                while f as usize != ksq.file().index() {
+                                    if (1 << f) & ed.half_open_files[us.index()] != 0 {
+                                        trapped = false;
+                                        break;
+                                    }
+                                    f += direction;
+                                }
+                                if trapped {
+                                    side_score[us.index()] -= sc!(15, 0);
+                                    if !pos.can_castle(us) {
+                                        side_score[us.index()] -= sc!(15, 0);
+                                    }
+                                }
+                            }
+                        }
                         m
                     }
                     PieceType::Queen => {
@@ -446,14 +440,6 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                         if attacks & king_halo != 0 {
                             num_king_attackers += 1;
                             king_attack_weight += 64;
-                        }
-                        // Small bonus for being on open or half-open files.
-                        let f = 1 << sq.file().index();
-                        if f & ed.half_open_files[us.index()] != 0 {
-                            side_score[us.index()] += sc!(5, 2);
-                            if f & ed.half_open_files[them.index()] != 0 {
-                                side_score[us.index()] += sc!(5, 2);
-                            }
                         }
                         (attacks & available_squares).count_ones()
                     }
