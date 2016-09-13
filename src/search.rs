@@ -174,7 +174,7 @@ impl SearchConstraints {
             hard_limit = max!((time / 5) as i32, (inc as i32) - 250) as u32;
         }
         soft_limit = min!(soft_limit, time - options::time_buffer()) * 6 / 10;
-        hard_limit = min!(hard_limit, time - options::time_buffer());
+        hard_limit = min!(2 * hard_limit, time - options::time_buffer());
         self.soft_limit = Duration::from_millis(soft_limit as u64);
         self.hard_limit = Duration::from_millis(hard_limit as u64);
     }
