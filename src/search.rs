@@ -436,7 +436,7 @@ fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Scor
      } else {
          format!("cp {}", rm.score)
      };
-     println!("info multipv {} depth {} score {} {} alpha {} beta {} time {} nodes {} {}pv {}",
+     println!("info multipv {} depth {} score {} {}alpha {} beta {} time {} nodes {} {}pv {}",
               ordinal, data.current_depth, score, bound, alpha, beta, ms, data.stats.nodes, nps, pv);
      debug_assert!(score_is_valid(rm.score));
 }

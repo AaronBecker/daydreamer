@@ -402,6 +402,12 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             pos.king_sq(them).relative_to(us).rank().index() >= Rank::_7.index() &&
                             pos.pieces_of_color_and_type(them, PieceType::Pawn) & bb!(sq.rank()) != 0 {
                             side_score[us.index()] += sc!(10, 20);
+                            // Extra bonus if we're connected to another major on the same rank.
+                            if (pos.pieces_of_color_and_type(us, PieceType::Queen) |
+                                pos.pieces_of_color_and_type(us, PieceType::Rook)) &
+                                bb!(sq.rank()) & attacks != 0 {
+                                side_score[us.index()] += sc!(10, 20);
+                            }
                         }
 
                         let m = (attacks & available_squares).count_ones();
