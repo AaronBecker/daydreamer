@@ -54,6 +54,27 @@ pub type Depth = usize;
 pub const ONE_PLY: Depth = 1;
 pub const MAX_PLY: Depth = 127;
 
+pub fn score_to_tt(s: Score, ply: usize) -> Score {
+    if s < score::mated_in(MAX_PLY) {
+        s - ply as Score
+    } else if s > score::mate_in(MAX_PLY) {
+        s + ply as Score
+    } else {
+        s
+    }
+}
+
+pub fn score_from_tt(s: Score, ply: usize) -> Score {
+    if s < score::mated_in(MAX_PLY) {
+        s + ply as Score
+    } else if s > score::mate_in(MAX_PLY) {
+        s - ply as Score
+    } else {
+        s
+    }
+}
+
+
 // EngineState is an atomic value that tracks engine state. It's atomic so that
 // we can safely signal the search to stop based on external inputs without
 // requiring the search thread to poll input. Logically it should be an enum,
@@ -553,7 +574,7 @@ fn search(data: &mut SearchData, ply: usize,
             if depth as u8 <= entry.depth {
                 if (entry.score >= beta as i16 && entry.score_type & score::AT_LEAST != 0) ||
                     (entry.score <= alpha as i16 && entry.score_type & score::AT_MOST != 0) {
-                    tt_score = entry.score as Score;
+                    tt_score = score_from_tt(entry.score as Score, ply);
                 }
             }
         } else {
@@ -790,7 +811,7 @@ fn search(data: &mut SearchData, ply: usize,
                     }
                 }
                 debug_assert!(score_is_valid(score));
-                data.tt.put(data.pos.hash(), m, depth, score, score::AT_LEAST);
+                data.tt.put(data.pos.hash(), m, depth, score_to_tt(score, ply), score::AT_LEAST);
                 return beta;
             }
         }
@@ -806,7 +827,7 @@ fn search(data: &mut SearchData, ply: usize,
         };
     }
     debug_assert!(score_is_valid(best_score));
-    data.tt.put(data.pos.hash(), best_move, depth, best_score,
+    data.tt.put(data.pos.hash(), best_move, depth, score_to_tt(best_score, ply),
                 if best_score <= orig_alpha { score::AT_MOST } else { score::EXACT });
     best_score
 }
@@ -829,7 +850,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
             //println!("{:ply$}tt hit: m={}, depth={}, score={}", ' ', entry.m, entry.depth, entry.score, ply = ply);
             tt_hit = true;
             tt_move = entry.m;
-            tt_score = entry.score as Score;
+            tt_score = score_from_tt(entry.score as Score, ply);
             tt_score_type = entry.score_type;
             tt_depth = entry.depth;
             debug_assert!(score_is_valid(tt_score));
@@ -902,7 +923,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
             }
             if score >= beta {
                 debug_assert!(score_is_valid(score));
-                data.tt.put(data.pos.hash(), m, QDEPTH, score, score::AT_LEAST);
+                data.tt.put(data.pos.hash(), m, QDEPTH, score_to_tt(score, ply), score::AT_LEAST);
                 return beta;
             }
         }
@@ -913,7 +934,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
         best_score = score::mated_in(ply);
     }
     debug_assert!(score_is_valid(best_score));
-    data.tt.put(data.pos.hash(), best_move, QDEPTH, best_score,
+    data.tt.put(data.pos.hash(), best_move, QDEPTH, score_to_tt(best_score, ply),
                 if best_score <= orig_alpha { score::AT_MOST } else { score::EXACT });
     best_score
 }
