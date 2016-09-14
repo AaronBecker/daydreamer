@@ -736,10 +736,9 @@ fn search(data: &mut SearchData, ply: usize,
                 } else {
                     1.
                 };
-                if selector.bad_move() && num_moves > 8 {
-                    lmr_red += 1.5;
-                } else if searched_quiet_count > 8 {
-                    lmr_red += 1.5;
+                if selector.bad_move() && num_moves > 8 ||
+                    quiet_move && searched_quiet_count > 8 {
+                    lmr_red *= 2.;
                 }
             }
             if lmr_red > 0. {
