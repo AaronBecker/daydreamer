@@ -743,7 +743,7 @@ fn search(data: &mut SearchData, ply: usize,
                         lmr_red += 0.5;
                     }
                     if searched_quiet_count > 8 {
-                        lmr_red += 0.5;
+                        lmr_red += depth / 5.;
                     }
                 }
             }
