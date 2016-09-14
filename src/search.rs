@@ -701,8 +701,7 @@ fn search(data: &mut SearchData, ply: usize,
             (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
             num_moves >= depth_index &&
             m.promote() != PieceType::Queen &&
-            best_score > score::mated_in(MAX_PLY) &&
-            !selector.special_move() {
+            best_score > score::mated_in(MAX_PLY) {
             // Value pruning.
             if depth <= 5. &&
                 lazy_score + score::mg_material(m.capture().piece_type()) + futility_margin(depth) <
@@ -746,10 +745,9 @@ fn search(data: &mut SearchData, ply: usize,
                         lmr_red += 0.5;
                     }
                 }
-                // TODO: try this, not tested yet.
-                //if selector.special_move() {
-                //    lmr_red /= 2.
-                //}
+                if selector.special_move() {
+                    lmr_red /= 2.
+                }
             }
             if lmr_red > 0. {
                 score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - lmr_red - ONE_PLY_F);
