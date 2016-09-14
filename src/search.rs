@@ -745,9 +745,6 @@ fn search(data: &mut SearchData, ply: usize,
                         lmr_red += 0.5;
                     }
                 }
-                if selector.special_move() {
-                    lmr_red /= 2.
-                }
                 if quiet_move {
                     lmr_red -= data.history[SearchData::history_index(m)] as SearchDepth / (MAX_HISTORY as SearchDepth);
                 }
