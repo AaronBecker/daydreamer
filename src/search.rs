@@ -35,7 +35,7 @@ fn futility_margin(d: SearchDepth) -> Score {
     if is_quiescence_depth(d) {
         65. as Score
     } else {
-        (90. + 20. * d + 5. * d * d) as Score
+        (80. + 10. * d + 2. * d * d) as Score
     }
 }
 
