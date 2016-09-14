@@ -731,16 +731,16 @@ fn search(data: &mut SearchData, ply: usize,
         if !full_search {
             let mut lmr_red = 0.;
             if num_moves > 2 || searched_quiet_count > 0 {
-                lmr_red = depth.ln() * (num_moves as f32).ln() / 2.;
+                lmr_red = depth.cbrt() * (num_moves as f32).cbrt();
                 if selector.bad_move() {
                     lmr_red += 1.;
                     //// TODO: try reducing by a fraction of depth here
-                    if num_moves > 8 {
-                        lmr_red += 0.5;
-                    }
-                    if searched_quiet_count > 8 {
-                        lmr_red += 0.5;
-                    }
+                    //if num_moves > 8 {
+                    //    lmr_red += 0.5;
+                    //}
+                    //if searched_quiet_count > 8 {
+                    //    lmr_red += 0.5;
+                    //}
                 }
             }
             if lmr_red > 0. {
