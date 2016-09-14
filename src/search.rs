@@ -735,12 +735,12 @@ fn search(data: &mut SearchData, ply: usize,
                 if selector.bad_move() {
                     lmr_red += 1.;
                     //// TODO: try reducing by a fraction of depth here
-                    //if num_moves > 8 {
-                    //    lmr_red += 0.5;
-                    //}
-                    //if searched_quiet_count > 8 {
-                    //    lmr_red += 0.5;
-                    //}
+                    if num_moves > 8 {
+                        lmr_red += 0.5;
+                    }
+                    if searched_quiet_count > 8 {
+                        lmr_red += 0.5;
+                    }
                 }
             }
             if lmr_red > 0. {
