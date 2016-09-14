@@ -748,6 +748,9 @@ fn search(data: &mut SearchData, ply: usize,
                 if selector.special_move() {
                     lmr_red /= 2.
                 }
+                if quiet_move {
+                    lmr_red -= data.history[SearchData::history_index(m)] as SearchDepth / (MAX_HISTORY as SearchDepth);
+                }
             }
             if lmr_red > 0. {
                 score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - lmr_red - ONE_PLY_F);
