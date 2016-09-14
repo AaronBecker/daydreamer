@@ -450,6 +450,7 @@ pub struct MoveSelector {
     tt_move: Move,
     killers: [Move; 2],
     last_score: Score,
+    last_move: Move,
 }
 
 impl MoveSelector {
@@ -476,6 +477,7 @@ impl MoveSelector {
             tt_move: tt_move,
             killers: node.killers,
             last_score: 0,
+            last_move: NO_MOVE,
         }
     }
 
@@ -488,6 +490,7 @@ impl MoveSelector {
             tt_move: NO_MOVE,
             killers: [NO_MOVE; 2],
             last_score: 0,
+            last_move: NO_MOVE,
         }
     }
 
@@ -504,6 +507,7 @@ impl MoveSelector {
             tt_move: NO_MOVE,
             killers: [NO_MOVE; 2],
             last_score: 0,
+            last_move: NO_MOVE,
         }
     }
 
@@ -667,8 +671,15 @@ impl MoveSelector {
             } else {
                 self.last_score = sm.s;
             }
+            self.last_move = sm.m;
             return Some(sm.m)
         }
+    }
+
+    pub fn special_move(&self) -> bool {
+        self.last_move == self.tt_move ||
+            self.last_move == self.killers[0] ||
+            self.last_move == self.killers[1]
     }
 
     pub fn bad_move(&self) -> bool {
