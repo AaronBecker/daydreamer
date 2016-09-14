@@ -403,34 +403,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             pos.pieces_of_color_and_type(them, PieceType::Pawn) & bb!(sq.rank()) != 0 {
                             side_score[us.index()] += sc!(10, 20);
                         }
-
-                        let m = (attacks & available_squares).count_ones();
-                        if m < 4 {
-                            let ksq = pos.king_sq(us);
-                            if sq.relative_to(us).rank() == Rank::_1 &&
-                                ((sq.file().index() < ksq.file().index()) ==
-                                (sq.file().index() < File::E.index())) {
-                                // Figure out if we're actually trapped by
-                                // looking for half-open files.
-                                let mut trapped = true;
-                                let direction = if sq.file().index() < ksq.file().index() { 1 } else { -1 };
-                                let mut f = if sq.file().index() < ksq.file().index() { 0 } else { 7 };
-                                while f as usize != ksq.file().index() {
-                                    if (1 << f) & ed.half_open_files[us.index()] != 0 {
-                                        trapped = false;
-                                        break;
-                                    }
-                                    f += direction;
-                                }
-                                if trapped {
-                                    side_score[us.index()] -= sc!(15, 0);
-                                    if !pos.can_castle(us) {
-                                        side_score[us.index()] -= sc!(15, 0);
-                                    }
-                                }
-                            }
-                        }
-                        m
+                        (attacks & available_squares).count_ones()
                     }
                     PieceType::Queen => {
                         let attacks = bitboard::queen_attacks(sq,

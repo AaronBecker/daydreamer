@@ -568,7 +568,6 @@ fn search(data: &mut SearchData, ply: usize,
         tt_move = data.root_moves[0].m;
     } else {
         if let Some(entry) = data.tt.get(data.pos.hash()) {
-            //println!("{:ply$}tt hit: m={}, depth={}, score={}", ' ', entry.m, entry.depth, entry.score, ply = ply);
             tt_move = entry.m;
             tt_score_type = entry.score_type;
             if depth as u8 <= entry.depth {
@@ -577,8 +576,6 @@ fn search(data: &mut SearchData, ply: usize,
                     tt_score = score_from_tt(entry.score as Score, ply);
                 }
             }
-        } else {
-            //println!("{:ply$}tt miss", ' ', ply = ply);
         }
         if !open_window && tt_score != score::MIN_SCORE {
             debug_assert!(score_is_valid(tt_score));
@@ -594,8 +591,6 @@ fn search(data: &mut SearchData, ply: usize,
          (tt_score < lazy_score && tt_score_type & score::AT_MOST != 0)) {
         lazy_score = tt_score;
     }
-    let margin = beta - lazy_score;
-    let depth_index = depth as usize;
 
     if FUTILITY_ENABLED &&
         !root_node &&
@@ -607,6 +602,7 @@ fn search(data: &mut SearchData, ply: usize,
             return lazy_score - 2 * futility_margin(depth)
     }
 
+    let depth_index = depth as usize;
     if NULL_MOVE_ENABLED &&
         !open_window &&
         depth > 1. &&
@@ -642,6 +638,7 @@ fn search(data: &mut SearchData, ply: usize,
         }
     }
 
+    let margin = beta - lazy_score;
     if IID_ENABLED && tt_move == NO_MOVE &&
         ((open_window && depth >= 5. && margin <= 300) ||
          (!open_window && depth >= 8. && margin <= 150)) {
@@ -726,7 +723,6 @@ fn search(data: &mut SearchData, ply: usize,
 
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
-        //if ply < 5 { println!("{:ply$}ply {}, do_move {}", ' ', ply, m, ply = ply); }
         data.stats.nodes += 1;
         num_moves += 1;
         let mut score = score::MIN_SCORE;
@@ -777,7 +773,6 @@ fn search(data: &mut SearchData, ply: usize,
         // since we didn't finish searching it, so bail out without updating
         // pv, bounds, etc.
         if data.should_stop() { return score::DRAW_SCORE; }
-        //if ply < 5 { println!("{:ply$}ply {}, un_move {} score = {}", ' ', ply, m, score, ply = ply); }
 
         if root_node {
             data.root_moves[root_idx].score = score::MIN_SCORE;
@@ -853,15 +848,12 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let (mut tt_move, mut tt_score, mut tt_score_type) = (NO_MOVE, score::MIN_SCORE, 0);
     if TT_ENABLED {
         if let Some(entry) = data.tt.get(data.pos.hash()) {
-            //println!("{:ply$}tt hit: m={}, depth={}, score={}", ' ', entry.m, entry.depth, entry.score, ply = ply);
             tt_hit = true;
             tt_move = entry.m;
             tt_score = score_from_tt(entry.score as Score, ply);
             tt_score_type = entry.score_type;
             tt_depth = entry.depth;
             debug_assert!(score_is_valid(tt_score));
-        } else {
-            //println!("{:ply$}tt miss", ' ', ply = ply);
         }
         if !open_window &&
             tt_hit &&
@@ -907,14 +899,12 @@ fn quiesce(data: &mut SearchData, ply: usize,
         if data.pos.checkers() == 0 && data.pos.static_exchange_sign(m) < 0 { continue }
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
-        //println!("{:ply$}ply {} qsearch, do_move {}", ' ', ply, m, ply = ply);
         data.stats.nodes += 1;
         num_moves += 1;
 
         let score = -quiesce(data, ply + 1, -beta, -alpha, depth - ONE_PLY_F);
         debug_assert!(score_is_valid(score));
         data.pos.undo_move(m, &undo);
-        //println!("{:ply$}ply {} qsearch, un_move {} score {}", ' ', ply, m, score, ply = ply);
 
         // If we're aborting, the score from the last move shouldn't be trusted,
         // since we didn't finish searching it, so bail out without updating
