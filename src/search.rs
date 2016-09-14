@@ -739,13 +739,13 @@ fn search(data: &mut SearchData, ply: usize,
                 if selector.bad_move() {
                     lmr_red += 1.;
                     // TODO: try reducing by a fraction of depth here
-                    if num_moves > 8 {
-                        //lmr_red += 0.5;
-                        lmr_red += if 0.5 > depth / 5. { 0.5 } else { depth / 5. };
-                    }
-                    //if searched_quiet_count > 8 {
+                    //if num_moves > 8 {
+                    //    //lmr_red += 0.5;
                     //    lmr_red += if 0.5 > depth / 5. { 0.5 } else { depth / 5. };
                     //}
+                    if searched_quiet_count > 8 {
+                        lmr_red += if 1. > depth / 5. { 1. } else { depth / 5. };
+                    }
                 }
             }
             if lmr_red > 0. {
