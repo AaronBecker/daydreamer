@@ -35,7 +35,7 @@ fn futility_margin(d: SearchDepth) -> Score {
     if is_quiescence_depth(d) {
         65. as Score
     } else {
-        (80. + 10. * d + 2. * d * d) as Score
+        (85. + 15. * d + 2. * d * d) as Score
     }
 }
 
@@ -583,9 +583,7 @@ fn search(data: &mut SearchData, ply: usize,
         }
     }
 
-    // TODO: test with full eval and more aggressive futility.
-    //let mut lazy_score = data.pos.psqt_score().interpolate(&data.pos);
-    let mut lazy_score = eval::full(&data.pos);
+    let mut lazy_score = data.pos.psqt_score().interpolate(&data.pos);
     // TODO: write separate function to apply tt bounds.
     if data.pos.checkers() == 0 && tt_score != score::MIN_SCORE &&
         ((tt_score > lazy_score && tt_score_type & score::AT_LEAST != 0) ||
@@ -616,7 +614,7 @@ fn search(data: &mut SearchData, ply: usize,
         let undo = UndoState::undo_state(&data.pos);
         data.pos.do_nullmove();
         let null_r = 2.0 + ((depth + 2.0) / 4.0) +
-            clamp!(0.0, 1.5, (lazy_score-beta) as SearchDepth / 100.0);
+            clamp!((lazy_score-beta) as SearchDepth / 100.0, 0.0, 1.5);
         let null_score = -search(data, ply + 1, -beta, -beta + 1, depth - null_r);
         data.pos.undo_nullmove(&undo);
         if null_score >= beta { return beta }
