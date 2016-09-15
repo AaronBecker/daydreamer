@@ -550,6 +550,33 @@ fn deepening_search(data: &mut SearchData) {
     }
 }
 
+/*
+fn reduction() -> SearchDepth {
+    let mut lmr_red = 0.;
+    // TODO: test special_move separately from overall countermove change.
+    if num_moves > 2 || searched_quiet_count > 0 {
+        lmr_red = if num_moves > 5 {
+            depth / 5.
+        } else {
+            1.
+        };
+        if selector.bad_move() {
+            lmr_red += 1.;
+            // TODO: try reducing by a fraction of depth here
+            if num_moves > 8 {
+                lmr_red += 0.5;
+            }
+            if searched_quiet_count > 8 {
+                lmr_red += 0.5;
+            }
+        }
+        if selector.special_move() {
+            lmr_red /= 2.;
+        }
+    }
+}
+*/
+
 fn search(data: &mut SearchData, ply: usize,
           mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
     data.init_ply(ply);
@@ -663,7 +690,6 @@ fn search(data: &mut SearchData, ply: usize,
     let (mut best_score, mut best_move) = (score::MIN_SCORE, NO_MOVE);
     let ad = AttackData::new(&data.pos);
     let undo = UndoState::undo_state(&data.pos);
-    let mut num_moves = 0;
 
     let mut selector = if root_node {
         MoveSelector::root(&data)
@@ -676,15 +702,18 @@ fn search(data: &mut SearchData, ply: usize,
         };
         MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, cm)
     };
-    let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 128], 0);
+
+    let (mut generated_moves, mut searched_moves) = (0, 0);
+    let (mut searched_quiets, mut generated_quiet_count, mut searched_quiet_count) = ([NO_MOVE; 128], 0, 0);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
+        generated_moves += 1;
         let mut root_idx = 0;
         if root_node {
             if !data.constraints.searchmoves.contains(&m) {
                 continue
             }
             if should_print(data) {
-                println!("info currmove {} currmovenumber {}", m, num_moves + 1);
+                println!("info currmove {} currmovenumber {}", m, searched_moves + 1);
             }
             root_idx = data.root_moves.iter().position(|x| x.m == m).unwrap();
         }
@@ -698,7 +727,10 @@ fn search(data: &mut SearchData, ply: usize,
             (m.to().relative_to(data.pos.us()).rank().index() >= Rank::_7.index() &&
              (m.promote() == PieceType::NoPieceType || m.promote() == PieceType::Queen));
         let quiet_move = !m.is_capture() && !m.is_promote();
-        let late_move = num_moves > (depth * depth + 1.) as usize;
+        let late_move = generated_moves > (depth * depth + 1.) as usize;
+        if quiet_move {
+            generated_quiet_count += 1;
+        }
 
         let ext = if (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >= 0 {
             1.
@@ -711,14 +743,14 @@ fn search(data: &mut SearchData, ply: usize,
             ext == 0. &&
             depth < 10. &&
             (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
-            num_moves >= depth_index &&
+            generated_moves >= depth_index &&
             m.promote() != PieceType::Queen &&
             best_score > score::mated_in(MAX_PLY) &&
             !selector.special_move() {
             // Value pruning.
             if depth <= 5. &&
                 lazy_score + score::mg_material(m.capture().piece_type()) + futility_margin(depth) <
-                    beta + 2 * num_moves as Score {
+                    beta + 2 * generated_moves as Score {
                 continue
             }
 
@@ -736,15 +768,15 @@ fn search(data: &mut SearchData, ply: usize,
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
         data.stats.nodes += 1;
-        num_moves += 1;
+        searched_moves += 1;
         let mut score = score::MIN_SCORE;
-        let mut full_search = (open_window && num_moves == 1) ||
-                              (root_node && num_moves <= options::multi_pv());
+        let mut full_search = (open_window && searched_moves == 1) ||
+                              (root_node && searched_moves <= options::multi_pv());
         if !full_search {
             let mut lmr_red = 0.;
             // TODO: test special_move separately from overall countermove change.
-            if num_moves > 2 || searched_quiet_count > 0 {
-                lmr_red = if num_moves > 5 {
+            if generated_moves > 2 || searched_quiet_count > 0 {
+                lmr_red = if generated_moves > 5 {
                     depth / 5.
                 } else {
                     1.
@@ -752,10 +784,10 @@ fn search(data: &mut SearchData, ply: usize,
                 if selector.bad_move() {
                     lmr_red += 1.;
                     // TODO: try reducing by a fraction of depth here
-                    if num_moves > 8 {
+                    if generated_moves > 8 {
                         lmr_red += 0.5;
                     }
-                    if searched_quiet_count > 8 {
+                    if generated_quiet_count > 8 {
                         lmr_red += 0.5;
                     }
                 }
@@ -803,10 +835,10 @@ fn search(data: &mut SearchData, ply: usize,
                     data.root_moves[root_idx].pv.push(mv);
                 }
             }
-            if score > alpha && score < beta && num_moves > options::multi_pv() {
+            if score > alpha && score < beta && searched_moves > options::multi_pv() {
                 print_pv(data, alpha, beta)
             }
-            debug_assert!(score_is_valid(data.root_moves[root_idx].score) || num_moves > 0);
+            debug_assert!(score_is_valid(data.root_moves[root_idx].score) || searched_moves > 0);
         }
 
         if score > best_score {
@@ -833,7 +865,7 @@ fn search(data: &mut SearchData, ply: usize,
             }
         }
     }
-    if num_moves == 0 {
+    if searched_moves == 0 {
         // Stalemate or checkmate. We have to be careful not to prune away any
         // moves without checking their legality until we know that there's at
         // least one legal move so that this check is valid.
