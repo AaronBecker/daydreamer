@@ -558,7 +558,7 @@ fn reduction(depth: SearchDepth,
     let mut r = 0.;
     if searched_moves > 2 || searched_quiet_moves > 0 {
         r = if searched_moves > 5 {
-            depth / 4.
+            depth / 5.
         } else {
             1.
         };
