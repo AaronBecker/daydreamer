@@ -666,7 +666,12 @@ fn search(data: &mut SearchData, ply: usize,
         MoveSelector::root(&data)
     } else {
         // FIXME: countermoves is dire
-        MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, data.countermoves[data.pos.last_move().piece().index()][data.pos.last_move().to().index()])
+        let cm = if data.pos.last_move() == NO_MOVE {
+            NO_MOVE
+        } else {
+            data.countermoves[data.pos.last_move().piece().index()][data.pos.last_move().to().index()]
+        };
+        MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, cm)
     };
     let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 128], 0);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
