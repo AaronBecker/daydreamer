@@ -647,7 +647,7 @@ fn search(data: &mut SearchData, ply: usize,
         // Nullmove search.
         let undo = UndoState::undo_state(&data.pos);
         data.pos.do_nullmove();
-        let null_r = (depth + 10.) / 3. +
+        let null_r = (depth + 10.) / 3.5 +
             clamp!((lazy_score-beta) as SearchDepth / 100.0, 0.0, 1.5);
         let null_score = -search(data, ply + 1, -beta, -beta + 1, depth - null_r);
         data.pos.undo_nullmove(&undo);
