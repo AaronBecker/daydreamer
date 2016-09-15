@@ -315,7 +315,10 @@ impl SearchData {
                 self.history[i] = self.history[i] >> 1;
             }
         }
-        self.countermoves[self.pos.last_move().piece().index()][self.pos.last_move().to().index()] = m;
+        let lm = self.pos.last_move();
+        if lm != NO_MOVE && lm != NULL_MOVE {
+            self.countermoves[lm.piece().index()][lm.to().index()] = m;
+        }
     }
 
     pub fn record_failure(&mut self, m: Move, d: SearchDepth) {
