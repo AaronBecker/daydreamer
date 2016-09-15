@@ -729,7 +729,7 @@ fn search(data: &mut SearchData, ply: usize,
                               (root_node && num_moves <= options::multi_pv());
         if !full_search {
             let mut lmr_red = 0.;
-            if num_moves > 2 || searched_quiet_count > 0 {
+            if num_moves > 2 || searched_quiet_count > 0 && !selector.special_move() {
                 lmr_red = if num_moves > 5 {
                     depth / 5.
                 } else {
@@ -744,9 +744,6 @@ fn search(data: &mut SearchData, ply: usize,
                     if searched_quiet_count > 8 {
                         lmr_red += 0.5;
                     }
-                }
-                if quiet_move {
-                    lmr_red -= data.history[SearchData::history_index(m)] as SearchDepth / (MAX_HISTORY as SearchDepth);
                 }
             }
             if lmr_red > 0. {
