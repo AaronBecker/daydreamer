@@ -562,13 +562,15 @@ fn reduction(depth: SearchDepth,
         } else {
             1.
         };
-        if bad_move {
-            r += 1.;
-            if searched_moves > 8 {
-                r += 0.5;
-            }
-            if searched_quiet_moves > 8 {
-                r += 0.5;
+        if searched_moves > 6 {
+            if bad_move {
+                r += 1.;
+                if searched_moves > 8 {
+                    r += 0.5;
+                }
+                if searched_quiet_moves > 8 {
+                    r += 0.5;
+                }
             }
         }
         if special_move {
