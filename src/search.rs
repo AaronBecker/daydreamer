@@ -550,32 +550,33 @@ fn deepening_search(data: &mut SearchData) {
     }
 }
 
-/*
-fn reduction() -> SearchDepth {
-    let mut lmr_red = 0.;
-    // TODO: test special_move separately from overall countermove change.
-    if num_moves > 2 || searched_quiet_count > 0 {
-        lmr_red = if num_moves > 5 {
+fn reduction(depth: SearchDepth,
+             searched_moves: usize,
+             searched_quiet_moves: usize,
+             bad_move: bool,
+             special_move: bool) -> SearchDepth {
+    let mut r = 0.;
+    if searched_moves > 2 || searched_quiet_moves > 0 {
+        r = if searched_moves > 5 {
             depth / 5.
         } else {
             1.
         };
-        if selector.bad_move() {
-            lmr_red += 1.;
-            // TODO: try reducing by a fraction of depth here
-            if num_moves > 8 {
-                lmr_red += 0.5;
+        if bad_move {
+            r += 1.;
+            if searched_moves > 8 {
+                r += 0.5;
             }
-            if searched_quiet_count > 8 {
-                lmr_red += 0.5;
+            if searched_quiet_moves > 8 {
+                r += 0.5;
             }
         }
-        if selector.special_move() {
-            lmr_red /= 2.;
+        if special_move {
+            r /= 2.;
         }
     }
+    r
 }
-*/
 
 fn search(data: &mut SearchData, ply: usize,
           mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
@@ -703,10 +704,9 @@ fn search(data: &mut SearchData, ply: usize,
         MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, cm)
     };
 
-    let (mut generated_moves, mut searched_moves) = (0, 0);
-    let (mut searched_quiets, mut generated_quiet_count, mut searched_quiet_count) = ([NO_MOVE; 128], 0, 0);
+    let mut searched_moves = 0;
+    let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 128], 0);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
-        generated_moves += 1;
         let mut root_idx = 0;
         if root_node {
             if !data.constraints.searchmoves.contains(&m) {
@@ -727,16 +727,16 @@ fn search(data: &mut SearchData, ply: usize,
             (m.to().relative_to(data.pos.us()).rank().index() >= Rank::_7.index() &&
              (m.promote() == PieceType::NoPieceType || m.promote() == PieceType::Queen));
         let quiet_move = !m.is_capture() && !m.is_promote();
-        let late_move = generated_moves > (depth * depth + 1.) as usize;
-        if quiet_move {
-            generated_quiet_count += 1;
-        }
+        let late_move = searched_moves > (depth * depth + 1.) as usize;
 
         let ext = if (gives_check || deep_pawn) && data.pos.static_exchange_sign(m) >= 0 {
             1.
         } else {
             0.
         };
+        let lmr_red = reduction(depth, searched_moves, searched_quiet_count,
+                                selector.bad_move(), selector.special_move());
+        let lmr_depth = depth - lmr_red;
 
         if FUTILITY_ENABLED &&
             !root_node &&
@@ -748,7 +748,7 @@ fn search(data: &mut SearchData, ply: usize,
             best_score > score::mated_in(MAX_PLY) &&
             !selector.special_move() {
             // Value pruning.
-            if depth <= 5. &&
+            if lmr_depth <= 5. &&
                 lazy_score + score::mg_material(m.capture().piece_type()) + futility_margin(depth) <
                     beta + 2 * searched_moves as Score {
                 continue
@@ -756,11 +756,11 @@ fn search(data: &mut SearchData, ply: usize,
 
             // History pruning.
             // TODO: clean up the history interface; this is kind of ugly.
-            if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
+            if quiet_move && lmr_depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
                 continue
             }
 
-            if (late_move || depth <= 2.) && data.pos.static_exchange_sign(m) < 0 {
+            if (late_move || lmr_depth <= 2.) && data.pos.static_exchange_sign(m) < 0 {
                 continue
             }
         }
@@ -773,28 +773,6 @@ fn search(data: &mut SearchData, ply: usize,
         let mut full_search = (open_window && searched_moves == 1) ||
                               (root_node && searched_moves <= options::multi_pv());
         if !full_search {
-            let mut lmr_red = 0.;
-            // TODO: test special_move separately from overall countermove change.
-            if searched_moves > 2 || searched_quiet_count > 0 {
-                lmr_red = if generated_moves > 5 {
-                    depth / 5.
-                } else {
-                    1.
-                };
-                if selector.bad_move() {
-                    lmr_red += 1.;
-                    // TODO: try reducing by a fraction of depth here
-                    if generated_moves > 8 {
-                        lmr_red += 0.5;
-                    }
-                    if generated_quiet_count > 8 {
-                        lmr_red += 0.5;
-                    }
-                }
-                if selector.special_move() {
-                    lmr_red /= 2.;
-                }
-            }
             if lmr_red >= 1. {
                 score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - lmr_red - ONE_PLY_F);
                 debug_assert!(score_is_valid(score));
