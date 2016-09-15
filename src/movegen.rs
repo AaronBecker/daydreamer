@@ -449,6 +449,7 @@ pub struct MoveSelector {
     phase_index: usize,
     tt_move: Move,
     killers: [Move; 2],
+    countermove: Move,
     last_score: Score,
     last_move: Move,
 }
@@ -457,7 +458,8 @@ impl MoveSelector {
     pub fn new(pos: &Position,
                d: search::SearchDepth,
                node: &search::Node,
-               tt_move: Move) -> MoveSelector {
+               tt_move: Move,
+               cm: Move) -> MoveSelector {
         MoveSelector {
             moves: Vec::with_capacity(128),  // TODO: check the performance implications of a
                                              // smaller allocation.
@@ -476,6 +478,7 @@ impl MoveSelector {
             phase_index: 0,
             tt_move: tt_move,
             killers: node.killers,
+            countermove: cm,
             last_score: 0,
             last_move: NO_MOVE,
         }
@@ -489,6 +492,7 @@ impl MoveSelector {
             phase_index: 0,
             tt_move: NO_MOVE,
             killers: [NO_MOVE; 2],
+            countermove: NO_MOVE,
             last_score: 0,
             last_move: NO_MOVE,
         }
@@ -506,6 +510,7 @@ impl MoveSelector {
             phase_index: 0,
             tt_move: NO_MOVE,
             killers: [NO_MOVE; 2],
+            countermove: NO_MOVE,
             last_score: 0,
             last_move: NO_MOVE,
         }
@@ -525,11 +530,15 @@ impl MoveSelector {
             SelectionPhase::Legal => gen_legal(pos, ad, &mut self.moves),
             SelectionPhase::Loud | SelectionPhase::Quiescence => gen_loud(pos, &mut self.moves),
             SelectionPhase::Killers => {
-                if self.killers[1] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[1], false) {
-                    self.moves.push(ScoredMove { m: self.killers[1], s: search::MAX_HISTORY + 1 });
-                }
+                // FIXME: get rid of the unused final arg to move_is_pseudo_legal
                 if self.killers[0] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[0], false) {
-                    self.moves.push(ScoredMove { m: self.killers[0], s: search::MAX_HISTORY + 2 });
+                    self.moves.push(ScoredMove { m: self.killers[0], s: search::MAX_HISTORY + 3 });
+                }
+                if self.killers[1] != NO_MOVE && move_is_pseudo_legal(pos, self.killers[1], false) {
+                    self.moves.push(ScoredMove { m: self.killers[1], s: search::MAX_HISTORY + 2 });
+                }
+                if self.countermove != NO_MOVE && move_is_pseudo_legal(pos, self.countermove, false) {
+                    self.moves.push(ScoredMove { m: self.countermove, s: search::MAX_HISTORY + 1 });
                 }
             },
             SelectionPhase::Quiet => gen_quiet(pos, &mut self.moves),
@@ -589,10 +598,10 @@ impl MoveSelector {
                 for m in self.moves.iter_mut() {
                     // Push killers to the back since they've already been
                     // searched and will be skipped.
-                    if m.m == self.killers[0] {
+                    if m.m == self.killers[0] ||
+                        m.m == self.killers[1] ||
+                        m.m == self.countermove {
                         m.s = search::MIN_HISTORY - 1;
-                    } else if m.m == self.killers[1] {
-                        m.s = search::MIN_HISTORY;
                     } else {
                         m.s += history[search::SearchData::history_index(m.m)];
                     }
@@ -618,8 +627,10 @@ impl MoveSelector {
                         }
                     } else {
                         if m.m == self.killers[0] {
-                            m.s = search::MAX_HISTORY + 2
+                            m.s = search::MAX_HISTORY + 3
                         } else if m.m == self.killers[1] {
+                            m.s = search::MAX_HISTORY + 2
+                        } else if m.m == self.countermove {
                             m.s = search::MAX_HISTORY + 1
                         } else {
                             m.s = history[search::SearchData::history_index(m.m)];
@@ -664,7 +675,9 @@ impl MoveSelector {
             } else if phase == SelectionPhase::BadCaptures {
                 self.last_score = -1;
             } else if phase == SelectionPhase::Quiet {
-                if sm.m == self.killers[0] || sm.m == self.killers[1] {
+                if sm.m == self.killers[0] ||
+                    sm.m == self.killers[1] ||
+                    sm.m == self.countermove {
                     continue;
                 }
                 self.last_score = sm.s;
@@ -679,7 +692,8 @@ impl MoveSelector {
     pub fn special_move(&self) -> bool {
         self.last_move == self.tt_move ||
             self.last_move == self.killers[0] ||
-            self.last_move == self.killers[1]
+            self.last_move == self.killers[1] ||
+            self.last_move == self.countermove
     }
 
     pub fn bad_move(&self) -> bool {

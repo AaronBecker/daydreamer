@@ -259,6 +259,7 @@ pub struct SearchData {
     pub pv_stack: [[Move; MAX_PLY + 1]; MAX_PLY + 1],
     pub search_stack: [Node; MAX_PLY + 1],
     pub history: [Score; 64 * 16],
+    pub countermoves: [[Move; 64]; 14],
     pub tt: transposition::Table,
 }
 
@@ -281,6 +282,7 @@ impl SearchData {
             pv_stack: [[NO_MOVE; MAX_PLY + 1]; MAX_PLY + 1],
             search_stack: [Node::new(); MAX_PLY + 1],
             history: [0; 64 * 16],
+            countermoves: [[NO_MOVE; 64]; 14],
             tt: transposition::Table::new(16 << 20), // TODO: uci handling for table size
         }
     }
@@ -313,6 +315,7 @@ impl SearchData {
                 self.history[i] = self.history[i] >> 1;
             }
         }
+        self.countermoves[m.piece().index()][m.to().index()] = m;
     }
 
     pub fn record_failure(&mut self, m: Move, d: SearchDepth) {
@@ -662,7 +665,8 @@ fn search(data: &mut SearchData, ply: usize,
     let mut selector = if root_node {
         MoveSelector::root(&data)
     } else {
-        MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move)
+        // FIXME: countermoves is dire
+        MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, data.countermoves[data.pos.last_move().piece().index()][data.pos.last_move().to().index()])
     };
     let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 128], 0);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
@@ -729,6 +733,7 @@ fn search(data: &mut SearchData, ply: usize,
                               (root_node && num_moves <= options::multi_pv());
         if !full_search {
             let mut lmr_red = 0.;
+            // TODO: test special_move separately from overall countermove change.
             if num_moves > 2 || searched_quiet_count > 0 && !selector.special_move() {
                 lmr_red = if num_moves > 5 {
                     depth / 5.
@@ -887,7 +892,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
 
-    let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move);
+    let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, NO_MOVE);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
         if (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
             m.promote() != PieceType::Queen &&
