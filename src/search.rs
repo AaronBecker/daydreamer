@@ -666,7 +666,7 @@ fn search(data: &mut SearchData, ply: usize,
         MoveSelector::root(&data)
     } else {
         // FIXME: countermoves is dire
-        let cm = if data.pos.last_move() == NO_MOVE {
+        let cm = if data.pos.last_move() == NO_MOVE || data.pos.last_move() == NULL_MOVE {
             NO_MOVE
         } else {
             data.countermoves[data.pos.last_move().piece().index()][data.pos.last_move().to().index()]
