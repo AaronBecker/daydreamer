@@ -558,7 +558,7 @@ fn reduction(depth: SearchDepth,
     let mut r = 0.;
     if searched_moves > 2 || searched_quiet_moves > 0 {
         r = if searched_moves > 5 {
-            depth / 5.
+            depth / 4.
         } else {
             1.
         };
@@ -647,7 +647,7 @@ fn search(data: &mut SearchData, ply: usize,
         // Nullmove search.
         let undo = UndoState::undo_state(&data.pos);
         data.pos.do_nullmove();
-        let null_r = (depth + 10.) / 3.5 +
+        let null_r = (depth + 10.) / 4. +
             clamp!((lazy_score-beta) as SearchDepth / 100.0, 0.0, 1.5);
         let null_score = -search(data, ply + 1, -beta, -beta + 1, depth - null_r);
         data.pos.undo_nullmove(&undo);
