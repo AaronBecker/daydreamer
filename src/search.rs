@@ -647,7 +647,7 @@ fn search(data: &mut SearchData, ply: usize,
         // Nullmove search.
         let undo = UndoState::undo_state(&data.pos);
         data.pos.do_nullmove();
-        let null_r = (depth + 10.) / 4. +
+        let null_r = (depth + 10.) / 3. +
             clamp!((lazy_score-beta) as SearchDepth / 100.0, 0.0, 1.5);
         let null_score = -search(data, ply + 1, -beta, -beta + 1, depth - null_r);
         data.pos.undo_nullmove(&undo);
@@ -736,7 +736,6 @@ fn search(data: &mut SearchData, ply: usize,
         };
         let lmr_red = reduction(depth, searched_moves, searched_quiet_count,
                                 selector.bad_move(), selector.special_move());
-        let lmr_depth = depth - lmr_red;
 
         if FUTILITY_ENABLED &&
             !root_node &&
@@ -748,7 +747,7 @@ fn search(data: &mut SearchData, ply: usize,
             best_score > score::mated_in(MAX_PLY) &&
             !selector.special_move() {
             // Value pruning.
-            if lmr_depth <= 4. &&
+            if depth <= 5. &&
                 lazy_score + score::mg_material(m.capture().piece_type()) + futility_margin(depth) <
                     beta + 2 * searched_moves as Score {
                 continue
@@ -756,11 +755,11 @@ fn search(data: &mut SearchData, ply: usize,
 
             // History pruning.
             // TODO: clean up the history interface; this is kind of ugly.
-            if quiet_move && lmr_depth <= 3. && data.history[SearchData::history_index(m)] < 0 {
+            if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
                 continue
             }
 
-            if (late_move || lmr_depth <= 2.) && data.pos.static_exchange_sign(m) < 0 {
+            if (late_move || depth <= 2.) && data.pos.static_exchange_sign(m) < 0 {
                 continue
             }
         }
