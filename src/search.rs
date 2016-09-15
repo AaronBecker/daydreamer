@@ -743,14 +743,14 @@ fn search(data: &mut SearchData, ply: usize,
             ext == 0. &&
             depth < 10. &&
             (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
-            generated_moves >= depth_index &&
+            searched_moves >= depth_index &&
             m.promote() != PieceType::Queen &&
             best_score > score::mated_in(MAX_PLY) &&
             !selector.special_move() {
             // Value pruning.
             if depth <= 5. &&
                 lazy_score + score::mg_material(m.capture().piece_type()) + futility_margin(depth) <
-                    beta + 2 * generated_moves as Score {
+                    beta + 2 * searched_moves as Score {
                 continue
             }
 
@@ -775,7 +775,7 @@ fn search(data: &mut SearchData, ply: usize,
         if !full_search {
             let mut lmr_red = 0.;
             // TODO: test special_move separately from overall countermove change.
-            if generated_moves > 2 || searched_quiet_count > 0 {
+            if searched_moves > 2 || searched_quiet_count > 0 {
                 lmr_red = if generated_moves > 5 {
                     depth / 5.
                 } else {
