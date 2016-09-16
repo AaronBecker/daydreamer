@@ -457,7 +457,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             ed.attacks_by[us.index()][PieceType::AllPieces.index()];
         while targets != 0 {
             let sq = bitboard::pop_square(&mut targets);
-            let bonus = sc!(5, 5) + PhaseScore::value(pos.piece_at(sq)) / 85;
+            let bonus = sc!(10, 10) + PhaseScore::value(pos.piece_at(sq)) / 40;
             side_score[us.index()] += bonus;
         }
     }
