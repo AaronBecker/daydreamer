@@ -246,6 +246,7 @@ fn eval_pawns(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     for us in board::each_color() {
         let them = us.flip();
         ed.attacks_by[us.index()][PieceType::Pawn.index()] = pd.attacks[us.index()];
+        ed.attacks_by[us.index()][PieceType::AllPieces.index()] = pd.attacks[us.index()];
         ed.half_open_files[us.index()] = pd.half_open_files[us.index()];
         
         let mut passers_to_score = pd.passers[us.index()];
@@ -332,11 +333,12 @@ const MOBILITY_BONUS: [[PhaseScore; 32]; 8] = [
 fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
     let all_pieces = pos.all_pieces(); 
-    // FIXME: should really move this up a level and pass pawn data into eval_* methods.
-    // This is a short-term hack.
-    //let pd = analyze_pawns(pos);
+    
     for us in board::each_color() {
-        // TODO: take piece type and attacks into account here.
+        let kattack = bitboard::king_attacks(pos.king_sq(us));
+        ed.attacks_by[us.index()][PieceType::King.index()] |= kattack;
+        ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= kattack;
+
         let them = us.flip();
         let available_squares = !pos.pieces_of_color(us);
 
@@ -364,6 +366,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                     PieceType::Knight => {
                         let attacks = bitboard::knight_attacks(sq);
                         ed.attacks_by[us.index()][PieceType::Knight.index()] |= attacks;
+                        ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
                         if attacks & king_halo != 0 {
                             num_king_attackers += 1;
                             king_attack_weight += 16;
@@ -374,6 +377,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                         let attacks = bitboard::bishop_attacks(sq,
                                 all_pieces ^ pos.pieces_of_color_and_type(us, PieceType::Queen));
                         ed.attacks_by[us.index()][PieceType::Bishop.index()] |= attacks;
+                        ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
                         if attacks & king_halo != 0 {
                             num_king_attackers += 1;
                             king_attack_weight += 16;
@@ -385,6 +389,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                                 all_pieces ^ (pos.pieces_of_color_and_type(us, PieceType::Queen) |
                                               pos.pieces_of_color_and_type(us, PieceType::Rook)));
                         ed.attacks_by[us.index()][PieceType::Rook.index()] |= attacks;
+                        ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
                         if attacks & king_halo != 0 {
                             num_king_attackers += 1;
                             king_attack_weight += 32;
@@ -410,6 +415,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                                 all_pieces ^ (pos.pieces_of_color_and_type(us, PieceType::Bishop) |
                                               pos.pieces_of_color_and_type(us, PieceType::Rook)));
                         ed.attacks_by[us.index()][PieceType::Queen.index()] |= attacks;
+                        ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
                         if attacks & king_halo != 0 {
                             num_king_attackers += 1;
                             king_attack_weight += 64;
@@ -440,6 +446,19 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                 1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
             side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1024;
 
+        }
+    }
+
+    for us in board::each_color() {
+        let them = us.flip();
+        // Targets are their pieces that are attacked but not defended.
+        let mut targets = pos.pieces_of_color(them) &
+            !ed.attacks_by[them.index()][PieceType::AllPieces.index()] &
+            ed.attacks_by[us.index()][PieceType::AllPieces.index()];
+        while targets != 0 {
+            let sq = bitboard::pop_square(&mut targets);
+            let bonus = sc!(5, 5) + PhaseScore::value(pos.piece_at(sq)) / 85;
+            side_score[us.index()] += bonus;
         }
     }
 
