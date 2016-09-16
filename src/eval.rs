@@ -455,7 +455,8 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         let targets = pos.pieces_of_color(them) &
             !ed.attacks_by[them.index()][PieceType::AllPieces.index()] &
             ed.attacks_by[us.index()][PieceType::AllPieces.index()];
-        side_score[us.index()] += sc!(10, 10) * (targets.count_ones() as i32);
+        let num_targets = targets.count_ones() as i32;
+        side_score[us.index()] += sc!(5, 5) * num_targets * num_targets;
     }
 
     side_score[Color::White.index()] - side_score[Color::Black.index()]
