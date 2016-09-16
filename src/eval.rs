@@ -452,14 +452,10 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     for us in board::each_color() {
         let them = us.flip();
         // Targets are their pieces that are attacked but not defended.
-        let mut targets = pos.pieces_of_color(them) &
+        let targets = pos.pieces_of_color(them) &
             !ed.attacks_by[them.index()][PieceType::AllPieces.index()] &
             ed.attacks_by[us.index()][PieceType::AllPieces.index()];
-        while targets != 0 {
-            let sq = bitboard::pop_square(&mut targets);
-            let bonus = sc!(10, 10) + PhaseScore::value(pos.piece_at(sq)) / 40;
-            side_score[us.index()] += bonus;
-        }
+        side_score[us.index()] += sc!(15, 15) * (targets.count_ones() as i32);
     }
 
     side_score[Color::White.index()] - side_score[Color::Black.index()]
