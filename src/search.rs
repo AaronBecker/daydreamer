@@ -193,6 +193,10 @@ impl SearchConstraints {
             soft_limit = time / 30 + inc;
             hard_limit = max!((time / 5) as i32, (inc as i32) - 250) as u32;
         }
+        if self.ponder {
+            soft_limit *= 2;
+            hard_limit *= 2;
+        }
         soft_limit = min!(soft_limit, time - options::time_buffer()) * 6 / 10;
         hard_limit = min!(2 * hard_limit, time - options::time_buffer());
         self.soft_limit = Duration::from_millis(soft_limit as u64);

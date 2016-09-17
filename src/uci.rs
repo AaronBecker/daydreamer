@@ -99,6 +99,8 @@ fn handle_command(search_data: &mut SearchData, line: &str) -> Result<(), String
                          env!("CARGO_PKG_VERSION"),
                          include_str!(concat!(env!("OUT_DIR"), "/version.rs")));
                 println!("id author Aaron Becker");
+                println!("option name Hash type spin default 64 min 1 max 65536");
+                println!("option name Ponder type check default false");
                 println!("uciok");
             }
             Some("isready") => {
@@ -117,6 +119,7 @@ fn handle_command(search_data: &mut SearchData, line: &str) -> Result<(), String
             Some("perft") => return handle_perft(search_data, &mut tokens),
             Some("divide") => return handle_divide(search_data, &mut tokens),
             Some("print") => return handle_print(search_data, &mut tokens),
+            Some("setoption") => return handle_option(search_data, &mut tokens),
             // Try to interpret unrecognized tokens as moves to make in the
             // current position. This tends to be handy for debugging.
             Some(unknown) => try!(make_move(search_data, unknown)),
@@ -270,6 +273,28 @@ fn handle_print<'a, I>(search_data: &mut SearchData, _tokens: &mut I) -> Result<
     Ok(())
 }
 
+fn handle_option<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), String>
+        where I: Iterator<Item=&'a str> {
+    let mut name = String::new();
+    while let Some(tok) = tokens.next() {
+        match tok {
+            "name" => {},
+            "value" => { break },
+            t => { name.push_str(t) },
+        }
+    }
+    name = name.to_lowercase();
+    if name == "hash" {
+        if let Some(s) = tokens.next() {
+            let mb = try!(s.parse::<usize>().map_err(|e| e.to_string()));
+            if mb > 0 && mb <= 65536 {
+                println!("info string setting transposition table to {}mb", mb);
+                search_data.tt = ::transposition::Table::new(mb << 20);
+            }
+        }
+    }
+    Ok(())
+}
 
 // Options to support:
 // option name Hash type spin default 64 min 1 max 64448
