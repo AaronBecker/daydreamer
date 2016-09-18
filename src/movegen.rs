@@ -814,29 +814,6 @@ mod tests {
 
     });
 
-    chess_test!(test_quiet_checks, {
-        let test_case = |fen, expect_moves: &Vec<&str>| {
-            let pos = Position::from_fen(fen);
-            let ad = AttackData::new(&pos);
-            let mut moves = Vec::new();
-            for uci in expect_moves.iter() {
-                moves.push(Move::from_uci(&pos, &ad, *uci));
-            }
-            moves.sort_by_key(|m| { m.as_u32() });
-
-            let mut sms = Vec::new();
-            ::movegen::gen_quiet_checks(&pos, &ad, &mut sms);
-            let mut got = Vec::new();
-            for m in sms.iter() {
-                got.push(m.m);
-            }
-            got.sort_by_key(|m| { m.as_u32() });
-            assert_eq!(moves, got);
-        };
-        test_case("8/8/8/8/8/8/1R2P1k1/4K3 w - -", &mut vec!("e2e3", "e2e4"));
-        test_case("8/8/8/8/8/8/1R2PPk1/4K3 w - -", &mut vec!());
-        test_case("8/8/8/8/6k1/8/1R2PP2/4K3 w - -", &mut vec!("f2f3"));
-    });
     // TODO: some tests for ordering, to be added after I implement,
     // at a minimum, bad capture deferment.
 }
