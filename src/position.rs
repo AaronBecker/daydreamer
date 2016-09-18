@@ -476,6 +476,7 @@ impl Position {
         for rank in each_rank().rev() {
             for file in each_file() {
                 s.push(self.piece_at(Square::new(file, rank)).glyph());
+                s.push(' ');
             }
             s.push('\n');
         }

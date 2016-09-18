@@ -13,5 +13,5 @@ time = "*"
 opt-level = 3
 #debug = true
 debug-assertions = false
-lto = true
-# TODO: experiment with lto = true and panic = 'abort'
+# lto = true is too slow for normal development
+# lto = true
