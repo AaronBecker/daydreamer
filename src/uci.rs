@@ -102,6 +102,8 @@ fn handle_command(search_data: &mut SearchData, line: &str) -> Result<(), String
                 println!("option name Hash type spin default 64 min 1 max 65536");
                 println!("option name Ponder type check default false");
                 println!("option name UCI_Chess960 type check default false");
+                println!("option name Arena 960 castling type check default false");
+                println!("option name MultiPV type spin default 1 min 1 max 255");
                 println!("uciok");
             }
             Some("isready") => {
@@ -284,29 +286,43 @@ fn handle_option<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<
             t => { name.push_str(t) },
         }
     }
-    name = name.to_lowercase();
-    if name == "hash" {
-        if let Some(t) = tokens.next() {
-            let mb = try!(t.parse::<usize>().map_err(|e| e.to_string()));
-            if mb > 0 && mb <= 65536 {
-                println!("info string setting transposition table to {}mb", mb);
-                search_data.tt = ::transposition::Table::new(mb << 20);
+    match name.to_lowercase().as_ref() {
+        "hash" => {
+            if let Some(t) = tokens.next() {
+                let mb = try!(t.parse::<usize>().map_err(|e| e.to_string()));
+                if mb > 0 && mb <= 65536 {
+                    search_data.tt = ::transposition::Table::new(mb << 20);
+                }
+            }
+        },
+        "uci_chess960" => {
+            if let Some(t) = tokens.next() {
+                let c960 = try!(t.parse::<bool>().map_err(|e| e.to_string()));
+                ::options::set_c960(c960);
+            }
+        },
+        "arena960castling" => {
+            if let Some(t) = tokens.next() {
+                let arena = try!(t.parse::<bool>().map_err(|e| e.to_string()));
+                ::options::set_arena_960_castling(arena);
+            }
+        },
+        "multipv" => {
+            if let Some(t) = tokens.next() {
+                let mpv = try!(t.parse::<usize>().map_err(|e| e.to_string()));
+                if mpv > 0 && mpv < 256 {
+                    ::options::set_multi_pv(mpv);
+                } else {
+                    ::options::set_multi_pv(1);
+                }
             }
         }
-    }
-    if name == "uci_chess960" {
-        if let Some(t) = tokens.next() {
-            let c960 = try!(t.parse::<bool>().map_err(|e| e.to_string()));
-            println!("info string setting c960 to {}", c960);
-            ::options::set_c960(c960);
-        }
+        _ => {
+            println!("info string unknown option {}, ignoring", name);
+        },
     }
     Ok(())
 }
 
 // Options to support:
-// option name Hash type spin default 64 min 1 max 64448
-// option name UCI_Chess960 type check default false
-// option name Arena-style 960 castling type check default false
-// option name MultiPV type spin default 1 min 1 max 256
 // maybe a debugging log file and verbosity control
