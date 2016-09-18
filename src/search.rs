@@ -286,7 +286,7 @@ impl SearchData {
             search_stack: [Node::new(); MAX_PLY + 1],
             history: [0; 64 * 16],
             countermoves: [[NO_MOVE; 64]; 16],
-            tt: transposition::Table::new(16 << 20), // TODO: uci handling for table size
+            tt: transposition::Table::new(64 << 20),
         }
     }
 

@@ -588,6 +588,7 @@ impl Position {
             if ch == '-' {
                 return c;
             }
+            // FIXME: there's no reason to duplicate all this code.
             if ch >= 'a' && ch <= 'z' {
                 ksq = self.king_sq(Color::Black);
                 if ch == 'k' {

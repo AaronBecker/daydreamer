@@ -1,7 +1,14 @@
+use std::sync::atomic;
+
+static C960: atomic::AtomicBool = atomic::ATOMIC_BOOL_INIT;
+
+pub fn set_c960(x: bool) {
+    C960.store(x, atomic::Ordering::SeqCst);
+}
 
 // Are we playing Chess960?
 pub fn c960() -> bool {
-    false
+    C960.load(atomic::Ordering::SeqCst)
 }
 
 // The Arena frontend has its own idea about how to handle castling in

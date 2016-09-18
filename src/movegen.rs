@@ -132,9 +132,9 @@ fn add_castles(pos: &Position, moves: &mut Vec<ScoredMove>) {
             // would discover an attack from a piece that was masked by the
             // castling rook.
             if bitboard::rook_attacks(ci.kdest,
-                                      pos.all_pieces() ^ bb!(ci.rook) &
+                                      pos.all_pieces() ^ bb!(ci.rook)) &
                                       (pos.pieces_of_color_and_type(them, PieceType::Rook) |
-                                       pos.pieces_of_color_and_type(them, PieceType::Queen))) != 0 {
+                                       pos.pieces_of_color_and_type(them, PieceType::Queen)) != 0 {
                 failed = true;
             }
         }
