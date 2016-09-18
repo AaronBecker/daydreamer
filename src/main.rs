@@ -25,6 +25,7 @@ fn main() {
              include_str!(concat!(env!("OUT_DIR"), "/version.rs")));
     bitboard::initialize();
     position::initialize();
+    ::options::set_multi_pv(1);
     let mut search_data = search::SearchData::new();
 
     // Treat each argument as a file containing uci commands.
