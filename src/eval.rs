@@ -334,6 +334,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
     let all_pieces = pos.all_pieces(); 
     
+    let mut piece_count = [[0; 8]; 2];
     for us in board::each_color() {
         let kattack = bitboard::king_attacks(pos.king_sq(us));
         ed.attacks_by[us.index()][PieceType::King.index()] |= kattack;
@@ -358,6 +359,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
             let mut pieces_to_score = pos.pieces_of_color_and_type(us, pt);
             while pieces_to_score != 0 {
+                piece_count[us.index()][pt.index()] += 1;
                 let sq = bitboard::pop_square(&mut pieces_to_score);
                 let mob = match pt {
                     PieceType::Pawn => {
@@ -445,7 +447,6 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                 0, 0, 640, 800, 1120, 1200, 1280, 1280,
                 1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
             side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1024;
-
         }
     }
 
@@ -457,6 +458,12 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             ed.attacks_by[us.index()][PieceType::AllPieces.index()];
         let num_targets = targets.count_ones() as i32;
         side_score[us.index()] += sc!(5, 5) * num_targets * num_targets / 2;
+
+        // Bishop pair bonus.
+        if piece_count[us.index()][PieceType::Bishop.index()] == 2 {
+            side_score[us.index()] += sc!(30, 45);
+        }
+        // TODO: port other material balance scoring.
     }
 
     side_score[Color::White.index()] - side_score[Color::Black.index()]
