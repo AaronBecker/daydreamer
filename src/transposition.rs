@@ -1,12 +1,18 @@
-use std::sync::{Arc, Mutex};
-
 use movement::{Move, NO_MOVE};
 use position::HashKey;
 use score::{Score, ScoreType, score_is_valid};
 use search::SearchDepth;
 
+
 // TODO: experiment with Entry/Bucket size for the purposes of cache tuning.
 // It may be beneficial to add padding so that buckets are cache-aligned.
+// TODO: experiment with collision detection. I think that very weak detection
+// is plenty in practice and we don't need elaborate tests to verify that
+// moves returned by the table are pseudo-legal. Experimental validiation
+// would be nice though. We can also add a supplementary verification hash
+// if needed or as part of testing. Note that issues are more likely with
+// large tables and very large searches, so they are less likely to arise in
+// fast time control strenth tests.
 #[derive(Clone, Copy)]
 pub struct Entry {
     key: u32,
@@ -15,7 +21,7 @@ pub struct Entry {
     generation: u8,
     pub depth: u8,
     pub score_type: ScoreType,
-    // TODO: when we have a proper eval, consider adding static eval.
+    // TODO: when we have a proper eval, add static eval.
 }
 
 impl Entry {
@@ -46,85 +52,8 @@ impl Bucket {
     }
 }
 
-#[derive(Clone)]
-pub struct Panel {
-    buckets: Arc<Mutex<Vec<Bucket>>>,
-}
-
-impl Panel {
-    pub fn new(size: usize) -> Panel {
-        Panel {
-            buckets: Arc::new(Mutex::new(vec![Bucket::new(); size])),
-        }
-    }
-
-    pub fn get(&self, idx: usize, key: HashKey) -> Option<Entry> {
-        let locked_buckets = self.buckets.lock().unwrap();
-        let bucket = &locked_buckets[idx];
-        let short_key = (key >> 32) as u32;
-        for i in 0..BUCKET_SIZE {
-            if short_key == bucket.entries[i].key {
-                debug_assert!(score_is_valid(bucket.entries[i].score as Score));
-                unsafe {
-                    let mut e: Entry = ::std::mem::uninitialized();
-                    ::std::ptr::copy_nonoverlapping(&bucket.entries[i], &mut e, 1);
-                    return Some(e);
-                }
-            }
-        }
-        None
-    }
-
-    pub fn put(&mut self,
-               idx: usize,
-               key: HashKey,
-               m: Move,
-               d: SearchDepth,
-               s: Score,
-               st: ScoreType,
-               gen: u8) {
-        debug_assert!(score_is_valid(s));
-        let mut locked_buckets = self.buckets.lock().unwrap();
-        let bucket = &mut locked_buckets[idx];
-        let short_key = (key >> 32) as u32;
-        let mut index = BUCKET_SIZE;
-        for i in 0..BUCKET_SIZE {
-            if short_key == bucket.entries[i].key || bucket.entries[i].key == 0 {
-                index = i;
-                break;
-            }
-        }
-        if index == BUCKET_SIZE {
-            let mut min_score = i16::max_value();
-            for i in 0..BUCKET_SIZE {
-                // Note the wrapping behavior here: we allow generations to wrap
-                // so that age doesn't break when our generation number wraps, but
-                // the total score should never over- or under-flow an 16.
-                let entry_score = bucket.entries[i].depth as i16 -
-                    gen.wrapping_sub(bucket.entries[i].generation) as i16;
-                if entry_score < min_score {
-                    min_score = entry_score;
-                    index = i;
-                }
-            }
-        }
-
-        // TODO: test ignoring the write if the depth is shallower (maybe by some
-        // margin) than the existing entry and we're updating an existing entry
-        debug_assert!(index < BUCKET_SIZE);
-        bucket.entries[index].key = short_key;
-        bucket.entries[index].m = m;
-        bucket.entries[index].score = s as i16;
-        bucket.entries[index].generation = gen;
-        bucket.entries[index].depth = d as u8;
-        bucket.entries[index].score_type = st;
-        debug_assert!(s == bucket.entries[index].score as Score);
-    }
-
-}
-
 pub struct Table {
-    panels: Vec<Panel>,
+    table: Vec<Bucket>,
     buckets: usize,
     generation: u8,
     // TODO: add stats
@@ -143,7 +72,7 @@ impl<'a> Table {
             buckets = buckets << 1;
         }
         Table {
-            panels: vec![Panel::new(buckets); 1],
+            table: vec![Bucket::new(); buckets],
             buckets: buckets,
             generation: 0,
         }
@@ -153,17 +82,54 @@ impl<'a> Table {
         self.generation = self.generation.wrapping_add(1);
     }
 
-    pub fn get(&'a mut self, key: HashKey) -> Option<Entry> {
-        // TODO: obviously we need to fix this for a multi-panel scenario
-        let panel = 0;
-        let idx = key as usize & (self.buckets - 1);
-        self.panels[panel].get(idx, key)
+    pub fn get(&'a mut self, key: HashKey) -> Option<&'a Entry> {
+        let bucket: &mut Bucket = &mut self.table[key as usize & (self.buckets - 1)];
+        let short_key = (key >> 32) as u32;
+        for i in 0..BUCKET_SIZE {
+            if short_key == bucket.entries[i].key {
+                debug_assert!(score_is_valid(bucket.entries[i].score as Score));
+                return Some(&mut bucket.entries[i]);
+            }
+        }
+        None
     }
 
     pub fn put(&mut self, key: HashKey, m: Move, d: SearchDepth, s: Score, st: ScoreType) {
-        let panel = 0;
-        let idx = key as usize & (self.buckets - 1);
-        self.panels[panel].put(idx, key, m, d, s, st, self.generation);
+        debug_assert!(score_is_valid(s));
+        let bucket: &mut Bucket = &mut self.table[key as usize & (self.buckets - 1)];
+        let short_key = (key >> 32) as u32;
+        let mut index = BUCKET_SIZE;
+        for i in 0..BUCKET_SIZE {
+            if short_key == bucket.entries[i].key || bucket.entries[i].key == 0 {
+                index = i;
+                break;
+            }
+        }
+        if index == BUCKET_SIZE {
+            let mut min_score = i16::max_value();
+            for i in 0..BUCKET_SIZE {
+                // Note the wrapping behavior here: we allow generations to wrap
+                // so that age doesn't break when our generation number wraps, but
+                // the total score should never over- or under-flow an 16.
+                let entry_score = bucket.entries[i].depth as i16 -
+                    self.generation.wrapping_sub(bucket.entries[i].generation) as i16;
+                if entry_score < min_score {
+                    min_score = entry_score;
+                    index = i;
+                }
+            }
+        }
+
+        // TODO: test ignoring the write if the depth is shallower (maybe by some
+        // margin) than the existing entry and we're updating an existing entry
+        debug_assert!(index < BUCKET_SIZE);
+        bucket.entries[index].key = short_key;
+        bucket.entries[index].m = m;
+        bucket.entries[index].score = s as i16;
+        bucket.entries[index].generation = self.generation;
+        bucket.entries[index].depth = d as u8;
+        bucket.entries[index].score_type = st;
+        debug_assert!(s == bucket.entries[index].score as Score);
     }
 }
 
