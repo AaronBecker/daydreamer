@@ -1,0 +1,117 @@
+#!/usr/bin/env python
+import os
+from subprocess import Popen, PIPE
+import sys
+import optparse
+
+concurrency = 6
+resign_moves = 5
+resign_score = 500
+chess_home = os.path.expanduser('~') + '/src/chess/'
+engine_prefix = chess_home
+this_path = chess_home + 'baru_testing/'
+out_path = this_path + 'results/'
+cutechess_path = chess_home + 'cutechess-cli'
+baru_path = chess_home + 'baru/'
+openings = 'file=%s format=epd' % (this_path + 'clean.epd')
+#timecontrol = 'inf'
+timecontrol = '5+0.05'
+gamecount = '10000'
+
+external_programs = {
+    'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
+    'cinnamon': 'cmd=' + engine_prefix + 'cinnamon_chess/cinnamon proto=uci',
+    'daydreamer': 'cmd=' + engine_prefix + 'daydreamer/daydreamer proto=uci',
+    'discocheck': 'cmd=' + engine_prefix + 'discocheck/discocheck proto=uci',
+    'diablo64' : 'cmd=' + engine_prefix + 'diablo/diablo64.sh proto=uci',
+    'dirty' : 'cmd=' + engine_prefix + \
+            'dirty_acca3/dirty.sh proto=xboard name=Dirty',
+    'ethereal' : 'cmd=' + engine_prefix + 'ethereal/ethereal proto=uci',
+    'viper64' : 'cmd=' + engine_prefix + \
+            'viper/viper64.sh proto=uci option."Number of threads"=1',
+    'glaurung64' : 'cmd=' + engine_prefix + \
+            'glaurung121/glaurung64.sh proto=uci option."Number of threads"=1',
+    'hamsters' : 'cmd=' + engine_prefix + 'hamsters/hamster.sh proto=uci',
+    'cyrano' : 'cmd=' + engine_prefix + 'cyrano/cyrano.sh proto=uci',
+    'alaric' : 'cmd=' + engine_prefix + 'alaric/alaric.sh proto=uci',
+    'spike' : 'cmd=' + engine_prefix + 'spike/spike.sh proto=uci',
+    'pawny' : 'cmd=' + engine_prefix + 'pawny_1.2/pawny proto=uci',
+    'protector' : 'cmd=' + engine_prefix + 'protector/protector.sh proto=uci',
+    'spark' : 'cmd=' + engine_prefix + 'spark/spark.sh proto=uci',
+    'komodo' : 'cmd=' + engine_prefix + 'komodo/komodo.sh proto=uci',
+}
+
+def build_engines(engines):
+    for engine in engines:
+        if os.path.exists(out_path + engine) or engine in external_programs:
+            continue
+        cmd = ("mkdir -p %s;"
+               "cd %s;"
+               "git stash;"
+               "git checkout %s;"
+               "cargo build --release;"
+               "mv ./target/release/baru %s;"
+               "git checkout master;"
+               "git stash apply") % (out_path, baru_path, engine, out_path + engine)
+        proc = Popen(cmd, shell=True)
+        os.waitpid(proc.pid, 0)
+
+def engine_str(engine):
+    if engine in external_programs:
+        return external_programs[engine]
+    return 'dir=' + out_path + ' cmd=./' + engine + ' proto=uci stderr=' + out_path + engine + '.stderr'
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+
+    parser = optparse.OptionParser(
+        formatter=optparse.TitledHelpFormatter(width=78),
+        add_help_option=None)
+
+    # define options here:
+    parser.add_option(
+        '--debug', action='store_true', dest='debug',
+        help='Show all input and output during games.')
+
+    settings, args = parser.parse_args(argv)
+
+    engines = args[0].split(',')
+    build_engines(engines)
+    primary_engine, engines = engines[0], engines[1:]
+    pr_eng_str = engine_str(primary_engine)
+    outfile = out_path + args[0] + '.pgn'
+
+    for engine in engines:
+        sec_eng_str = engine_str(engine)
+        #cutechess_args = '-concurrency ' + str(concurrency) + \
+        #        ' -variant fischerandom' + \
+        #        ' -resign movecount=' + str(resign_moves)+' score='+str(resign_score) + ' ' \
+        #        ' -repeat ' + \
+        #        ' -engine ' + pr_eng_str + \
+        #        ' -engine ' + sec_eng_str + \
+        #        ' -each tc=' + timecontrol + \
+        #        ' option."Search Threads"=1 ' + \
+        #        ' -games ' + gamecount + ' -pgnout ' + outfile
+
+        #if settings.debug:
+        #    concurrency = 1
+        cutechess_args = '-concurrency ' + str(concurrency) + \
+                ' -openings ' + openings + \
+                ' -resign movecount=' + str(resign_moves)+' score='+str(resign_score) + ' ' \
+                ' -repeat ' + \
+                ' -engine ' + pr_eng_str + \
+                ' -engine ' + sec_eng_str + \
+                ' -each tc=' + timecontrol + \
+                ' -games ' + gamecount + ' -pgnout ' + outfile
+                #' option."Search Threads"=1 ' + \
+        if settings.debug:
+            cutechess_args += ' -debug > ' + out_path + 'debug_' + args[0] + '.log'
+        command = cutechess_path + " " + cutechess_args
+        print command
+        proc = Popen(command, shell=True)
+        os.waitpid(proc.pid, 0)
+
+if __name__ == "__main__":
+    status = main()
+    sys.exit(status)
