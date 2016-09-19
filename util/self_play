@@ -62,6 +62,7 @@ def engine_str(engine):
     return 'dir=' + out_path + ' cmd=./' + engine + ' proto=uci stderr=' + out_path + engine + '.stderr'
 
 def main(argv=None):
+    global concurrency
     if argv is None:
         argv = sys.argv[1:]
 
@@ -103,7 +104,8 @@ def main(argv=None):
                 ' -engine ' + pr_eng_str + \
                 ' -engine ' + sec_eng_str + \
                 ' -each tc=' + timecontrol + \
-                ' -games ' + gamecount + ' -pgnout ' + outfile
+                ' -games ' + gamecount + ' -pgnout ' + outfile + \
+                ' -sprt elo0=0 elo1=10 alpha=0.05 beta=0.05'
                 #' option."Search Threads"=1 ' + \
         if settings.debug:
             cutechess_args += ' -debug > ' + out_path + 'debug_' + args[0] + '.log'
