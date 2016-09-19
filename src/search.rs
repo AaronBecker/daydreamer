@@ -832,7 +832,7 @@ fn search(data: &mut SearchData, ply: usize,
                 if open_window { data.update_pv(ply, m) }
             }
             if score >= beta {
-                if !m.is_capture() && !m.is_promote() {
+                if !m.is_capture() && !m.is_promote() && data.pos.checkers() == 0 {
                     if data.search_stack[ply].killers[0] != m {
                         data.search_stack[ply].killers[1] = data.search_stack[ply].killers[0];
                         data.search_stack[ply].killers[0] = m;
