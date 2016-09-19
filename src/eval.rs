@@ -461,7 +461,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
         // Bishop pair bonus.
         if piece_count[us.index()][PieceType::Bishop.index()] == 2 {
-            side_score[us.index()] += sc!(30, 45);
+            side_score[us.index()] += sc!(40, 55);
         }
         // TODO: port other material balance scoring.
     }
