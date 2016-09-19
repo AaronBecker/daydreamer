@@ -334,8 +334,9 @@ impl SearchData {
         }
     }
 
-    pub fn init_ply(&mut self, ply: usize) {
+    pub fn clear_pv(&mut self, ply: usize) {
         self.pv_stack[ply][ply] = NO_MOVE;
+        self.pv_stack[ply + 1][ply + 1] = NO_MOVE;
     }
 
     pub fn update_pv(&mut self, ply: usize, m: Move) {
@@ -585,7 +586,7 @@ fn reduction(depth: SearchDepth,
 
 fn search(data: &mut SearchData, ply: usize,
           mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
-    data.init_ply(ply);
+    data.clear_pv(ply);
     if data.should_stop() { return score::DRAW_SCORE; }
     if is_quiescence_depth(depth) {
         return quiesce(data, ply, alpha, beta, depth);
@@ -865,12 +866,12 @@ fn search(data: &mut SearchData, ply: usize,
 
 fn quiesce(data: &mut SearchData, ply: usize,
            mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
+    data.clear_pv(ply);
     alpha = max!(alpha, score::mated_in(ply));
     beta = min!(beta, score::mate_in(ply + 1));
     if alpha >= beta { return alpha }
     if data.pos.is_draw() { return score::DRAW_SCORE }
     if ply >= MAX_PLY { return score::DRAW_SCORE }
-    data.init_ply(ply);
     let open_window = beta - alpha > 1;
     let orig_alpha = alpha;
 
