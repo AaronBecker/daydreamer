@@ -94,8 +94,8 @@ def main(argv=None):
         #        ' option."Search Threads"=1 ' + \
         #        ' -games ' + gamecount + ' -pgnout ' + outfile
 
-        #if settings.debug:
-        #    concurrency = 1
+        if settings.debug:
+            concurrency = 1
         cutechess_args = '-concurrency ' + str(concurrency) + \
                 ' -openings ' + openings + \
                 ' -resign movecount=' + str(resign_moves)+' score='+str(resign_score) + ' ' \
