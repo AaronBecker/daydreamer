@@ -4,7 +4,7 @@ from subprocess import Popen, PIPE
 import sys
 import optparse
 
-concurrency = 6
+concurrency = 4
 resign_moves = 5
 resign_score = 500
 chess_home = os.path.expanduser('~') + '/src/chess/'
