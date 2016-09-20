@@ -464,13 +464,16 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         if piece_count[us.index()][Bishop.index()] == 2 {
             side_score[us.index()] += sc!(30, 45);
         }
-        if piece_count[us.index()][Rook.index()] == 2 {
-            side_score[us.index()] += sc!(-12, -17);
+        if piece_count[us.index()][Rook.index()] + piece_count[us.index()][Queen.index()] > 1 {
+            side_score[us.index()] += sc!(-5, -10);
+            if piece_count[us.index()][Rook.index()] > 1 {
+                side_score[us.index()] += sc!(-15, -20);
+            }
         }
 
         // Pawn adjustment.
-        let pc = piece_count[us.index()][Pawn.index()];
-        side_score[us.index()] += sc!(0, piece_count[us.index()][Knight.index()] * 3 * (pc - 4));
+        //let pc = piece_count[us.index()][Pawn.index()];
+        //side_score[us.index()] += sc!(0, piece_count[us.index()][Knight.index()] * 3 * (pc - 4));
         // TODO: port other material balance scoring.
     }
 
