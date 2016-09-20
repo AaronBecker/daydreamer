@@ -431,9 +431,6 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
         if do_safety {
             let mut safety_score = king_shield_penalty(them, pos, ed) + king_attack_weight;
-            if num_king_attackers > 2 {
-                safety_score *= 2;
-            }
             //println!("enemy_shield_penalty[{}] = {}", us.glyph(), shield_penalty);
             //println!("king_attack_weight[{}] = {}", us.glyph(), king_attack_weight);
             //println!("num_king_attackers[{}] = {}", us.glyph(), num_king_attackers);
