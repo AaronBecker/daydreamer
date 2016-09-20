@@ -11,6 +11,12 @@ use position;
 use search;
 use search::SearchData;
 
+// in_millis converts a duration to integer milliseconds. It's always at least
+// 1, to avoid divide-by-zero errors.
+pub fn in_millis(d: &time::Duration) -> u64 {
+    1 + d.as_secs() * 1000 + d.subsec_nanos() as u64 / 1_000_000
+}
+
 pub fn read_stream(search_data: &mut SearchData, script: Option<String>) {
     let (tx, rx) = mpsc::channel();
     search_data.uci_channel = rx;
@@ -248,10 +254,10 @@ fn handle_perft<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(
     match tokens.next() {
         Some(depth) => {
             let d = try!(depth.parse::<u32>().map_err(|e| e.to_string()));
-            let t1 = ::time::precise_time_ns();
+            let t1 = time::Instant::now();
             let count = perft::perft(&mut search_data.pos, d);
-            let t2 = ::time::precise_time_ns();
-            println!("{} ({} ms, {} nodes/s", count, (t2 - t1) / 1_000_000, count * 1_000_000_000 / (t2 - t1));
+            let elapsed_ms = in_millis(&t1.elapsed());
+            println!("{} ({} ms, {} nodes/s)", count, elapsed_ms, count * 1000 / elapsed_ms);
         },
         None => return Err("input ended with no depth".to_string()),
     }

@@ -1,16 +1,16 @@
 use board::*;
+use uci::in_millis;
 
 pub fn initialize() {
     static INIT: ::std::sync::Once = ::std::sync::ONCE_INIT;
     INIT.call_once(|| {
-        let t1 = ::time::precise_time_ns();
+        let t1 = ::std::time::Instant::now();
         init_simple_bitboards();
         init_mundane_attacks();
         init_magic();
         init_pseudo_attacks();
         init_post_attack_bitboards();
-        let t2 = ::time::precise_time_ns();
-        println!("initialized in {} ms", (t2 -t1) / 1_000_000);
+        println!("initialized in {} ms", in_millis(&t1.elapsed()));
     })
 }
 
@@ -373,7 +373,7 @@ fn init_magic() {
 }
 
 unsafe fn init_magic_opt(pt: PieceType, xseed: usize, best_time: u64) -> u64{
-    let t1 = ::time::precise_time_ns();
+    let t1 = ::std::time::Instant::now();
     let mut occ: [Bitboard; 4096] = [0; 4096];
     let mut gold: [Bitboard; 4096] = [0; 4096];
     let mut masks = if pt == PieceType::Bishop { &mut bishop_masks } else { &mut rook_masks };
@@ -403,8 +403,8 @@ unsafe fn init_magic_opt(pt: PieceType, xseed: usize, best_time: u64) -> u64{
 
         // Find a magic number that works by trial and error.
         loop {
-            let t2 = ::time::precise_time_ns();
-            if t2 - t1 > best_time {
+            let elapsed_ms = in_millis(&t1.elapsed());
+            if elapsed_ms > best_time {
                 return u64::max_value();
             }
             magic[sq.index()] = prng.gen::<u64>() & prng.gen::<u64>() & prng.gen::<u64>();
@@ -416,7 +416,7 @@ unsafe fn init_magic_opt(pt: PieceType, xseed: usize, best_time: u64) -> u64{
             }
         }
     }
-    ::time::precise_time_ns() - t1
+    in_millis(&t1.elapsed())
 }
 
 static mut bishop_pseudo_attacks_bb: [Bitboard; 64] = [0; 64];

@@ -7,7 +7,6 @@ build = "build.rs"
 [dependencies]
 lazy_static = "0.1.*"
 rand = "*"
-time = "*"
 
 [profile.release]
 opt-level = 3

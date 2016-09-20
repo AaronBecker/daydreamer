@@ -1,7 +1,6 @@
 use std::sync::{Arc, mpsc};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
-use std::time;
 use std::time::{Duration, Instant};
 
 use bitboard;
@@ -16,6 +15,7 @@ use position::{AttackData, Position, UndoState};
 use score;
 use score::{Score, score_is_valid, is_mate_score};
 use transposition;
+use uci::in_millis;
 
 const NULL_MOVE_ENABLED: bool = true;
 const NULL_EVAL_MARGIN: Score = 200;
@@ -114,12 +114,6 @@ pub enum SearchResult {
      Exact,
 }
 
-// in_millis converts a duration to integer milliseconds. It's always at least
-// 1, to avoid divide-by-zero errors.
-pub fn in_millis(d: &Duration) -> u64 {
-    1 + d.as_secs() * 1000 + d.subsec_nanos() as u64 / 1_000_000
-}
-
 // SearchConstraints track the conditions for a search as specified via UCI.
 // This is mostly about how much searching we should do before stopping, but
 // also includes a list of moves to consider at the root.
@@ -147,7 +141,7 @@ impl SearchConstraints {
             use_timer: false,
             hard_limit: Duration::new(0, 0),
             soft_limit: Duration::new(0, 0),
-            start_time: time::Instant::now(),
+            start_time: Instant::now(),
         }
     }
 
@@ -160,12 +154,12 @@ impl SearchConstraints {
         self.use_timer = false;
         self.hard_limit = Duration::new(0, 0);
         self.soft_limit = Duration::new(0, 0);
-        self.start_time = time::Instant::now();
+        self.start_time = Instant::now();
     }
 
     pub fn set_timer(&mut self, us: board::Color, wtime: u32, btime: u32,
                      winc: u32, binc: u32, movetime: u32, movestogo: u32) {
-        self.start_time = time::Instant::now();
+        self.start_time = Instant::now();
         if wtime == 0 && btime == 0 && winc == 0 && binc == 0 && movetime == 0 {
             self.use_timer = false;
             return;
@@ -398,7 +392,7 @@ pub fn go(data: &mut SearchData) {
         let engine_state = data.state.load();
         if engine_state == PONDERING_STATE ||
             data.constraints.infinite && engine_state == SEARCHING_STATE {
-            thread::sleep(time::Duration::from_millis(1));
+            thread::sleep(Duration::from_millis(1));
         } else {
             break
         }
