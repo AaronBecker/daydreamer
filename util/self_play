@@ -15,7 +15,7 @@ cutechess_path = chess_home + 'cutechess-cli'
 baru_path = chess_home + 'baru/'
 openings = 'file=%s format=epd' % (this_path + 'clean.epd')
 #timecontrol = 'inf'
-timecontrol = '5+0.05'
+timecontrol = '2+0.05'
 gamecount = '10000'
 
 external_programs = {
