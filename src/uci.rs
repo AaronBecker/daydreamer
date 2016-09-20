@@ -62,7 +62,6 @@ fn consume_stream<T: BufRead>(stream: T, chan: mpsc::Sender<String>, state: sear
     for line in stream.lines() {
         match line {
             Ok(s) => {
-                println!("handling line {}", s);
                 match s.split_whitespace().next() {
                     Some("isready") => println!("readyok"),
                     Some("wait") => {
