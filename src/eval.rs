@@ -481,7 +481,16 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 }
 
 fn king_shield_score(c: Color, pos: &Position) -> Score {
-    let mut score = king_shield_at(pos.king_sq(c), c, pos);
+    // If the king is on the A or H file, evaluate the shield for
+    // the B or G file, respectively. This lets us always evaluate
+    // a shield with width 3.
+    let mut ksq = pos.king_sq(c);
+    if ksq.file() == File::A {
+        ksq = board::shift_sq(ksq, board::EAST);
+    } else if ksq.file() == File::H {
+        ksq = board::shift_sq(ksq, board::WEST);
+    }
+    let mut score = king_shield_at(ksq, c, pos);
     if pos.can_castle_short(c) {
         let target = pos.possible_castles(c, 0).kdest;
         score = max!(score, king_shield_at(target, c, pos));
