@@ -451,21 +451,26 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     }
 
     for us in board::each_color() {
+        use board::PieceType::*;
         let them = us.flip();
         // Targets are their pieces that are attacked but not defended.
         let targets = pos.pieces_of_color(them) &
-            !ed.attacks_by[them.index()][PieceType::AllPieces.index()] &
-            ed.attacks_by[us.index()][PieceType::AllPieces.index()];
+            !ed.attacks_by[them.index()][AllPieces.index()] &
+            ed.attacks_by[us.index()][AllPieces.index()];
         let num_targets = targets.count_ones() as i32;
         side_score[us.index()] += sc!(5, 5) * num_targets * num_targets / 2;
 
         // Pair bonuses.
-        if piece_count[us.index()][PieceType::Bishop.index()] == 2 {
+        if piece_count[us.index()][Bishop.index()] == 2 {
             side_score[us.index()] += sc!(30, 45);
         }
-        if piece_count[us.index()][PieceType::Rook.index()] == 2 {
+        if piece_count[us.index()][Rook.index()] == 2 {
             side_score[us.index()] += sc!(-12, -17);
         }
+
+        // Pawn adjustment.
+        let pc = piece_count[us.index()][Pawn.index()];
+        side_score[us.index()] += sc!(0, piece_count[us.index()][Knight.index()] * 3 * (pc - 4));
         // TODO: port other material balance scoring.
     }
 
