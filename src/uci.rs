@@ -62,9 +62,17 @@ fn consume_stream<T: BufRead>(stream: T, chan: mpsc::Sender<String>, state: sear
     for line in stream.lines() {
         match line {
             Ok(s) => {
+                println!("handling line {}", s);
                 match s.split_whitespace().next() {
                     Some("isready") => println!("readyok"),
-                    Some("sleep") => thread::sleep(time::Duration::from_secs(1)),
+                    Some("wait") => {
+                        // Note: we sleep at least once to make sure that the
+                        // previous command has a chance to start executing.
+                        thread::sleep(time::Duration::from_millis(5));
+                        while state.load() != search::WAITING_STATE {
+                            thread::sleep(time::Duration::from_millis(5));
+                        }
+                    },
                     Some("stop") => state.enter(search::STOPPING_STATE),
                     Some("ponderhit") => {
                         if state.load() == search::PONDERING_STATE {
