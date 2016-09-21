@@ -4,6 +4,7 @@ use bitboard;
 use bitboard::{Bitboard};
 use board;
 use board::{Color, File, Piece, PieceType, Rank, Square};
+use position;
 use position::{HashKey, Position};
 use score;
 use score::{PhaseScore, Score};
@@ -430,26 +431,22 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         }
 
         if do_safety {
-            let mut safety_score = king_shield_penalty(them, pos, ed) + king_attack_weight;
-            //println!("enemy_shield_penalty[{}] = {}", us.glyph(), shield_penalty);
-            //println!("king_attack_weight[{}] = {}", us.glyph(), king_attack_weight);
-            //println!("num_king_attackers[{}] = {}", us.glyph(), num_king_attackers);
-            //if pos.castle_rights() != position::CASTLE_NONE {
-            //    shield_penalty /= 8;
-            //}
-            //side_score[us.index()].mg += shield_value;
-            //if shield_value < 36 {
-            //    king_attack_weight += 8;
-            //    if shield_value < 18 {
-            //        king_attack_weight += 8;
-            //    }
-            //}
+            let mut shield_value = king_shield_score(us, pos);
+            if pos.castle_rights() != position::CASTLE_NONE {
+                shield_value /= 8;
+            }
+            side_score[us.index()].mg += shield_value;
+            if shield_value < 36 {
+                king_attack_weight += 8;
+                if shield_value < 18 {
+                    king_attack_weight += 8;
+                }
+            }
 
-            //const KING_ATTACK_SCALE: [i32; 16] = [
-            //    0, 0, 640, 800, 1120, 1200, 1280, 1280,
-            //    1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
-            //side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1024;
-            side_score[us.index()].mg += safety_score;
+            const KING_ATTACK_SCALE: [i32; 16] = [
+                0, 0, 640, 800, 1120, 1200, 1280, 1280,
+                1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
+            side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1024;
         }
     }
 
@@ -483,54 +480,26 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     side_score[Color::White.index()] - side_score[Color::Black.index()]
 }
 
-fn king_shield_penalty(c: Color, pos: &Position, ed: &EvalData) -> i32 {
-    // If the king is on the A or H file, evaluate the shield for
-    // the B or G file, respectively. This lets us always evaluate
-    // a shield with width 3.
-    let mut ksq = pos.king_sq(c);
-    if ksq.file() == File::A {
-        ksq = board::shift_sq(ksq, board::EAST);
-    } else if ksq.file() == File::H {
-        ksq = board::shift_sq(ksq, board::WEST);
-    }
-    let mut score = king_shield_at(ksq, c, pos, ed);
+fn king_shield_score(c: Color, pos: &Position) -> Score {
+    let mut score = king_shield_at(pos.king_sq(c), c, pos);
     if pos.can_castle_short(c) {
         let target = pos.possible_castles(c, 0).kdest;
-        score = max!(score, king_shield_at(target, c, pos, ed));
+        score = max!(score, king_shield_at(target, c, pos));
     }
     if pos.can_castle_long(c) {
         let target = pos.possible_castles(c, 1).kdest;
-        score = max!(score, king_shield_at(target, c, pos, ed));
+        score = max!(score, king_shield_at(target, c, pos));
     }
     score
 }
 
-fn king_shield_at(ksq: Square, us: Color, pos: &Position, ed: &EvalData) -> i32 {
-    if ksq.relative_to(us).rank().index() >= Rank::_4.index() { return 0 }
-    let them = us.flip();
-    let big_shield = bitboard::king_attacks(ksq) | bitboard::king_attacks(ksq.pawn_push(us));
-    let far_shield = big_shield ^ bitboard::king_attacks(ksq);
-    let near_shield = bitboard::shift(far_shield, if us == Color::White { board::SOUTH } else { board::NORTH });
-    let pawns = pos.pieces_of_color_and_type(us, PieceType::Pawn);
-    let shield_penalty = 15 -
-        ((big_shield & pawns).count_ones() as i32 +
-         (far_shield & pawns).count_ones() as i32 * 2 +
-         (near_shield & pawns).count_ones() as i32 * 4);
-    //println!("raw_shield_penalty[{}] = {}", us.glyph(), shield_penalty);
-
-    let mut file_penalty = 0;
-    let mut f = 1 << (ksq.file().index() + 1);
-    for _ in 0..3 {
-        if f & ed.half_open_files[us.index()] != 0 {
-            file_penalty += 4;
-            if f & ed.half_open_files[them.index()] != 0 {
-                file_penalty += 4;
-            }
-        }
-        f = f >> 1;
-    }
-    //println!("raw_file_penalty[{}] = {}", us.glyph(), file_penalty);
-    4 * (shield_penalty + file_penalty)
+fn king_shield_at(ksq: Square, c: Color, pos: &Position) -> Score {
+    if ksq.relative_to(c).rank().index() >= Rank::_4.index() { return 0 }
+    let big_shield = bitboard::king_shield(c, ksq);
+    let near_shield = bitboard::king_near_shield(c, ksq);
+    let pawns = pos.pieces_of_color_and_type(c, PieceType::Pawn);
+    4 * ((big_shield & pawns).count_ones() +
+         (near_shield & pawns).count_ones() * 2) as Score
 }
 
 #[cfg(test)]

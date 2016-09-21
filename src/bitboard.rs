@@ -10,6 +10,7 @@ pub fn initialize() {
         init_magic();
         init_pseudo_attacks();
         init_post_attack_bitboards();
+        init_king_safety();
         println!("initialized in {} ms", in_millis(&t1.elapsed()));
     })
 }
@@ -229,6 +230,49 @@ fn init_mundane_attacks() {
         init_mundane(&mut king_attacks_bb,
                      &[NORTHWEST, NORTH, NORTHEAST, WEST, EAST, SOUTHWEST, SOUTH, SOUTHEAST]);
     }
+}
+
+static mut king_near_shield_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
+static mut king_shield_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
+static mut king_halo_bb: [Bitboard; 64] = [0; 64];
+
+fn init_king_safety() {
+    unsafe {
+        for sq in each_square() {
+            for c in each_color() {
+                let shield = king_attacks(sq) | king_attacks(sq.pawn_push(c));
+                let far_shield = shield ^ king_attacks(sq) ^ bb!(sq);
+                let near_shield = shift(far_shield, pawn_push(c.flip()));
+                king_shield_bb[c.index()][sq.index()] = shield;
+                king_near_shield_bb[c.index()][sq.index()] = near_shield;
+                king_halo_bb[sq.index()] = king_attacks(sq);
+                if sq.rank() != Rank::_1 {
+                    king_halo_bb[sq.index()] |= king_attacks(shift_sq(sq, SOUTH));
+                }
+                if sq.rank() != Rank::_8 {
+                    king_halo_bb[sq.index()] |= king_attacks(shift_sq(sq, NORTH));
+                }
+                if sq.file() != File::A {
+                    king_halo_bb[sq.index()] |= king_attacks(shift_sq(sq, WEST));
+                }
+                if sq.file() != File::H {
+                    king_halo_bb[sq.index()] |= king_attacks(shift_sq(sq, EAST));
+                }
+            }
+        }
+    }
+}
+
+pub fn king_shield(us: Color, sq: Square) -> Bitboard {
+    unsafe { king_shield_bb[us.index()][sq.index()] }
+}
+
+pub fn king_near_shield(us: Color, sq: Square) -> Bitboard {
+    unsafe { king_near_shield_bb[us.index()][sq.index()] }
+}
+
+pub fn king_halo(sq: Square) -> Bitboard {
+    unsafe { king_halo_bb[sq.index()] }
 }
 
 static mut bishop_masks: [Bitboard; 64] = [0; 64];
