@@ -4,7 +4,6 @@ use bitboard;
 use bitboard::{Bitboard};
 use board;
 use board::{Color, File, Piece, PieceType, Rank, Square};
-use position;
 use position::{HashKey, Position};
 use score;
 use score::{PhaseScore, Score};
@@ -433,9 +432,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         if do_safety {
             let shield_value = king_shield_score(us, pos, ed);
             side_score[us.index()].mg += shield_value;
-            if shield_value < 36 {
+            if shield_value < 16 {
                 king_attack_weight += 8;
-                if shield_value < 18 {
+                if shield_value < 0 {
                     king_attack_weight += 8;
                 }
             }
@@ -487,17 +486,17 @@ fn king_shield_score(c: Color, pos: &Position, ed: &EvalData) -> Score {
         let target = pos.possible_castles(c, 1).kdest;
         score = max!(score, king_shield_at(target, c, pos, ed));
     }
-    if pos.castle_rights() != position::CASTLE_NONE {
-        score /= 2;
-    }
     score
 }
 
 fn king_shield_at(ksq: Square, us: Color, pos: &Position, ed: &EvalData) -> Score {
-    if ksq.relative_to(us).rank().index() >= Rank::_4.index() { return 0 }
+    if ksq.relative_to(us).rank().index() > Rank::_4.index() { return 0 }
+    let them = us.flip(); 
     let big_shield = bitboard::king_shield(us, ksq);
     let near_shield = bitboard::king_near_shield(us, ksq);
-    let pawns = pos.pieces_of_color_and_type(us, PieceType::Pawn);
+    let storm_shield = bitboard::shift(big_shield, board::pawn_push(us));
+    let our_pawns = pos.pieces_of_color_and_type(us, PieceType::Pawn);
+    let their_pawns = pos.pieces_of_color_and_type(them, PieceType::Pawn);
 
     let mut file_penalty = 0;
     let low = if ksq.file() == File::A { 0 } else { ksq.file().index() - 1 };
@@ -506,14 +505,17 @@ fn king_shield_at(ksq: Square, us: Color, pos: &Position, ed: &EvalData) -> Scor
         let f = 1 << idx;
         if f & ed.half_open_files[us.index()] != 0 {
             file_penalty += 8;
-            if f & ed.half_open_files[us.flip().index()] != 0 {
+            if f & ed.half_open_files[them.index()] != 0 {
                 file_penalty += 8;
             }
         }
     }
 
-    4 * ((big_shield & pawns).count_ones() +
-         (near_shield & pawns).count_ones() * 2) as Score - file_penalty as Score
+    6 * ((big_shield & our_pawns).count_ones() +
+         (near_shield & our_pawns).count_ones() * 3) as Score -
+        4 * ((storm_shield & their_pawns).count_ones() +
+             (big_shield & their_pawns).count_ones() * 2) as Score -
+        file_penalty as Score
 }
 
 #[cfg(test)]
