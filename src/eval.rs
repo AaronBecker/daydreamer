@@ -344,9 +344,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
         // King safety counters. We only calculate king safety if there's
         // substantial material left on the board.
-        let do_safety = pos.non_pawn_material(them) >= score::QUEEN.mg;
+        let do_safety = pos.non_pawn_material(us) >= score::QUEEN.mg;
         let king_halo = if do_safety {
-            bitboard::king_attacks(pos.king_sq(them))
+            bitboard::king_halo(pos.king_sq(them))
         } else {
             0
         };
@@ -430,11 +430,11 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         }
 
         if do_safety {
-            let shield_value = king_shield_score(us, pos, ed);
+            let shield_value = -king_shield_score(them, pos, ed);
             side_score[us.index()].mg += shield_value;
-            if shield_value < 16 {
+            if shield_value < 0 {
                 king_attack_weight += 8;
-                if shield_value < 0 {
+                if shield_value < -16 {
                     king_attack_weight += 8;
                 }
             }
