@@ -431,10 +431,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         }
 
         if do_safety {
-            let mut shield_value = king_shield_score(us, pos);
-            if pos.castle_rights() != position::CASTLE_NONE {
-                shield_value /= 8;
-            }
+            let shield_value = king_shield_score(us, pos, ed);
             side_score[us.index()].mg += shield_value;
             if shield_value < 36 {
                 king_attack_weight += 8;
@@ -480,26 +477,43 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     side_score[Color::White.index()] - side_score[Color::Black.index()]
 }
 
-fn king_shield_score(c: Color, pos: &Position) -> Score {
-    let mut score = king_shield_at(pos.king_sq(c), c, pos);
+fn king_shield_score(c: Color, pos: &Position, ed: &EvalData) -> Score {
+    let mut score = king_shield_at(pos.king_sq(c), c, pos, ed);
     if pos.can_castle_short(c) {
         let target = pos.possible_castles(c, 0).kdest;
-        score = max!(score, king_shield_at(target, c, pos));
+        score = max!(score, king_shield_at(target, c, pos, ed));
     }
     if pos.can_castle_long(c) {
         let target = pos.possible_castles(c, 1).kdest;
-        score = max!(score, king_shield_at(target, c, pos));
+        score = max!(score, king_shield_at(target, c, pos, ed));
+    }
+    if pos.castle_rights() != position::CASTLE_NONE {
+        score /= 2;
     }
     score
 }
 
-fn king_shield_at(ksq: Square, c: Color, pos: &Position) -> Score {
-    if ksq.relative_to(c).rank().index() >= Rank::_4.index() { return 0 }
-    let big_shield = bitboard::king_shield(c, ksq);
-    let near_shield = bitboard::king_near_shield(c, ksq);
-    let pawns = pos.pieces_of_color_and_type(c, PieceType::Pawn);
+fn king_shield_at(ksq: Square, us: Color, pos: &Position, ed: &EvalData) -> Score {
+    if ksq.relative_to(us).rank().index() >= Rank::_4.index() { return 0 }
+    let big_shield = bitboard::king_shield(us, ksq);
+    let near_shield = bitboard::king_near_shield(us, ksq);
+    let pawns = pos.pieces_of_color_and_type(us, PieceType::Pawn);
+
+    let mut file_penalty = 0;
+    let low = if ksq.file() == File::A { 0 } else { ksq.file().index() - 1 };
+    let high = if ksq.file() == File::H { 8 } else { ksq.file().index() + 2 };
+    for idx in low..high {
+        let f = 1 << idx;
+        if f & ed.half_open_files[us.index()] != 0 {
+            file_penalty += 8;
+            if f & ed.half_open_files[us.flip().index()] != 0 {
+                file_penalty += 8;
+            }
+        }
+    }
+
     4 * ((big_shield & pawns).count_ones() +
-         (near_shield & pawns).count_ones() * 2) as Score
+         (near_shield & pawns).count_ones() * 2) as Score - file_penalty as Score
 }
 
 #[cfg(test)]
