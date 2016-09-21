@@ -346,7 +346,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         // substantial material left on the board.
         let do_safety = pos.non_pawn_material(us) >= score::QUEEN.mg;
         let king_halo = if do_safety {
-            bitboard::king_halo(pos.king_sq(them))
+            // TODO: experiment with different attack scaling for near
+            // and far attacks.
+            bitboard::king_attacks(pos.king_sq(them))
         } else {
             0
         };
