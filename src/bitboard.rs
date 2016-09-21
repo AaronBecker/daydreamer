@@ -240,7 +240,11 @@ fn init_king_safety() {
     unsafe {
         for sq in each_square() {
             for c in each_color() {
-                let shield = king_attacks(sq) | king_attacks(sq.pawn_push(c));
+                let mut shield = king_attacks(sq);
+                if (sq.rank() != Rank::_1 || c == Color::White) &&
+                    (sq.rank() != Rank::_8 || c == Color::Black) {
+                    shield |= king_attacks(sq.pawn_push(c));
+                }
                 let far_shield = shield ^ king_attacks(sq) ^ bb!(sq);
                 let near_shield = shift(far_shield, pawn_push(c.flip()));
                 king_shield_bb[c.index()][sq.index()] = shield;
