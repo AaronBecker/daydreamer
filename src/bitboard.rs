@@ -131,6 +131,7 @@ static mut distance: [[u8; 64]; 64] = [[0; 64]; 64];
 static mut neighbor_files_bb: [Bitboard; 8] = [0; 8];
 static mut in_front_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
 static mut passer_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
+static mut outpost_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
 
 fn init_simple_bitboards() {
     for i in 0..8 {
@@ -153,17 +154,25 @@ fn init_simple_bitboards() {
     for sq1 in each_square() {
         let i = sq1.index();
         unsafe {
+            let this_file = bb!(sq1.file());
+            let neighbor_files = neighbor_files_bb[sq1.file().index()];
             for r in 0..sq1.rank().index() {
                 passer_bb[1][i] |= rank_bb[r];
             }
             for r in (sq1.rank().index() + 1)..8 {
                 passer_bb[0][i] |= rank_bb[r];
             }
-            let near_files = neighbor_files_bb[sq1.file().index()] | file_bb[sq1.file().index()];
+            outpost_bb[0][i] = passer_bb[0][i];
+            outpost_bb[1][i] = passer_bb[1][i];
+            let near_files = this_file | neighbor_files;
+
             passer_bb[0][i] &= near_files; 
-            in_front_bb[0][i] = passer_bb[0][i] & file_bb[sq1.file().index()];
+            in_front_bb[0][i] = passer_bb[0][i] & this_file;
+            outpost_bb[0][i] &= neighbor_files;
+
             passer_bb[1][i] &= near_files;
-            in_front_bb[1][i] = passer_bb[1][i] & file_bb[sq1.file().index()];
+            in_front_bb[1][i] = passer_bb[1][i] & this_file;
+            outpost_bb[1][i] &= neighbor_files;
         }
         for sq2 in each_square() {
             let j = sq2.index();
@@ -180,6 +189,11 @@ fn init_simple_bitboards() {
 pub fn passer_mask(side: Color, sq: Square) -> Bitboard {
     debug_assert!(sq != Square::NoSquare);
     unsafe { passer_bb[side.index()][sq.index()] }
+}
+
+pub fn outpost_mask(side: Color, sq: Square) -> Bitboard {
+    debug_assert!(sq != Square::NoSquare);
+    unsafe { outpost_bb[side.index()][sq.index()] }
 }
 
 pub fn in_front_mask(side: Color, sq: Square) -> Bitboard {
@@ -667,9 +681,28 @@ mod tests {
                                                       E3, F3, G3,
                                                       E2, F2, G2,
                                                       E1, F1, G1));
+
         assert_eq!(in_front_mask(Color::White, A5), bb!(A6, A7, A8));
         assert_eq!(in_front_mask(Color::Black, A5), bb!(A4, A3, A2, A1));
         assert_eq!(in_front_mask(Color::White, F7), bb!(F8));
         assert_eq!(in_front_mask(Color::Black, F7), bb!(F6, F5, F4, F3, F2, F1));
+
+        assert_eq!(outpost_mask(Color::White, A5), bb!(B6, B7, B8));
+        assert_eq!(outpost_mask(Color::Black, A5), bb!(B4, B3, B2, B1));
+        assert_eq!(outpost_mask(Color::White, F6), bb!(E7, G7, E8, G8));
+        assert_eq!(outpost_mask(Color::Black, F6), bb!(E5, G5,
+                                                       E4, G4,
+                                                       E3, G3,
+                                                       E2, G2,
+                                                       E1, G1));
+ 
+    });
+
+    chess_test!(test_outpost_masks, {
+        assert_eq!(in_front_mask(Color::White, A5), bb!(A6, A7, A8));
+        assert_eq!(in_front_mask(Color::Black, A5), bb!(A4, A3, A2, A1));
+        assert_eq!(in_front_mask(Color::White, F7), bb!(F8));
+        assert_eq!(in_front_mask(Color::Black, F7), bb!(F6, F5, F4, F3, F2, F1));
+
     });
 }
