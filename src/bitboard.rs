@@ -166,17 +166,15 @@ fn init_simple_bitboards() {
             for r in (sq1.rank().index() + 1)..8 {
                 passer_bb[0][i] |= rank_bb[r];
             }
-            outpost_bb[0][i] = passer_bb[0][i];
-            outpost_bb[1][i] = passer_bb[1][i];
             let near_files = this_file | neighbor_files;
 
             passer_bb[0][i] &= near_files; 
             in_front_bb[0][i] = passer_bb[0][i] & this_file;
-            outpost_bb[0][i] &= neighbor_files;
+            outpost_bb[0][i] = passer_bb[0][i] & neighbor_files;
 
             passer_bb[1][i] &= near_files;
             in_front_bb[1][i] = passer_bb[1][i] & this_file;
-            outpost_bb[1][i] &= neighbor_files;
+            outpost_bb[1][i] = passer_bb[1][i] & neighbor_files;
         }
         for sq2 in each_square() {
             let j = sq2.index();
