@@ -465,25 +465,25 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
                 // Outpost scoring.
                 if pt == PieceType::Knight || pt == PieceType::Bishop {
-                    let mut outpost_scale = -2;
+                    let mut outpost_scale = 0;
                     if bb!(sq) & ed.outposts[us.index()] != 0 {
                         outpost_scale += 2;
                         // Defended by a pawn.
                         if bb!(sq) & ed.attacks_by[us.index()][PieceType::Pawn.index()] != 0 {
                             outpost_scale += 1;
                         }
-                        // Shielded by a pawn.
-                        if bitboard::in_front_mask(us, sq) & pos.pieces_of_type(PieceType::Pawn) != 0 {
-                            outpost_scale += 1;
-                        }
-                        // Can't be captured by an opposing minor.
-                        if pos.pieces_of_color_and_type(them, PieceType::Knight) |
-                            (pos.pieces_of_color_and_type(them, PieceType::Bishop) &
-                             bitboard::squares_of_color(sq)) == 0 {
-                            outpost_scale += 1;
-                        }
+                        //// Shielded by a pawn.
+                        //if bitboard::in_front_mask(us, sq) & pos.pieces_of_type(PieceType::Pawn) != 0 {
+                        //    outpost_scale += 1;
+                        //}
+                        //// Can't be captured by an opposing minor.
+                        //if pos.pieces_of_color_and_type(them, PieceType::Knight) |
+                        //    (pos.pieces_of_color_and_type(them, PieceType::Bishop) &
+                        //     bitboard::squares_of_color(sq)) == 0 {
+                        //    outpost_scale += 1;
+                        //}
                     }
-                    side_score[us.index()] += sc!(outpost_scale * 5, outpost_scale * 5);
+                    side_score[us.index()] += sc!(outpost_scale * 4, outpost_scale * 4);
                 }
             }
         }
