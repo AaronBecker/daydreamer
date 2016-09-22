@@ -344,9 +344,10 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
         // King safety counters. We only calculate king safety if there's
         // substantial material left on the board.
+        let their_king = pos.king_sq(them);
         let do_safety = pos.non_pawn_material(us) >= score::QUEEN.mg;
         let king_halo = if do_safety {
-            bitboard::king_shield(them, pos.king_sq(them))
+            bitboard::king_attacks(their_king)
         } else {
             0
         };
@@ -395,13 +396,34 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             num_king_attackers += 1;
                             king_attack_weight += 32;
                         }
+
+                        // Open file scoring.
                         let f = 1 << sq.file().index();
+                        let mut openness = 0;
                         if f & ed.half_open_files[us.index()] != 0 {
-                            side_score[us.index()] += sc!(10, 5);
+                            openness += 10;
                             if f & ed.half_open_files[them.index()] != 0 {
-                                side_score[us.index()] += sc!(10, 5);
+                                openness += 10;
                             }
                         }
+                        if openness > 0 {
+                            let minors = pos.pieces_of_color_and_type(them, PieceType::Knight) |
+                                         pos.pieces_of_color_and_type(them, PieceType::Bishop);
+                            if bb!(sq.file()) & minors == 0 {
+                                openness = 5;
+                            }
+                        }
+
+                        if openness > 5 && (sq.file().index() as i8 -
+                                            their_king.file().index() as i8).abs() <= 1 {
+                            let mut open_king_bonus = openness;
+                            if sq.file() != their_king.file() {
+                                open_king_bonus >>= 1;
+                            }
+                            side_score[us.index()] += sc!(open_king_bonus, 0);
+                        }
+                        side_score[us.index()] += sc!(openness - 10, openness - 10);
+
                         // Bonus for being on the 7th rank if there are pawns on the 7th and the
                         // opposing king is on the 7th or 8th.
                         if sq.relative_to(us).rank() == Rank::_7 &&
