@@ -164,12 +164,13 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             }
         }
 
-        for r in Rank::_4.relative_to(us).index()..Rank::_7.relative_to(us).index() {
-            for f in File::C.index()..File::G.index() {
-                let sq = Square::new(File::from_u8(f as u8), Rank::from_u8(r as u8));
-                if bitboard::outpost_mask(us, sq) & their_pawns == 0 {
-                    pd.outposts[us.index()] |= bb!(sq);
-                }
+        for sq in board::each_square() {
+            let r = sq.relative_to(us).rank().index();
+            let f = sq.file().index();
+            if r >= Rank::_4.index() && r <= Rank::_6.index() &&
+                f >= File::C.index() && f <= File::F.index() &&
+                bitboard::outpost_mask(us, sq) & their_pawns == 0 {
+                pd.outposts[us.index()] |= bb!(sq);
             }
         }
 
