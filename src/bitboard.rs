@@ -133,6 +133,8 @@ static mut in_front_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
 static mut passer_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
 static mut outpost_bb: [[Bitboard; 64]; 2] = [[0; 64]; 2];
 
+static mut squares_of_color_bb: [Bitboard; 2] = [0; 2];
+
 fn init_simple_bitboards() {
     for i in 0..8 {
         unsafe {
@@ -154,6 +156,8 @@ fn init_simple_bitboards() {
     for sq1 in each_square() {
         let i = sq1.index();
         unsafe {
+            squares_of_color_bb[(sq1.file().index() +
+                                 sq1.rank().index() + 1) & 1] |= bb!(sq1);
             let this_file = bb!(sq1.file());
             let neighbor_files = neighbor_files_bb[sq1.file().index()];
             for r in 0..sq1.rank().index() {
@@ -184,6 +188,10 @@ fn init_simple_bitboards() {
         }
     }
 
+}
+
+pub fn squares_of_color(sq: Square) -> Bitboard {
+    unsafe { squares_of_color_bb[(sq.file().index() + sq.rank().index() + 1) & 1] }
 }
 
 pub fn passer_mask(side: Color, sq: Square) -> Bitboard {
@@ -695,14 +703,19 @@ mod tests {
                                                        E3, G3,
                                                        E2, G2,
                                                        E1, G1));
- 
     });
-
-    chess_test!(test_outpost_masks, {
-        assert_eq!(in_front_mask(Color::White, A5), bb!(A6, A7, A8));
-        assert_eq!(in_front_mask(Color::Black, A5), bb!(A4, A3, A2, A1));
-        assert_eq!(in_front_mask(Color::White, F7), bb!(F8));
-        assert_eq!(in_front_mask(Color::Black, F7), bb!(F6, F5, F4, F3, F2, F1));
-
+    
+    chess_test!(test_color_masks, {
+        let wsq = squares_of_color(E4);
+        let bsq = squares_of_color(A1);
+        assert_eq!(bsq, bb!(A1, A3, A5, A7,
+                            B2, B4, B6, B8,
+                            C1, C3, C5, C7,
+                            D2, D4, D6, D8,
+                            E1, E3, E5, E7,
+                            F2, F4, F6, F8,
+                            G1, G3, G5, G7,
+                            H2, H4, H6, H8));
+        assert_eq!(wsq, u64::max_value() ^ bsq);
     });
 }
