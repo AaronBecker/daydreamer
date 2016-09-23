@@ -506,6 +506,14 @@ fn deepening_search(data: &mut SearchData) {
         loop {
             let sd = data.current_depth as SearchDepth;
             last_score = search(data, 0, alpha, beta, sd);
+            // TODO: try nodes searched under this move as a secondary key.
+            data.root_moves.sort_by(|a, b| {
+                if a.depth == b.depth {
+                    b.score.cmp(&a.score)
+                } else {
+                    b.depth.cmp(&a.depth)
+                }
+            });
             if data.should_stop() { return }
             print_pv(data, alpha, beta);
             debug_assert!(score_is_valid(last_score));
