@@ -275,10 +275,19 @@ fn init_psqt() -> [[PhaseScore; 64]; 15] {
     for pt in board::each_piece_type() {
         let bp = Piece::new(Color::Black, pt);
         let wp = Piece::new(Color::White, pt);
-        // FIXME: re-weight tables so that they're value-neutral automatically.
+        let (mut mg_sum, mut eg_sum) = (0, 0);
         for sq in board::each_square() {
             psqt[wp.index()][sq.index()] = PIECE_SCORE[wp.index()] + psqt_base[pt.index()][sq.flip().index()];
-            psqt[bp.index()][sq.flip().index()] = -psqt[wp.index()][sq.index()]
+            psqt[bp.index()][sq.flip().index()] = -psqt[wp.index()][sq.index()];
+            mg_sum += psqt_base[pt.index()][sq.flip().index()].mg;
+            eg_sum += psqt_base[pt.index()][sq.flip().index()].eg;
+        }
+        
+        // Adjust scores so that the mean value is nearly zero.
+        let (mg_adj, eg_adj) = (mg_sum / 64, eg_sum / 64);
+        for sq in board::each_square() {
+            psqt[wp.index()][sq.index()] -= sc!(mg_adj, eg_adj);
+            psqt[bp.index()][sq.flip().index()] += sc!(mg_adj, eg_adj);
         }
     }
     psqt
