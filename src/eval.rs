@@ -426,19 +426,18 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             let minors = pos.pieces_of_color_and_type(them, PieceType::Knight) |
                                          pos.pieces_of_color_and_type(them, PieceType::Bishop);
                             if bb!(sq.file()) & minors == 0 {
-                                openness = 5;
+                                openness >>= 1;
+                            } else if (sq.file().index() as i8 -
+                                       their_king.file().index() as i8).abs() <= 1 {
+                                let open_king_bonus = if sq.file() == their_king.file() {
+                                    openness
+                                } else {
+                                    openness / 2
+                                };
+                                side_score[us.index()] += sc!(open_king_bonus, 0);
                             }
                         }
-
-                        if openness > 5 && (sq.file().index() as i8 -
-                                            their_king.file().index() as i8).abs() <= 1 {
-                            let mut open_king_bonus = openness;
-                            if sq.file() != their_king.file() {
-                                open_king_bonus >>= 1;
-                            }
-                            side_score[us.index()] += sc!(open_king_bonus, 0);
-                        }
-                        side_score[us.index()] += sc!(openness - 10, openness - 10);
+                        side_score[us.index()] += sc!(openness, openness / 2);
 
                         // Bonus for being on the 7th rank if there are pawns on the 7th and the
                         // opposing king is on the 7th or 8th.
@@ -465,6 +464,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                 };
                 side_score[us.index()] += MOBILITY_BONUS[pt.index()][mob as usize];
 
+                /*
                 // Outpost scoring.
                 if pt == PieceType::Knight || pt == PieceType::Bishop {
                     let mut outpost_scale = 0;
@@ -487,6 +487,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                     }
                     side_score[us.index()] += sc!(outpost_scale * 4, outpost_scale * 4);
                 }
+                */
             }
         }
 
