@@ -41,6 +41,16 @@ const PASSER_BONUS: [PhaseScore; 8] = [
     sc!(0, 0),
 ];
 
+// Penalty for isolated pawns, indexed by whether or not there's an
+// enemy pawn in front of us.
+// TODO: try to condense this down so we don't have big tables.
+const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
+    // Blocked
+    [sc!(-6, -8), sc!(-6, -8), sc!(-6, -8), sc!(-8, -8), sc!(-8, -8), sc!(-6, -8), sc!(-6, -8), sc!(-6, -8)],
+    // Open
+    [sc!(-14, -16), sc!(-14, -17), sc!(-15, -18), sc!(-16, -20), sc!(-16, -20), sc!(-15, -18), sc!(-14, -17), sc!(-14, -16)],
+];
+
 const CANDIDATE_BONUS: [PhaseScore; 8] = [
     sc!(0, 0), sc!(5, 5), sc!(5, 10), sc!(10, 15), sc!(20, 30), sc!(30, 45), sc!(0, 0), sc!(0, 0)
 ];
@@ -189,10 +199,7 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             let open = bitboard::in_front_mask(us, sq) & their_pawns == 0;
             let isolated = neighbor_files & our_pawns == 0;
             if isolated {
-                pd.score[us.index()] += sc!(-7, -9);
-                if open {
-                    pd.score[us.index()] += sc!(-7, -9);
-                }
+                pd.score[us.index()] += ISOLATION_BONUS[open as usize][sq.file().index()];
             }
 
             // Only pawns that are behind a friendly pawn count as doubled.
