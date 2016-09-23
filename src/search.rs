@@ -506,14 +506,6 @@ fn deepening_search(data: &mut SearchData) {
         loop {
             let sd = data.current_depth as SearchDepth;
             last_score = search(data, 0, alpha, beta, sd);
-            // TODO: try nodes searched under this move as a secondary key.
-            data.root_moves.sort_by(|a, b| {
-                if a.depth == b.depth {
-                    b.score.cmp(&a.score)
-                } else {
-                    b.depth.cmp(&a.depth)
-                }
-            });
             if data.should_stop() { return }
             print_pv(data, alpha, beta);
             debug_assert!(score_is_valid(last_score));
@@ -599,7 +591,7 @@ fn search(data: &mut SearchData, ply: usize,
 
     let (mut tt_move, mut tt_score, mut tt_score_type) = (NO_MOVE, score::MIN_SCORE, score::AT_MOST);
     if root_node {
-        tt_move = data.root_moves[0].m;
+        tt_move = data.root_moves.iter().max_by_key(|m| m.score).unwrap().m;
     } else {
         if let Some(entry) = data.tt.get(data.pos.hash()) {
             tt_move = entry.m;
@@ -692,17 +684,17 @@ fn search(data: &mut SearchData, ply: usize,
     let ad = AttackData::new(&data.pos);
     let undo = UndoState::undo_state(&data.pos);
 
-    let mut selector = if root_node {
-        MoveSelector::root(&data)
-    } else {
+    //let mut selector = if root_node {
+    //    MoveSelector::root(&data)
+    //} else {
         // FIXME: countermoves is dire
         let cm = if data.pos.last_move() == NO_MOVE || data.pos.last_move() == NULL_MOVE {
             NO_MOVE
         } else {
             data.countermoves[data.pos.last_move().piece().index()][data.pos.last_move().to().index()]
         };
-        MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, cm)
-    };
+        let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, cm);
+    //};
 
     let mut searched_moves = 0;
     let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 128], 0);
