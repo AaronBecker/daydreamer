@@ -560,6 +560,31 @@ impl MoveSelector {
             SelectionPhase::TT => {
                 return;
             },
+            SelectionPhase::Root => { 
+                for m in self.moves.iter_mut() {
+                    if m.m.is_capture() || m.m.is_promote() {
+                        let see = pos.static_exchange_sign(m.m);
+                        if see < 0 {
+                            // SEE values less than zero are actually calculated
+                            // out, so the value is meaningful.
+                            m.s = search::MIN_HISTORY + see;
+                        } else {
+                            m.s = score::mg_material(m.m.capture().piece_type()) -
+                                m.m.piece().piece_type().index() as Score + search::MAX_HISTORY;
+                        }
+                    } else {
+                        if m.m == self.killers[0] {
+                            m.s = search::MAX_HISTORY + 3
+                        } else if m.m == self.killers[1] {
+                            m.s = search::MAX_HISTORY + 2
+                        } else if m.m == self.countermove {
+                            m.s = search::MAX_HISTORY + 1
+                        } else {
+                            m.s = history[search::SearchData::history_index(m.m)];
+                        }
+                    }
+                }
+            },
             SelectionPhase::Legal => { return },
             SelectionPhase::Loud | SelectionPhase::Quiescence => {
                 // MVV/LVA
@@ -589,8 +614,8 @@ impl MoveSelector {
                 // Scoring for bad captures already happended in the loud phase.
                 // We just need to sort.
             },
-            SelectionPhase::Root | SelectionPhase::Evasions => {
-                // We don't get a bad capture phase, so do static exchange
+            SelectionPhase::Evasions => {
+                // Evasions don't get a bad capture phase, so do static exchange
                 // evaluation now.
                 for m in self.moves.iter_mut() {
                     if m.m.is_capture() || m.m.is_promote() {
