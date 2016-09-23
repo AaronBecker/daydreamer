@@ -424,6 +424,7 @@ const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
                                                   SelectionPhase::Legal,
                                                   SelectionPhase::Done];
 const ROOT_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
+                                                 SelectionPhase::TT,
                                                  SelectionPhase::Root,
                                                  SelectionPhase::Done];
 const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
@@ -498,7 +499,7 @@ impl MoveSelector {
         }
     }
 
-    pub fn root(sd: &search::SearchData) -> MoveSelector {
+    pub fn root(sd: &search::SearchData, tt_move: Move) -> MoveSelector {
         let mut v = Vec::new();
         for rm in sd.root_moves.iter().rev() {
             v.push(ScoredMove{ m: rm.m, s: rm.score });
@@ -508,8 +509,8 @@ impl MoveSelector {
             bad_captures: Vec::new(),
             phases: ROOT_PHASES,
             phase_index: 0,
-            tt_move: NO_MOVE,
-            killers: [NO_MOVE; 2],
+            tt_move: tt_move,
+            killers: sd.search_stack[0].killers,
             countermove: NO_MOVE,
             last_score: 0,
             last_move: NO_MOVE,
@@ -559,29 +560,6 @@ impl MoveSelector {
             SelectionPhase::TT => {
                 return;
             },
-            SelectionPhase::Root => { 
-                let mut nth_move = 0;
-                for m in self.moves.iter_mut().rev() {
-                    nth_move += 1;
-                    if m.s != score::MIN_SCORE {
-                        m.s = score::MAX_SCORE - nth_move;
-                        continue;
-                    }
-                    if m.m.is_capture() || m.m.is_promote() {
-                        let see = pos.static_exchange_sign(m.m);
-                        if see < 0 {
-                            // SEE values less than zero are actually calculated
-                            // out, so the value is meaningful.
-                            m.s = search::MIN_HISTORY + see;
-                        } else {
-                            m.s = score::mg_material(m.m.capture().piece_type()) -
-                                m.m.piece().piece_type().index() as Score + search::MAX_HISTORY;
-                        }
-                    } else {
-                        m.s = history[search::SearchData::history_index(m.m)];
-                    }
-                }
-            },
             SelectionPhase::Legal => { return },
             SelectionPhase::Loud | SelectionPhase::Quiescence => {
                 // MVV/LVA
@@ -611,8 +589,8 @@ impl MoveSelector {
                 // Scoring for bad captures already happended in the loud phase.
                 // We just need to sort.
             },
-            SelectionPhase::Evasions => {
-                // Evasions don't get a bad capture phase, so do static exchange
+            SelectionPhase::Root | SelectionPhase::Evasions => {
+                // We don't get a bad capture phase, so do static exchange
                 // evaluation now.
                 for m in self.moves.iter_mut() {
                     if m.m.is_capture() || m.m.is_promote() {

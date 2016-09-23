@@ -685,17 +685,17 @@ fn search(data: &mut SearchData, ply: usize,
     let ad = AttackData::new(&data.pos);
     let undo = UndoState::undo_state(&data.pos);
 
-    //let mut selector = if root_node {
-    //    MoveSelector::root(&data)
-    //} else {
+    let mut selector = if root_node {
+        MoveSelector::root(&data, tt_move)
+    } else {
         // FIXME: countermoves is dire
         let cm = if data.pos.last_move() == NO_MOVE || data.pos.last_move() == NULL_MOVE {
             NO_MOVE
         } else {
             data.countermoves[data.pos.last_move().piece().index()][data.pos.last_move().to().index()]
         };
-        let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, cm);
-    //};
+        MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, cm)
+    };
 
     let mut searched_moves = 0;
     let (mut searched_quiets, mut searched_quiet_count) = ([NO_MOVE; 128], 0);
