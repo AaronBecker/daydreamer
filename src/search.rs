@@ -407,10 +407,9 @@ pub fn go(data: &mut SearchData) {
                  in_millis(&data.constraints.soft_limit),
                  in_millis(&data.constraints.hard_limit));
     }
-    let bm = data.root_moves.iter().max_by_key(|m| m.score).unwrap();
-    print!("bestmove {}", bm.m);
-    if bm.pv.len() > 0 {
-        print!(" ponder {}", bm.pv[0]);
+    print!("bestmove {}", data.root_moves[0].m);
+    if data.root_moves[0].pv.len() > 0 {
+        print!(" ponder {}", data.root_moves[0].pv[0]);
     }
     println!("");
 }
@@ -507,6 +506,14 @@ fn deepening_search(data: &mut SearchData) {
         loop {
             let sd = data.current_depth as SearchDepth;
             last_score = search(data, 0, alpha, beta, sd);
+            // TODO: try nodes searched under this move as a secondary key.
+            data.root_moves.sort_by(|a, b| {
+                if a.depth == b.depth {
+                    b.score.cmp(&a.score)
+                } else {
+                    b.depth.cmp(&a.depth)
+                }
+            });
             if data.should_stop() { return }
             print_pv(data, alpha, beta);
             debug_assert!(score_is_valid(last_score));
@@ -592,7 +599,7 @@ fn search(data: &mut SearchData, ply: usize,
 
     let (mut tt_move, mut tt_score, mut tt_score_type) = (NO_MOVE, score::MIN_SCORE, score::AT_MOST);
     if root_node {
-        tt_move = data.root_moves.iter().max_by_key(|m| m.score).unwrap().m;
+        tt_move = data.root_moves[0].m;
     } else {
         if let Some(entry) = data.tt.get(data.pos.hash()) {
             tt_move = entry.m;
@@ -686,7 +693,7 @@ fn search(data: &mut SearchData, ply: usize,
     let undo = UndoState::undo_state(&data.pos);
 
     let mut selector = if root_node {
-        MoveSelector::root(&data, tt_move)
+        MoveSelector::root(&data)
     } else {
         // FIXME: countermoves is dire
         let cm = if data.pos.last_move() == NO_MOVE || data.pos.last_move() == NULL_MOVE {
@@ -911,7 +918,13 @@ fn quiesce(data: &mut SearchData, ply: usize,
         if (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
             m.promote() != PieceType::Queen &&
             static_eval + score::mg_material(m.capture().piece_type()) + futility_margin(depth) < alpha {
-            continue
+            let gives_check = !m.is_castle() && !m.is_en_passant() &&
+                ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
+                 (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
+                  bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
+            if !gives_check {
+                continue
+            }
         }
 
         if data.pos.checkers() == 0 && data.pos.static_exchange_sign(m) < 0 { continue }

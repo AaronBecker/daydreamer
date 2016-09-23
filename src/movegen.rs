@@ -424,7 +424,6 @@ const LEGAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
                                                   SelectionPhase::Legal,
                                                   SelectionPhase::Done];
 const ROOT_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
-                                                 SelectionPhase::TT,
                                                  SelectionPhase::Root,
                                                  SelectionPhase::Done];
 const NORMAL_PHASES: &'static [SelectionPhase] = &[SelectionPhase::Start,
@@ -499,7 +498,7 @@ impl MoveSelector {
         }
     }
 
-    pub fn root(sd: &search::SearchData, tt_move: Move) -> MoveSelector {
+    pub fn root(sd: &search::SearchData) -> MoveSelector {
         let mut v = Vec::new();
         for rm in sd.root_moves.iter().rev() {
             v.push(ScoredMove{ m: rm.m, s: rm.score });
@@ -509,8 +508,8 @@ impl MoveSelector {
             bad_captures: Vec::new(),
             phases: ROOT_PHASES,
             phase_index: 0,
-            tt_move: tt_move,
-            killers: sd.search_stack[0].killers,
+            tt_move: NO_MOVE,
+            killers: [NO_MOVE; 2],
             countermove: NO_MOVE,
             last_score: 0,
             last_move: NO_MOVE,
@@ -561,7 +560,13 @@ impl MoveSelector {
                 return;
             },
             SelectionPhase::Root => { 
-                for m in self.moves.iter_mut() {
+                let mut nth_move = 0;
+                for m in self.moves.iter_mut().rev() {
+                    nth_move += 1;
+                    if m.s != score::MIN_SCORE {
+                        m.s = score::MAX_SCORE - nth_move;
+                        continue;
+                    }
                     if m.m.is_capture() || m.m.is_promote() {
                         let see = pos.static_exchange_sign(m.m);
                         if see < 0 {
@@ -573,15 +578,7 @@ impl MoveSelector {
                                 m.m.piece().piece_type().index() as Score + search::MAX_HISTORY;
                         }
                     } else {
-                        if m.m == self.killers[0] {
-                            m.s = search::MAX_HISTORY + 3
-                        } else if m.m == self.killers[1] {
-                            m.s = search::MAX_HISTORY + 2
-                        } else if m.m == self.countermove {
-                            m.s = search::MAX_HISTORY + 1
-                        } else {
-                            m.s = history[search::SearchData::history_index(m.m)];
-                        }
+                        m.s = history[search::SearchData::history_index(m.m)];
                     }
                 }
             },
