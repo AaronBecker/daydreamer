@@ -18,19 +18,24 @@ pub fn score_is_valid(s: Score) -> bool {
     s < MAX_SCORE && s > MIN_SCORE
 }
 
+/// The score for delivering mate in `ply` moves.
 pub fn mate_in(ply: usize) -> Score {
     MATE_SCORE - ply as Score
 }
 
+/// The score for getting mated in `ply` moves.
 pub fn mated_in(ply: usize) -> Score {
     ply as Score - MATE_SCORE
 }
 
+/// Does `s` indicate that either side will be checkmated?
 pub fn is_mate_score(s: Score) -> bool {
     use search::MAX_PLY;
     s < mated_in(MAX_PLY) || s > mate_in(MAX_PLY)
 }
 
+// TODO: consider implementing this as a single 64-bit quantity so that we
+// can do arithmetic on it in one instruction.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct PhaseScore {
     pub mg: Score,
@@ -46,7 +51,7 @@ pub const QUEEN: PhaseScore = PhaseScore{ mg: 1000, eg: 1200 };
 
 // This is incredibly gross, but I don't want the piece score array to be
 // mutable and the compiler won't evaluate PieceScore negation at compile
-// time so this is what we're stuck with.
+// time so this is what we're stuck with at the moment.
 const BPAWN: PhaseScore = PhaseScore{ mg: -85, eg: -115 };
 const BKNIGHT: PhaseScore = PhaseScore{ mg: -350, eg: -400 };
 const BBISHOP: PhaseScore = PhaseScore{ mg: -350, eg: -400 };
@@ -191,6 +196,7 @@ impl ::std::fmt::Display for PhaseScore {
     }
 }
 
+// FIXME: implement Ord so that we can do st <= EXACT, etc.
 pub type ScoreType = u8;
 pub const AT_LEAST: ScoreType = 0x01;
 pub const AT_MOST: ScoreType = 0x02;
@@ -269,6 +275,7 @@ fn init_psqt() -> [[PhaseScore; 64]; 15] {
     for pt in board::each_piece_type() {
         let bp = Piece::new(Color::Black, pt);
         let wp = Piece::new(Color::White, pt);
+        // FIXME: re-weight tables so that they're value-neutral automatically.
         for sq in board::each_square() {
             psqt[wp.index()][sq.index()] = PIECE_SCORE[wp.index()] + psqt_base[pt.index()][sq.flip().index()];
             psqt[bp.index()][sq.flip().index()] = -psqt[wp.index()][sq.index()]

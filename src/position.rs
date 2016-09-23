@@ -11,11 +11,11 @@ use search;
 
 pub const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-// CastleRights represents the available castling rights for both sides (black
-// and white) and both directions (long and short). This doesn't indicate the
-// castling is actually possible at the moment, only that it could become
-// possible eventually. Each color/direction combination corresponds to one bit
-// of a CastleRights.
+/// CastleRights represents the available castling rights for both sides (black
+/// and white) and both directions (long and short). This doesn't indicate the
+/// castling is actually possible at the moment, only that it could become
+/// possible eventually. Each color/direction combination corresponds to one bit
+/// of a CastleRights.
 pub type CastleRights = u8;
 pub const WHITE_OO: CastleRights = 0x01;
 pub const BLACK_OO: CastleRights = 0x01 << 1;
@@ -24,23 +24,23 @@ pub const BLACK_OOO: CastleRights = 0x01 << 3;
 pub const CASTLE_ALL: CastleRights = WHITE_OO | WHITE_OOO | BLACK_OO | BLACK_OOO;
 pub const CASTLE_NONE: CastleRights = 0;
 
-// CastleInfo stores useful information for generating castling moves
-// efficiently. It supports both traditional chess and Chess960, which
-// is why it seems unreasonably complicated.
+/// CastleInfo stores useful information for generating castling moves
+/// efficiently. It supports both traditional chess and Chess960, which
+/// is why it seems unreasonably complicated.
 pub struct CastleInfo {
-    // The set of squares that must be unoccupied.
+    /// The set of squares that must be unoccupied.
     pub path: Bitboard,
-    // The king's initial square.
+    /// The king's initial square.
     pub king: Square,
-    // The rook's initial square.
+    /// The rook's initial square.
     pub rook: Square,
-    // The king's final square.
+    /// The king's final square.
     pub kdest: Square,
-    // The direction from the king's initial square to its final square.
+    /// The direction from the king's initial square to its final square.
     pub d: Delta,
-    // In some Chess960 positions, the rook may be pinned to the king,
-    // making an otherwise legal castle illegal due to discovered check.
-    // This flags such positions for extra checking during move generation.
+    /// In some Chess960 positions, the rook may be pinned to the king,
+    /// making an otherwise legal castle illegal due to discovered check.
+    /// This flags such positions for extra checking during move generation.
     pub may_discover_check: bool,
 }
 
@@ -60,7 +60,7 @@ static mut castle_random: [HashKey; 16] = [0; 16];
 static mut enpassant_random: [HashKey; 8] = [0; 8];
 static mut side_random: HashKey = 0;
 
-// initialize sets up the Zobrist hash tables. Only done once, at startup.
+/// Sets up the Zobrist hash tables. Only done once, at startup.
 pub fn initialize()
 {
     static INIT: ::std::sync::Once = ::std::sync::ONCE_INIT;
@@ -101,8 +101,8 @@ pub fn side_hash() -> HashKey {
     unsafe { side_random }
 }
 
-// State stores core position state information that would otherwise be lost
-// when making a move.
+/// State stores core position state information that would otherwise be lost
+/// when making a move.
 pub struct State {
     checkers: Bitboard,
     last_move: Move,
@@ -137,8 +137,6 @@ impl State {
     }
 
     pub fn clear(&mut self) {
-        // It's not clear that this is guaranteed to work correctly, but looking at the
-        // implementation of std::cell::Cell makes me think it should be no problem.
         unsafe { ::std::intrinsics::write_bytes(self, 0, 1); }
         self.ep_square = Square::NoSquare;
     }
@@ -159,6 +157,8 @@ pub struct Position {
     board: [Piece; 64],
     pieces_of_type: [Bitboard; 8],
     pieces_of_color: [Bitboard; 2],
+    // Hash values for all previous positions. We use this for detecting
+    // draws by repetition.
     hash_history: Vec<HashKey>,
 
     // We store information about possible castles in Position, even though
