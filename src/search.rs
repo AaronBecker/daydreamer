@@ -633,8 +633,6 @@ fn search(data: &mut SearchData, ply: usize,
     let depth_index = depth as usize;
     if NULL_MOVE_ENABLED &&
         !open_window &&
-        depth > 1. &&
-        data.pos.last_move() != NULL_MOVE &&
         lazy_score + NULL_EVAL_MARGIN > beta &&
         !is_mate_score(beta) &&
         data.pos.checkers() == 0 &&
