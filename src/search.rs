@@ -729,7 +729,7 @@ fn search(data: &mut SearchData, ply: usize,
         let quiet_move = !m.is_capture() && !m.is_promote();
         let late_move = searched_moves > (depth * depth + 1.) as usize;
 
-        let ext = if (gives_check || deep_pawn) &&
+        let ext = if (gives_check || deep_pawn) && (depth < 5. || open_window) &&
             data.pos.static_exchange_sign(m) >= 0 { 1. } else { 0. };
         let lmr_red = reduction(depth, searched_moves, searched_quiet_count,
                                 selector.bad_move(), selector.special_move());
