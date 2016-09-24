@@ -729,9 +729,7 @@ fn search(data: &mut SearchData, ply: usize,
         let quiet_move = !m.is_capture() && !m.is_promote();
         let late_move = searched_moves > (depth * depth + 1.) as usize;
 
-        let ext = if (gives_check || deep_pawn ||
-                      (depth < 4. && m.to() == data.pos.last_move().to() &&
-                       data.pos.last_move().capture().piece_type().index() >= m.piece().piece_type().index())) &&
+        let ext = if (gives_check || deep_pawn) &&
             data.pos.static_exchange_sign(m) >= 0 { 1. } else { 0. };
         let lmr_red = reduction(depth, searched_moves, searched_quiet_count,
                                 selector.bad_move(), selector.special_move());
@@ -758,7 +756,7 @@ fn search(data: &mut SearchData, ply: usize,
                 continue
             }
 
-            if (late_move || depth <= 2.) && data.pos.static_exchange_sign(m) < 0 {
+            if (late_move || depth <= 4.) && data.pos.static_exchange_sign(m) < 0 {
                 continue
             }
         }
