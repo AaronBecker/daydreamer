@@ -759,7 +759,6 @@ fn search(data: &mut SearchData, ply: usize,
         searched_moves += 1;
         let mut score = score::MIN_SCORE;
         let mut full_search = searched_moves == 1 ||
-                              (!quiet_move || !late_move) ||
                               (root_node && searched_moves <= options::multi_pv());
         if !full_search {
             if lmr_red >= 1. {
