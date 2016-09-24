@@ -20,16 +20,13 @@ use uci::in_millis;
 const NULL_MOVE_ENABLED: bool = true;
 const NULL_EVAL_MARGIN: Score = 200;
 
-const TT_ENABLED: bool = true;
 // All transposition entries generated in quiesce() are considered equally deep.
 const QDEPTH: SearchDepth = 0.;
 
-const RAZORING_ENABLED: bool = true;
 const RAZOR_DEPTH: SearchDepth = 3.5;
 const RAZOR_MARGIN: [Score; 4] = [0 /* unused */, 300, 300, 325];
 
 const IID_ENABLED: bool = true;
-const FUTILITY_ENABLED: bool = true;
 
 fn futility_margin(d: SearchDepth) -> Score {
     if is_quiescence_depth(d) {
@@ -625,8 +622,7 @@ fn search(data: &mut SearchData, ply: usize,
         lazy_score = tt_score;
     }
 
-    if FUTILITY_ENABLED &&
-        !root_node &&
+    if !root_node &&
         depth <= 5. &&
         data.pos.checkers() == 0 &&
         data.pos.non_pawn_material(data.pos.us()) != 0 &&
@@ -652,8 +648,7 @@ fn search(data: &mut SearchData, ply: usize,
         let null_score = -search(data, ply + 1, -beta, -beta + 1, depth - null_r);
         data.pos.undo_nullmove(&undo);
         if null_score >= beta { return beta }
-    } else if RAZORING_ENABLED &&
-        !open_window &&
+    } else if !open_window &&
         data.pos.last_move() != NULL_MOVE &&
         depth <= RAZOR_DEPTH &&
         tt_move == NO_MOVE &&
@@ -734,8 +729,7 @@ fn search(data: &mut SearchData, ply: usize,
         let lmr_red = reduction(depth, searched_moves, searched_quiet_count,
                                 selector.bad_move(), selector.special_move());
 
-        if FUTILITY_ENABLED &&
-            !root_node &&
+        if !root_node &&
             ext == 0. &&
             depth < 10. &&
             (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
@@ -867,22 +861,20 @@ fn quiesce(data: &mut SearchData, ply: usize,
 
     let (mut tt_hit, mut tt_depth) = (false, 0);
     let (mut tt_move, mut tt_score, mut tt_score_type) = (NO_MOVE, score::MIN_SCORE, 0);
-    if TT_ENABLED {
-        if let Some(entry) = data.tt.get(data.pos.hash()) {
-            tt_hit = true;
-            tt_move = entry.m;
-            tt_score = score_from_tt(entry.score as Score, ply);
-            tt_score_type = entry.score_type;
-            tt_depth = entry.depth;
-            debug_assert!(score_is_valid(tt_score));
-        }
-        if !open_window &&
-            tt_hit &&
-            depth as i8 <= tt_depth as i8 &&
-            ((tt_score >= beta && tt_score_type & score::AT_LEAST != 0) ||
-             (tt_score <= alpha && tt_score_type & score::AT_MOST != 0)) {
-            return tt_score;
-        }
+    if let Some(entry) = data.tt.get(data.pos.hash()) {
+        tt_hit = true;
+        tt_move = entry.m;
+        tt_score = score_from_tt(entry.score as Score, ply);
+        tt_score_type = entry.score_type;
+        tt_depth = entry.depth;
+        debug_assert!(score_is_valid(tt_score));
+    }
+    if !open_window &&
+        tt_hit &&
+        depth as i8 <= tt_depth as i8 &&
+        ((tt_score >= beta && tt_score_type & score::AT_LEAST != 0) ||
+         (tt_score <= alpha && tt_score_type & score::AT_MOST != 0)) {
+        return tt_score;
     }
 
     let (mut best_move, mut best_score) = (NO_MOVE, score::MIN_SCORE);
