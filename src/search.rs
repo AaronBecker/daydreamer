@@ -741,8 +741,7 @@ fn search(data: &mut SearchData, ply: usize,
             (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
             searched_moves >= depth_index &&
             m.promote() != PieceType::Queen &&
-            best_score > score::mated_in(MAX_PLY) &&
-            !selector.special_move() {
+            best_score > score::mated_in(MAX_PLY) {
             // Value pruning.
             if depth <= 5. &&
                 lazy_score + score::mg_material(m.capture().piece_type()) + futility_margin(depth) <
@@ -752,11 +751,11 @@ fn search(data: &mut SearchData, ply: usize,
 
             // History pruning.
             // TODO: clean up the history interface; this is kind of ugly.
-            if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
+            if quiet_move && !selector.special_move() && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
                 continue
             }
 
-            if (late_move || depth <= 4.) && data.pos.static_exchange_sign(m) < 0 {
+            if (late_move || depth <= 2.) && data.pos.static_exchange_sign(m) < 0 {
                 continue
             }
         }
