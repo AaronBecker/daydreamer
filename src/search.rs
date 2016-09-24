@@ -744,7 +744,7 @@ fn search(data: &mut SearchData, ply: usize,
             best_score > score::mated_in(MAX_PLY) &&
             !selector.special_move() {
             // Value pruning.
-            if depth <= 5. && !gives_check && !quiet_move &&
+            if depth <= 5. &&
                 lazy_score + score::mg_material(m.capture().piece_type()) + futility_margin(depth) <
                     alpha + 2 * searched_moves as Score {
                 continue
