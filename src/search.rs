@@ -579,16 +579,17 @@ fn search(data: &mut SearchData, ply: usize,
           mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
     data.clear_pv(ply);
     if data.should_stop() { return score::DRAW_SCORE; }
+
+    //let qnode = is_quiescence_depth(depth);
     if is_quiescence_depth(depth) {
         return quiesce(data, ply, alpha, beta, depth);
     }
-
     let root_node = ply == 0;
     if !root_node {
         alpha = max!(alpha, score::mated_in(ply));
         beta = min!(beta, score::mate_in(ply + 1));
         if alpha >= beta { return alpha }
-        if data.pos.is_draw() { return score::DRAW_SCORE }
+        if data.pos.is_draw() || ply >= MAX_PLY { return score::DRAW_SCORE }
     }
 
     let orig_alpha = alpha;
@@ -597,20 +598,18 @@ fn search(data: &mut SearchData, ply: usize,
     let (mut tt_move, mut tt_score, mut tt_score_type) = (NO_MOVE, score::MIN_SCORE, score::AT_MOST);
     if root_node {
         tt_move = data.root_moves[0].m;
+        tt_score = data.root_moves[0].score;
     } else {
         if let Some(entry) = data.tt.get(data.pos.hash()) {
             tt_move = entry.m;
+            tt_score = score_from_tt(entry.score as Score, ply);
             tt_score_type = entry.score_type;
             if depth as u8 <= entry.depth {
-                if (entry.score >= beta as i16 && tt_score_type & score::AT_LEAST != 0) ||
-                    (entry.score <= alpha as i16 && tt_score_type & score::AT_MOST != 0) {
-                    tt_score = score_from_tt(entry.score as Score, ply);
+                if (tt_score >= beta && tt_score_type & score::AT_LEAST != 0) ||
+                    (tt_score <= alpha && tt_score_type & score::AT_MOST != 0) {
+                    return tt_score;
                 }
             }
-        }
-        if !open_window && tt_score != score::MIN_SCORE {
-            debug_assert!(score_is_valid(tt_score));
-            return tt_score;
         }
     }
 
@@ -735,7 +734,8 @@ fn search(data: &mut SearchData, ply: usize,
             (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
             searched_moves >= depth_index &&
             m.promote() != PieceType::Queen &&
-            best_score > score::mated_in(MAX_PLY) {
+            best_score > score::mated_in(MAX_PLY) &&
+            !selector.special_move() {
             // Value pruning.
             if depth <= 5. &&
                 lazy_score + score::mg_material(m.capture().piece_type()) + futility_margin(depth) <
@@ -745,7 +745,7 @@ fn search(data: &mut SearchData, ply: usize,
 
             // History pruning.
             // TODO: clean up the history interface; this is kind of ugly.
-            if quiet_move && !selector.special_move() && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
+            if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
                 continue
             }
 
