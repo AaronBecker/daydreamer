@@ -501,7 +501,6 @@ fn deepening_search(data: &mut SearchData) {
         loop {
             let sd = data.current_depth as SearchDepth;
             last_score = search(data, 0, alpha, beta, sd);
-            // TODO: try nodes searched under this move as a secondary key.
             data.root_moves.sort_by(|a, b| {
                 if a.depth == b.depth {
                     b.score.cmp(&a.score)
@@ -763,7 +762,7 @@ fn search(data: &mut SearchData, ply: usize,
             }
 
             // TODO: tune this margin
-            if see_value(&data.pos, m, &mut see) < (-15. * depth * depth) as Score {
+            if see_value(&data.pos, m, &mut see) < (-10. * depth * depth) as Score {
                 continue
             }
         }
