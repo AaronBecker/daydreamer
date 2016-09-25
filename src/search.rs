@@ -909,12 +909,10 @@ fn quiesce(data: &mut SearchData, ply: usize,
                 ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
                  (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
                   bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
-            if !gives_check {
-                continue
-            }
+            if !gives_check { continue }
+            if data.pos.static_exchange_sign(m) < 0 { continue }
         }
 
-        if data.pos.checkers() == 0 && data.pos.static_exchange_sign(m) < 0 { continue }
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
         data.stats.nodes += 1;
@@ -943,7 +941,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
         }
     }
     // Detect checkmate. We can't find stalemate because we don't reliably generate
-    // quiet moves, but evasion movegen is always exhaustive.
+    // quiet moves, but we always search at least one move when in check.
     if num_moves == 0 && data.pos.checkers() != 0 {
         best_score = score::mated_in(ply);
     }
