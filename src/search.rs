@@ -572,6 +572,10 @@ fn reduction(depth: SearchDepth,
     r
 }
 
+// Computes `static_exchange_sign` in a way that allows us to
+// cache results. We use static exchange values on many codepaths
+// in search, and this allows us to avoid recomputations without
+// complicating the code.
 fn see_sign(pos: &Position, m: Move, val: &mut Score) -> Score {
     if *val == score::MIN_SCORE {
         *val = pos.static_exchange_sign(m);
@@ -579,6 +583,12 @@ fn see_sign(pos: &Position, m: Move, val: &mut Score) -> Score {
     *val
 }
 
+// Computes `static_exchange_eval` in a way that allows us to cache
+// results. Note that this relies on the fact that the short-circuit
+// path in `static_exchange_sign` returns 1, which allows us to detect
+// the case where we've previously called `see_sign` and gotten the
+// short-circuited answer, while still re-using the results in the
+// non-short-circuited cases.
 fn see_value(pos: &Position, m: Move, val: &mut Score) -> Score {
     if *val == score::MIN_SCORE || *val == 1 {
         *val = pos.static_exchange_eval(m);
@@ -733,7 +743,7 @@ fn search(data: &mut SearchData, ply: usize,
         let quiet_move = !m.is_capture() && m.promote() != PieceType::Queen;
         let late_move = searched_moves > (depth * depth + 1.) as usize;
 
-        let mut see = score::MIN_SCORE;
+        let mut see = selector.last_see();
         let ext = if (gives_check || deep_pawn) && see_sign(&data.pos, m, &mut see) >= 0 { 1. } else { 0. };
 
         if !root_node &&
@@ -761,8 +771,7 @@ fn search(data: &mut SearchData, ply: usize,
                 continue
             }
 
-            // TODO: tune this margin
-            if see_value(&data.pos, m, &mut see) < (-20. * depth * depth) as Score {
+            if see_value(&data.pos, m, &mut see) < (-15. * depth * depth) as Score {
                 continue
             }
         }

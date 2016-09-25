@@ -451,6 +451,7 @@ pub struct MoveSelector {
     killers: [Move; 2],
     countermove: Move,
     last_score: Score,
+    last_see: Score,
     last_move: Move,
 }
 
@@ -480,6 +481,7 @@ impl MoveSelector {
             killers: node.killers,
             countermove: cm,
             last_score: 0,
+            last_see: score::MIN_SCORE,
             last_move: NO_MOVE,
         }
     }
@@ -494,6 +496,7 @@ impl MoveSelector {
             killers: [NO_MOVE; 2],
             countermove: NO_MOVE,
             last_score: 0,
+            last_see: score::MIN_SCORE,
             last_move: NO_MOVE,
         }
     }
@@ -512,6 +515,7 @@ impl MoveSelector {
             killers: [NO_MOVE; 2],
             countermove: NO_MOVE,
             last_score: 0,
+            last_see: score::MIN_SCORE,
             last_move: NO_MOVE,
         }
     }
@@ -665,12 +669,14 @@ impl MoveSelector {
             if phase != SelectionPhase::TT && sm.m == self.tt_move {
                 continue
             }
+            self.last_see = score::MIN_SCORE;
             if phase == SelectionPhase::Loud {
                 let see = pos.static_exchange_sign(sm.m);
                 if see < 0 {
                     self.bad_captures.push(sm);
                     continue;
                 }
+                self.last_see = see;
                 self.last_score = see;
             } else if phase == SelectionPhase::BadCaptures {
                 self.last_score = -1;
@@ -698,6 +704,10 @@ impl MoveSelector {
 
     pub fn bad_move(&self) -> bool {
         self.last_score < 0
+    }
+
+    pub fn last_see(&self) -> Score {
+        self.last_see
     }
 }
 
