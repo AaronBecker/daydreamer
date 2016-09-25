@@ -907,13 +907,14 @@ fn quiesce(data: &mut SearchData, ply: usize,
             ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
              (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
               bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
+        let see_value = data.pos.static_exchange_eval(m);
 
         if !gives_check && (!in_check || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
             m.promote() != PieceType::Queen &&
-            static_eval + score::mg_material(m.capture().piece_type()) + futility_margin(depth) < alpha {
+            static_eval + see_value + futility_margin(depth) < alpha {
             continue
         }
-        if !in_check && !gives_check && data.pos.static_exchange_sign(m) < 0 { continue }
+        if !in_check && see_value < 0 { continue }
 
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
