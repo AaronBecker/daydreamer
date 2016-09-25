@@ -40,15 +40,13 @@ fn futility_margin(d: SearchDepth) -> Score {
 // value to accomodate fractional extensions and reductions better. Elsewhere
 // depths are all integers to accommodate depth-indexed arrays.
 pub type SearchDepth = f32;
-pub const ONE_PLY_F: SearchDepth = 1.;
 pub const MAX_PLY_F: SearchDepth = 127.;
 
 pub fn is_quiescence_depth(sd: SearchDepth) -> bool {
-    sd < ONE_PLY_F
+    sd < 1.
 }
 
 pub type Depth = usize;
-pub const ONE_PLY: Depth = 1;
 pub const MAX_PLY: Depth = 127;
 
 pub fn score_to_tt(s: Score, ply: usize) -> Score {
@@ -541,7 +539,7 @@ fn deepening_search(data: &mut SearchData) {
             }
         }
 
-        data.current_depth += ONE_PLY;
+        data.current_depth += 1;
     }
 }
 
@@ -738,9 +736,6 @@ fn search(data: &mut SearchData, ply: usize,
 
         let mut see = score::MIN_SCORE;
         let ext = if (gives_check || deep_pawn) && see_sign(&data.pos, m, &mut see) >= 0 { 1. } else { 0. };
-        let lmr_red = reduction(depth, searched_moves, searched_quiet_count,
-                                //TODO: test
-                                selector.bad_move() /*|| see_sign(&data.pos, m, &mut see) < 0*/, selector.special_move());
 
         if !root_node &&
             ext == 0. &&
@@ -767,8 +762,10 @@ fn search(data: &mut SearchData, ply: usize,
                 continue
             }
 
-            // TODO: test
-            if see_value(&data.pos, m, &mut see) < (-15. * depth * depth) as Score { continue }
+            // TODO: tune this margin
+            if see_value(&data.pos, m, &mut see) < (-15. * depth * depth) as Score {
+                continue
+            }
         }
 
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
@@ -779,20 +776,26 @@ fn search(data: &mut SearchData, ply: usize,
         let mut full_search = searched_moves == 1 ||
                               (root_node && searched_moves <= options::multi_pv());
         if !full_search {
+            let lmr_red = reduction(depth,
+                                    searched_moves,
+                                    searched_quiet_count,
+                                    selector.bad_move() || see_sign(&data.pos, m, &mut see) < 0,
+                                    selector.special_move());
+
             if lmr_red >= 1. {
-                score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - lmr_red - ONE_PLY_F);
+                score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - lmr_red - 1.);
                 debug_assert!(score_is_valid(score));
             } else {
                 score = alpha + 1;
             }
             if score > alpha {
-                score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - ONE_PLY_F);
+                score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - 1.);
                 debug_assert!(score_is_valid(score));
                 if open_window && score > alpha { full_search = true; }
             }
         }
         if full_search {
-            score = -search(data, ply + 1, -beta, -alpha, depth + ext - ONE_PLY_F);
+            score = -search(data, ply + 1, -beta, -alpha, depth + ext - 1.);
             debug_assert!(score_is_valid(score));
         }
         debug_assert!(score_is_valid(score));
@@ -939,7 +942,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
         data.stats.nodes += 1;
         num_moves += 1;
 
-        let score = -quiesce(data, ply + 1, -beta, -alpha, depth - ONE_PLY_F);
+        let score = -quiesce(data, ply + 1, -beta, -alpha, depth - 1.);
         debug_assert!(score_is_valid(score));
         data.pos.undo_move(m, &undo);
 
