@@ -762,7 +762,7 @@ fn search(data: &mut SearchData, ply: usize,
             }
 
             // TODO: tune this margin
-            if see_value(&data.pos, m, &mut see) < (-10. * depth * depth) as Score {
+            if see_value(&data.pos, m, &mut see) < (-20. * depth * depth) as Score {
                 continue
             }
         }
