@@ -719,11 +719,11 @@ fn search(data: &mut SearchData, ply: usize,
         let deep_pawn = m.piece().piece_type() == PieceType::Pawn &&
             (m.to().relative_to(data.pos.us()).rank().index() >= Rank::_7.index() &&
              (m.promote() == PieceType::NoPieceType || m.promote() == PieceType::Queen));
-        let quiet_move = !m.is_capture() && !m.is_promote();
+        let quiet_move = !m.is_capture() && m.promote() != PieceType::Queen;
         let late_move = searched_moves > (depth * depth + 1.) as usize;
 
-        let ext = if (gives_check || deep_pawn) &&
-            data.pos.static_exchange_sign(m) >= 0 { 1. } else { 0. };
+        let see_value = data.pos.static_exchange_eval(m);
+        let ext = if (gives_check || deep_pawn) && see_value >= 0 { 1. } else { 0. };
         let lmr_red = reduction(depth, searched_moves, searched_quiet_count,
                                 selector.bad_move(), selector.special_move());
 
@@ -737,8 +737,7 @@ fn search(data: &mut SearchData, ply: usize,
             !selector.special_move() {
             // Value pruning.
             if depth <= 5. &&
-                lazy_score + score::mg_material(m.capture().piece_type()) + futility_margin(depth) <
-                    alpha + 2 * searched_moves as Score {
+                lazy_score + see_value + futility_margin(depth) < alpha + 2 * searched_moves as Score {
                 continue
             }
 
@@ -748,9 +747,12 @@ fn search(data: &mut SearchData, ply: usize,
                 continue
             }
 
-            if (late_move || depth <= 2.) && data.pos.static_exchange_sign(m) < 0 {
+            if (late_move || depth <= 2.) && see_value < 0 {
                 continue
             }
+
+            // TODO: test
+            // if see_value < -15 * depth * depth { continue }
         }
 
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
