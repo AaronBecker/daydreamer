@@ -575,6 +575,20 @@ fn reduction(depth: SearchDepth,
     r
 }
 
+fn see_sign(pos: &Position, m: Move, val: &mut Score) -> Score {
+    if *val == score::MIN_SCORE {
+        *val = pos.static_exchange_sign(m);
+    }
+    *val
+}
+
+fn see_value(pos: &Position, m: Move, val: &mut Score) -> Score {
+    if *val == score::MIN_SCORE || *val == 1 {
+        *val = pos.static_exchange_eval(m);
+    }
+    *val
+}
+
 fn search(data: &mut SearchData, ply: usize,
           mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
     data.clear_pv(ply);
@@ -722,10 +736,11 @@ fn search(data: &mut SearchData, ply: usize,
         let quiet_move = !m.is_capture() && m.promote() != PieceType::Queen;
         let late_move = searched_moves > (depth * depth + 1.) as usize;
 
-        let see_value = data.pos.static_exchange_eval(m);
-        let ext = if (gives_check || deep_pawn) && see_value >= 0 { 1. } else { 0. };
+        let mut see = score::MIN_SCORE;
+        let ext = if (gives_check || deep_pawn) && see_sign(&data.pos, m, &mut see) >= 0 { 1. } else { 0. };
         let lmr_red = reduction(depth, searched_moves, searched_quiet_count,
-                                selector.bad_move(), selector.special_move());
+                                //TODO: test
+                                selector.bad_move() /*|| see_sign(&data.pos, m, &mut see) < 0*/, selector.special_move());
 
         if !root_node &&
             ext == 0. &&
@@ -735,24 +750,25 @@ fn search(data: &mut SearchData, ply: usize,
             m.promote() != PieceType::Queen &&
             best_score > score::mated_in(MAX_PLY) &&
             !selector.special_move() {
-            // Value pruning.
-            if depth <= 5. &&
-                lazy_score + see_value + futility_margin(depth) < alpha + 2 * searched_moves as Score {
-                continue
-            }
-
             // History pruning.
             // TODO: clean up the history interface; this is kind of ugly.
             if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
                 continue
             }
 
-            if (late_move || depth <= 2.) && see_value < 0 {
+            // Value pruning.
+            if depth <= 5. &&
+                lazy_score + see_value(&data.pos, m, &mut see) + futility_margin(depth) <
+                    alpha + 2 * searched_moves as Score {
+                continue
+            }
+
+            if (late_move || depth <= 2.) && see_value(&data.pos, m, &mut see) < 0 {
                 continue
             }
 
             // TODO: test
-            // if see_value < -15 * depth * depth { continue }
+            if see_value(&data.pos, m, &mut see) < (-15. * depth * depth) as Score { continue }
         }
 
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
