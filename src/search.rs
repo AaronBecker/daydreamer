@@ -771,7 +771,7 @@ fn search(data: &mut SearchData, ply: usize,
                 continue
             }
 
-            if see_value(&data.pos, m, &mut see) < ((-10. * depth - 5.) * depth) as Score {
+            if see_value(&data.pos, m, &mut see) < ((-15. * depth - 5.) * depth) as Score {
                 continue
             }
         }
