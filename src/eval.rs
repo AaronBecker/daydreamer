@@ -534,12 +534,21 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             }
         }
 
-        //// Pawn adjustment.
-        //let pc = piece_count[us.index()][Pawn.index()];
-        //let mat_adj = piece_count[us.index()][Knight.index()] * 4 * (pc - 4) -
-        //              piece_count[us.index()][Rook.index()] * 3 * (pc - 4);
-        //side_score[us.index()] += sc!(mat_adj, mat_adj);
-        //// TODO: port other material balance scoring.
+        // Pawn adjustment.
+        let pc = piece_count[us.index()][Pawn.index()];
+        let nc = piece_count[us.index()][Knight.index()];
+        let bc = piece_count[us.index()][Bishop.index()];
+        let rc = piece_count[us.index()][Rook.index()];
+        let qc = piece_count[us.index()][Rook.index()];
+        let minor = nc + bc;
+        let major = rc + qc;
+        let mat_adj = nc * 4 * (pc - 4) +
+                      bc * 2 * (pc - 4) -
+                      rc * 3 * (pc - 4) +
+                      10 * minor +
+                      10 * major;
+        side_score[us.index()] += sc!(mat_adj, mat_adj);
+        // TODO: port other material balance scoring.
     }
 
     side_score[Color::White.index()] - side_score[Color::Black.index()]

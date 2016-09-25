@@ -760,7 +760,7 @@ fn search(data: &mut SearchData, ply: usize,
                 continue
             }
 
-            // Value pruning.
+            // Value/SEE pruning.
             if depth <= 5. &&
                 lazy_score + see_value(&data.pos, m, &mut see) + futility_margin(depth) <
                     alpha + 2 * searched_moves as Score {
