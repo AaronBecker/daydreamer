@@ -879,7 +879,8 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let (mut best_move, mut best_score) = (NO_MOVE, score::MIN_SCORE);
     let mut static_eval = eval::full(&data.pos);
     debug_assert!(score_is_valid(static_eval));
-    if data.pos.checkers() == 0 {
+    let in_check = data.pos.checkers() != 0;
+    if !in_check {
         best_score = static_eval;
         if best_score >= alpha {
             alpha = best_score;
@@ -902,16 +903,17 @@ fn quiesce(data: &mut SearchData, ply: usize,
 
     let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, NO_MOVE);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
-        if (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
+        let gives_check = !m.is_castle() && !m.is_en_passant() &&
+            ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
+             (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
+              bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
+
+        if !gives_check && (!in_check || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
             m.promote() != PieceType::Queen &&
             static_eval + score::mg_material(m.capture().piece_type()) + futility_margin(depth) < alpha {
-            let gives_check = !m.is_castle() && !m.is_en_passant() &&
-                ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
-                 (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
-                  bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
-            if !gives_check { continue }
-            if data.pos.static_exchange_sign(m) < 0 { continue }
+            continue
         }
+        if !in_check && !gives_check && data.pos.static_exchange_sign(m) < 0 { continue }
 
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
