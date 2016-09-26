@@ -373,7 +373,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         let their_king = pos.king_sq(them);
         let do_safety = pos.non_pawn_material(us) >= score::QUEEN.mg;
         let king_halo = if do_safety {
-            bitboard::king_attacks(their_king)
+            bitboard::king_shield(them, their_king)
         } else {
             0
         };
@@ -524,9 +524,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             //println!("num_king_attackers[{}] = {}", us.glyph(), num_king_attackers);
 
             const KING_ATTACK_SCALE: [i32; 16] = [
-                0, 0, 640, 800, 1120, 1200, 1280, 1280,
+                0, 400, 640, 800, 1120, 1200, 1280, 1280,
                 1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
-            let king_attack_value = KING_ATTACK_SCALE[min!(2 * num_king_attackers, 15)] * king_attack_weight / 800;
+            let king_attack_value = KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 800;
             //println!("king_attack_value[{}] = {}", us.glyph(), king_attack_value);
             side_score[us.index()].mg += king_attack_value;
         }
