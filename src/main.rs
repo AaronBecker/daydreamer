@@ -18,7 +18,7 @@ pub mod transposition;
 pub mod uci;
 
 fn main() {
-    println!("Baru {} ({}), by Aaron Becker",
+    println!("Daydreamer {} ({}), by Aaron Becker",
              env!("CARGO_PKG_VERSION"),
              include_str!(concat!(env!("OUT_DIR"), "/version.rs")));
     bitboard::initialize();

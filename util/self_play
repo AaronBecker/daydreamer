@@ -9,10 +9,10 @@ resign_moves = 5
 resign_score = 500
 chess_home = os.path.expanduser('~') + '/src/chess/'
 engine_prefix = chess_home
-this_path = chess_home + 'baru_testing/'
+this_path = chess_home + 'daydreamer_testing/'
 out_path = this_path + 'results/'
 cutechess_path = chess_home + 'cutechess-cli'
-baru_path = chess_home + 'baru/'
+daydreamer_path = chess_home + 'daydreamer/'
 openings = 'file=%s format=epd' % (this_path + 'clean.epd')
 #timecontrol = 'inf'
 timecontrol = '2+0.05'
@@ -50,9 +50,9 @@ def build_engines(engines):
                "git stash;"
                "git checkout %s;"
                "cargo build --release;"
-               "mv ./target/release/baru %s;"
+               "mv ./target/release/daydreamer %s;"
                "git checkout master;"
-               "git stash apply") % (out_path, baru_path, engine, out_path + engine)
+               "git stash apply") % (out_path, daydreamer_path, engine, out_path + engine)
         proc = Popen(cmd, shell=True)
         os.waitpid(proc.pid, 0)
 

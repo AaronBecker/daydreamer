@@ -1,6 +1,6 @@
 [package]
-name = "baru"
-version = "0.1.0"
+name = "daydreamer"
+version = "0.1.0-pre"
 authors = ["akb <aaron@falsesharing.com>"]
 build = "build.rs"
 
