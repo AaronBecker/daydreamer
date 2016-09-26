@@ -1,6 +1,6 @@
 [package]
 name = "daydreamer"
-version = "0.1.0-pre"
+version = "2.0.0-pre"
 authors = ["akb <aaron@falsesharing.com>"]
 build = "build.rs"
 readme = "README.md"

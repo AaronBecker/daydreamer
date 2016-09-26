@@ -28,9 +28,7 @@ run_test_suite() {
 
     cargo build --target $TARGET --verbose
     cargo test --target $TARGET
-
-    # sanity check the file type
-    file target/$TARGET/debug/hello
+    cargo run --target $TARGET util/bench.rc
 }
 
 main() {

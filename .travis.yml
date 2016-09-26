@@ -81,6 +81,8 @@ matrix:
       env: TARGET=x86_64-unknown-linux-musl
   allow_failures:
     - rust: nightly
+    - env: TARGET=x86_64-unknown-linux-musl
+    - env: TARGET=i686-unknown-linux-musl
 
 before_install:
   - export PATH="$PATH:$HOME/.cargo/bin"

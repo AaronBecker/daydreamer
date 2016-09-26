@@ -49,6 +49,7 @@ build: false
 test_script:
   - cargo build --verbose
   - cargo test
+  - cargo run util/bench.rc
 
 before_deploy:
   # Generate artifacts for release
@@ -81,3 +82,4 @@ deploy:
 branches:
   only:
     - release
+    - /^v?\d+\.\d+\.\d+.*$/
