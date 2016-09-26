@@ -12,7 +12,5 @@ rand = "*"
 
 [profile.release]
 opt-level = 3
-#debug = true
 debug-assertions = false
-# lto = true is too slow for normal development
-# lto = true
+lto = true
