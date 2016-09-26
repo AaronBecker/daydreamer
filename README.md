@@ -1,16 +1,31 @@
 
-Daydreamer 1.75
-===============
+Daydreamer 2.0 (pre-release)
+============================
 
-Daydreamer is a chess-playing program I have been writing in my spare time. I
-hope it will one day be a test bed for some ideas I have on parallel tree
-search with distributed memory, but first the serial code needs more work.
+Daydreamer is a chess-playing program I have been writing in my spare time. 
 I named it Daydreamer after a bug in an early version caused it to occasionally
 follow up very strong play with bizarre blunders, as though it had lost its
 focus on the game and its mind was wandering aimlessly.
 
-Windows, Linux, and Mac binaries are available on the
-[downloads page](http://github.com/AaronBecker/daydreamer/downloads).
+Changes from 1.75 to 2.0
+------------------------
+
+2.0 is a total rewrite in [Rust](https://www.rust-lang.org/). I took the
+opportunity to modernize Daydreamer's internals as well. The biggest
+differences are a move from 0x88 board representation to bitboards and the
+introduction of phased move generation. There are also big changes to input
+handling and time management, largely due to differences between C and Rust.
+
+The evaluation function is mostly unchanged, but there are some tweaks due to
+board representation changes, and some terms that I haven't ported, including
+material balance calculations and endgame scaling. There are also a number of
+features that I haven't ported at all, notably support for books and endgame
+tablebases.
+
+I've updated and tuned the search significantly. The biggest changes are
+better aspiration windowing and much more aggressive pruning.
+
+Version 2.0 isn't complete yet; the current release is a preview.
 
 Changes from 1.7 to 1.75
 ------------------------
