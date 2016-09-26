@@ -475,29 +475,29 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                 };
                 side_score[us.index()] += MOBILITY_BONUS[pt.index()][mob as usize];
 
-                // Outpost scoring.
-                if pt == PieceType::Knight {
-                    let mut outpost_scale = 0;
-                    let bonus = OUTPOST_BONUS[sq.relative_to(us).index()];
-                    if bonus != 0 && bb!(sq) & ed.outposts[us.index()] != 0 {
-                        outpost_scale += 2;
-                        // Defended by a pawn.
-                        if bb!(sq) & ed.attacks_by[us.index()][PieceType::Pawn.index()] != 0 {
-                            outpost_scale += 1;
-                        }
-                        //// Shielded by a pawn.
-                        //if bitboard::in_front_mask(us, sq) & pos.pieces_of_type(PieceType::Pawn) != 0 {
-                        //    outpost_scale += 1;
-                        //}
-                        //// Can't be captured by an opposing minor.
-                        //if pos.pieces_of_color_and_type(them, PieceType::Knight) |
-                        //    (pos.pieces_of_color_and_type(them, PieceType::Bishop) &
-                        //     bitboard::squares_of_color(sq)) == 0 {
-                        //    outpost_scale += 1;
-                        //}
-                    }
-                    side_score[us.index()] += sc!(outpost_scale * bonus, outpost_scale * bonus);
-                }
+                //// Outpost scoring.
+                //if pt == PieceType::Knight {
+                //    let mut outpost_scale = 0;
+                //    let bonus = OUTPOST_BONUS[sq.relative_to(us).index()];
+                //    if bonus != 0 && bb!(sq) & ed.outposts[us.index()] != 0 {
+                //        outpost_scale += 2;
+                //        // Defended by a pawn.
+                //        if bb!(sq) & ed.attacks_by[us.index()][PieceType::Pawn.index()] != 0 {
+                //            outpost_scale += 1;
+                //        }
+                //        //// Shielded by a pawn.
+                //        //if bitboard::in_front_mask(us, sq) & pos.pieces_of_type(PieceType::Pawn) != 0 {
+                //        //    outpost_scale += 1;
+                //        //}
+                //        //// Can't be captured by an opposing minor.
+                //        //if pos.pieces_of_color_and_type(them, PieceType::Knight) |
+                //        //    (pos.pieces_of_color_and_type(them, PieceType::Bishop) &
+                //        //     bitboard::squares_of_color(sq)) == 0 {
+                //        //    outpost_scale += 1;
+                //        //}
+                //    }
+                //    side_score[us.index()] += sc!(outpost_scale * bonus, outpost_scale * bonus);
+                //}
             }
         }
 
