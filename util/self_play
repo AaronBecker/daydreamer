@@ -21,7 +21,6 @@ gamecount = '10000'
 external_programs = {
     'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
     'cinnamon': 'cmd=' + engine_prefix + 'cinnamon_chess/cinnamon proto=uci',
-    'daydreamer': 'cmd=' + engine_prefix + 'daydreamer/daydreamer proto=uci',
     'discocheck': 'cmd=' + engine_prefix + 'discocheck/discocheck proto=uci',
     'diablo64' : 'cmd=' + engine_prefix + 'diablo/diablo64.sh proto=uci',
     'dirty' : 'cmd=' + engine_prefix + \
@@ -37,6 +36,7 @@ external_programs = {
     'spike' : 'cmd=' + engine_prefix + 'spike/spike.sh proto=uci',
     'pawny' : 'cmd=' + engine_prefix + 'pawny_1.2/pawny proto=uci',
     'protector' : 'cmd=' + engine_prefix + 'protector/protector.sh proto=uci',
+    'rodent' : 'cmd=' + engine_prefix + 'rodentII/sources/rodentII proto=uci',
     'spark' : 'cmd=' + engine_prefix + 'spark/spark.sh proto=uci',
     'komodo' : 'cmd=' + engine_prefix + 'komodo/komodo.sh proto=uci',
 }
