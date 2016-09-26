@@ -3,6 +3,8 @@ name = "daydreamer"
 version = "0.1.0-pre"
 authors = ["akb <aaron@falsesharing.com>"]
 build = "build.rs"
+readme = "README.md"
+license = "Apache-2.0"
 
 [dependencies]
 lazy_static = "0.1.*"
