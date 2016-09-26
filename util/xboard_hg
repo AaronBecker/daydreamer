@@ -1,0 +1,1 @@
+xboard -zp -ics -icshost winboard.nl -fUCI -fcp ./baru -fd ~/src/baru/target/release -autoKibitz -size medium

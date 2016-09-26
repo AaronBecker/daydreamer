@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sed "s/@git/$1/g" fcp_template.ini > results/fcp.ini
+sed "s/@git/$2/g" scp_template.ini > results/scp.ini
+/usr/games/xboard -size medium -fcp "./polyglot results/fcp.ini" -scp "./polyglot results/scp.ini"
