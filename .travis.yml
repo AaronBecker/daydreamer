@@ -1,0 +1,128 @@
+# From https://github.com/japaric/rust-everywhere
+language: rust
+cache: cargo
+
+env:
+  global:
+    # This will be part of the release tarball
+    - PROJECT_NAME=daydreamer
+
+# AFAICT There are a few ways to set up the build jobs. This one is not the DRYest but I feel is the
+# easiest to reason about.
+matrix:
+  include:
+    # Stable channel
+    - os: osx
+      rust: stable
+      env: TARGET=i686-apple-darwin
+    - os: linux
+      rust: stable
+      env: TARGET=i686-unknown-linux-gnu
+      addons:
+        apt:
+          packages: &i686_unknown_linux_gnu
+            # Cross compiler and cross compiled C libraries
+            - gcc-multilib
+    - os: linux
+      rust: stable
+      env: TARGET=i686-unknown-linux-musl
+    - os: osx
+      rust: stable
+      env: TARGET=x86_64-apple-darwin
+    - os: linux
+      rust: stable
+      env: TARGET=x86_64-unknown-linux-gnu
+    - os: linux
+      rust: stable
+      env: TARGET=x86_64-unknown-linux-musl
+    # Beta channel
+    - os: osx
+      rust: beta
+      env: TARGET=i686-apple-darwin
+    - os: linux
+      rust: beta
+      env: TARGET=i686-unknown-linux-gnu
+      addons:
+        apt:
+          packages: *i686_unknown_linux_gnu
+    - os: linux
+      rust: beta
+      env: TARGET=i686-unknown-linux-musl
+    - os: osx
+      rust: beta
+      env: TARGET=x86_64-apple-darwin
+    - os: linux
+      rust: beta
+      env: TARGET=x86_64-unknown-linux-gnu
+    - os: linux
+      rust: beta
+      env: TARGET=x86_64-unknown-linux-musl
+    # Nightly channel
+    - os: osx
+      rust: nightly
+      env: TARGET=i686-apple-darwin
+    - os: linux
+      rust: nightly
+      env: TARGET=i686-unknown-linux-gnu
+      addons:
+        apt:
+          packages: *i686_unknown_linux_gnu
+    - os: linux
+      rust: nightly
+      env: TARGET=i686-unknown-linux-musl
+    - os: osx
+      rust: nightly
+      env: TARGET=x86_64-apple-darwin
+    - os: linux
+      rust: nightly
+      env: TARGET=x86_64-unknown-linux-gnu
+    - os: linux
+      rust: nightly
+      env: TARGET=x86_64-unknown-linux-musl
+  allow_failures:
+    - rust: nightly
+
+before_install:
+  - export PATH="$PATH:$HOME/.cargo/bin"
+
+install:
+  - bash ci/install.sh
+
+script:
+  - bash ci/script.sh
+
+before_deploy:
+  - bash ci/before_deploy.sh
+
+deploy:
+  provider: releases
+  # TODO Regenerate this api_key for your project, this one won't work for you. Here's how:
+  # - Go to 'https://github.com/settings/tokens/new' and generate a Token with only the
+  # `public_repo` scope enabled
+  # - Call `travis encrypt $github_token` where $github_token is the token you got in the previous
+  # step and `travis` is the official Travis CI gem (see https://rubygems.org/gems/travis/)
+  # - Enter the "encrypted value" below
+  api_key:
+      secure: "j/Qw4KiltGIyF8B7mEa8vvnBIwvPdf6VQ1joHb/ryKf2n5IpPL0nTjS3bh9ZqeE0fm1JOjIV/5YsrAM7IJ1qmngvWoCCU2CenHAwnkh4w3nkp3JotKL6khmmGvHNLckGqC2zw35DzIHWI7S+I2wE+QjqNTSY5RVX1pgwbQi4sWxFhEQ35rNdR25Ahq9Do2W6UJr2B+aFWkrXjKH2u3GN/+PypeEJ9hn5XRcd7egi9BYDcg7LCDYbD3glyQ+esUDR6JOXDnqJ9EVYNaYDGKxqRG/bR2bB1d4fqdYgvS9tq7t07NM8jLyZeIl2zVwgKASaRxB16m9LuhhOyFObTn1JcIneVglRoCQVYMtJCp3KStkvPjV0kC19fkoIykHNxxYtVaul7IyWK4d2GgB49qmfUirzQ27ousynNCbC1KVmMVe5vVcj9pQdNsTHSFjoKmIIc4CivV7JZ1PnbslF8wJn4bNU1FNi4xAqXBNl9r6xl90uDC3SAGTMv85R3ZQXGcHLLljO0kGgQejVxJGKSvlTU1nnlT6LmUSxbkvbGTyt3BWco039MdP9yC+4Sf7G9UW0AMf7sJMt7/PXNWcDUC9lQ71X56ixOhqiBYyuKBq3IMxb+WhB+bkA6FgxciZYHETXAznXFPvXC7kn/4yAzgZghDFFemiPVcHDShJUfoS7ySE="
+  file_glob: true
+  file: ${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.*
+  # don't delete the artifacts from previous phases
+  skip_cleanup: true
+  # deploy when a new tag is pushed
+  on:
+    # channel to use to produce the release artifacts
+    # NOTE make sure you only release *once* per target
+    condition: $TRAVIS_RUST_VERSION = stable
+    tags: true
+
+branches:
+  only:
+    # Pushes and PR to the release branch
+    - release
+    # IMPORTANT Ruby regex to match tags. Required, or travis won't trigger deploys when a new tag
+    # is pushed. This regex matches semantic versions like v1.2.3-rc4+2016.02.22
+    - /^v?\d+\.\d+\.\d+.*$/
+
+notifications:
+  email:
+    on_success: never
