@@ -344,6 +344,17 @@ const MOBILITY_BONUS: [[PhaseScore; 32]; 8] = [
     [sc!(0, 0); 32],
 ];
 
+const OUTPOST_BONUS: [Score; 64] = [
+    0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  4,  5,  5,  4,  0,  0,
+    0,  0,  6,  9,  9,  6,  0,  0,
+    0,  0,  3,  4,  4,  3,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,
+];
+
 fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
     let all_pieces = pos.all_pieces(); 
@@ -464,11 +475,11 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                 };
                 side_score[us.index()] += MOBILITY_BONUS[pt.index()][mob as usize];
 
-                /*
                 // Outpost scoring.
-                if pt == PieceType::Knight || pt == PieceType::Bishop {
+                if pt == PieceType::Knight {
                     let mut outpost_scale = 0;
-                    if bb!(sq) & ed.outposts[us.index()] != 0 {
+                    let bonus = OUTPOST_BONUS[sq.relative_to(us).index()];
+                    if bonus != 0 && bb!(sq) & ed.outposts[us.index()] != 0 {
                         outpost_scale += 2;
                         // Defended by a pawn.
                         if bb!(sq) & ed.attacks_by[us.index()][PieceType::Pawn.index()] != 0 {
@@ -485,9 +496,8 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                         //    outpost_scale += 1;
                         //}
                     }
-                    side_score[us.index()] += sc!(outpost_scale * 4, outpost_scale * 4);
+                    side_score[us.index()] += sc!(outpost_scale * bonus, outpost_scale * bonus);
                 }
-                */
             }
         }
 
@@ -533,22 +543,6 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                 side_score[us.index()] += sc!(-15, -20);
             }
         }
-
-        // Pawn adjustment.
-        let pc = piece_count[us.index()][Pawn.index()];
-        let nc = piece_count[us.index()][Knight.index()];
-        let bc = piece_count[us.index()][Bishop.index()];
-        let rc = piece_count[us.index()][Rook.index()];
-        let qc = piece_count[us.index()][Rook.index()];
-        let minor = nc + bc;
-        let major = rc + qc;
-        let mat_adj = nc * 4 * (pc - 4) +
-                      bc * 2 * (pc - 4) -
-                      rc * 3 * (pc - 4) +
-                      10 * minor +
-                      10 * major;
-        side_score[us.index()] += sc!(mat_adj, mat_adj);
-        // TODO: port other material balance scoring.
     }
 
     side_score[Color::White.index()] - side_score[Color::Black.index()]
