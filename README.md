@@ -1,3 +1,5 @@
+[![Travis](https://travis-ci.org/AaronBecker/daydreamer.svg?branch=release)](https://travis-ci.org/AaronBecker/daydreamer)
+[![Appveyor](https://ci.appveyor.com/api/projects/status/x84d9c2afjkqd0we?svg=true)](https://ci.appveyor.com/project/AaronBecker/daydreamer)
 
 Daydreamer 2.0 (pre-release)
 ============================
