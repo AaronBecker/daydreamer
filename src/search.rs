@@ -778,11 +778,11 @@ fn search(data: &mut SearchData, ply: usize,
 
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
+        let mut full_search = searched_moves == 0 ||
+                              (root_node && searched_moves <= options::multi_pv());
         data.stats.nodes += 1;
         searched_moves += 1;
         let mut score = score::MIN_SCORE;
-        let mut full_search = searched_moves == 1 ||
-                              (root_node && searched_moves <= options::multi_pv());
         if !full_search {
             let lmr_red = reduction(depth,
                                     searched_moves,

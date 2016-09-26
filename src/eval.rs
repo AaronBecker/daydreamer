@@ -378,7 +378,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             0
         };
         let mut num_king_attackers = 0;
-        let mut king_attack_weight = 0;
+        let mut king_attack_weight: i32 = 0;
 
         for pt in board::each_piece_type() {
             if pt == PieceType::King { break }
@@ -395,9 +395,10 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                         let attacks = bitboard::knight_attacks(sq);
                         ed.attacks_by[us.index()][PieceType::Knight.index()] |= attacks;
                         ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
-                        if attacks & king_halo != 0 {
+                        let katt = (attacks ^ bb!(sq)) & king_halo;
+                        if katt != 0 {
                             num_king_attackers += 1;
-                            king_attack_weight += 16;
+                            king_attack_weight += 16 * katt.count_ones() as i32;
                         }
 
                         (attacks & available_squares).count_ones()
@@ -407,9 +408,10 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                                 all_pieces ^ pos.pieces_of_color_and_type(us, PieceType::Queen));
                         ed.attacks_by[us.index()][PieceType::Bishop.index()] |= attacks;
                         ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
-                        if attacks & king_halo != 0 {
+                        let katt = (attacks ^ bb!(sq)) & king_halo;
+                        if katt != 0 {
                             num_king_attackers += 1;
-                            king_attack_weight += 16;
+                            king_attack_weight += 16 * katt.count_ones() as i32;
                         }
                         (attacks & available_squares).count_ones()
                     },
@@ -419,9 +421,10 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                                               pos.pieces_of_color_and_type(us, PieceType::Rook)));
                         ed.attacks_by[us.index()][PieceType::Rook.index()] |= attacks;
                         ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
-                        if attacks & king_halo != 0 {
+                        let katt = (attacks ^ bb!(sq)) & king_halo;
+                        if katt != 0 {
                             num_king_attackers += 1;
-                            king_attack_weight += 32;
+                            king_attack_weight += 24 * katt.count_ones() as i32;
                         }
 
                         // Open file scoring.
@@ -465,9 +468,10 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                                               pos.pieces_of_color_and_type(us, PieceType::Rook)));
                         ed.attacks_by[us.index()][PieceType::Queen.index()] |= attacks;
                         ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
-                        if attacks & king_halo != 0 {
+                        let katt = (attacks ^ bb!(sq)) & king_halo;
+                        if katt != 0 {
                             num_king_attackers += 1;
-                            king_attack_weight += 64;
+                            king_attack_weight += 32 * katt.count_ones() as i32;
                         }
                         (attacks & available_squares).count_ones()
                     }
@@ -503,6 +507,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
         if do_safety {
             let shield_value = -king_shield_score(them, pos, ed);
+            //println!("shield[{}] = {}", us.glyph(), shield_value);
             side_score[us.index()].mg += shield_value;
             if shield_value > 8 {
                 king_attack_weight += 4;
@@ -515,11 +520,15 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                     king_attack_weight -= 8;
                 }
             }
+            //println!("king_attack_weight[{}] = {}", us.glyph(), king_attack_weight);
+            //println!("num_king_attackers[{}] = {}", us.glyph(), num_king_attackers);
 
             const KING_ATTACK_SCALE: [i32; 16] = [
                 0, 0, 640, 800, 1120, 1200, 1280, 1280,
                 1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
-            side_score[us.index()].mg += KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 1024;
+            let king_attack_value = KING_ATTACK_SCALE[num_king_attackers] * king_attack_weight / 800;
+            //println!("king_attack_value[{}] = {}", us.glyph(), king_attack_value);
+            side_score[us.index()].mg += king_attack_value;
         }
     }
 
