@@ -48,7 +48,6 @@ build: false
 # Equivalent to Travis' `script` phase
 test_script:
   - cargo build --verbose
-  - cargo run
   - cargo test
 
 before_deploy:
