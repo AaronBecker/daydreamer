@@ -57,7 +57,6 @@ const CANDIDATE_BONUS: [PhaseScore; 8] = [
 
 struct EvalData {
     attacks_by: [[Bitboard; 8]; 2],
-    outposts: [Bitboard; 2],
     open_files: u8,
     half_open_files: [u8; 2],
 }
@@ -66,7 +65,6 @@ impl EvalData {
     pub fn new() -> EvalData {
         EvalData {
             attacks_by: [[0; 8]; 2],
-            outposts: [0; 2],
             open_files: 0,
             half_open_files: [0, 0],
         }
@@ -78,7 +76,6 @@ struct PawnData {
     key: u32,
     score: [PhaseScore; 2], 
     passers: [Bitboard; 2],
-    outposts: [Bitboard; 2],
     attacks: [Bitboard; 2],
     open_files: u8,
     half_open_files: [u8; 2],
@@ -90,7 +87,6 @@ impl PawnData {
             key: 0,
             score: [sc!(0, 0), sc!(0, 0)],
             passers: [0, 0],
-            outposts: [0, 0],
             attacks: [0, 0],
             open_files: 0,
             half_open_files: [0, 0],
@@ -161,16 +157,6 @@ fn analyze_pawns(pos: &Position) -> PawnData {
             }
             if all_pawns & file_bb == 0 {
                 pd.open_files |= 1 << f;
-            }
-        }
-
-        for sq in board::each_square() {
-            let r = sq.relative_to(us).rank().index();
-            let f = sq.file().index();
-            if r >= Rank::_4.index() && r <= Rank::_6.index() &&
-                f >= File::C.index() && f <= File::F.index() &&
-                bitboard::outpost_mask(us, sq) & their_pawns == 0 {
-                pd.outposts[us.index()] |= bb!(sq);
             }
         }
 
@@ -261,7 +247,6 @@ fn eval_pawns(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         ed.attacks_by[us.index()][PieceType::Pawn.index()] = pd.attacks[us.index()];
         ed.attacks_by[us.index()][PieceType::AllPieces.index()] = pd.attacks[us.index()];
         ed.half_open_files[us.index()] = pd.half_open_files[us.index()];
-        ed.outposts[us.index()] = pd.outposts[us.index()];
         
         let mut passers_to_score = pd.passers[us.index()];
         while passers_to_score != 0 {
@@ -344,17 +329,6 @@ const MOBILITY_BONUS: [[PhaseScore; 32]; 8] = [
     [sc!(0, 0); 32],
 ];
 
-const OUTPOST_BONUS: [Score; 64] = [
-    0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  4,  5,  5,  4,  0,  0,
-    0,  0,  6,  9,  9,  6,  0,  0,
-    0,  0,  3,  4,  4,  3,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,
-];
-
 fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
     let all_pieces = pos.all_pieces(); 
@@ -373,7 +347,7 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         let their_king = pos.king_sq(them);
         let do_safety = pos.non_pawn_material(us) >= score::QUEEN.mg;
         let king_halo = if do_safety {
-            bitboard::king_shield(them, their_king)
+            bitboard::king_attacks(their_king)
         } else {
             0
         };
@@ -478,36 +452,11 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                     _ => 0,
                 };
                 side_score[us.index()] += MOBILITY_BONUS[pt.index()][mob as usize];
-
-                //// Outpost scoring.
-                //if pt == PieceType::Knight {
-                //    let mut outpost_scale = 0;
-                //    let bonus = OUTPOST_BONUS[sq.relative_to(us).index()];
-                //    if bonus != 0 && bb!(sq) & ed.outposts[us.index()] != 0 {
-                //        outpost_scale += 2;
-                //        // Defended by a pawn.
-                //        if bb!(sq) & ed.attacks_by[us.index()][PieceType::Pawn.index()] != 0 {
-                //            outpost_scale += 1;
-                //        }
-                //        //// Shielded by a pawn.
-                //        //if bitboard::in_front_mask(us, sq) & pos.pieces_of_type(PieceType::Pawn) != 0 {
-                //        //    outpost_scale += 1;
-                //        //}
-                //        //// Can't be captured by an opposing minor.
-                //        //if pos.pieces_of_color_and_type(them, PieceType::Knight) |
-                //        //    (pos.pieces_of_color_and_type(them, PieceType::Bishop) &
-                //        //     bitboard::squares_of_color(sq)) == 0 {
-                //        //    outpost_scale += 1;
-                //        //}
-                //    }
-                //    side_score[us.index()] += sc!(outpost_scale * bonus, outpost_scale * bonus);
-                //}
             }
         }
 
         if do_safety {
             let shield_value = -king_shield_score(them, pos, ed);
-            //println!("shield[{}] = {}", us.glyph(), shield_value);
             side_score[us.index()].mg += shield_value;
             if shield_value > 8 {
                 king_attack_weight += 4;
@@ -520,14 +469,11 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                     king_attack_weight -= 8;
                 }
             }
-            //println!("king_attack_weight[{}] = {}", us.glyph(), king_attack_weight);
-            //println!("num_king_attackers[{}] = {}", us.glyph(), num_king_attackers);
 
             const KING_ATTACK_SCALE: [i32; 16] = [
-                0, 400, 640, 800, 1120, 1200, 1280, 1280,
+                0, 0, 640, 800, 1120, 1200, 1280, 1280,
                 1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
-            let king_attack_value = KING_ATTACK_SCALE[min!(2 * num_king_attackers, 15)] * king_attack_weight / 900;
-            //println!("king_attack_value[{}] = {}", us.glyph(), king_attack_value);
+            let king_attack_value = KING_ATTACK_SCALE[min!(2 * num_king_attackers, 15)] * king_attack_weight / 800;
             side_score[us.index()].mg += king_attack_value;
         }
     }

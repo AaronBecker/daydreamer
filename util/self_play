@@ -19,26 +19,13 @@ timecontrol = '2+0.05'
 gamecount = '10000'
 
 external_programs = {
-    'bison' : 'cmd=' + engine_prefix + 'bison/bison.sh  proto=uci',
-    'cinnamon': 'cmd=' + engine_prefix + 'cinnamon_chess/cinnamon proto=uci',
     'discocheck': 'cmd=' + engine_prefix + 'discocheck/discocheck proto=uci',
-    'diablo64' : 'cmd=' + engine_prefix + 'diablo/diablo64.sh proto=uci',
-    'dirty' : 'cmd=' + engine_prefix + \
-            'dirty_acca3/dirty.sh proto=xboard name=Dirty',
-    'ethereal' : 'cmd=' + engine_prefix + 'ethereal/ethereal proto=uci',
-    'viper64' : 'cmd=' + engine_prefix + \
-            'viper/viper64.sh proto=uci option."Number of threads"=1',
-    'glaurung64' : 'cmd=' + engine_prefix + \
-            'glaurung121/glaurung64.sh proto=uci option."Number of threads"=1',
-    'hamsters' : 'cmd=' + engine_prefix + 'hamsters/hamster.sh proto=uci',
-    'cyrano' : 'cmd=' + engine_prefix + 'cyrano/cyrano.sh proto=uci',
-    'alaric' : 'cmd=' + engine_prefix + 'alaric/alaric.sh proto=uci',
-    'spike' : 'cmd=' + engine_prefix + 'spike/spike.sh proto=uci',
+    'hakkapeliitta': 'cmd=' + engine_prefix + 'hakkapeliitta/hakkapeliitta proto=uci',
     'pawny' : 'cmd=' + engine_prefix + 'pawny_1.2/pawny proto=uci',
     'protector' : 'cmd=' + engine_prefix + 'protector/protector.sh proto=uci',
     'rodent' : 'cmd=' + engine_prefix + 'rodentII/sources/rodentII proto=uci',
-    'spark' : 'cmd=' + engine_prefix + 'spark/spark.sh proto=uci',
-    'komodo' : 'cmd=' + engine_prefix + 'komodo/komodo.sh proto=uci',
+    'senpai' : 'cmd=' + engine_prefix + 'senpai/senpai proto=uci',
+    'texel' : 'cmd=' + engine_prefix + 'texel/texel64 proto=uci',
 }
 
 def build_engines(engines):
