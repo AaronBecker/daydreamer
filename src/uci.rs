@@ -138,7 +138,7 @@ fn handle_command(search_data: &mut SearchData, line: &str) -> Result<(), String
             Some("setoption") => return handle_option(search_data, &mut tokens),
             // Try to interpret unrecognized tokens as moves to make in the
             // current position. This tends to be handy for debugging.
-            Some(unknown) => try!(make_move(search_data, unknown)),
+            Some(unknown) => make_move(search_data, unknown)?,
             None => return Ok(()),
         }
     }
@@ -148,7 +148,7 @@ fn handle_position<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Resul
         where I: Iterator<Item=&'a str> {
     match tokens.next() {
         Some("startpos") => {
-            try!(search_data.pos.load_fen(position::START_FEN));
+            search_data.pos.load_fen(position::START_FEN)?;
         },
         Some("fen") => {
             let mut fen = String::new();
@@ -160,7 +160,7 @@ fn handle_position<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Resul
                 fen.push_str(" ");
             }
             if fen.len() > 0 {
-                try!(search_data.pos.load_fen(fen.as_str()));
+                search_data.pos.load_fen(fen.as_str())?;
             }
         },
         Some(x) => return Err(format!("unrecognized token '{}'", x)),
@@ -260,7 +260,7 @@ fn handle_perft<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(
         where I: Iterator<Item=&'a str> {
     match tokens.next() {
         Some(depth) => {
-            let d = try!(depth.parse::<u32>().map_err(|e| e.to_string()));
+            let d = depth.parse::<u32>().map_err(|e| e.to_string())?;
             let t1 = time::Instant::now();
             let count = perft::perft(&mut search_data.pos, d);
             let elapsed_ms = in_millis(&t1.elapsed());
@@ -275,7 +275,7 @@ fn handle_divide<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<
         where I: Iterator<Item=&'a str> {
     match tokens.next() {
         Some(depth) => {
-            let d = try!(depth.parse::<u32>().map_err(|e| e.to_string()));
+            let d = depth.parse::<u32>().map_err(|e| e.to_string())?;
             println!("{}", perft::divide(&mut search_data.pos, d));
         },
         None => return Err("input ended with no depth".to_string()),
@@ -302,7 +302,7 @@ fn handle_option<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<
     match name.to_lowercase().as_ref() {
         "hash" => {
             if let Some(t) = tokens.next() {
-                let mb = try!(t.parse::<usize>().map_err(|e| e.to_string()));
+                let mb = t.parse::<usize>().map_err(|e| e.to_string())?;
                 if mb > 0 && mb <= 65536 {
                     search_data.tt = ::transposition::Table::new(mb << 20);
                 }
@@ -310,19 +310,19 @@ fn handle_option<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<
         },
         "uci_chess960" => {
             if let Some(t) = tokens.next() {
-                let c960 = try!(t.parse::<bool>().map_err(|e| e.to_string()));
+                let c960 = t.parse::<bool>().map_err(|e| e.to_string())?;
                 ::options::set_c960(c960);
             }
         },
         "arena960castling" => {
             if let Some(t) = tokens.next() {
-                let arena = try!(t.parse::<bool>().map_err(|e| e.to_string()));
+                let arena = t.parse::<bool>().map_err(|e| e.to_string())?;
                 ::options::set_arena_960_castling(arena);
             }
         },
         "multipv" => {
             if let Some(t) = tokens.next() {
-                let mpv = try!(t.parse::<usize>().map_err(|e| e.to_string()));
+                let mpv = t.parse::<usize>().map_err(|e| e.to_string())?;
                 if mpv > 0 && mpv < 256 {
                     ::options::set_multi_pv(mpv);
                 } else {

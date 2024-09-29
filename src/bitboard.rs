@@ -2,7 +2,7 @@ use board::*;
 use uci::in_millis;
 
 pub fn initialize() {
-    static INIT: ::std::sync::Once = ::std::sync::ONCE_INIT;
+    static INIT: ::std::sync::Once = ::std::sync::Once::new();
     INIT.call_once(|| {
         let t1 = ::std::time::Instant::now();
         init_simple_bitboards();

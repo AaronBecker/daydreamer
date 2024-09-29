@@ -63,7 +63,7 @@ static mut side_random: HashKey = 0;
 /// Sets up the Zobrist hash tables. Only done once, at startup.
 pub fn initialize()
 {
-    static INIT: ::std::sync::Once = ::std::sync::ONCE_INIT;
+    static INIT: ::std::sync::Once = ::std::sync::Once::new();
     INIT.call_once(|| {
         use rand::{Rng, SeedableRng, StdRng};
         let seed: &[_] = &[1];
@@ -1103,21 +1103,21 @@ impl ::std::fmt::Display for Position {
                 let sq = Square::new(file, rank);
                 let p = self.piece_at(sq);
                 if empty != 0 && p != Piece::NoPiece {
-                    try!(write!(f, "{}", empty));
+                    write!(f, "{}", empty)?;
                     empty = 0;
                 }
                 if p == Piece::NoPiece {
                     empty += 1;
                 } else {
-                    try!(write!(f, "{}", p.glyph()));
+                    write!(f, "{}", p.glyph())?;
                 }
                 if sq.file() == File::H {
                     if empty != 0 {
-                        try!(write!(f, "{}", empty));
+                        write!(f, "{}", empty)?;
                         empty = 0;
                     }
                     if sq.rank() != Rank::_1 {
-                        try!(write!(f, "/"));
+                        write!(f, "/")?;
                     }
                 }
             }
