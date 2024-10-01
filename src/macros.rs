@@ -21,17 +21,15 @@ macro_rules! min {
 }
 
 macro_rules! clamp {
-    ($x:expr, $min:expr, $max:expr) => {
-        {
-            if $x < $min {
-                $min
-            } else if $x > $max {
-                $max
-            } else {
-                $x
-            }
+    ($x:expr, $min:expr, $max:expr) => {{
+        if $x < $min {
+            $min
+        } else if $x > $max {
+            $max
+        } else {
+            $x
         }
-    };
+    }};
 }
 
 // The bitboard you get from OR'ing together any number of elements that are
@@ -51,12 +49,10 @@ macro_rules! bb {
 
 // Convenience macro for populating tables of phase scores.
 macro_rules! sc {
-    ( $mg:expr, $eg:expr ) => {
-        {
-            use score::PhaseScore;
-            PhaseScore{ mg: $mg, eg: $eg }
-        }
-    };
+    ( $mg:expr, $eg:expr ) => {{
+        use score::PhaseScore;
+        PhaseScore { mg: $mg, eg: $eg }
+    }};
 }
 
 #[cfg(test)]

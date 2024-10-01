@@ -123,7 +123,6 @@ pub fn pop_square(b: &mut Bitboard) -> Square {
     sq
 }
 
-
 static mut RANK_BB: [Bitboard; 8] = [0; 8];
 static mut FILE_BB: [Bitboard; 8] = [0; 8];
 static mut DISTANCE: [[u8; 64]; 64] = [[0; 64]; 64];
@@ -156,8 +155,7 @@ fn init_simple_bitboards() {
     for sq1 in each_square() {
         let i = sq1.index();
         unsafe {
-            SQUARES_OF_COLOR_BB[(sq1.file().index() +
-                                 sq1.rank().index() + 1) & 1] |= bb!(sq1);
+            SQUARES_OF_COLOR_BB[(sq1.file().index() + sq1.rank().index() + 1) & 1] |= bb!(sq1);
             let this_file = bb!(sq1.file());
             let neighbor_files = NEIGHBOR_FILES_BB[sq1.file().index()];
             for r in 0..sq1.rank().index() {
@@ -168,7 +166,7 @@ fn init_simple_bitboards() {
             }
             let near_files = this_file | neighbor_files;
 
-            PASSER_BB[0][i] &= near_files; 
+            PASSER_BB[0][i] &= near_files;
             IN_FRONT_BB[0][i] = PASSER_BB[0][i] & this_file;
             OUTPOST_BB[0][i] = PASSER_BB[0][i] & neighbor_files;
 
@@ -185,7 +183,6 @@ fn init_simple_bitboards() {
             }
         }
     }
-
 }
 
 pub fn squares_of_color(sq: Square) -> Bitboard {
@@ -238,17 +235,25 @@ fn init_mundane_attacks() {
     unsafe {
         init_mundane(&mut WHITE_PAWN_ATTACKS_BB, &[NORTHWEST, NORTHEAST]);
         init_mundane(&mut BLACK_PAWN_ATTACKS_BB, &[SOUTHWEST, SOUTHEAST]);
-        init_mundane(&mut KNIGHT_ATTACKS_BB,
-                     &[NORTH + NORTHWEST,
-                       NORTH + NORTHEAST,
-                       WEST + NORTHWEST,
-                       WEST + SOUTHWEST,
-                       EAST + NORTHEAST,
-                       EAST + SOUTHEAST,
-                       SOUTH + SOUTHEAST,
-                       SOUTH + SOUTHWEST]);
-        init_mundane(&mut KING_ATTACKS_BB,
-                     &[NORTHWEST, NORTH, NORTHEAST, WEST, EAST, SOUTHWEST, SOUTH, SOUTHEAST]);
+        init_mundane(
+            &mut KNIGHT_ATTACKS_BB,
+            &[
+                NORTH + NORTHWEST,
+                NORTH + NORTHEAST,
+                WEST + NORTHWEST,
+                WEST + SOUTHWEST,
+                EAST + NORTHEAST,
+                EAST + SOUTHEAST,
+                SOUTH + SOUTHEAST,
+                SOUTH + SOUTHWEST,
+            ],
+        );
+        init_mundane(
+            &mut KING_ATTACKS_BB,
+            &[
+                NORTHWEST, NORTH, NORTHEAST, WEST, EAST, SOUTHWEST, SOUTH, SOUTHEAST,
+            ],
+        );
     }
 }
 
@@ -261,8 +266,9 @@ fn init_king_safety() {
         for sq in each_square() {
             for c in each_color() {
                 let mut shield = king_attacks(sq);
-                if (sq.rank() != Rank::_1 || c == Color::White) &&
-                    (sq.rank() != Rank::_8 || c == Color::Black) {
+                if (sq.rank() != Rank::_1 || c == Color::White)
+                    && (sq.rank() != Rank::_8 || c == Color::Black)
+                {
                     shield |= king_attacks(sq.pawn_push(c));
                 }
                 let far_shield = shield ^ king_attacks(sq) ^ bb!(sq);
@@ -350,11 +356,12 @@ fn rook_slide_mask(sq: Square, occ: Bitboard) -> Bitboard {
     slide_mask(sq, occ, &[NORTH, SOUTH, EAST, WEST])
 }
 
-unsafe fn init_bishop_attacks(sq: Square,
-                              size: usize,
-                              occ: &[Bitboard; 4096],
-                              gold: &[Bitboard; 4096])
-                              -> bool {
+unsafe fn init_bishop_attacks(
+    sq: Square,
+    size: usize,
+    occ: &[Bitboard; 4096],
+    gold: &[Bitboard; 4096],
+) -> bool {
     ::std::intrinsics::write_bytes(&mut BISHOP_ATTACKS_BB[sq.index()][0], 0, 512);
     for i in 0..size {
         let att: *mut Bitboard =
@@ -367,11 +374,12 @@ unsafe fn init_bishop_attacks(sq: Square,
     true
 }
 
-unsafe fn init_rook_attacks(sq: Square,
-                            size: usize,
-                            occ: &[Bitboard; 4096],
-                            gold: &[Bitboard; 4096])
-                            -> bool {
+unsafe fn init_rook_attacks(
+    sq: Square,
+    size: usize,
+    occ: &[Bitboard; 4096],
+    gold: &[Bitboard; 4096],
+) -> bool {
     ::std::intrinsics::write_bytes(&mut ROOK_ATTACKS_BB[sq.index()][0], 0, 4096);
     for i in 0..size {
         let att: *mut Bitboard =
@@ -436,18 +444,38 @@ fn init_magic() {
     // mostly a feature for my own convenience in development, so the fact that
     // the benefits don't necessarily translate across systems doesn't matter.
     // I tested Seed values up to 100k.
-    unsafe { init_magic_opt(PieceType::Bishop, 17337, u64::max_value()); }
-    unsafe { init_magic_opt(PieceType::Rook, 8452, u64::max_value()); }
+    unsafe {
+        init_magic_opt(PieceType::Bishop, 17337, u64::max_value());
+    }
+    unsafe {
+        init_magic_opt(PieceType::Rook, 8452, u64::max_value());
+    }
 }
 
-unsafe fn init_magic_opt(pt: PieceType, xseed: usize, best_time: u64) -> u64{
+unsafe fn init_magic_opt(pt: PieceType, xseed: usize, best_time: u64) -> u64 {
     let t1 = ::std::time::Instant::now();
     let mut occ: [Bitboard; 4096] = [0; 4096];
     let mut gold: [Bitboard; 4096] = [0; 4096];
-    let masks = if pt == PieceType::Bishop { &mut BISHOP_MASKS } else { &mut ROOK_MASKS };
-    let magic = if pt == PieceType::Bishop { &mut BISHOP_MAGIC } else { &mut ROOK_MAGIC };
-    let mask_fn = if pt == PieceType::Bishop { bishop_slide_mask } else { rook_slide_mask };
-    let attack_fn = if pt == PieceType::Bishop { init_bishop_attacks } else { init_rook_attacks };
+    let masks = if pt == PieceType::Bishop {
+        &mut BISHOP_MASKS
+    } else {
+        &mut ROOK_MASKS
+    };
+    let magic = if pt == PieceType::Bishop {
+        &mut BISHOP_MAGIC
+    } else {
+        &mut ROOK_MAGIC
+    };
+    let mask_fn = if pt == PieceType::Bishop {
+        bishop_slide_mask
+    } else {
+        rook_slide_mask
+    };
+    let attack_fn = if pt == PieceType::Bishop {
+        init_bishop_attacks
+    } else {
+        init_rook_attacks
+    };
 
     use rand::{Rng, SeedableRng, StdRng};
     let seed: &[_] = &[xseed];
@@ -536,7 +564,9 @@ fn init_post_attack_bitboards() {
             let d = direction(sq1, sq2);
             let mut sq3 = shift_sq(sq1, d);
             while sq3 != sq2 {
-                unsafe { BETWEEN_BB[sq1.index()][sq2.index()] |= bb(sq3); }
+                unsafe {
+                    BETWEEN_BB[sq1.index()][sq2.index()] |= bb(sq3);
+                }
                 sq3 = shift_sq(sq3, d);
             }
         }
@@ -601,12 +631,18 @@ mod tests {
             assert_eq!(s, bb_to_str(x));
         };
 
-        test_case(0,
-                  "\n........\n........\n........\n........\n........\n........\n........\n........\n");
-        test_case(bb!(E4, E5, D4, D5),
-                  "\n........\n........\n........\n...xx...\n...xx...\n........\n........\n........\n");
-        test_case(bb!(A1, B2, A8, B7),
-                  "\nx.......\n.x......\n........\n........\n........\n........\n.x......\nx.......\n");
+        test_case(
+            0,
+            "\n........\n........\n........\n........\n........\n........\n........\n........\n",
+        );
+        test_case(
+            bb!(E4, E5, D4, D5),
+            "\n........\n........\n........\n...xx...\n...xx...\n........\n........\n........\n",
+        );
+        test_case(
+            bb!(A1, B2, A8, B7),
+            "\nx.......\n.x......\n........\n........\n........\n........\n.x......\nx.......\n",
+        );
     });
 
     chess_test!(test_pop_square, {
@@ -642,24 +678,34 @@ mod tests {
     });
 
     chess_test!(test_bishop_attacks, {
-        assert_eq!(bishop_attacks(A1, bb!(A1, A8, B3, B6, C6, G3, H1)),
-                   bb!(B2, C3, D4, E5, F6, G7, H8));
-        assert_eq!(bishop_attacks(F6, bb!(B3, C2, C3, C6, D5, D7, F5)),
-                   bb!(C3, D4, D8, E5, E7, G5, G7, H4, H8));
+        assert_eq!(
+            bishop_attacks(A1, bb!(A1, A8, B3, B6, C6, G3, H1)),
+            bb!(B2, C3, D4, E5, F6, G7, H8)
+        );
+        assert_eq!(
+            bishop_attacks(F6, bb!(B3, C2, C3, C6, D5, D7, F5)),
+            bb!(C3, D4, D8, E5, E7, G5, G7, H4, H8)
+        );
     });
 
     chess_test!(test_rook_attacks, {
-        assert_eq!(rook_attacks(A1, bb!(A1, A6, A8, B3, B6, C6, G3, H1)),
-                   bb!(A2, A3, A4, A5, A6, B1, C1, D1, E1, F1, G1, H1));
-        assert_eq!(rook_attacks(F6, bb!(B3, C2, C3, C6, D5, D7, F6)),
-                   bb!(C6, D6, E6, G6, H6, F1, F2, F3, F4, F5, F7, F8));
+        assert_eq!(
+            rook_attacks(A1, bb!(A1, A6, A8, B3, B6, C6, G3, H1)),
+            bb!(A2, A3, A4, A5, A6, B1, C1, D1, E1, F1, G1, H1)
+        );
+        assert_eq!(
+            rook_attacks(F6, bb!(B3, C2, C3, C6, D5, D7, F6)),
+            bb!(C6, D6, E6, G6, H6, F1, F2, F3, F4, F5, F7, F8)
+        );
     });
-    
+
     chess_test!(test_queen_attacks, {
-        assert_eq!(queen_attacks(A1, bb_from_str("x......x\n........\nxxx.....\n........\n........\n.x....x.\n........\nx......x\n")),
-                   bb_from_str(".......x\n......x.\nx....x..\nx...x...\nx..x....\nx.x.....\nxx......\n.xxxxxxx\n"));
-        assert_eq!(queen_attacks(F6, bb_from_str("........\n...x....\n..x..x..\n...x....\n........\n.xx.....\n..x.....\n........\n")),
-                   bb_from_str("...x.x.x\n....xxx.\n..xxx.xx\n....xxx.\n...x.x.x\n..x..x..\n.....x..\n.....x..\n"));
+        assert_eq!(queen_attacks(A1,
+                bb_from_str("x......x\n........\nxxx.....\n........\n........\n.x....x.\n........\nx......x\n")),
+                bb_from_str(".......x\n......x.\nx....x..\nx...x...\nx..x....\nx.x.....\nxx......\n.xxxxxxx\n"));
+        assert_eq!(queen_attacks(F6,
+                bb_from_str("........\n...x....\n..x..x..\n...x....\n........\n.xx.....\n..x.....\n........\n")),
+                bb_from_str("...x.x.x\n....xxx.\n..xxx.xx\n....xxx.\n...x.x.x\n..x..x..\n.....x..\n.....x..\n"));
     });
 
     chess_test!(test_directional_bitboards, {
@@ -679,13 +725,15 @@ mod tests {
 
     chess_test!(test_pawn_masks, {
         assert_eq!(passer_mask(Color::White, A5), bb!(A6, B6, A7, B7, A8, B8));
-        assert_eq!(passer_mask(Color::Black, A5), bb!(A4, B4, A3, B3, A2, B2, A1, B1));
+        assert_eq!(
+            passer_mask(Color::Black, A5),
+            bb!(A4, B4, A3, B3, A2, B2, A1, B1)
+        );
         assert_eq!(passer_mask(Color::White, F6), bb!(E7, F7, G7, E8, F8, G8));
-        assert_eq!(passer_mask(Color::Black, F6), bb!(E5, F5, G5,
-                                                      E4, F4, G4,
-                                                      E3, F3, G3,
-                                                      E2, F2, G2,
-                                                      E1, F1, G1));
+        assert_eq!(
+            passer_mask(Color::Black, F6),
+            bb!(E5, F5, G5, E4, F4, G4, E3, F3, G3, E2, F2, G2, E1, F1, G1)
+        );
 
         assert_eq!(in_front_mask(Color::White, A5), bb!(A6, A7, A8));
         assert_eq!(in_front_mask(Color::Black, A5), bb!(A4, A3, A2, A1));
@@ -695,24 +743,29 @@ mod tests {
         assert_eq!(outpost_mask(Color::White, A5), bb!(B6, B7, B8));
         assert_eq!(outpost_mask(Color::Black, A5), bb!(B4, B3, B2, B1));
         assert_eq!(outpost_mask(Color::White, F6), bb!(E7, G7, E8, G8));
-        assert_eq!(outpost_mask(Color::Black, F6), bb!(E5, G5,
-                                                       E4, G4,
-                                                       E3, G3,
-                                                       E2, G2,
-                                                       E1, G1));
+        assert_eq!(
+            outpost_mask(Color::Black, F6),
+            bb!(E5, G5, E4, G4, E3, G3, E2, G2, E1, G1)
+        );
     });
-    
+
+    #[rustfmt::skip]
     chess_test!(test_color_masks, {
         let wsq = squares_of_color(E4);
         let bsq = squares_of_color(A1);
-        assert_eq!(bsq, bb!(A1, A3, A5, A7,
-                            B2, B4, B6, B8,
-                            C1, C3, C5, C7,
-                            D2, D4, D6, D8,
-                            E1, E3, E5, E7,
-                            F2, F4, F6, F8,
-                            G1, G3, G5, G7,
-                            H2, H4, H6, H8));
+        assert_eq!(
+            bsq,
+            bb!(
+                A1, A3, A5, A7,
+                B2, B4, B6, B8,
+                C1, C3, C5, C7,
+                D2, D4, D6, D8,
+                E1, E3, E5, E7,
+                F2, F4, F6, F8,
+                G1, G3, G5, G7,
+                H2, H4, H6, H8
+            )
+        );
         assert_eq!(wsq, u64::max_value() ^ bsq);
     });
 }

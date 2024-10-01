@@ -1,8 +1,8 @@
 use std::mem::MaybeUninit;
 
-use board::*;
 use bitboard;
 use bitboard::Bitboard;
+use board::*;
 use eval;
 use movegen::MoveSelector;
 use movement::{Move, NO_MOVE, NULL_MOVE};
@@ -47,13 +47,13 @@ pub struct CastleInfo {
 }
 
 const EMPTY_CASTLE_INFO: CastleInfo = CastleInfo {
-        path: 0,
-        king: Square::NoSquare,
-        rook: Square::NoSquare,
-        kdest: Square::NoSquare,
-        d: 0,
-        may_discover_check: false,
-    };
+    path: 0,
+    king: Square::NoSquare,
+    rook: Square::NoSquare,
+    kdest: Square::NoSquare,
+    d: 0,
+    may_discover_check: false,
+};
 
 pub type HashKey = u64;
 
@@ -63,8 +63,7 @@ static mut ENPASSANT_RANDOM: [HashKey; 8] = [0; 8];
 static mut SIDE_RANDOM: HashKey = 0;
 
 /// Sets up the Zobrist hash tables. Only done once, at startup.
-pub fn initialize()
-{
+pub fn initialize() {
     static INIT: ::std::sync::Once = ::std::sync::Once::new();
     INIT.call_once(|| {
         use rand::{Rng, SeedableRng, StdRng};
@@ -73,17 +72,25 @@ pub fn initialize()
         for i in 0..2 {
             for j in 0..7 {
                 for k in 0..64 {
-                    unsafe { PIECE_RANDOM[i][j][k] = prng.gen::<u64>(); }
+                    unsafe {
+                        PIECE_RANDOM[i][j][k] = prng.gen::<u64>();
+                    }
                 }
             }
         }
         for i in 0..16 {
-            unsafe { CASTLE_RANDOM[i] = prng.gen::<u64>(); }
+            unsafe {
+                CASTLE_RANDOM[i] = prng.gen::<u64>();
+            }
         }
         for i in 0..8 {
-            unsafe { ENPASSANT_RANDOM[i] = prng.gen::<u64>(); }
+            unsafe {
+                ENPASSANT_RANDOM[i] = prng.gen::<u64>();
+            }
         }
-        unsafe { SIDE_RANDOM = prng.gen::<u64>(); }
+        unsafe {
+            SIDE_RANDOM = prng.gen::<u64>();
+        }
     });
 }
 
@@ -139,7 +146,9 @@ impl State {
     }
 
     pub fn clear(&mut self) {
-        unsafe { ::std::intrinsics::write_bytes(self, 0, 1); }
+        unsafe {
+            ::std::intrinsics::write_bytes(self, 0, 1);
+        }
         self.ep_square = Square::NoSquare;
     }
 
@@ -187,7 +196,10 @@ impl Position {
             pieces_of_color: [0; 2],
             hash_history: Vec::with_capacity(255),
             castle_mask: [CASTLE_NONE; 64],
-            possible_castles: [[EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO], [EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO]],
+            possible_castles: [
+                [EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO],
+                [EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO],
+            ],
         }
     }
 
@@ -198,7 +210,9 @@ impl Position {
     }
 
     pub fn copy_state(&mut self, state: &State) {
-        unsafe { ::std::ptr::copy_nonoverlapping(state, &mut self.state, 1); }
+        unsafe {
+            ::std::ptr::copy_nonoverlapping(state, &mut self.state, 1);
+        }
     }
 
     // clear resets the position and removes all pieces from the board.
@@ -209,7 +223,10 @@ impl Position {
         self.pieces_of_color = [0; 2];
         self.hash_history.clear();
         self.castle_mask = [CASTLE_NONE; 64];
-        self.possible_castles = [[EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO], [EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO]];
+        self.possible_castles = [
+            [EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO],
+            [EMPTY_CASTLE_INFO, EMPTY_CASTLE_INFO],
+        ];
     }
 
     pub fn all_pieces(&self) -> Bitboard {
@@ -239,7 +256,7 @@ impl Position {
     pub fn their_pieces(&self) -> Bitboard {
         self.pieces_of_color[self.state.us.flip().index()]
     }
-    
+
     pub fn king_sq(&self, c: Color) -> Square {
         bitboard::lsb(self.pieces_of_color_and_type(c, PieceType::King))
     }
@@ -270,7 +287,7 @@ impl Position {
         let mut hash = 0;
         for sq in each_square() {
             if self.piece_at(sq) == Piece::NoPiece {
-                continue
+                continue;
             }
             hash ^= piece_hash(self.piece_at(sq), sq);
         }
@@ -333,8 +350,8 @@ impl Position {
     fn insufficient_material(&self) -> bool {
         // Note: this criterion misses some insufficient material scenarios,
         // for example K vs KNN and KB vs KN, but that's ok.
-        self.pieces_of_type(PieceType::Pawn) == 0 &&
-            self.state.phase < PhaseScore::phase(PieceType::Rook)
+        self.pieces_of_type(PieceType::Pawn) == 0
+            && self.state.phase < PhaseScore::phase(PieceType::Rook)
     }
 
     // repetition detects draws by repetition. Note that we only have to look
@@ -347,7 +364,9 @@ impl Position {
         let max_age = min!(end, self.state.fifty_move_counter as usize);
         let mut age = 2;
         while age <= max_age {
-            if self.state.hash == self.hash_history[end - age] { return true }
+            if self.state.hash == self.hash_history[end - age] {
+                return true;
+            }
             age += 2;
         }
         false
@@ -357,10 +376,10 @@ impl Position {
     // play isn't required; checkmate is impossible). It's not precise, but
     // it's never true in non-draw situations.
     pub fn is_draw(&self) -> bool {
-        self.state.fifty_move_counter > 100 ||
-            (self.state.fifty_move_counter == 100 && self.checkers() == 0) ||
-            self.insufficient_material() ||
-            self.repetition()
+        self.state.fifty_move_counter > 100
+            || (self.state.fifty_move_counter == 100 && self.checkers() == 0)
+            || self.insufficient_material()
+            || self.repetition()
     }
 
     // attackers gives the set of pieces in occ attacking sq, regardless of color.
@@ -402,7 +421,7 @@ impl Position {
         for sq in each_square() {
             let p = self.board[sq.index()];
             if p == Piece::NoPiece {
-                continue
+                continue;
             }
             s[p.color().index()] += score::non_pawn_material(p.piece_type());
         }
@@ -427,16 +446,20 @@ impl Position {
     // attack sq. This can find pinned pieces or pieces that could discover check
     // depending on the arguments passed.
     fn attack_occluders(&self, sq: Square, c: Color, attacker: Color) -> Bitboard {
-        let rpinners = (self.pieces_of_type(PieceType::Rook) |
-                        self.pieces_of_type(PieceType::Queen)) & bitboard::rook_pseudo_attacks(sq);
-        let bpinners = (self.pieces_of_type(PieceType::Bishop) |
-                        self.pieces_of_type(PieceType::Queen)) & bitboard::bishop_pseudo_attacks(sq);
+        let rpinners = (self.pieces_of_type(PieceType::Rook)
+            | self.pieces_of_type(PieceType::Queen))
+            & bitboard::rook_pseudo_attacks(sq);
+        let bpinners = (self.pieces_of_type(PieceType::Bishop)
+            | self.pieces_of_type(PieceType::Queen))
+            & bitboard::bishop_pseudo_attacks(sq);
 
         let mut potential_pinners = (rpinners | bpinners) & self.pieces_of_color(attacker);
         let mut occluders: Bitboard = 0;
         while potential_pinners != 0 {
-            let between = bitboard::between(sq, bitboard::pop_square(&mut potential_pinners)) & self.all_pieces();
-            if (between & (between.wrapping_sub(1))) == 0 {  // exactly one piece in between
+            let between = bitboard::between(sq, bitboard::pop_square(&mut potential_pinners))
+                & self.all_pieces();
+            if (between & (between.wrapping_sub(1))) == 0 {
+                // exactly one piece in between
                 occluders |= between & self.pieces_of_color(c);
             }
         }
@@ -470,8 +493,8 @@ impl Position {
         let from = m.from();
         // If this piece can discover check and we're not moving along the path
         // to the enemy king, this move discovers check.
-        ad.check_discoverers & bitboard::bb(from) != 0 &&
-            (bitboard::ray(from, to) & bitboard::bb(ad.their_king)) == 0
+        ad.check_discoverers & bitboard::bb(from) != 0
+            && (bitboard::ray(from, to) & bitboard::bb(ad.their_king)) == 0
     }
 
     pub fn debug_string(&self) -> String {
@@ -492,10 +515,22 @@ impl Position {
             s.push_str(m.to_string().as_str());
             s.push(' ');
         }
-        s.push_str(format!("\npsqt score: {} ({})\n",
-            self.psqt_score().interpolate(self), self.state.psqt_score).as_str());
-        s.push_str(format!("\nnon pawn material: ({}, {})\n",
-            self.non_pawn_material(Color::White), self.non_pawn_material(Color::Black)).as_str());
+        s.push_str(
+            format!(
+                "\npsqt score: {} ({})\n",
+                self.psqt_score().interpolate(self),
+                self.state.psqt_score
+            )
+            .as_str(),
+        );
+        s.push_str(
+            format!(
+                "\nnon pawn material: ({}, {})\n",
+                self.non_pawn_material(Color::White),
+                self.non_pawn_material(Color::Black)
+            )
+            .as_str(),
+        );
         s.push_str(format!("\nfull eval: {}\n", eval::full(&self)).as_str());
         s.push_str(format!("phase: {}\n", self.state.phase).as_str());
         s.push_str(format!("hash:          {}\n", self.state.hash).as_str());
@@ -509,8 +544,11 @@ impl Position {
         let pieces: Vec<&str> = fen.split_whitespace().collect();
 
         if pieces.len() < 4 {
-            return Err(format!("error parsing fen position {}: expected at least 4 tokens, got {}",
-                               fen, pieces.len()));
+            return Err(format!(
+                "error parsing fen position {}: expected at least 4 tokens, got {}",
+                fen,
+                pieces.len()
+            ));
         }
 
         {
@@ -534,8 +572,10 @@ impl Position {
             } else if ch == 'b' {
                 self.state.us = Color::Black;
             } else {
-                return Err(format!("error parsing fen position {}: couldn't parse side to move ({})",
-                                   fen, pieces[1]));
+                return Err(format!(
+                    "error parsing fen position {}: couldn't parse side to move ({})",
+                    fen, pieces[1]
+                ));
             }
         }
         self.state.checkers = self.find_checkers();
@@ -545,10 +585,11 @@ impl Position {
         if self.ep_square() != Square::NoSquare {
             // Don't believe the ep square unless there's a pawn that could
             // actually do the capture.
-            if (self.us() == Color::White &&
-                bitboard::black_pawn_attacks(self.ep_square()) & self.pieces(Piece::WP) == 0) ||
-               (self.us() == Color::Black &&
-                bitboard::white_pawn_attacks(self.ep_square()) & self.pieces(Piece::BP) == 0) {
+            if (self.us() == Color::White
+                && bitboard::black_pawn_attacks(self.ep_square()) & self.pieces(Piece::WP) == 0)
+                || (self.us() == Color::Black
+                    && bitboard::white_pawn_attacks(self.ep_square()) & self.pieces(Piece::BP) == 0)
+            {
                 self.state.ep_square = Square::NoSquare;
             }
         }
@@ -693,7 +734,8 @@ impl Position {
             self.state.fifty_move_counter = 0;
             if from.index() ^ to.index() == 16 && // double pawn push
                 (bitboard::pawn_attacks(us, from.pawn_push(us)) &
-                 self.pieces_of_color_and_type(them, PieceType::Pawn) != 0) {
+                 self.pieces_of_color_and_type(them, PieceType::Pawn) != 0)
+            {
                 self.state.ep_square = from.pawn_push(us);
                 self.state.hash ^= ep_hash(self.state.ep_square);
             }
@@ -725,8 +767,8 @@ impl Position {
             };
             let to_piece = self.piece_at(to);
             self.state.hash ^= piece_hash(to_piece, rdest) ^ piece_hash(to_piece, to);
-            self.state.psqt_score += score::PSQT[to_piece.index()][rdest.index()] -
-                score::PSQT[to_piece.index()][to.index()];
+            self.state.psqt_score += score::PSQT[to_piece.index()][rdest.index()]
+                - score::PSQT[to_piece.index()][to.index()];
             self.remove_piece(from);
             self.transfer_piece(to, rdest);
             self.place_piece(Piece::new(us, PieceType::King), kdest);
@@ -740,16 +782,16 @@ impl Position {
                 let cap_piece = self.piece_at(cap_sq);
                 self.state.hash ^= piece_hash(capture, to) ^ piece_hash(cap_piece, cap_sq);
                 self.state.pawn_hash ^= piece_hash(capture, to) ^ piece_hash(cap_piece, cap_sq);
-                self.state.psqt_score += score::PSQT[capture.index()][to.index()] -
-                    score::PSQT[cap_piece.index()][cap_sq.index()];
+                self.state.psqt_score += score::PSQT[capture.index()][to.index()]
+                    - score::PSQT[cap_piece.index()][cap_sq.index()];
                 self.remove_piece(to.pawn_push(them));
                 self.state.checkers = self.attackers(ad.their_king) & self.our_pieces();
             } else if promote != PieceType::NoPieceType {
                 let new_piece = Piece::new(us, promote);
                 self.remove_piece(to);
                 self.place_piece(new_piece, to);
-                self.state.psqt_score += score::PSQT[new_piece.index()][to.index()] -
-                    score::PSQT[piece.index()][to.index()];
+                self.state.psqt_score += score::PSQT[new_piece.index()][to.index()]
+                    - score::PSQT[piece.index()][to.index()];
                 self.state.hash ^= piece_hash(new_piece, to) ^ piece_hash(piece, to);
                 self.state.pawn_hash ^= piece_hash(piece, to);
                 self.state.phase += PhaseScore::phase(promote);
@@ -759,8 +801,8 @@ impl Position {
         }
 
         self.state.hash ^= piece_hash(piece, to) ^ piece_hash(piece, from);
-        self.state.psqt_score += score::PSQT[piece.index()][to.index()] -
-            score::PSQT[piece.index()][from.index()];
+        self.state.psqt_score +=
+            score::PSQT[piece.index()][to.index()] - score::PSQT[piece.index()][from.index()];
 
         if self.obvious_check(m, ad) {
             let (bb_from, bb_to) = (bitboard::bb(from), bitboard::bb(to));
@@ -770,15 +812,16 @@ impl Position {
             if ad.check_discoverers & bb_from != 0 {
                 if piece_type != PieceType::Bishop {
                     self.state.checkers |=
-                        bitboard::bishop_attacks(ad.their_king, self.all_pieces()) &
-                        (self.pieces_of_type(PieceType::Bishop) | self.pieces_of_type(PieceType::Queen)) &
-                        self.our_pieces();
+                        bitboard::bishop_attacks(ad.their_king, self.all_pieces())
+                            & (self.pieces_of_type(PieceType::Bishop)
+                                | self.pieces_of_type(PieceType::Queen))
+                            & self.our_pieces();
                 }
                 if piece_type != PieceType::Rook {
-                    self.state.checkers |=
-                        bitboard::rook_attacks(ad.their_king, self.all_pieces()) &
-                        (self.pieces_of_type(PieceType::Rook) | self.pieces_of_type(PieceType::Queen)) &
-                        self.our_pieces();
+                    self.state.checkers |= bitboard::rook_attacks(ad.their_king, self.all_pieces())
+                        & (self.pieces_of_type(PieceType::Rook)
+                            | self.pieces_of_type(PieceType::Queen))
+                        & self.our_pieces();
                 }
             }
         }
@@ -909,16 +952,18 @@ impl Position {
             after |= bitboard::bb(mv.to());
             after ^= bb!(mv.from(), mv.to().pawn_push(them));
             let ksq = self.king_sq(us);
-            if bitboard::bishop_attacks(ksq, after) &
-                (self.pieces_of_type(PieceType::Bishop) |
-                 self.pieces_of_type(PieceType::Queen)) &
-                    self.their_pieces() != 0 {
+            if bitboard::bishop_attacks(ksq, after)
+                & (self.pieces_of_type(PieceType::Bishop) | self.pieces_of_type(PieceType::Queen))
+                & self.their_pieces()
+                != 0
+            {
                 return false;
             }
-            if bitboard::rook_attacks(ksq, after) &
-                (self.pieces_of_type(PieceType::Rook) |
-                 self.pieces_of_type(PieceType::Queen)) &
-                    self.their_pieces() != 0 {
+            if bitboard::rook_attacks(ksq, after)
+                & (self.pieces_of_type(PieceType::Rook) | self.pieces_of_type(PieceType::Queen))
+                & self.their_pieces()
+                != 0
+            {
                 return false;
             }
         }
@@ -939,8 +984,7 @@ impl Position {
         }
 
         // Otherwise, it's legal iff the move travels along the path of the pin.
-        bitboard::ray(mv.from(), mv.to()) &
-            self.pieces_of_color_and_type(us, PieceType::King) != 0
+        bitboard::ray(mv.from(), mv.to()) & self.pieces_of_color_and_type(us, PieceType::King) != 0
     }
 
     // remove_rights takes a CastleRights and the source and destination of a move,
@@ -955,15 +999,27 @@ impl Position {
     // at a time and castling legality isn't updated during search, so the data is
     // effectively const over the lifetime of any search.
     fn add_castle(&mut self, k: Square, r: Square) {
-        let color = if k.index() > Square::H1.index() { Color::Black } else { Color::White };
+        let color = if k.index() > Square::H1.index() {
+            Color::Black
+        } else {
+            Color::White
+        };
         let kside = k.index() < r.index();
 
         let rights = (if kside { WHITE_OO } else { WHITE_OOO }) << color.index();
         self.castle_mask[k.index()] &= !rights;
         self.castle_mask[r.index()] &= !rights;
 
-        let kdest = if kside { Square::G1.relative_to(color) } else { Square::C1.relative_to(color) };
-        let rdest = if kside { Square::F1.relative_to(color) } else { Square::D1.relative_to(color) };
+        let kdest = if kside {
+            Square::G1.relative_to(color)
+        } else {
+            Square::C1.relative_to(color)
+        };
+        let rdest = if kside {
+            Square::F1.relative_to(color)
+        } else {
+            Square::D1.relative_to(color)
+        };
         let mut path: Bitboard = 0;
         let min_sq = min!(k, r, kdest, rdest);
         let max_sq = max!(k, r, kdest, rdest);
@@ -972,15 +1028,14 @@ impl Position {
                 path |= bitboard::bb(sq)
             }
         }
-        self.possible_castles[color.index()][if kside { 0 } else { 1 }] =
-            CastleInfo {
-                path: path,
-                king: k,
-                rook: r,
-                kdest: kdest,
-                d: if kdest > k { WEST } else { EAST },
-                may_discover_check: r.file() != File::A && r.file() != File::H,
-            };
+        self.possible_castles[color.index()][if kside { 0 } else { 1 }] = CastleInfo {
+            path: path,
+            king: k,
+            rook: r,
+            kdest: kdest,
+            d: if kdest > k { WEST } else { EAST },
+            may_discover_check: r.file() != File::A && r.file() != File::H,
+        };
     }
 
     // rights_string returns a string representation of the given castling rights,
@@ -998,20 +1053,24 @@ impl Position {
             };
             let mut add_glyph = |x: usize, y: usize, ch: char| {
                 let base = if ch.is_uppercase() { 'A' } else { 'a' };
-                let glyph = if !c960 { ch } else { (file_idx(x, y) + base as u8) as char };
+                let glyph = if !c960 {
+                    ch
+                } else {
+                    (file_idx(x, y) + base as u8) as char
+                };
                 castle.push(glyph);
             };
             if c & WHITE_OO != 0 {
-                add_glyph(0, 0, 'K'); 
+                add_glyph(0, 0, 'K');
             }
             if c & WHITE_OOO != 0 {
-                add_glyph(0, 1, 'Q'); 
+                add_glyph(0, 1, 'Q');
             }
             if c & BLACK_OO != 0 {
-                add_glyph(1, 0, 'k'); 
+                add_glyph(1, 0, 'k');
             }
             if c & BLACK_OOO != 0 {
-                add_glyph(1, 1, 'q'); 
+                add_glyph(1, 1, 'q');
             }
         }
         return castle;
@@ -1025,7 +1084,9 @@ impl Position {
         // Just bail out on castles. Doing the work to handle them in a principled
         // way seems like a waste since there are almost never relevant capture
         // followups anyway..
-        if m.is_castle() { return 0; }
+        if m.is_castle() {
+            return 0;
+        }
 
         let sq = m.to();
         let attacker = m.piece();
@@ -1065,16 +1126,18 @@ impl Position {
             occ ^= candidates & candidates.wrapping_neg();
 
             // Add in revealed x-ray attackers.
-            attackers |= bitboard::bishop_attacks(sq, occ) &
-                (self.pieces_of_type(PieceType::Bishop) | self.pieces_of_type(PieceType::Queen));
-            attackers |= bitboard::rook_attacks(sq, occ) &
-                (self.pieces_of_type(PieceType::Rook) | self.pieces_of_type(PieceType::Queen));
+            attackers |= bitboard::bishop_attacks(sq, occ)
+                & (self.pieces_of_type(PieceType::Bishop) | self.pieces_of_type(PieceType::Queen));
+            attackers |= bitboard::rook_attacks(sq, occ)
+                & (self.pieces_of_type(PieceType::Rook) | self.pieces_of_type(PieceType::Queen));
             attackers &= occ;
 
             us = us.flip();
             active_attackers = attackers & self.pieces_of_color(us);
 
-            if captured == PieceType::King && active_attackers != 0 { break }
+            if captured == PieceType::King && active_attackers != 0 {
+                break;
+            }
             gain_index += 1;
         }
 
@@ -1090,8 +1153,9 @@ impl Position {
     // or bad (< 0). We can often skip the expensive calculations this way.
     pub fn static_exchange_sign(&self, m: Move) -> Score {
         let attacker_type = m.piece().piece_type();
-        if attacker_type == PieceType::King ||
-                attacker_type.index() <= m.capture().piece_type().index() {
+        if attacker_type == PieceType::King
+            || attacker_type.index() <= m.capture().piece_type().index()
+        {
             return 1;
         }
         self.static_exchange_eval(m)
@@ -1125,18 +1189,21 @@ impl ::std::fmt::Display for Position {
                 }
             }
         }
-                
+
         let ply = if self.state.ply == 0 {
             1
         } else {
             (self.state.ply - self.us().index() as u16) / 2 + 1
         };
-        write!(f, " {} {} {} {} {}",
-               self.us().glyph(),
-               self.rights_string(),
-               self.ep_square(),
-               self.state.fifty_move_counter,
-               ply)
+        write!(
+            f,
+            " {} {} {} {} {}",
+            self.us().glyph(),
+            self.rights_string(),
+            self.ep_square(),
+            self.state.fifty_move_counter,
+            ply
+        )
     }
 }
 
@@ -1178,8 +1245,8 @@ impl AttackData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use board::*;
     use board::Square::*;
+    use board::*;
     use movement::*;
 
     chess_test!(test_fen, {
@@ -1227,7 +1294,11 @@ mod tests {
             let pos = Position::from_fen(fen);
             assert_eq!(pos.attackers(sq), want);
         };
-        test_case("q2rk3/8/3np3/2KPp3/4p3/2N1P3/8/7Q w - - 0 1", D5, bb!(A8, C3, C5, E6));
+        test_case(
+            "q2rk3/8/3np3/2KPp3/4p3/2N1P3/8/7Q w - - 0 1",
+            D5,
+            bb!(A8, C3, C5, E6),
+        );
         test_case("k7/8/8/8/8/B7/2PP4/q1r3RK w - - 0 1", C1, bb!(A1, A3, G1));
     });
 
@@ -1237,15 +1308,21 @@ mod tests {
             let ad = AttackData::new(&pos);
             assert_eq!(pos.obvious_check(m, &ad), want);
         };
-        test_case("8/4k3/4r3/4n3/1N6/8/4K3/8 w - - 0 1",
-                  Move::new(B4, C6, Piece::WN, Piece::NoPiece),
-                  true);
-        test_case("8/4k3/4r3/4n3/1N6/8/4K3/8 w - - 0 1",
-                  Move::new(B4, A6, Piece::WN, Piece::NoPiece),
-                  false);
-        test_case("8/4k3/4r3/4n3/1N6/8/4K3/8 b - - 0 1",
-                  Move::new(E5, C4, Piece::BN, Piece::NoPiece),
-                  true);
+        test_case(
+            "8/4k3/4r3/4n3/1N6/8/4K3/8 w - - 0 1",
+            Move::new(B4, C6, Piece::WN, Piece::NoPiece),
+            true,
+        );
+        test_case(
+            "8/4k3/4r3/4n3/1N6/8/4K3/8 w - - 0 1",
+            Move::new(B4, A6, Piece::WN, Piece::NoPiece),
+            false,
+        );
+        test_case(
+            "8/4k3/4r3/4n3/1N6/8/4K3/8 b - - 0 1",
+            Move::new(E5, C4, Piece::BN, Piece::NoPiece),
+            true,
+        );
     });
 
     chess_test!(test_checkers, {
@@ -1263,26 +1340,36 @@ mod tests {
             assert_eq!(pos.pinned(c), pin);
             assert_eq!(pos.check_discoverers(c), discover);
         };
-        test_case("8/8/RB2kqPR/4N3/1b2b3/4R3/3PP3/4K3 w - - 0 1",
-                  Color::White,
-                  bb!(D2),
-                  bb!(B6));
-        test_case("8/8/RB2kqPR/4N3/1b2b3/4R3/3PP3/4K3 w - - 0 1",
-                  Color::Black,
-                  0,
-                  0);
-        test_case("kN5Q/NN6/Q1Q5/8/7b/2r1r1P1/3QBP2/bq1NKN1n w - - 0 1",
-                  Color::White,
-                  bb!(D1, E2),
-                  bb!(A7, B7, B8));
-        test_case("kN5Q/NN6/Q1Q5/8/7b/2r1r1P1/3QBP2/bq1NKN1n w - - 0 1",
-                  Color::Black,
-                  0,
-                  0);
-        test_case("3k4/K2p3r/8/2P5/8/8/8/8 b - - 0 1",
-                  Color::Black,
-                  0,
-                  bb!(D7));
+        test_case(
+            "8/8/RB2kqPR/4N3/1b2b3/4R3/3PP3/4K3 w - - 0 1",
+            Color::White,
+            bb!(D2),
+            bb!(B6),
+        );
+        test_case(
+            "8/8/RB2kqPR/4N3/1b2b3/4R3/3PP3/4K3 w - - 0 1",
+            Color::Black,
+            0,
+            0,
+        );
+        test_case(
+            "kN5Q/NN6/Q1Q5/8/7b/2r1r1P1/3QBP2/bq1NKN1n w - - 0 1",
+            Color::White,
+            bb!(D1, E2),
+            bb!(A7, B7, B8),
+        );
+        test_case(
+            "kN5Q/NN6/Q1Q5/8/7b/2r1r1P1/3QBP2/bq1NKN1n w - - 0 1",
+            Color::Black,
+            0,
+            0,
+        );
+        test_case(
+            "3k4/K2p3r/8/2P5/8/8/8/8 b - - 0 1",
+            Color::Black,
+            0,
+            bb!(D7),
+        );
     });
 
     chess_test!(test_do_move, {
@@ -1295,27 +1382,41 @@ mod tests {
             pos.undo_move(mv, &undo);
             assert_eq!(pos.to_string(), before);
         };
-        test_case("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-                  "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
-                  Move::new(E2, E4, Piece::WP, Piece::NoPiece));
-        test_case("3k4/3p4/8/K1P4r/8/8/8/8 b - - 0 1",
-                  "3k4/8/8/K1Pp3r/8/8/8/8 w - d6 0 2",
-                  Move::new(D7, D5, Piece::BP, Piece::NoPiece));
-        test_case("3k4/8/8/8/8/8/8/R3K3 w Q - 0 1",
-                  "3k4/8/8/8/8/8/8/2KR4 b - - 1 1",
-                  Move::new_castle(E1, A1, Piece::WK));
-        test_case("r3k2r/8/8/8/4b3/8/8/R3K2R b KQkq - 0 1",
-                  "r3k2r/8/8/8/8/8/8/R3K2b w Qkq - 0 2",
-                  Move::new(E4, H1, Piece::BB, Piece::WR));
-        test_case("r3k3/2p5/8/8/8/8/8/4K2R w Kq - 0 1",
-                  "r3k3/2p5/8/8/8/8/3K4/7R b q - 1 1",
-                  Move::new(E1, D2, Piece::WK, Piece::NoPiece));
-        test_case("4k3/8/8/1Pp5/8/8/8/4K3 w - c6 0 2",
-                  "4k3/8/2P5/8/8/8/8/4K3 b - - 0 2",
-                  Move::new_en_passant(B5, C6, Piece::WP, Piece::BP));
-        test_case("n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1",
-                  "n1n5/PPPk4/8/8/8/8/4Kp1p/5NqN w - - 0 2",
-                  Move::new_promotion(G2, G1, Piece::BP, Piece::NoPiece, PieceType::Queen));
+        test_case(
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+            Move::new(E2, E4, Piece::WP, Piece::NoPiece),
+        );
+        test_case(
+            "3k4/3p4/8/K1P4r/8/8/8/8 b - - 0 1",
+            "3k4/8/8/K1Pp3r/8/8/8/8 w - d6 0 2",
+            Move::new(D7, D5, Piece::BP, Piece::NoPiece),
+        );
+        test_case(
+            "3k4/8/8/8/8/8/8/R3K3 w Q - 0 1",
+            "3k4/8/8/8/8/8/8/2KR4 b - - 1 1",
+            Move::new_castle(E1, A1, Piece::WK),
+        );
+        test_case(
+            "r3k2r/8/8/8/4b3/8/8/R3K2R b KQkq - 0 1",
+            "r3k2r/8/8/8/8/8/8/R3K2b w Qkq - 0 2",
+            Move::new(E4, H1, Piece::BB, Piece::WR),
+        );
+        test_case(
+            "r3k3/2p5/8/8/8/8/8/4K2R w Kq - 0 1",
+            "r3k3/2p5/8/8/8/8/3K4/7R b q - 1 1",
+            Move::new(E1, D2, Piece::WK, Piece::NoPiece),
+        );
+        test_case(
+            "4k3/8/8/1Pp5/8/8/8/4K3 w - c6 0 2",
+            "4k3/8/2P5/8/8/8/8/4K3 b - - 0 2",
+            Move::new_en_passant(B5, C6, Piece::WP, Piece::BP),
+        );
+        test_case(
+            "n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1",
+            "n1n5/PPPk4/8/8/8/8/4Kp1p/5NqN w - - 0 2",
+            Move::new_promotion(G2, G1, Piece::BP, Piece::NoPiece, PieceType::Queen),
+        );
     });
 
     chess_test!(test_pseudo_move_is_legal, {
@@ -1324,26 +1425,56 @@ mod tests {
             let ad = AttackData::new(&pos);
             assert_eq!(want, pos.pseudo_move_is_legal(mv, &ad));
         };
-        test_case("k7/8/8/5n2/8/4K3/8/8 w - - 0 1",
-                  Move::new(E3, D4, Piece::WK, Piece::NoPiece), false);
-        test_case("k7/8/8/5n2/8/4K3/8/8 w - - 0 1",
-                  Move::new(E3, E2, Piece::WK, Piece::NoPiece), true);
-        test_case("k3r3/8/8/8/4Q3/4K3/8/8 w - - 0 1",
-                  Move::new(E4, E7, Piece::WQ, Piece::NoPiece), true);
-        test_case("k3r3/8/8/8/4Q3/4K3/8/8 w - - 0 1",
-                  Move::new(E4, E8, Piece::WQ, Piece::BR), true);
-        test_case("1k2r3/8/8/8/4Q3/4K3/8/8 w - - 0 1",
-                  Move::new(E4, D4, Piece::WQ, Piece::NoPiece), false);
-        test_case("k7/8/8/2Pp4/4K3/8/8/8 w - d6 0 2",
-                  Move::new_en_passant(C5, D6, Piece::WP, Piece::BP), true);
-        test_case("k7/8/8/r1Pp2K1/8/8/8/8 w - d6 0 2",
-                  Move::new_en_passant(C5, D6, Piece::WP, Piece::BP), false);
-        test_case("n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1",
-                  Move::new(D7, D8, Piece::BK, Piece::NoPiece), false);
-        test_case("n1n5/PPPk4/8/8/8/8/4Kp1p/5b1N w - - 0 1",
-                  Move::new(E2, E1, Piece::WK, Piece::NoPiece), false);
-        test_case("r2q3r/p1ppkpb1/bn2pnp1/3PN3/NB2P3/5Q1p/PPP1BPPP/1R2K2R b K - 0 3",
-                  Move::new(C7, C5, Piece::BP, Piece::NoPiece), true);
+        test_case(
+            "k7/8/8/5n2/8/4K3/8/8 w - - 0 1",
+            Move::new(E3, D4, Piece::WK, Piece::NoPiece),
+            false,
+        );
+        test_case(
+            "k7/8/8/5n2/8/4K3/8/8 w - - 0 1",
+            Move::new(E3, E2, Piece::WK, Piece::NoPiece),
+            true,
+        );
+        test_case(
+            "k3r3/8/8/8/4Q3/4K3/8/8 w - - 0 1",
+            Move::new(E4, E7, Piece::WQ, Piece::NoPiece),
+            true,
+        );
+        test_case(
+            "k3r3/8/8/8/4Q3/4K3/8/8 w - - 0 1",
+            Move::new(E4, E8, Piece::WQ, Piece::BR),
+            true,
+        );
+        test_case(
+            "1k2r3/8/8/8/4Q3/4K3/8/8 w - - 0 1",
+            Move::new(E4, D4, Piece::WQ, Piece::NoPiece),
+            false,
+        );
+        test_case(
+            "k7/8/8/2Pp4/4K3/8/8/8 w - d6 0 2",
+            Move::new_en_passant(C5, D6, Piece::WP, Piece::BP),
+            true,
+        );
+        test_case(
+            "k7/8/8/r1Pp2K1/8/8/8/8 w - d6 0 2",
+            Move::new_en_passant(C5, D6, Piece::WP, Piece::BP),
+            false,
+        );
+        test_case(
+            "n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1",
+            Move::new(D7, D8, Piece::BK, Piece::NoPiece),
+            false,
+        );
+        test_case(
+            "n1n5/PPPk4/8/8/8/8/4Kp1p/5b1N w - - 0 1",
+            Move::new(E2, E1, Piece::WK, Piece::NoPiece),
+            false,
+        );
+        test_case(
+            "r2q3r/p1ppkpb1/bn2pnp1/3PN3/NB2P3/5Q1p/PPP1BPPP/1R2K2R b K - 0 3",
+            Move::new(C7, C5, Piece::BP, Piece::NoPiece),
+            true,
+        );
     });
 
     chess_test!(test_static_exchange_eval, {
@@ -1360,14 +1491,24 @@ mod tests {
                 assert!(pos.static_exchange_sign(m) < 0);
             }
         };
-        let (p, n, b, r, q) = (mg_material(PieceType::Pawn),
-                               mg_material(PieceType::Knight),
-                               mg_material(PieceType::Bishop),
-                               mg_material(PieceType::Rook),
-                               mg_material(PieceType::Queen));
+        let (p, n, b, r, q) = (
+            mg_material(PieceType::Pawn),
+            mg_material(PieceType::Knight),
+            mg_material(PieceType::Bishop),
+            mg_material(PieceType::Rook),
+            mg_material(PieceType::Queen),
+        );
         test_case("1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - -", "e1e5", p);
-        test_case("1k1r4/1pp4p/p2p4/4p3/8/P5P1/1PP4P/2K1R3 w - - 0 1", "e1e5", p - r);
-        test_case("1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - - ", "d3e5", p - n);
+        test_case(
+            "1k1r4/1pp4p/p2p4/4p3/8/P5P1/1PP4P/2K1R3 w - - 0 1",
+            "e1e5",
+            p - r,
+        );
+        test_case(
+            "1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - - ",
+            "d3e5",
+            p - n,
+        );
         test_case("k6K/3p4/4b3/8/3N4/8/8/4R3 w - -", "d4e6", p + b - n);
         test_case("k6K/3p4/4b3/8/3N4/8/8/4R3 w - -", "e1e6", p + b - r);
         test_case("k6K/3p4/8/8/3N4/8/8/4R3 w - -", "d4e6", p - n);
@@ -1391,26 +1532,44 @@ mod tests {
             assert_eq!(pos.is_draw(), want);
         };
         // Repetition
-        test_case(START_FEN, vec!("b1c3", "b8c6", "c3b1", "c6b8"), true);
+        test_case(START_FEN, vec!["b1c3", "b8c6", "c3b1", "c6b8"], true);
         // Non-repetition due to castle rights
-        test_case("r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1",
-                  vec!("e1e2", "f8e7", "e2e1", "e7f8"), false);
+        test_case(
+            "r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1",
+            vec!["e1e2", "f8e7", "e2e1", "e7f8"],
+            false,
+        );
         // Non-repetition due to en passant
-        test_case("rnbqkbnr/2pppppp/p7/1pP5/8/8/PP1PPPPP/RNBQKBNR w KQkq b6 0 3",
-                  vec!("b1c3", "b8c6", "c3b1", "c6b8"), false);
+        test_case(
+            "rnbqkbnr/2pppppp/p7/1pP5/8/8/PP1PPPPP/RNBQKBNR w KQkq b6 0 3",
+            vec!["b1c3", "b8c6", "c3b1", "c6b8"],
+            false,
+        );
         // 50 move rule
-        test_case("8/7k/1R6/R7/8/7P/8/1K6 w - - 98 1", vec!("a5a7", "h7h8"), true);
+        test_case(
+            "8/7k/1R6/R7/8/7P/8/1K6 w - - 98 1",
+            vec!["a5a7", "h7h8"],
+            true,
+        );
         // Non 50 move rule due to checkmate
-        test_case("8/7k/1R6/R7/8/7P/8/1K6 w - - 97 1", vec!("a5a7", "h7h8", "b6b8"), false);
+        test_case(
+            "8/7k/1R6/R7/8/7P/8/1K6 w - - 97 1",
+            vec!["a5a7", "h7h8", "b6b8"],
+            false,
+        );
         // Non 50 move rule due to pawn move
-        test_case("8/7k/1R6/R7/8/7P/8/1K6 w - - 98 1", vec!("h3h4", "h7h8"), false);
+        test_case(
+            "8/7k/1R6/R7/8/7P/8/1K6 w - - 98 1",
+            vec!["h3h4", "h7h8"],
+            false,
+        );
         // Sufficient material
-        test_case("7k/1R6/8/8/8/8/8/1K6 w - - 0 1", vec!(), false);
-        test_case("7k/1Q6/8/8/8/8/8/1K6 w - - 0 1", vec!(), false);
-        test_case("7k/8/8/8/8/5P2/8/1K6 w - - 0 1", vec!(), false);
-        test_case("7k/8/8/8/4B3/5N2/8/1K6 w - - 0 1", vec!(), false);
+        test_case("7k/1R6/8/8/8/8/8/1K6 w - - 0 1", vec![], false);
+        test_case("7k/1Q6/8/8/8/8/8/1K6 w - - 0 1", vec![], false);
+        test_case("7k/8/8/8/8/5P2/8/1K6 w - - 0 1", vec![], false);
+        test_case("7k/8/8/8/4B3/5N2/8/1K6 w - - 0 1", vec![], false);
         // Insufficient material
-        test_case("7k/8/8/8/8/5N2/8/1K6 w - - 0 1", vec!(), true);
-        test_case("7k/8/8/8/8/5B2/8/1K6 w - - 0 1", vec!(), true);
+        test_case("7k/8/8/8/8/5N2/8/1K6 w - - 0 1", vec![], true);
+        test_case("7k/8/8/8/8/5B2/8/1K6 w - - 0 1", vec![], true);
     });
 }

@@ -9,18 +9,20 @@ fn main() {
     let out_path = Path::new(&out_dir).join("version.rs");
     let mut f = File::create(&out_path).unwrap();
     // Call git to get the best available version descriptor.
-    let git_desc = Command::new("git").arg("describe")
-                                      .arg("--abbrev=7")
-                                      .arg("--always")
-                                      .arg("--dirty")
-                                      .arg("--tags")
-                                      .output()
-                                      .expect("failed to get git version");
-    let git_rev = Command::new("git").arg("rev-parse")
-                                     .arg("--short")
-                                     .arg("HEAD")
-                                     .output()
-                                     .expect("failed to get git revision");
+    let git_desc = Command::new("git")
+        .arg("describe")
+        .arg("--abbrev=7")
+        .arg("--always")
+        .arg("--dirty")
+        .arg("--tags")
+        .output()
+        .expect("failed to get git version");
+    let git_rev = Command::new("git")
+        .arg("rev-parse")
+        .arg("--short")
+        .arg("HEAD")
+        .output()
+        .expect("failed to get git revision");
 
     let version = String::from_utf8(git_desc.stdout).expect("couldn't parse git describe");
     let revision = String::from_utf8(git_rev.stdout).expect("couldn't parse git rev-parse");
@@ -31,4 +33,3 @@ fn main() {
     };
     f.write_all(tag.as_bytes()).unwrap();
 }
-

@@ -186,8 +186,9 @@ impl Piece {
     }
 
     pub fn glyph(self) -> char {
-        const GLYPHS: [char; 15] = ['.', 'P', 'N', 'B', 'R', 'Q', 'K', 'x',
-                                    'x', 'p', 'n', 'b', 'r', 'q', 'k'];
+        const GLYPHS: [char; 15] = [
+            '.', 'P', 'N', 'B', 'R', 'Q', 'K', 'x', 'x', 'p', 'n', 'b', 'r', 'q', 'k',
+        ];
         GLYPHS[self as usize]
     }
 }
@@ -310,7 +311,7 @@ impl Square {
     pub fn next(self) -> Square {
         Square::from_index(self.index() + 1)
     }
-    
+
     pub fn prev(self) -> Square {
         Square::from_index(self.index() - 1)
     }
@@ -357,10 +358,12 @@ impl ::std::fmt::Display for Square {
         if *self == Square::NoSquare {
             return write!(f, "-");
         }
-        write!(f,
-               "{}{}",
-               (self.file() as u8 + 97) as char,
-               self.rank() as u8 + 1)
+        write!(
+            f,
+            "{}{}",
+            (self.file() as u8 + 97) as char,
+            self.rank() as u8 + 1
+        )
     }
 }
 
@@ -379,7 +382,7 @@ impl ::std::str::FromStr for Square {
         if fb >= File::NoFile as u8 || rb >= Rank::NoRank as u8 {
             return Err(format!("couldn't parse string as square: {}", s));
         }
-        unsafe{ Ok(sq(mem::transmute(fb), mem::transmute(rb))) }
+        unsafe { Ok(sq(mem::transmute(fb), mem::transmute(rb))) }
     }
 }
 

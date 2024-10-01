@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 
 use bitboard;
-use bitboard::{Bitboard};
+use bitboard::Bitboard;
 use board;
 use board::{Color, File, Piece, PieceType, Rank, Square};
 use position::{HashKey, Position};
@@ -25,14 +25,14 @@ pub fn full(pos: &Position) -> Score {
 }
 
 fn can_win(side: Color, pos: &Position) -> bool {
-    !(pos.pieces_of_color_and_type(side, PieceType::Pawn) == 0 &&
-      pos.non_pawn_material(side) < score::mg_material(PieceType::Rook))
+    !(pos.pieces_of_color_and_type(side, PieceType::Pawn) == 0
+        && pos.non_pawn_material(side) < score::mg_material(PieceType::Rook))
 }
 
 // Bonus for passed pawns, indexed by rank.
 const PASSER_BONUS: [PhaseScore; 8] = [
     sc!(0, 0),
-    sc!(5, 10), 
+    sc!(5, 10),
     sc!(10, 20),
     sc!(20, 25),
     sc!(60, 75),
@@ -46,13 +46,38 @@ const PASSER_BONUS: [PhaseScore; 8] = [
 // TODO: try to condense this down so we don't have big tables.
 const ISOLATION_BONUS: [[PhaseScore; 8]; 2] = [
     // Blocked
-    [sc!(-6, -8), sc!(-6, -8), sc!(-6, -8), sc!(-8, -8), sc!(-8, -8), sc!(-6, -8), sc!(-6, -8), sc!(-6, -8)],
+    [
+        sc!(-6, -8),
+        sc!(-6, -8),
+        sc!(-6, -8),
+        sc!(-8, -8),
+        sc!(-8, -8),
+        sc!(-6, -8),
+        sc!(-6, -8),
+        sc!(-6, -8),
+    ],
     // Open
-    [sc!(-14, -16), sc!(-14, -17), sc!(-15, -18), sc!(-16, -20), sc!(-16, -20), sc!(-15, -18), sc!(-14, -17), sc!(-14, -16)],
+    [
+        sc!(-14, -16),
+        sc!(-14, -17),
+        sc!(-15, -18),
+        sc!(-16, -20),
+        sc!(-16, -20),
+        sc!(-15, -18),
+        sc!(-14, -17),
+        sc!(-14, -16),
+    ],
 ];
 
 const CANDIDATE_BONUS: [PhaseScore; 8] = [
-    sc!(0, 0), sc!(5, 5), sc!(5, 10), sc!(10, 15), sc!(20, 30), sc!(30, 45), sc!(0, 0), sc!(0, 0)
+    sc!(0, 0),
+    sc!(5, 5),
+    sc!(5, 10),
+    sc!(10, 15),
+    sc!(20, 30),
+    sc!(30, 45),
+    sc!(0, 0),
+    sc!(0, 0),
 ];
 
 struct EvalData {
@@ -74,7 +99,7 @@ impl EvalData {
 #[derive(Clone, Copy)]
 struct PawnData {
     key: u32,
-    score: [PhaseScore; 2], 
+    score: [PhaseScore; 2],
     passers: [Bitboard; 2],
     attacks: [Bitboard; 2],
     open_files: u8,
@@ -177,7 +202,9 @@ fn analyze_pawns(pos: &Position) -> PawnData {
                 pd.passers[us.index()] |= bb!(sq);
             } else {
                 // Candidate passed pawns (one enemy pawn one file away).
-                if bitboard::in_front_mask(us, sq) & all_pawns == 0 && (blockers & neighbor_files).count_ones() < 2 {
+                if bitboard::in_front_mask(us, sq) & all_pawns == 0
+                    && (blockers & neighbor_files).count_ones() < 2
+                {
                     pd.score[us.index()] += CANDIDATE_BONUS[rel_rank.index()];
                 }
             }
@@ -194,8 +221,10 @@ fn analyze_pawns(pos: &Position) -> PawnData {
                 pd.score[us.index()] -= sc!(6, 9);
             }
 
-            let connected = ((sq.pawn_push(them).rank().into_bitboard() & our_pawns) |
-                             (sq.rank().into_bitboard() & our_pawns)) & neighbor_files != 0;
+            let connected = ((sq.pawn_push(them).rank().into_bitboard() & our_pawns)
+                | (sq.rank().into_bitboard() & our_pawns))
+                & neighbor_files
+                != 0;
             if connected {
                 pd.score[us.index()] += sc!(5, 5);
             }
@@ -207,10 +236,13 @@ fn analyze_pawns(pos: &Position) -> PawnData {
                 pd.score[us.index()].mg += 2;
             }
 
-            if !passed && !isolated && !connected &&
-                bitboard::pawn_attacks(us, sq) & their_pawns == 0 &&
-                bitboard::passer_mask(them, sq) & our_pawns == 0 &&
-                rel_rank.index() < Rank::_6.index() {
+            if !passed
+                && !isolated
+                && !connected
+                && bitboard::pawn_attacks(us, sq) & their_pawns == 0
+                && bitboard::passer_mask(them, sq) & our_pawns == 0
+                && rel_rank.index() < Rank::_6.index()
+            {
                 let mut adv = sq.pawn_push(us);
                 if adv.rank().into_bitboard() & our_passer_mask & their_pawns != 0 {
                     pd.score[us.index()] -= sc!(6, 9);
@@ -221,8 +253,9 @@ fn analyze_pawns(pos: &Position) -> PawnData {
                             pd.score[us.index()] -= sc!(6, 9);
                             break;
                         }
-                        if adv.rank().into_bitboard() & our_passer_mask & our_pawns != 0 ||
-                            adv2.relative_to(us).rank().index() >= Rank::_7.index() {
+                        if adv.rank().into_bitboard() & our_passer_mask & our_pawns != 0
+                            || adv2.relative_to(us).rank().index() >= Rank::_7.index()
+                        {
                             break;
                         }
                         adv = adv2;
@@ -247,7 +280,7 @@ fn eval_pawns(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         ed.attacks_by[us.index()][PieceType::Pawn.index()] = pd.attacks[us.index()];
         ed.attacks_by[us.index()][PieceType::AllPieces.index()] = pd.attacks[us.index()];
         ed.half_open_files[us.index()] = pd.half_open_files[us.index()];
-        
+
         let mut passers_to_score = pd.passers[us.index()];
         while passers_to_score != 0 {
             let sq = bitboard::pop_square(&mut passers_to_score);
@@ -259,14 +292,18 @@ fn eval_pawns(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             if pos.non_pawn_material(them) == 0 {
                 // Other side is down to king and pawns. Can the king reach us?
                 // This measure is conservative, which is fine.
-                let prom_dist: i32 = (Rank::_8.index() - rel_rank.index() -
-                    if us == pos.us() { 1 } else { 0 } -
-                    if rel_rank.index() == Rank::_2.index() { 1 } else { 0 }) as i32;
+                let prom_dist: i32 = (Rank::_8.index()
+                    - rel_rank.index()
+                    - if us == pos.us() { 1 } else { 0 }
+                    - if rel_rank.index() == Rank::_2.index() {
+                        1
+                    } else {
+                        0
+                    }) as i32;
                 if prom_dist < dist(pos.king_sq(them), promote_sq) as i32 {
                     // Give partial credit for the queen based on how long
                     // it'll take us to convert.
-                    passer_score.eg +=
-                        (score::QUEEN.eg - score::PAWN.eg) * (5 - prom_dist) / 6;
+                    passer_score.eg += (score::QUEEN.eg - score::PAWN.eg) * (5 - prom_dist) / 6;
                 } else {
                     passer_score = PASSER_BONUS[rel_rank.index()];
                 }
@@ -280,9 +317,10 @@ fn eval_pawns(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             }
 
             // Adjust endgame bonus based on king proximity.
-            passer_score.eg += 5 * (dist(pos.king_sq(them), target) as i32 -
-                                    dist(pos.king_sq(us), target) as i32) * rel_rank.index() as i32;
-            
+            passer_score.eg += 5
+                * (dist(pos.king_sq(them), target) as i32 - dist(pos.king_sq(us), target) as i32)
+                * rel_rank.index() as i32;
+
             side_score[us.index()] += passer_score;
         }
     }
@@ -294,45 +332,189 @@ fn eval_pawns(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 // TODO: come up with some formula for these instead of a giant table.
 const MOBILITY_BONUS: [[PhaseScore; 32]; 8] = [
     [sc!(0, 0); 32],
-
     // Pawn
-    [sc!(0, 0), sc!(4, 12), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
-     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
-     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
-     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0)],
-
+    [
+        sc!(0, 0),
+        sc!(4, 12),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+    ],
     // Knight
-    [sc!(-8, -8), sc!(-4, -4), sc!(0, 0), sc!(4, 4), sc!(8, 8), sc!(12, 12), sc!(16, 16), sc!(18, 18),
-     sc!(20, 20), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
-     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
-     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0)],
-
+    [
+        sc!(-8, -8),
+        sc!(-4, -4),
+        sc!(0, 0),
+        sc!(4, 4),
+        sc!(8, 8),
+        sc!(12, 12),
+        sc!(16, 16),
+        sc!(18, 18),
+        sc!(20, 20),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+    ],
     // Bishop
-    [sc!(-15, -15), sc!(-10, -10), sc!(-5, -5), sc!(0, 0), sc!(5, 5), sc!(10, 10), sc!(15, 15), sc!(20, 20),
-     sc!(25, 25), sc!(30, 30), sc!(35, 35), sc!(40, 40), sc!(40, 40), sc!(40, 40), sc!(40, 40), sc!(40, 40),
-     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
-     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0)],
-
+    [
+        sc!(-15, -15),
+        sc!(-10, -10),
+        sc!(-5, -5),
+        sc!(0, 0),
+        sc!(5, 5),
+        sc!(10, 10),
+        sc!(15, 15),
+        sc!(20, 20),
+        sc!(25, 25),
+        sc!(30, 30),
+        sc!(35, 35),
+        sc!(40, 40),
+        sc!(40, 40),
+        sc!(40, 40),
+        sc!(40, 40),
+        sc!(40, 40),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+    ],
     // Rook
-    [sc!(-10, -10), sc!(-8, -6), sc!(-6, -2), sc!(-4, 2), sc!(-2, 6), sc!(0, 10), sc!(2, 14), sc!(4, 18),
-     sc!(6, 22), sc!(8, 26), sc!(10, 30), sc!(12, 34), sc!(14, 38), sc!(16, 42), sc!(18, 46), sc!(20, 50),
-     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0),
-     sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0), sc!(0, 0)],
-
+    [
+        sc!(-10, -10),
+        sc!(-8, -6),
+        sc!(-6, -2),
+        sc!(-4, 2),
+        sc!(-2, 6),
+        sc!(0, 10),
+        sc!(2, 14),
+        sc!(4, 18),
+        sc!(6, 22),
+        sc!(8, 26),
+        sc!(10, 30),
+        sc!(12, 34),
+        sc!(14, 38),
+        sc!(16, 42),
+        sc!(18, 46),
+        sc!(20, 50),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+        sc!(0, 0),
+    ],
     // Queen
-    [sc!(-20, -20), sc!(-19, -18), sc!(-18, -16), sc!(-17, -14), sc!(-16, -12), sc!(-15, -10), sc!(-14, -8), sc!(-13, -6),
-     sc!(-12, -4), sc!(-11, -2), sc!(-10, 0), sc!(-9, 2), sc!(-8, 4), sc!(-7, 6), sc!(-6, 8), sc!(-5, 10),
-     sc!(-4, 12), sc!(-3, 14), sc!(-2, 16), sc!(-1, 18), sc!(0, 20), sc!(1, 22), sc!(2, 24), sc!(3, 26),
-     sc!(4, 28), sc!(5, 30), sc!(6, 32), sc!(7, 34), sc!(8, 36), sc!(9, 38), sc!(10, 40), sc!(11, 42)],
-
+    [
+        sc!(-20, -20),
+        sc!(-19, -18),
+        sc!(-18, -16),
+        sc!(-17, -14),
+        sc!(-16, -12),
+        sc!(-15, -10),
+        sc!(-14, -8),
+        sc!(-13, -6),
+        sc!(-12, -4),
+        sc!(-11, -2),
+        sc!(-10, 0),
+        sc!(-9, 2),
+        sc!(-8, 4),
+        sc!(-7, 6),
+        sc!(-6, 8),
+        sc!(-5, 10),
+        sc!(-4, 12),
+        sc!(-3, 14),
+        sc!(-2, 16),
+        sc!(-1, 18),
+        sc!(0, 20),
+        sc!(1, 22),
+        sc!(2, 24),
+        sc!(3, 26),
+        sc!(4, 28),
+        sc!(5, 30),
+        sc!(6, 32),
+        sc!(7, 34),
+        sc!(8, 36),
+        sc!(9, 38),
+        sc!(10, 40),
+        sc!(11, 42),
+    ],
     [sc!(0, 0); 32],
     [sc!(0, 0); 32],
 ];
 
 fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
     let mut side_score = [sc!(0, 0), sc!(0, 0)];
-    let all_pieces = pos.all_pieces(); 
-    
+    let all_pieces = pos.all_pieces();
+
     let mut piece_count = [[0; 8]; 2];
     for us in board::each_color() {
         let kattack = bitboard::king_attacks(pos.king_sq(us));
@@ -355,7 +537,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         let mut king_attack_weight: i32 = 0;
 
         for pt in board::each_piece_type() {
-            if pt == PieceType::King { break }
+            if pt == PieceType::King {
+                break;
+            }
 
             let mut pieces_to_score = pos.pieces_of_color_and_type(us, pt);
             while pieces_to_score != 0 {
@@ -363,8 +547,12 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                 let sq = bitboard::pop_square(&mut pieces_to_score);
                 let mob = match pt {
                     PieceType::Pawn => {
-                        if pos.piece_at(sq.pawn_push(us)) == Piece::NoPiece { 1 } else { 0 }
-                    },
+                        if pos.piece_at(sq.pawn_push(us)) == Piece::NoPiece {
+                            1
+                        } else {
+                            0
+                        }
+                    }
                     PieceType::Knight => {
                         let attacks = bitboard::knight_attacks(sq);
                         ed.attacks_by[us.index()][PieceType::Knight.index()] |= attacks;
@@ -376,10 +564,12 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                         }
 
                         (attacks & available_squares).count_ones()
-                    },
+                    }
                     PieceType::Bishop => {
-                        let attacks = bitboard::bishop_attacks(sq,
-                                all_pieces ^ pos.pieces_of_color_and_type(us, PieceType::Queen));
+                        let attacks = bitboard::bishop_attacks(
+                            sq,
+                            all_pieces ^ pos.pieces_of_color_and_type(us, PieceType::Queen),
+                        );
                         ed.attacks_by[us.index()][PieceType::Bishop.index()] |= attacks;
                         ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
                         let katt = (attacks ^ bb!(sq)) & king_halo;
@@ -388,11 +578,14 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             king_attack_weight += 16 * katt.count_ones() as i32;
                         }
                         (attacks & available_squares).count_ones()
-                    },
+                    }
                     PieceType::Rook => {
-                        let attacks = bitboard::rook_attacks(sq,
-                                all_pieces ^ (pos.pieces_of_color_and_type(us, PieceType::Queen) |
-                                              pos.pieces_of_color_and_type(us, PieceType::Rook)));
+                        let attacks = bitboard::rook_attacks(
+                            sq,
+                            all_pieces
+                                ^ (pos.pieces_of_color_and_type(us, PieceType::Queen)
+                                    | pos.pieces_of_color_and_type(us, PieceType::Rook)),
+                        );
                         ed.attacks_by[us.index()][PieceType::Rook.index()] |= attacks;
                         ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
                         let katt = (attacks ^ bb!(sq)) & king_halo;
@@ -411,12 +604,14 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
                             }
                         }
                         if openness > 0 {
-                            let minors = pos.pieces_of_color_and_type(them, PieceType::Knight) |
-                                         pos.pieces_of_color_and_type(them, PieceType::Bishop);
+                            let minors = pos.pieces_of_color_and_type(them, PieceType::Knight)
+                                | pos.pieces_of_color_and_type(them, PieceType::Bishop);
                             if bb!(sq.file()) & minors == 0 {
                                 openness >>= 1;
-                            } else if (sq.file().index() as i8 -
-                                       their_king.file().index() as i8).abs() <= 1 {
+                            } else if (sq.file().index() as i8 - their_king.file().index() as i8)
+                                .abs()
+                                <= 1
+                            {
                                 let open_king_bonus = if sq.file() == their_king.file() {
                                     openness
                                 } else {
@@ -429,17 +624,22 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
 
                         // Bonus for being on the 7th rank if there are pawns on the 7th and the
                         // opposing king is on the 7th or 8th.
-                        if sq.relative_to(us).rank() == Rank::_7 &&
-                            pos.king_sq(them).relative_to(us).rank().index() >= Rank::_7.index() &&
-                            pos.pieces_of_color_and_type(them, PieceType::Pawn) & bb!(sq.rank()) != 0 {
+                        if sq.relative_to(us).rank() == Rank::_7
+                            && pos.king_sq(them).relative_to(us).rank().index() >= Rank::_7.index()
+                            && pos.pieces_of_color_and_type(them, PieceType::Pawn) & bb!(sq.rank())
+                                != 0
+                        {
                             side_score[us.index()] += sc!(10, 20);
                         }
                         (attacks & available_squares).count_ones()
                     }
                     PieceType::Queen => {
-                        let attacks = bitboard::queen_attacks(sq,
-                                all_pieces ^ (pos.pieces_of_color_and_type(us, PieceType::Bishop) |
-                                              pos.pieces_of_color_and_type(us, PieceType::Rook)));
+                        let attacks = bitboard::queen_attacks(
+                            sq,
+                            all_pieces
+                                ^ (pos.pieces_of_color_and_type(us, PieceType::Bishop)
+                                    | pos.pieces_of_color_and_type(us, PieceType::Rook)),
+                        );
                         ed.attacks_by[us.index()][PieceType::Queen.index()] |= attacks;
                         ed.attacks_by[us.index()][PieceType::AllPieces.index()] |= attacks;
                         let katt = (attacks ^ bb!(sq)) & king_halo;
@@ -471,9 +671,11 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
             }
 
             const KING_ATTACK_SCALE: [i32; 16] = [
-                0, 0, 640, 800, 1120, 1200, 1280, 1280,
-                1344, 1344, 1408, 1408, 1472, 1472, 1536, 1536];
-            let king_attack_value = KING_ATTACK_SCALE[min!(2 * num_king_attackers, 15)] * king_attack_weight / 800;
+                0, 0, 640, 800, 1120, 1200, 1280, 1280, 1344, 1344, 1408, 1408, 1472, 1472, 1536,
+                1536,
+            ];
+            let king_attack_value =
+                KING_ATTACK_SCALE[min!(2 * num_king_attackers, 15)] * king_attack_weight / 800;
             side_score[us.index()].mg += king_attack_value;
         }
     }
@@ -482,9 +684,9 @@ fn eval_pieces(pos: &Position, ed: &mut EvalData) -> PhaseScore {
         use board::PieceType::*;
         let them = us.flip();
         // Targets are their pieces that are attacked but not defended.
-        let targets = pos.pieces_of_color(them) &
-            !ed.attacks_by[them.index()][AllPieces.index()] &
-            ed.attacks_by[us.index()][AllPieces.index()];
+        let targets = pos.pieces_of_color(them)
+            & !ed.attacks_by[them.index()][AllPieces.index()]
+            & ed.attacks_by[us.index()][AllPieces.index()];
         let num_targets = targets.count_ones() as i32;
         side_score[us.index()] += sc!(5, 5) * num_targets * num_targets / 2;
 
@@ -517,8 +719,10 @@ fn king_shield_score(c: Color, pos: &Position, ed: &EvalData) -> Score {
 }
 
 fn king_shield_at(ksq: Square, us: Color, pos: &Position, ed: &EvalData) -> Score {
-    if ksq.relative_to(us).rank().index() > Rank::_4.index() { return 0 }
-    let them = us.flip(); 
+    if ksq.relative_to(us).rank().index() > Rank::_4.index() {
+        return 0;
+    }
+    let them = us.flip();
     let big_shield = bitboard::king_shield(us, ksq);
     let near_shield = bitboard::king_near_shield(us, ksq);
     let storm_shield = bitboard::shift(big_shield, board::pawn_push(us));
@@ -526,8 +730,16 @@ fn king_shield_at(ksq: Square, us: Color, pos: &Position, ed: &EvalData) -> Scor
     let their_pawns = pos.pieces_of_color_and_type(them, PieceType::Pawn);
 
     let mut file_penalty = 0;
-    let low = if ksq.file() == File::A { 0 } else { ksq.file().index() - 1 };
-    let high = if ksq.file() == File::H { 8 } else { ksq.file().index() + 2 };
+    let low = if ksq.file() == File::A {
+        0
+    } else {
+        ksq.file().index() - 1
+    };
+    let high = if ksq.file() == File::H {
+        8
+    } else {
+        ksq.file().index() + 2
+    };
     for idx in low..high {
         let f = 1 << idx;
         if f & ed.half_open_files[us.index()] != 0 {
@@ -538,11 +750,11 @@ fn king_shield_at(ksq: Square, us: Color, pos: &Position, ed: &EvalData) -> Scor
         }
     }
 
-    6 * ((big_shield & our_pawns).count_ones() +
-         (near_shield & our_pawns).count_ones() * 3) as Score -
-        4 * ((storm_shield & their_pawns).count_ones() +
-             (big_shield & their_pawns).count_ones() * 2) as Score -
-        file_penalty as Score
+    6 * ((big_shield & our_pawns).count_ones() + (near_shield & our_pawns).count_ones() * 3)
+        as Score
+        - 4 * ((storm_shield & their_pawns).count_ones()
+            + (big_shield & their_pawns).count_ones() * 2) as Score
+        - file_penalty as Score
 }
 
 #[cfg(test)]

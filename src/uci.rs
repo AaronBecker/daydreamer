@@ -22,7 +22,7 @@ pub fn read_stream(search_data: &mut SearchData, script: Option<String>) {
     search_data.uci_channel = rx;
     let engine_state = search_data.state.clone();
 
-    thread::spawn(move || { read_file_or_stdin(script, tx, engine_state) });
+    thread::spawn(move || read_file_or_stdin(script, tx, engine_state));
     loop {
         match search_data.uci_channel.try_recv() {
             Ok(command) => match handle_command(search_data, command.as_str()) {
@@ -37,7 +37,11 @@ pub fn read_stream(search_data: &mut SearchData, script: Option<String>) {
     }
 }
 
-fn read_file_or_stdin(input: Option<String>, chan: mpsc::Sender<String>, state: search::EngineState) {
+fn read_file_or_stdin(
+    input: Option<String>,
+    chan: mpsc::Sender<String>,
+    state: search::EngineState,
+) {
     match input {
         Some(filename) => {
             let filename_copy = filename.clone();
@@ -48,9 +52,9 @@ fn read_file_or_stdin(input: Option<String>, chan: mpsc::Sender<String>, state: 
                     println!("reading from stdin");
                     let stdin = stdin();
                     consume_stream(stdin.lock(), chan, state);
-                },
+                }
             }
-        },
+        }
         None => {
             let stdin = stdin();
             consume_stream(stdin.lock(), chan, state);
@@ -71,13 +75,13 @@ fn consume_stream<T: BufRead>(stream: T, chan: mpsc::Sender<String>, state: sear
                         while state.load() != search::WAITING_STATE {
                             thread::sleep(time::Duration::from_millis(5));
                         }
-                    },
+                    }
                     Some("stop") => state.enter(search::STOPPING_STATE),
                     Some("ponderhit") => {
                         if state.load() == search::PONDERING_STATE {
                             state.enter(search::SEARCHING_STATE)
                         }
-                    },
+                    }
                     Some("quit") => ::std::process::exit(0),
                     Some(_) => {
                         match state.load() {
@@ -88,7 +92,7 @@ fn consume_stream<T: BufRead>(stream: T, chan: mpsc::Sender<String>, state: sear
                             // search thread.
                             search::SEARCHING_STATE | search::PONDERING_STATE => {
                                 println!("info string busy searching, ignoring command '{}'", s);
-                            },
+                            }
                             // If we're not actively searching, the main thread
                             // will handle the command.
                             search::WAITING_STATE | search::STOPPING_STATE => chan.send(s).unwrap(),
@@ -108,9 +112,11 @@ fn handle_command(search_data: &mut SearchData, line: &str) -> Result<(), String
     loop {
         match tokens.next() {
             Some("uci") => {
-                println!("id name Daydreamer {} ({})",
-                         env!("CARGO_PKG_VERSION"),
-                         include_str!(concat!(env!("OUT_DIR"), "/version.rs")));
+                println!(
+                    "id name Daydreamer {} ({})",
+                    env!("CARGO_PKG_VERSION"),
+                    include_str!(concat!(env!("OUT_DIR"), "/version.rs"))
+                );
                 println!("id author Aaron Becker");
                 println!("option name Hash type spin default 64 min 1 max 65536");
                 println!("option name Ponder type check default false");
@@ -122,7 +128,7 @@ fn handle_command(search_data: &mut SearchData, line: &str) -> Result<(), String
             Some("isready") => {
                 println!("readyok");
                 return Ok(());
-            },
+            }
             Some("debug") => return Ok(()),
             Some("register") => return Ok(()),
             Some("ucinewgame") => return Ok(()),
@@ -145,11 +151,13 @@ fn handle_command(search_data: &mut SearchData, line: &str) -> Result<(), String
 }
 
 fn handle_position<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), String>
-        where I: Iterator<Item=&'a str> {
+where
+    I: Iterator<Item = &'a str>,
+{
     match tokens.next() {
         Some("startpos") => {
             search_data.pos.load_fen(position::START_FEN)?;
-        },
+        }
         Some("fen") => {
             let mut fen = String::new();
             while let Some(tok) = tokens.next() {
@@ -162,14 +170,16 @@ fn handle_position<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Resul
             if fen.len() > 0 {
                 search_data.pos.load_fen(fen.as_str())?;
             }
-        },
+        }
         Some(x) => return Err(format!("unrecognized token '{}'", x)),
         None => return Err("input ended unexpectedly".to_string()),
     }
 
     // Remaining tokens should be moves.
     while let Some(tok) = tokens.next() {
-        if tok == "moves" { continue }
+        if tok == "moves" {
+            continue;
+        }
         // handle moves
         let ad = position::AttackData::new(&search_data.pos);
         let m = Move::from_uci(&search_data.pos, &ad, tok);
@@ -197,29 +207,61 @@ fn parse_u32_or_0(token: &str) -> u32 {
 }
 
 fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), String>
-        where I: Iterator<Item=&'a str> {
+where
+    I: Iterator<Item = &'a str>,
+{
     let (mut wtime, mut winc, mut btime, mut binc) = (0, 0, 0, 0);
     let (mut movestogo, mut movetime) = (0, 0);
     search_data.constraints.clear();
     let mut ptokens = tokens.peekable();
     while let Some(tok) = ptokens.next() {
         match tok {
-            "wtime" => if let Some(x) = ptokens.next() { wtime = parse_u32_or_0(x) },
-            "winc" => if let Some(x) = ptokens.next() { winc = parse_u32_or_0(x) },
-            "btime" => if let Some(x) = ptokens.next() { btime = parse_u32_or_0(x) },
-            "binc" => if let Some(x) = ptokens.next() { binc = parse_u32_or_0(x) },
-            "movestogo" => if let Some(x) = ptokens.next() { movestogo = parse_u32_or_0(x) },
-            "movetime" => if let Some(x) = ptokens.next() { movetime= parse_u32_or_0(x) },
-            "depth" => if let Some(x) = ptokens.next() {
-                search_data.constraints.depth_limit = parse_u64_or_0(x) as usize;
-            },
-            "nodes" => if let Some(x) = ptokens.next() {
-                search_data.constraints.node_limit = parse_u64_or_0(x);
-            },
+            "wtime" => {
+                if let Some(x) = ptokens.next() {
+                    wtime = parse_u32_or_0(x)
+                }
+            }
+            "winc" => {
+                if let Some(x) = ptokens.next() {
+                    winc = parse_u32_or_0(x)
+                }
+            }
+            "btime" => {
+                if let Some(x) = ptokens.next() {
+                    btime = parse_u32_or_0(x)
+                }
+            }
+            "binc" => {
+                if let Some(x) = ptokens.next() {
+                    binc = parse_u32_or_0(x)
+                }
+            }
+            "movestogo" => {
+                if let Some(x) = ptokens.next() {
+                    movestogo = parse_u32_or_0(x)
+                }
+            }
+            "movetime" => {
+                if let Some(x) = ptokens.next() {
+                    movetime = parse_u32_or_0(x)
+                }
+            }
+            "depth" => {
+                if let Some(x) = ptokens.next() {
+                    search_data.constraints.depth_limit = parse_u64_or_0(x) as usize;
+                }
+            }
+            "nodes" => {
+                if let Some(x) = ptokens.next() {
+                    search_data.constraints.node_limit = parse_u64_or_0(x);
+                }
+            }
             "infinite" => search_data.constraints.infinite = true,
-            "mate" => if let Some(_) = ptokens.next() {
-                println!("info string mate search not supported, ignoring");
-            },
+            "mate" => {
+                if let Some(_) = ptokens.next() {
+                    println!("info string mate search not supported, ignoring");
+                }
+            }
             "ponder" => search_data.constraints.ponder = true,
             "searchmoves" => {
                 let ad = position::AttackData::new(&search_data.pos);
@@ -228,20 +270,27 @@ fn handle_go<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), 
                     if let Some(tok) = ptokens.peek() {
                         let m = Move::from_uci(&search_data.pos, &ad, tok);
                         if m == movement::NO_MOVE {
-                            break
+                            break;
                         }
                         search_data.constraints.searchmoves.push(m);
                     } else {
-                        break
+                        break;
                     }
                     ptokens.next();
                 }
-            },
+            }
             _ => println!("info string unrecognized token {}", tok),
         }
     }
-    search_data.constraints.set_timer(search_data.pos.us(),
-                                      wtime, btime, winc, binc, movetime, movestogo);
+    search_data.constraints.set_timer(
+        search_data.pos.us(),
+        wtime,
+        btime,
+        winc,
+        binc,
+        movetime,
+        movestogo,
+    );
     search::go(search_data);
     Ok(())
 }
@@ -257,46 +306,59 @@ fn make_move(search_data: &mut SearchData, mv: &str) -> Result<(), String> {
 }
 
 fn handle_perft<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), String>
-        where I: Iterator<Item=&'a str> {
+where
+    I: Iterator<Item = &'a str>,
+{
     match tokens.next() {
         Some(depth) => {
             let d = depth.parse::<u32>().map_err(|e| e.to_string())?;
             let t1 = time::Instant::now();
             let count = perft::perft(&mut search_data.pos, d);
             let elapsed_ms = in_millis(&t1.elapsed());
-            println!("{} ({} ms, {} nodes/s)", count, elapsed_ms, count * 1000 / elapsed_ms);
-        },
+            println!(
+                "{} ({} ms, {} nodes/s)",
+                count,
+                elapsed_ms,
+                count * 1000 / elapsed_ms
+            );
+        }
         None => return Err("input ended with no depth".to_string()),
     }
     Ok(())
 }
 
 fn handle_divide<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), String>
-        where I: Iterator<Item=&'a str> {
+where
+    I: Iterator<Item = &'a str>,
+{
     match tokens.next() {
         Some(depth) => {
             let d = depth.parse::<u32>().map_err(|e| e.to_string())?;
             println!("{}", perft::divide(&mut search_data.pos, d));
-        },
+        }
         None => return Err("input ended with no depth".to_string()),
     }
     Ok(())
 }
 
 fn handle_print<'a, I>(search_data: &mut SearchData, _tokens: &mut I) -> Result<(), String>
-        where I: Iterator<Item=&'a str> {
+where
+    I: Iterator<Item = &'a str>,
+{
     println!("{}", search_data.pos.debug_string());
     Ok(())
 }
 
 fn handle_option<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<(), String>
-        where I: Iterator<Item=&'a str> {
+where
+    I: Iterator<Item = &'a str>,
+{
     let mut name = String::new();
     while let Some(tok) = tokens.next() {
         match tok {
-            "name" => {},
-            "value" => { break },
-            t => { name.push_str(t) },
+            "name" => {}
+            "value" => break,
+            t => name.push_str(t),
         }
     }
     match name.to_lowercase().as_ref() {
@@ -307,19 +369,19 @@ fn handle_option<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<
                     search_data.tt = ::transposition::Table::new(mb << 20);
                 }
             }
-        },
+        }
         "uci_chess960" => {
             if let Some(t) = tokens.next() {
                 let c960 = t.parse::<bool>().map_err(|e| e.to_string())?;
                 ::options::set_c960(c960);
             }
-        },
+        }
         "arena960castling" => {
             if let Some(t) = tokens.next() {
                 let arena = t.parse::<bool>().map_err(|e| e.to_string())?;
                 ::options::set_arena_960_castling(arena);
             }
-        },
+        }
         "multipv" => {
             if let Some(t) = tokens.next() {
                 let mpv = t.parse::<usize>().map_err(|e| e.to_string())?;
@@ -332,7 +394,7 @@ fn handle_option<'a, I>(search_data: &mut SearchData, tokens: &mut I) -> Result<
         }
         _ => {
             println!("info string unknown option {}, ignoring", name);
-        },
+        }
     }
     Ok(())
 }

@@ -1,8 +1,7 @@
 use movement::{Move, NO_MOVE};
 use position::HashKey;
-use score::{Score, ScoreType, score_is_valid};
+use score::{score_is_valid, Score, ScoreType};
 use search::SearchDepth;
-
 
 // TODO: experiment with Entry/Bucket size for the purposes of cache tuning.
 // It may be beneficial to add padding so that buckets are cache-aligned.
@@ -111,8 +110,8 @@ impl<'a> Table {
                 // Note the wrapping behavior here: we allow generations to wrap
                 // so that age doesn't break when our generation number wraps, but
                 // the total score should never over- or under-flow an 16.
-                let entry_score = bucket.entries[i].depth as i16 -
-                    self.generation.wrapping_sub(bucket.entries[i].generation) as i16;
+                let entry_score = bucket.entries[i].depth as i16
+                    - self.generation.wrapping_sub(bucket.entries[i].generation) as i16;
                 if entry_score < min_score {
                     min_score = entry_score;
                     index = i;
@@ -218,6 +217,5 @@ mod tests {
         } else {
             assert!(false);
         }
-
     });
 }

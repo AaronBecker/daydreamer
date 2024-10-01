@@ -42,38 +42,54 @@ pub struct PhaseScore {
     pub eg: Score,
 }
 
-pub const NONE: PhaseScore = PhaseScore{ mg: 0, eg: 0 };
-pub const PAWN: PhaseScore = PhaseScore{ mg: 85, eg: 115 };
-pub const KNIGHT: PhaseScore = PhaseScore{ mg: 350, eg: 400 };
-pub const BISHOP: PhaseScore = PhaseScore{ mg: 350, eg: 400 };
-pub const ROOK: PhaseScore = PhaseScore{ mg: 500, eg: 650 };
-pub const QUEEN: PhaseScore = PhaseScore{ mg: 1000, eg: 1200 };
+pub const NONE: PhaseScore = PhaseScore { mg: 0, eg: 0 };
+pub const PAWN: PhaseScore = PhaseScore { mg: 85, eg: 115 };
+pub const KNIGHT: PhaseScore = PhaseScore { mg: 350, eg: 400 };
+pub const BISHOP: PhaseScore = PhaseScore { mg: 350, eg: 400 };
+pub const ROOK: PhaseScore = PhaseScore { mg: 500, eg: 650 };
+pub const QUEEN: PhaseScore = PhaseScore { mg: 1000, eg: 1200 };
 
 // This is incredibly gross, but I don't want the piece score array to be
 // mutable and the compiler won't evaluate PieceScore negation at compile
 // time so this is what we're stuck with at the moment.
-const BPAWN: PhaseScore = PhaseScore{ mg: -85, eg: -115 };
-const BKNIGHT: PhaseScore = PhaseScore{ mg: -350, eg: -400 };
-const BBISHOP: PhaseScore = PhaseScore{ mg: -350, eg: -400 };
-const BROOK: PhaseScore = PhaseScore{ mg: -500, eg: -650 };
-const BQUEEN: PhaseScore = PhaseScore{ mg: -1000, eg: -1200 };
+const BPAWN: PhaseScore = PhaseScore { mg: -85, eg: -115 };
+const BKNIGHT: PhaseScore = PhaseScore { mg: -350, eg: -400 };
+const BBISHOP: PhaseScore = PhaseScore { mg: -350, eg: -400 };
+const BROOK: PhaseScore = PhaseScore { mg: -500, eg: -650 };
+const BQUEEN: PhaseScore = PhaseScore {
+    mg: -1000,
+    eg: -1200,
+};
 
-const PIECE_SCORE: [PhaseScore; 16] = [NONE,  PAWN,  KNIGHT,  BISHOP,  ROOK,  QUEEN, NONE, NONE,
-                                       NONE, BPAWN, BKNIGHT, BBISHOP, BROOK, BQUEEN, NONE, NONE];
+#[rustfmt::skip]
+const PIECE_SCORE: [PhaseScore; 16] = [
+    NONE,  PAWN,  KNIGHT,  BISHOP,  ROOK,  QUEEN, NONE, NONE,
+    NONE, BPAWN, BKNIGHT, BBISHOP, BROOK, BQUEEN, NONE, NONE,
+];
 // TODO: consider consolidating phase and non_pawn_material--phase is just the sum of black
 // and white non-pawn material.
 const PT_PHASE: [Phase; 8] = [
-    NONE.mg as Phase, NONE.mg as Phase, KNIGHT.mg as Phase,
-    BISHOP.mg as Phase, ROOK.mg as Phase, QUEEN.mg as Phase,
-    NONE.mg as Phase, NONE.mg as Phase];
+    NONE.mg as Phase,
+    NONE.mg as Phase,
+    KNIGHT.mg as Phase,
+    BISHOP.mg as Phase,
+    ROOK.mg as Phase,
+    QUEEN.mg as Phase,
+    NONE.mg as Phase,
+    NONE.mg as Phase,
+];
 const MAX_PHASE: Phase = 2 * (2 * (KNIGHT.mg + BISHOP.mg + ROOK.mg) + QUEEN.mg) as Phase;
 
-const MG_MATERIAL: [Score; 8] = [NONE.mg, PAWN.mg, KNIGHT.mg, BISHOP.mg, ROOK.mg, QUEEN.mg, NONE.mg, NONE.mg];
+const MG_MATERIAL: [Score; 8] = [
+    NONE.mg, PAWN.mg, KNIGHT.mg, BISHOP.mg, ROOK.mg, QUEEN.mg, NONE.mg, NONE.mg,
+];
 pub fn mg_material(pt: PieceType) -> Score {
     MG_MATERIAL[pt.index()]
 }
 
-const NON_PAWN_MATERIAL: [Score; 8] = [NONE.mg, NONE.mg, KNIGHT.mg, BISHOP.mg, ROOK.mg, QUEEN.mg, NONE.mg, NONE.mg];
+const NON_PAWN_MATERIAL: [Score; 8] = [
+    NONE.mg, NONE.mg, KNIGHT.mg, BISHOP.mg, ROOK.mg, QUEEN.mg, NONE.mg, NONE.mg,
+];
 pub fn non_pawn_material(pt: PieceType) -> Score {
     NON_PAWN_MATERIAL[pt.index()]
 }
@@ -83,10 +99,7 @@ pub fn non_pawn_material(pt: PieceType) -> Score {
 // perspective.
 impl PhaseScore {
     pub fn new(mg: Score, eg: Score) -> PhaseScore {
-        PhaseScore {
-            mg,
-            eg,
-        }
+        PhaseScore { mg, eg }
     }
     pub fn interpolate(self, pos: &Position) -> Score {
         let phase = clamp!(pos.phase(), 0, MAX_PHASE);
@@ -215,7 +228,7 @@ lazy_static! {
 
 fn init_psqt() -> [[PhaseScore; 64]; 15] {
     let psqt_base = [
-        [PhaseScore{ mg: 0, eg: 0 }; 64],
+        [PhaseScore { mg: 0, eg: 0 }; 64],
         // Pawn
         psqt!({  0, 0}, { 0,  0}, {0,  0}, { 0, 0}, { 0, 0}, {0,  0}, { 0,  0}, {  0, 0},
               {-10, 6}, { 2,  4}, {8,  2}, {15, 0}, {15, 0}, {8,  2}, { 2,  4}, {-10, 6},
@@ -269,20 +282,21 @@ fn init_psqt() -> [[PhaseScore; 64]; 15] {
               {22,-12}, {28,  9},{ -2, 24},{-22, 33},{-22, 33},{ -2, 24},{ 28,  9},{ 22,-12},
               {25,-18}, {31,  3},{  1, 18},{-19, 24},{-19, 24},{  1, 18},{ 31,  3},{ 25,-18},
               {28,-29}, {33, -4},{  4,  8},{-16, 14},{-16, 14},{  4,  8},{ 33, -4},{ 28,-29},
-              {31,-62}, {36,-39},{  6,-23},{-14,-17},{-14,-17},{  6,-23},{ 36,-39},{ 31,-62})
+              {31,-62}, {36,-39},{  6,-23},{-14,-17},{-14,-17},{  6,-23},{ 36,-39},{ 31,-62}),
     ];
-    let mut psqt = [[PhaseScore{ mg: 0, eg: 0}; 64]; 15];
+    let mut psqt = [[PhaseScore { mg: 0, eg: 0 }; 64]; 15];
     for pt in board::each_piece_type() {
         let bp = Piece::new(Color::Black, pt);
         let wp = Piece::new(Color::White, pt);
         let (mut mg_sum, mut eg_sum) = (0, 0);
         for sq in board::each_square() {
-            psqt[wp.index()][sq.index()] = PIECE_SCORE[wp.index()] + psqt_base[pt.index()][sq.flip().index()];
+            psqt[wp.index()][sq.index()] =
+                PIECE_SCORE[wp.index()] + psqt_base[pt.index()][sq.flip().index()];
             psqt[bp.index()][sq.flip().index()] = -psqt[wp.index()][sq.index()];
             mg_sum += psqt_base[pt.index()][sq.flip().index()].mg;
             eg_sum += psqt_base[pt.index()][sq.flip().index()].eg;
         }
-        
+
         // Adjust scores so that the mean value is nearly zero.
         let (mg_adj, eg_adj) = (mg_sum / 64, eg_sum / 64);
         for sq in board::each_square() {

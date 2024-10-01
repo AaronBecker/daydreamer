@@ -36,4 +36,3 @@ pub fn set_multi_pv(x: usize) {
 pub fn time_buffer() -> u32 {
     10
 }
-

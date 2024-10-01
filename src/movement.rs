@@ -1,8 +1,8 @@
 use board::*;
-use options;
-use position::Position;
-use position::AttackData;
 use movegen::MoveSelector;
+use options;
+use position::AttackData;
+use position::Position;
 use search;
 
 // Move is a 4-byte quantity that encodes source and destination square, the
@@ -74,33 +74,47 @@ impl Move {
     }
 
     pub fn new(from: Square, to: Square, p: Piece, capture: Piece) -> Move {
-        Move((from.index() as u32) |
-             ((to.index() as u32) << 8) |
-             ((p.index() as u32) << 16) |
-             ((capture.index() as u32) << 20))
+        Move(
+            (from.index() as u32)
+                | ((to.index() as u32) << 8)
+                | ((p.index() as u32) << 16)
+                | ((capture.index() as u32) << 20),
+        )
     }
 
-    pub fn new_promotion(from: Square, to: Square, p: Piece, capture: Piece, promote: PieceType) -> Move {
-        Move((from.index() as u32) |
-             ((to.index() as u32) << 8) |
-             ((p.index() as u32) << 16) |
-             ((capture.index() as u32) << 20) |
-             ((promote.index() as u32) << 24))
+    pub fn new_promotion(
+        from: Square,
+        to: Square,
+        p: Piece,
+        capture: Piece,
+        promote: PieceType,
+    ) -> Move {
+        Move(
+            (from.index() as u32)
+                | ((to.index() as u32) << 8)
+                | ((p.index() as u32) << 16)
+                | ((capture.index() as u32) << 20)
+                | ((promote.index() as u32) << 24),
+        )
     }
 
     pub fn new_castle(from: Square, to: Square, p: Piece) -> Move {
-        Move((from.index() as u32) |
-             ((to.index() as u32) << 8) |
-             ((p.index() as u32) << 16) |
-             CASTLE_FLAG)
+        Move(
+            (from.index() as u32)
+                | ((to.index() as u32) << 8)
+                | ((p.index() as u32) << 16)
+                | CASTLE_FLAG,
+        )
     }
 
     pub fn new_en_passant(from: Square, to: Square, p: Piece, capture: Piece) -> Move {
-        Move((from.index() as u32) |
-             ((to.index() as u32) << 8) |
-             ((p.index() as u32) << 16) |
-             ((capture.index() as u32) << 20) |
-             EN_PASSANT_FLAG)
+        Move(
+            (from.index() as u32)
+                | ((to.index() as u32) << 8)
+                | ((p.index() as u32) << 16)
+                | ((capture.index() as u32) << 20)
+                | EN_PASSANT_FLAG,
+        )
     }
 
     pub fn as_u32(self) -> u32 {

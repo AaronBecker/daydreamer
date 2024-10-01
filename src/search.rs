@@ -1,11 +1,11 @@
-use std::sync::{Arc, mpsc};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{mpsc, Arc};
 use std::thread;
 use std::time::{Duration, Instant};
 
 use bitboard;
 use board;
-use board::{Rank, PieceType};
+use board::{PieceType, Rank};
 use eval;
 use movegen::MoveSelector;
 use movement::{Move, NO_MOVE, NULL_MOVE};
@@ -13,7 +13,7 @@ use options;
 use position;
 use position::{AttackData, Position, UndoState};
 use score;
-use score::{Score, score_is_valid, is_mate_score};
+use score::{is_mate_score, score_is_valid, Score};
 use transposition;
 use uci::in_millis;
 
@@ -103,10 +103,10 @@ impl EngineState {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SearchResult {
-     Aborted,
-     FailHigh,
-     FailLow,
-     Exact,
+    Aborted,
+    FailHigh,
+    FailLow,
+    Exact,
 }
 
 // SearchConstraints track the conditions for a search as specified via UCI.
@@ -114,7 +114,7 @@ pub enum SearchResult {
 // also includes a list of moves to consider at the root.
 pub struct SearchConstraints {
     pub infinite: bool,
-    pub ponder : bool,
+    pub ponder: bool,
     pub searchmoves: Vec<Move>, // TODO: this doesn't seem quite right here, maybe move out
     pub node_limit: u64,
     pub depth_limit: Depth,
@@ -152,22 +152,39 @@ impl SearchConstraints {
         self.start_time = Instant::now();
     }
 
-    pub fn set_timer(&mut self, us: board::Color, wtime: u32, btime: u32,
-                     winc: u32, binc: u32, movetime: u32, movestogo: u32) {
+    pub fn set_timer(
+        &mut self,
+        us: board::Color,
+        wtime: u32,
+        btime: u32,
+        winc: u32,
+        binc: u32,
+        movetime: u32,
+        movestogo: u32,
+    ) {
         self.start_time = Instant::now();
         if wtime == 0 && btime == 0 && winc == 0 && binc == 0 && movetime == 0 {
             self.use_timer = false;
             return;
         }
         self.use_timer = true;
-        
+
         if movetime != 0 {
-            self.hard_limit = Duration::from_millis(max!(0, movetime - options::time_buffer()) as u64);
+            self.hard_limit =
+                Duration::from_millis(max!(0, movetime - options::time_buffer()) as u64);
             self.soft_limit = self.hard_limit;
             return;
         }
-        let time = if us == board::Color::White { wtime } else { btime };
-        let inc = if us == board::Color::White { winc } else { binc };
+        let time = if us == board::Color::White {
+            wtime
+        } else {
+            btime
+        };
+        let inc = if us == board::Color::White {
+            winc
+        } else {
+            binc
+        };
         let (mut soft_limit, mut hard_limit);
         if movestogo != 0 {
             // x/y time control
@@ -225,7 +242,6 @@ impl RootMove {
         }
     }
 }
-
 
 #[derive(Copy, Clone, Debug)]
 pub struct Node {
@@ -288,10 +304,15 @@ impl SearchData {
 
     pub fn should_stop(&self) -> bool {
         let engine_state = self.state.load();
-        if engine_state == PONDERING_STATE { return false }
-        if engine_state == STOPPING_STATE { return true }
-        if self.stats.nodes >= self.constraints.node_limit &&
-           !self.constraints.infinite { return true }
+        if engine_state == PONDERING_STATE {
+            return false;
+        }
+        if engine_state == STOPPING_STATE {
+            return true;
+        }
+        if self.stats.nodes >= self.constraints.node_limit && !self.constraints.infinite {
+            return true;
+        }
         false
     }
 
@@ -353,17 +374,22 @@ pub fn go(data: &mut SearchData) {
                 while engine_state.load() == PONDERING_STATE {
                     thread::sleep(sleep_time);
                 }
-                if engine_state.load() != SEARCHING_STATE ||
-                    engine_state.generation.load(Ordering::SeqCst) != current_gen {
+                if engine_state.load() != SEARCHING_STATE
+                    || engine_state.generation.load(Ordering::SeqCst) != current_gen
+                {
                     return;
                 }
                 engine_state.enter(STOPPING_STATE);
             });
         }
     }
-    data.state.enter(if data.constraints.ponder { PONDERING_STATE } else { SEARCHING_STATE });
+    data.state.enter(if data.constraints.ponder {
+        PONDERING_STATE
+    } else {
+        SEARCHING_STATE
+    });
     data.reset();
- 
+
     let ad = AttackData::new(&data.pos);
     if data.constraints.searchmoves.len() == 0 {
         let mut ms = MoveSelector::legal();
@@ -374,33 +400,36 @@ pub fn go(data: &mut SearchData) {
     if data.constraints.searchmoves.len() == 0 {
         println!("info string no moves to search");
         println!("bestmove (none)");
-        return
+        return;
     }
     for m in data.constraints.searchmoves.iter() {
         data.root_moves.push(RootMove::new(*m));
     }
     data.tt.new_generation();
- 
+
     deepening_search(data);
 
     loop {
         let engine_state = data.state.load();
-        if engine_state == PONDERING_STATE ||
-            data.constraints.infinite && engine_state == SEARCHING_STATE {
+        if engine_state == PONDERING_STATE
+            || data.constraints.infinite && engine_state == SEARCHING_STATE
+        {
             thread::sleep(Duration::from_millis(1));
         } else {
-            break
+            break;
         }
     }
- 
+
     // Note: we enter the waiting state before outputting to ensure that we
     // aren't still in a searching state when a followup command arrives.
     data.state.enter(WAITING_STATE);
     if data.constraints.use_timer {
-        println!("info string time {} soft limit {} hard limit {}",
-                 in_millis(&data.constraints.start_time.elapsed()),
-                 in_millis(&data.constraints.soft_limit),
-                 in_millis(&data.constraints.hard_limit));
+        println!(
+            "info string time {} soft limit {} hard limit {}",
+            in_millis(&data.constraints.start_time.elapsed()),
+            in_millis(&data.constraints.soft_limit),
+            in_millis(&data.constraints.hard_limit)
+        );
     }
     print!("bestmove {}", data.root_moves[0].m);
     if data.root_moves[0].pv.len() > 0 {
@@ -410,12 +439,24 @@ pub fn go(data: &mut SearchData) {
 }
 
 fn should_deepen(data: &SearchData) -> bool {
-    if data.current_depth == MAX_PLY - 1 { return false }
-    if data.state.load() == PONDERING_STATE { return true }
-    if data.should_stop() { return false }
-    if data.constraints.infinite { return true }
-    if data.constraints.depth_limit < data.current_depth { return false }
-    if !data.constraints.use_timer { return true }
+    if data.current_depth == MAX_PLY - 1 {
+        return false;
+    }
+    if data.state.load() == PONDERING_STATE {
+        return true;
+    }
+    if data.should_stop() {
+        return false;
+    }
+    if data.constraints.infinite {
+        return true;
+    }
+    if data.constraints.depth_limit < data.current_depth {
+        return false;
+    }
+    if !data.constraints.use_timer {
+        return true;
+    }
     // If we're much more than halfway through our time, we won't make it
     // through the first move of the next iteration anyway.
     data.constraints.start_time.elapsed() < data.constraints.soft_limit
@@ -427,34 +468,36 @@ fn should_print(data: &SearchData) -> bool {
 
 // print_pv_single prints the search data for a single root move.
 fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Score, beta: Score) {
-     let ms = in_millis(&data.constraints.start_time.elapsed());
-     let nps = if ms < 20 {
-         String::new()  // don't report nps if we just started.
-     } else {
-         format!("nps {} ", data.stats.nodes * 1000 / ms)
-     };
-     let mut pv = String::new();
-     pv.push_str(&format!("{} ", rm.m));
-     for m in rm.pv.iter() {
-         pv.push_str(&format!("{} ", *m));
-     }
-     let bound = if rm.score <= alpha {
-         String::from("upperbound ")
-     } else if rm.score >= beta {
-         String::from("lowerbound ")
-     } else {
-         String::new()
-     };
-     let score = if is_mate_score(rm.score) {
-         let mut mate_in = (score::MATE_SCORE - rm.score.abs() + 1) / 2;
-         if rm.score < 0 { mate_in *= -1; }
-         format!("mate {}", mate_in)
-     } else {
-         format!("cp {}", rm.score)
-     };
-     println!("info multipv {} depth {} score {} {}alpha {} beta {} time {} nodes {} qnodes {} pvnodes {} {}pv {}",
+    let ms = in_millis(&data.constraints.start_time.elapsed());
+    let nps = if ms < 20 {
+        String::new() // don't report nps if we just started.
+    } else {
+        format!("nps {} ", data.stats.nodes * 1000 / ms)
+    };
+    let mut pv = String::new();
+    pv.push_str(&format!("{} ", rm.m));
+    for m in rm.pv.iter() {
+        pv.push_str(&format!("{} ", *m));
+    }
+    let bound = if rm.score <= alpha {
+        String::from("upperbound ")
+    } else if rm.score >= beta {
+        String::from("lowerbound ")
+    } else {
+        String::new()
+    };
+    let score = if is_mate_score(rm.score) {
+        let mut mate_in = (score::MATE_SCORE - rm.score.abs() + 1) / 2;
+        if rm.score < 0 {
+            mate_in *= -1;
+        }
+        format!("mate {}", mate_in)
+    } else {
+        format!("cp {}", rm.score)
+    };
+    println!("info multipv {} depth {} score {} {}alpha {} beta {} time {} nodes {} qnodes {} pvnodes {} {}pv {}",
               ordinal, data.current_depth, score, bound, alpha, beta, ms, data.stats.nodes, data.stats.qnodes, data.stats.pvnodes, nps, pv);
-     debug_assert!(score_is_valid(rm.score));
+    debug_assert!(score_is_valid(rm.score));
 }
 
 // print_pv prints out the most up-to-date information about the current
@@ -505,7 +548,9 @@ fn deepening_search(data: &mut SearchData) {
                     b.depth.cmp(&a.depth)
                 }
             });
-            if data.should_stop() { return }
+            if data.should_stop() {
+                return;
+            }
             print_pv(data, alpha, beta);
             debug_assert!(score_is_valid(last_score));
             if last_score <= alpha {
@@ -517,20 +562,26 @@ fn deepening_search(data: &mut SearchData) {
             } else {
                 break;
             }
- 
+
             // TODO: allow more time to resolve the search on multiple consecutive failures.
             if consecutive_fail_lows > 0 {
                 if consecutive_fail_lows >= ASPIRE_MARGIN.len() {
                     alpha = score::MIN_SCORE;
                 } else {
-                    alpha = max!(last_score - ASPIRE_MARGIN[consecutive_fail_lows], score::MIN_SCORE);
+                    alpha = max!(
+                        last_score - ASPIRE_MARGIN[consecutive_fail_lows],
+                        score::MIN_SCORE
+                    );
                 }
             }
             if consecutive_fail_highs > 0 {
                 if consecutive_fail_highs >= ASPIRE_MARGIN.len() {
                     beta = score::MAX_SCORE;
                 } else {
-                    beta = min!(last_score + ASPIRE_MARGIN[consecutive_fail_highs], score::MAX_SCORE);
+                    beta = min!(
+                        last_score + ASPIRE_MARGIN[consecutive_fail_highs],
+                        score::MAX_SCORE
+                    );
                 }
             }
         }
@@ -539,18 +590,16 @@ fn deepening_search(data: &mut SearchData) {
     }
 }
 
-fn reduction(depth: SearchDepth,
-             searched_moves: usize,
-             searched_quiet_moves: usize,
-             bad_move: bool,
-             special_move: bool) -> SearchDepth {
+fn reduction(
+    depth: SearchDepth,
+    searched_moves: usize,
+    searched_quiet_moves: usize,
+    bad_move: bool,
+    special_move: bool,
+) -> SearchDepth {
     let mut r = 0.;
     if searched_moves > 2 || searched_quiet_moves > 0 {
-        r = if searched_moves > 5 {
-            depth / 5.
-        } else {
-            1.
-        };
+        r = if searched_moves > 5 { depth / 5. } else { 1. };
         if searched_moves > 6 {
             if bad_move {
                 r += 1.;
@@ -593,10 +642,17 @@ fn see_value(pos: &Position, m: Move, val: &mut Score) -> Score {
     *val
 }
 
-fn search(data: &mut SearchData, ply: usize,
-          mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
+fn search(
+    data: &mut SearchData,
+    ply: usize,
+    mut alpha: Score,
+    mut beta: Score,
+    depth: SearchDepth,
+) -> Score {
     data.clear_pv(ply);
-    if data.should_stop() { return score::DRAW_SCORE; }
+    if data.should_stop() {
+        return score::DRAW_SCORE;
+    }
 
     //let qnode = is_quiescence_depth(depth);
     if is_quiescence_depth(depth) {
@@ -606,14 +662,19 @@ fn search(data: &mut SearchData, ply: usize,
     if !root_node {
         alpha = max!(alpha, score::mated_in(ply));
         beta = min!(beta, score::mate_in(ply + 1));
-        if alpha >= beta { return alpha }
-        if data.pos.is_draw() || ply >= MAX_PLY { return score::DRAW_SCORE }
+        if alpha >= beta {
+            return alpha;
+        }
+        if data.pos.is_draw() || ply >= MAX_PLY {
+            return score::DRAW_SCORE;
+        }
     }
 
     let orig_alpha = alpha;
     let open_window = beta - alpha > 1;
 
-    let (mut tt_move, mut tt_score, mut tt_score_type) = (NO_MOVE, score::MIN_SCORE, score::AT_MOST);
+    let (mut tt_move, mut tt_score, mut tt_score_type) =
+        (NO_MOVE, score::MIN_SCORE, score::AT_MOST);
     if root_node {
         tt_move = data.root_moves[0].m;
         tt_score = data.root_moves[0].score;
@@ -623,9 +684,10 @@ fn search(data: &mut SearchData, ply: usize,
             tt_score = score_from_tt(entry.score as Score, ply);
             tt_score_type = entry.score_type;
             if depth as u8 <= entry.depth {
-                if !open_window &&
-                    ((tt_score >= beta && tt_score_type & score::AT_LEAST != 0) ||
-                     (tt_score <= alpha && tt_score_type & score::AT_MOST != 0)) {
+                if !open_window
+                    && ((tt_score >= beta && tt_score_type & score::AT_LEAST != 0)
+                        || (tt_score <= alpha && tt_score_type & score::AT_MOST != 0))
+                {
                     return tt_score;
                 }
             }
@@ -634,43 +696,50 @@ fn search(data: &mut SearchData, ply: usize,
 
     let mut lazy_score = data.pos.psqt_score().interpolate(&data.pos);
     // TODO: write separate function to apply tt bounds.
-    if data.pos.checkers() == 0 && tt_score != score::MIN_SCORE &&
-        ((tt_score > lazy_score && tt_score_type & score::AT_LEAST != 0) ||
-         (tt_score < lazy_score && tt_score_type & score::AT_MOST != 0)) {
+    if data.pos.checkers() == 0
+        && tt_score != score::MIN_SCORE
+        && ((tt_score > lazy_score && tt_score_type & score::AT_LEAST != 0)
+            || (tt_score < lazy_score && tt_score_type & score::AT_MOST != 0))
+    {
         lazy_score = tt_score;
     }
 
-    if !root_node &&
-        depth <= 5. &&
-        data.pos.checkers() == 0 &&
-        data.pos.non_pawn_material(data.pos.us()) != 0 &&
-        (tt_move == NO_MOVE || tt_score > score::mated_in(MAX_PLY)) &&
-        lazy_score - 2 * futility_margin(depth) > beta {
-            return lazy_score - 2 * futility_margin(depth)
+    if !root_node
+        && depth <= 5.
+        && data.pos.checkers() == 0
+        && data.pos.non_pawn_material(data.pos.us()) != 0
+        && (tt_move == NO_MOVE || tt_score > score::mated_in(MAX_PLY))
+        && lazy_score - 2 * futility_margin(depth) > beta
+    {
+        return lazy_score - 2 * futility_margin(depth);
     }
 
     let depth_index = depth as usize;
-    if NULL_MOVE_ENABLED &&
-        !open_window &&
-        lazy_score + NULL_EVAL_MARGIN > beta &&
-        !is_mate_score(beta) &&
-        data.pos.checkers() == 0 &&
-        data.pos.non_pawn_material(data.pos.us()) != 0 {
+    if NULL_MOVE_ENABLED
+        && !open_window
+        && lazy_score + NULL_EVAL_MARGIN > beta
+        && !is_mate_score(beta)
+        && data.pos.checkers() == 0
+        && data.pos.non_pawn_material(data.pos.us()) != 0
+    {
         // Nullmove search.
         let undo = UndoState::undo_state(&data.pos);
         data.pos.do_nullmove();
-        let null_r = (depth + 10.) / 4. +
-            clamp!((lazy_score-beta) as SearchDepth / 100.0, 0.0, 1.5);
+        let null_r =
+            (depth + 10.) / 4. + clamp!((lazy_score - beta) as SearchDepth / 100.0, 0.0, 1.5);
         let null_score = -search(data, ply + 1, -beta, -beta + 1, depth - null_r);
         data.pos.undo_nullmove(&undo);
-        if null_score >= beta { return beta }
-    } else if !open_window &&
-        data.pos.last_move() != NULL_MOVE &&
-        depth <= RAZOR_DEPTH &&
-        tt_move == NO_MOVE &&
-        data.pos.checkers() == 0 &&
-        !is_mate_score(beta) &&
-        lazy_score + RAZOR_MARGIN[depth_index] < beta {
+        if null_score >= beta {
+            return beta;
+        }
+    } else if !open_window
+        && data.pos.last_move() != NULL_MOVE
+        && depth <= RAZOR_DEPTH
+        && tt_move == NO_MOVE
+        && data.pos.checkers() == 0
+        && !is_mate_score(beta)
+        && lazy_score + RAZOR_MARGIN[depth_index] < beta
+    {
         if depth <= 1.0 {
             return quiesce(data, ply, alpha, beta, 0.);
         }
@@ -683,9 +752,11 @@ fn search(data: &mut SearchData, ply: usize,
     }
 
     let margin = beta - lazy_score;
-    if IID_ENABLED && tt_move == NO_MOVE &&
-        ((open_window && depth >= 5. && margin <= 300) ||
-         (!open_window && depth >= 8. && margin <= 150)) {
+    if IID_ENABLED
+        && tt_move == NO_MOVE
+        && ((open_window && depth >= 5. && margin <= 300)
+            || (!open_window && depth >= 8. && margin <= 150))
+    {
         let iid_depth = if open_window {
             (4. * depth / 5.) - 2.
         } else {
@@ -710,7 +781,8 @@ fn search(data: &mut SearchData, ply: usize,
         let cm = if data.pos.last_move() == NO_MOVE || data.pos.last_move() == NULL_MOVE {
             NO_MOVE
         } else {
-            data.countermoves[data.pos.last_move().piece().index()][data.pos.last_move().to().index()]
+            data.countermoves[data.pos.last_move().piece().index()]
+                [data.pos.last_move().to().index()]
         };
         MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, cm)
     };
@@ -721,7 +793,7 @@ fn search(data: &mut SearchData, ply: usize,
         let mut root_idx = 0;
         if root_node {
             if !data.constraints.searchmoves.contains(&m) {
-                continue
+                continue;
             }
             if should_print(data) {
                 println!("info currmove {} currmovenumber {}", m, searched_moves + 1);
@@ -730,66 +802,84 @@ fn search(data: &mut SearchData, ply: usize,
         }
 
         // gives_check is not precise, but it's just used for heuristic extensions.
-        let gives_check = !m.is_castle() && !m.is_en_passant() &&
-            ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
-             (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
-              bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
-        let deep_pawn = m.piece().piece_type() == PieceType::Pawn &&
-            (m.to().relative_to(data.pos.us()).rank().index() >= Rank::_7.index() &&
-             (m.promote() == PieceType::NoPieceType || m.promote() == PieceType::Queen));
+        let gives_check = !m.is_castle()
+            && !m.is_en_passant()
+            && ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0)
+                || (ad.check_discoverers & bitboard::bb(m.from()) != 0
+                    && bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
+        let deep_pawn = m.piece().piece_type() == PieceType::Pawn
+            && (m.to().relative_to(data.pos.us()).rank().index() >= Rank::_7.index()
+                && (m.promote() == PieceType::NoPieceType || m.promote() == PieceType::Queen));
         let quiet_move = !m.is_capture() && m.promote() != PieceType::Queen;
         let late_move = searched_moves > (depth * depth + 1.) as usize;
 
         let mut see = selector.last_see();
-        let ext = if (gives_check || deep_pawn) && see_sign(&data.pos, m, &mut see) >= 0 { 1. } else { 0. };
+        let ext = if (gives_check || deep_pawn) && see_sign(&data.pos, m, &mut see) >= 0 {
+            1.
+        } else {
+            0.
+        };
 
-        if !root_node &&
-            ext == 0. &&
-            depth < 10. &&
-            (data.pos.checkers() == 0 || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
-            searched_moves >= depth_index &&
-            m.promote() != PieceType::Queen &&
-            best_score > score::mated_in(MAX_PLY) &&
-            !selector.special_move() {
+        if !root_node
+            && ext == 0.
+            && depth < 10.
+            && (data.pos.checkers() == 0
+                || (!m.is_capture() && best_score > score::mated_in(MAX_PLY)))
+            && searched_moves >= depth_index
+            && m.promote() != PieceType::Queen
+            && best_score > score::mated_in(MAX_PLY)
+            && !selector.special_move()
+        {
             // History pruning.
             // TODO: clean up the history interface; this is kind of ugly.
             if quiet_move && depth <= 4. && data.history[SearchData::history_index(m)] < 0 {
-                continue
+                continue;
             }
 
             // Value/SEE pruning.
-            if depth <= 5. &&
-                lazy_score + see_value(&data.pos, m, &mut see) + futility_margin(depth) <
-                    alpha + 2 * searched_moves as Score {
-                continue
+            if depth <= 5.
+                && lazy_score + see_value(&data.pos, m, &mut see) + futility_margin(depth)
+                    < alpha + 2 * searched_moves as Score
+            {
+                continue;
             }
 
             if (late_move || depth <= 2.) && see_value(&data.pos, m, &mut see) < 0 {
-                continue
+                continue;
             }
 
             if see_value(&data.pos, m, &mut see) < ((-15. * depth - 5.) * depth) as Score {
-                continue
+                continue;
             }
         }
 
-        if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
+        if !data.pos.pseudo_move_is_legal(m, &ad) {
+            continue;
+        }
         data.pos.do_move(m, &ad);
-        let mut full_search = searched_moves == 0 ||
-                              (root_node && searched_moves <= options::multi_pv());
+        let mut full_search =
+            searched_moves == 0 || (root_node && searched_moves <= options::multi_pv());
         data.stats.nodes += 1;
         data.stats.pvnodes += (searched_moves == 0) as u64;
         searched_moves += 1;
         let mut score = score::MIN_SCORE;
         if !full_search {
-            let lmr_red = reduction(depth,
-                                    searched_moves,
-                                    searched_quiet_count,
-                                    selector.bad_move() || see_sign(&data.pos, m, &mut see) < 0,
-                                    selector.special_move());
+            let lmr_red = reduction(
+                depth,
+                searched_moves,
+                searched_quiet_count,
+                selector.bad_move() || see_sign(&data.pos, m, &mut see) < 0,
+                selector.special_move(),
+            );
 
             if lmr_red >= 1. {
-                score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - lmr_red - 1.);
+                score = -search(
+                    data,
+                    ply + 1,
+                    -alpha - 1,
+                    -alpha,
+                    depth + ext - lmr_red - 1.,
+                );
                 debug_assert!(score_is_valid(score));
             } else {
                 score = alpha + 1;
@@ -797,7 +887,9 @@ fn search(data: &mut SearchData, ply: usize,
             if score > alpha {
                 score = -search(data, ply + 1, -alpha - 1, -alpha, depth + ext - 1.);
                 debug_assert!(score_is_valid(score));
-                if open_window && score > alpha { full_search = true; }
+                if open_window && score > alpha {
+                    full_search = true;
+                }
             }
         }
         if full_search {
@@ -813,7 +905,9 @@ fn search(data: &mut SearchData, ply: usize,
         // If we're aborting, the score from the last move shouldn't be trusted,
         // since we didn't finish searching it, so bail out without updating
         // pv, bounds, etc.
-        if data.should_stop() { return score::DRAW_SCORE; }
+        if data.should_stop() {
+            return score::DRAW_SCORE;
+        }
 
         if root_node {
             data.root_moves[root_idx].score = score::MIN_SCORE;
@@ -824,7 +918,9 @@ fn search(data: &mut SearchData, ply: usize,
                 data.root_moves[root_idx].pv.clear();
                 for ply in 1..MAX_PLY {
                     let mv = data.pv_stack[1][ply];
-                    if mv == NO_MOVE { break }
+                    if mv == NO_MOVE {
+                        break;
+                    }
                     data.root_moves[root_idx].pv.push(mv);
                 }
             }
@@ -839,7 +935,9 @@ fn search(data: &mut SearchData, ply: usize,
             best_move = m;
             if score > alpha {
                 alpha = score;
-                if open_window { data.update_pv(ply, m) }
+                if open_window {
+                    data.update_pv(ply, m)
+                }
             }
             if score >= beta {
                 if !m.is_capture() && !m.is_promote() && data.pos.checkers() == 0 {
@@ -848,12 +946,18 @@ fn search(data: &mut SearchData, ply: usize,
                         data.search_stack[ply].killers[0] = m;
                     }
                     data.record_success(m, depth);
-                    for i in 0..searched_quiet_count-1 {
+                    for i in 0..searched_quiet_count - 1 {
                         data.record_failure(searched_quiets[i], depth);
                     }
                 }
                 debug_assert!(score_is_valid(score));
-                data.tt.put(data.pos.hash(), m, depth, score_to_tt(score, ply), score::AT_LEAST);
+                data.tt.put(
+                    data.pos.hash(),
+                    m,
+                    depth,
+                    score_to_tt(score, ply),
+                    score::AT_LEAST,
+                );
                 return beta;
             }
         }
@@ -869,19 +973,39 @@ fn search(data: &mut SearchData, ply: usize,
         };
     }
     debug_assert!(score_is_valid(best_score));
-    data.tt.put(data.pos.hash(), best_move, depth, score_to_tt(best_score, ply),
-                if best_score <= orig_alpha { score::AT_MOST } else { score::EXACT });
+    data.tt.put(
+        data.pos.hash(),
+        best_move,
+        depth,
+        score_to_tt(best_score, ply),
+        if best_score <= orig_alpha {
+            score::AT_MOST
+        } else {
+            score::EXACT
+        },
+    );
     best_score
 }
 
-fn quiesce(data: &mut SearchData, ply: usize,
-           mut alpha: Score, mut beta: Score, depth: SearchDepth) -> Score {
+fn quiesce(
+    data: &mut SearchData,
+    ply: usize,
+    mut alpha: Score,
+    mut beta: Score,
+    depth: SearchDepth,
+) -> Score {
     data.clear_pv(ply);
     alpha = max!(alpha, score::mated_in(ply));
     beta = min!(beta, score::mate_in(ply + 1));
-    if alpha >= beta { return alpha }
-    if data.pos.is_draw() { return score::DRAW_SCORE }
-    if ply >= MAX_PLY { return score::DRAW_SCORE }
+    if alpha >= beta {
+        return alpha;
+    }
+    if data.pos.is_draw() {
+        return score::DRAW_SCORE;
+    }
+    if ply >= MAX_PLY {
+        return score::DRAW_SCORE;
+    }
     let open_window = beta - alpha > 1;
     let orig_alpha = alpha;
 
@@ -895,11 +1019,12 @@ fn quiesce(data: &mut SearchData, ply: usize,
         tt_depth = entry.depth;
         debug_assert!(score_is_valid(tt_score));
     }
-    if !open_window &&
-        tt_hit &&
-        depth as i8 <= tt_depth as i8 &&
-        ((tt_score >= beta && tt_score_type & score::AT_LEAST != 0) ||
-         (tt_score <= alpha && tt_score_type & score::AT_MOST != 0)) {
+    if !open_window
+        && tt_hit
+        && depth as i8 <= tt_depth as i8
+        && ((tt_score >= beta && tt_score_type & score::AT_LEAST != 0)
+            || (tt_score <= alpha && tt_score_type & score::AT_MOST != 0))
+    {
         return tt_score;
     }
 
@@ -911,9 +1036,10 @@ fn quiesce(data: &mut SearchData, ply: usize,
         best_score = static_eval;
         if best_score >= alpha {
             alpha = best_score;
-            if tt_score != score::MIN_SCORE &&
-                ((tt_score > best_score && tt_score_type & score::AT_LEAST != 0) ||
-                    (tt_score < best_score && tt_score_type & score::AT_MOST != 0)) {
+            if tt_score != score::MIN_SCORE
+                && ((tt_score > best_score && tt_score_type & score::AT_LEAST != 0)
+                    || (tt_score < best_score && tt_score_type & score::AT_MOST != 0))
+            {
                 best_score = tt_score;
                 static_eval = tt_score;
             }
@@ -928,22 +1054,30 @@ fn quiesce(data: &mut SearchData, ply: usize,
     let undo = UndoState::undo_state(&data.pos);
     let mut num_moves = 0;
 
-    let mut selector = MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, NO_MOVE);
+    let mut selector =
+        MoveSelector::new(&data.pos, depth, &data.search_stack[ply], tt_move, NO_MOVE);
     while let Some(m) = selector.next(&data.pos, &ad, &data.history) {
-        let gives_check = !m.is_castle() && !m.is_en_passant() &&
-            ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0) ||
-             (ad.check_discoverers & bitboard::bb(m.from()) != 0 &&
-              bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
+        let gives_check = !m.is_castle()
+            && !m.is_en_passant()
+            && ((ad.potential_checks[m.piece().piece_type().index()] & bitboard::bb(m.to()) != 0)
+                || (ad.check_discoverers & bitboard::bb(m.from()) != 0
+                    && bitboard::ray(m.from(), m.to()) & bitboard::bb(ad.their_king) == 0));
         let see_value = data.pos.static_exchange_eval(m);
 
-        if !gives_check && (!in_check || (!m.is_capture() && best_score > score::mated_in(MAX_PLY))) &&
-            m.promote() != PieceType::Queen &&
-            static_eval + see_value + futility_margin(depth) < alpha {
-            continue
+        if !gives_check
+            && (!in_check || (!m.is_capture() && best_score > score::mated_in(MAX_PLY)))
+            && m.promote() != PieceType::Queen
+            && static_eval + see_value + futility_margin(depth) < alpha
+        {
+            continue;
         }
-        if !in_check && see_value < 0 { continue }
+        if !in_check && see_value < 0 {
+            continue;
+        }
 
-        if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
+        if !data.pos.pseudo_move_is_legal(m, &ad) {
+            continue;
+        }
         data.pos.do_move(m, &ad);
         data.stats.nodes += 1;
         data.stats.qnodes += 1;
@@ -956,17 +1090,27 @@ fn quiesce(data: &mut SearchData, ply: usize,
         // If we're aborting, the score from the last move shouldn't be trusted,
         // since we didn't finish searching it, so bail out without updating
         // pv, bounds, etc.
-        if data.should_stop() { return score::DRAW_SCORE; }
+        if data.should_stop() {
+            return score::DRAW_SCORE;
+        }
         if score > best_score {
             best_score = score;
             best_move = m;
             if score > alpha {
                 alpha = score;
-                if open_window { data.update_pv(ply, m) }
+                if open_window {
+                    data.update_pv(ply, m)
+                }
             }
             if score >= beta {
                 debug_assert!(score_is_valid(score));
-                data.tt.put(data.pos.hash(), m, QDEPTH, score_to_tt(score, ply), score::AT_LEAST);
+                data.tt.put(
+                    data.pos.hash(),
+                    m,
+                    QDEPTH,
+                    score_to_tt(score, ply),
+                    score::AT_LEAST,
+                );
                 return beta;
             }
         }
@@ -977,7 +1121,16 @@ fn quiesce(data: &mut SearchData, ply: usize,
         best_score = score::mated_in(ply);
     }
     debug_assert!(score_is_valid(best_score));
-    data.tt.put(data.pos.hash(), best_move, QDEPTH, score_to_tt(best_score, ply),
-                if best_score <= orig_alpha { score::AT_MOST } else { score::EXACT });
+    data.tt.put(
+        data.pos.hash(),
+        best_move,
+        QDEPTH,
+        score_to_tt(best_score, ply),
+        if best_score <= orig_alpha {
+            score::AT_MOST
+        } else {
+            score::EXACT
+        },
+    );
     best_score
 }
