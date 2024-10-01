@@ -55,10 +55,10 @@ const EMPTY_CASTLE_INFO: CastleInfo = CastleInfo {
 
 pub type HashKey = u64;
 
-static mut piece_random: [[[HashKey; 64]; 7]; 2] = [[[0; 64]; 7]; 2];
-static mut castle_random: [HashKey; 16] = [0; 16];
-static mut enpassant_random: [HashKey; 8] = [0; 8];
-static mut side_random: HashKey = 0;
+static mut PIECE_RANDOM: [[[HashKey; 64]; 7]; 2] = [[[0; 64]; 7]; 2];
+static mut CASTLE_RANDOM: [HashKey; 16] = [0; 16];
+static mut ENPASSANT_RANDOM: [HashKey; 8] = [0; 8];
+static mut SIDE_RANDOM: HashKey = 0;
 
 /// Sets up the Zobrist hash tables. Only done once, at startup.
 pub fn initialize()
@@ -71,34 +71,34 @@ pub fn initialize()
         for i in 0..2 {
             for j in 0..7 {
                 for k in 0..64 {
-                    unsafe { piece_random[i][j][k] = prng.gen::<u64>(); }
+                    unsafe { PIECE_RANDOM[i][j][k] = prng.gen::<u64>(); }
                 }
             }
         }
         for i in 0..16 {
-            unsafe { castle_random[i] = prng.gen::<u64>(); }
+            unsafe { CASTLE_RANDOM[i] = prng.gen::<u64>(); }
         }
         for i in 0..8 {
-            unsafe { enpassant_random[i] = prng.gen::<u64>(); }
+            unsafe { ENPASSANT_RANDOM[i] = prng.gen::<u64>(); }
         }
-        unsafe { side_random = prng.gen::<u64>(); }
+        unsafe { SIDE_RANDOM = prng.gen::<u64>(); }
     });
 }
 
 pub fn piece_hash(p: Piece, sq: Square) -> HashKey {
-    unsafe { piece_random[p.color().index()][p.piece_type().index()][sq.index()] }
+    unsafe { PIECE_RANDOM[p.color().index()][p.piece_type().index()][sq.index()] }
 }
 
 pub fn ep_hash(sq: Square) -> HashKey {
-    unsafe { enpassant_random[sq.file().index()] }
+    unsafe { ENPASSANT_RANDOM[sq.file().index()] }
 }
 
 pub fn castle_hash(cr: CastleRights) -> HashKey {
-    unsafe { castle_random[cr as usize] }
+    unsafe { CASTLE_RANDOM[cr as usize] }
 }
 
 pub fn side_hash() -> HashKey {
-    unsafe { side_random }
+    unsafe { SIDE_RANDOM }
 }
 
 /// State stores core position state information that would otherwise be lost
