@@ -218,7 +218,7 @@ pub struct RootMove {
 impl RootMove {
     pub fn new(m: Move) -> RootMove {
         RootMove {
-            m: m,
+            m,
             score: score::MIN_SCORE,
             depth: 0,
             pv: Vec::with_capacity(MAX_PLY),
@@ -455,8 +455,8 @@ fn print_pv_single(data: &SearchData, rm: &RootMove, ordinal: usize, alpha: Scor
      } else {
          format!("cp {}", rm.score)
      };
-     println!("info multipv {} depth {} score {} {}alpha {} beta {} time {} nodes {} {}pv {}",
-              ordinal, data.current_depth, score, bound, alpha, beta, ms, data.stats.nodes, nps, pv);
+     println!("info multipv {} depth {} score {} {}alpha {} beta {} time {} nodes {} qnodes {} pvnodes {} {}pv {}",
+              ordinal, data.current_depth, score, bound, alpha, beta, ms, data.stats.nodes, data.stats.qnodes, data.stats.pvnodes, nps, pv);
      debug_assert!(score_is_valid(rm.score));
 }
 
@@ -781,6 +781,7 @@ fn search(data: &mut SearchData, ply: usize,
         let mut full_search = searched_moves == 0 ||
                               (root_node && searched_moves <= options::multi_pv());
         data.stats.nodes += 1;
+        data.stats.pvnodes += (searched_moves == 0) as u64;
         searched_moves += 1;
         let mut score = score::MIN_SCORE;
         if !full_search {
@@ -948,6 +949,7 @@ fn quiesce(data: &mut SearchData, ply: usize,
         if !data.pos.pseudo_move_is_legal(m, &ad) { continue }
         data.pos.do_move(m, &ad);
         data.stats.nodes += 1;
+        data.stats.qnodes += 1;
         num_moves += 1;
 
         let score = -quiesce(data, ply + 1, -beta, -alpha, depth - 1.);
