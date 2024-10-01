@@ -1,3 +1,5 @@
+use std::mem::MaybeUninit;
+
 use board::*;
 use bitboard;
 use bitboard::Bitboard;
@@ -143,8 +145,9 @@ impl State {
 
     pub fn undo_state(p: &Position) -> State {
         unsafe {
-            let mut undo: State = ::std::mem::uninitialized();
-            ::std::ptr::copy_nonoverlapping(&p.state, &mut undo, 1);
+            let mut undo = MaybeUninit::<State>::uninit();
+            ::std::ptr::copy_nonoverlapping(&p.state, undo.as_mut_ptr(), 1);
+            let undo = undo.assume_init();
             undo
         }
     }
