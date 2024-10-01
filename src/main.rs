@@ -1,14 +1,16 @@
 #![allow(dead_code)]
 
 extern crate rand;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 
-#[macro_use] pub mod macros;
-pub mod board;
+#[macro_use]
+pub mod macros;
 pub mod bitboard;
+pub mod board;
 pub mod eval;
-pub mod movement;
 pub mod movegen;
+pub mod movement;
 pub mod options;
 pub mod perft;
 pub mod position;
@@ -18,9 +20,11 @@ pub mod transposition;
 pub mod uci;
 
 fn main() {
-    println!("Daydreamer {} ({}), by Aaron Becker",
-             env!("CARGO_PKG_VERSION"),
-             include_str!(concat!(env!("OUT_DIR"), "/version.rs")));
+    println!(
+        "Daydreamer {} ({}), by Aaron Becker",
+        env!("CARGO_PKG_VERSION"),
+        include_str!(concat!(env!("OUT_DIR"), "/version.rs"))
+    );
     bitboard::initialize();
     position::initialize();
     ::options::set_multi_pv(1);

@@ -37,7 +37,7 @@ fn futility_margin(d: SearchDepth) -> Score {
 }
 
 // Inside the search, we keep the remaining depth to search as a floating point
-// value to accomodate fractional extensions and reductions better. Elsewhere
+// value to accommodate fractional extensions and reductions better. Elsewhere
 // depths are all integers to accommodate depth-indexed arrays.
 pub type SearchDepth = f32;
 pub const MAX_PLY_F: SearchDepth = 127.;
@@ -418,10 +418,7 @@ fn should_deepen(data: &SearchData) -> bool {
     if !data.constraints.use_timer { return true }
     // If we're much more than halfway through our time, we won't make it
     // through the first move of the next iteration anyway.
-    if data.constraints.start_time.elapsed() > data.constraints.soft_limit {
-        return false
-    }
-    true
+    data.constraints.start_time.elapsed() < data.constraints.soft_limit
 }
 
 fn should_print(data: &SearchData) -> bool {
