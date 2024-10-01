@@ -84,8 +84,8 @@ pub fn non_pawn_material(pt: PieceType) -> Score {
 impl PhaseScore {
     pub fn new(mg: Score, eg: Score) -> PhaseScore {
         PhaseScore {
-            mg: mg,
-            eg: eg,
+            mg,
+            eg,
         }
     }
     pub fn interpolate(self, pos: &Position) -> Score {

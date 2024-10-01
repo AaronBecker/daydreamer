@@ -1,5 +1,3 @@
-#[macro_use]
-
 // The max of any number of comparable elements.
 macro_rules! max {
     ($x:expr) => ( $x );
