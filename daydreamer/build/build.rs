@@ -1,8 +1,12 @@
+extern crate rand;
+
 use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
+
+mod gen_bitboards;
 
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();

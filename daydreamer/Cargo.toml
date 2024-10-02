@@ -1,0 +1,20 @@
+[package]
+name = "daydreamer"
+build = "build/build.rs"
+version.workspace = true
+authors.workspace = true
+readme.workspace = true
+license.workspace = true
+
+[build-dependencies]
+rand = "*"
+
+[dependencies]
+lazy_static = "0.1.*"
+rand = "*"
+board = { path = "../board" }
+
+[profile.release]
+opt-level = 3
+debug-assertions = false
+lto = true

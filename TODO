@@ -1,0 +1,5 @@
+Move table generation to compile time
+Benchmark against old binary
+Try get_unchecked for bitboards
+(longer-term) Investigate use of neural eval
+

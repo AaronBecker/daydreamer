@@ -3,11 +3,11 @@
 extern crate rand;
 #[macro_use]
 extern crate lazy_static;
+extern crate board;
 
 #[macro_use]
 pub mod macros;
 pub mod bitboard;
-pub mod board;
 pub mod eval;
 pub mod movegen;
 pub mod movement;

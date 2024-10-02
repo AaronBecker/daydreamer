@@ -1,16 +1,8 @@
-[package]
-name = "daydreamer"
+[workspace]
+members = ["board", "daydreamer"]
+
+[workspace.package]
 version = "2.0.0-pre2"
 authors = ["akb <aaron@falsesharing.com>"]
-build = "build.rs"
 readme = "README.md"
 license = "Apache-2.0"
-
-[dependencies]
-lazy_static = "0.1.*"
-rand = "*"
-
-[profile.release]
-opt-level = 3
-debug-assertions = false
-lto = true
