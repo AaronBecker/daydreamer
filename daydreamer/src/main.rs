@@ -21,7 +21,6 @@ fn main() {
         env!("CARGO_PKG_VERSION"),
         include_str!(concat!(env!("OUT_DIR"), "/version.rs"))
     );
-    bitboard::initialize();
     position::initialize();
     ::options::set_multi_pv(1);
     let mut search_data = search::SearchData::new();

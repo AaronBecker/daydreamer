@@ -60,8 +60,6 @@ macro_rules! chess_test {
     ($id:ident, $b:block) => {
         #[test]
         fn $id() {
-            use bitboard;
-            bitboard::initialize();
             use position;
             position::initialize();
             $b

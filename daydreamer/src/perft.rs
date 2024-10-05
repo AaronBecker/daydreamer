@@ -45,8 +45,6 @@ mod tests {
     use position::Position;
 
     fn test_case(name: &str, fen: &str, depth: u32, expect: u64) {
-        use bitboard;
-        bitboard::initialize();
         let mut pos = Position::from_fen(fen);
         let count = perft(&mut pos, depth);
         assert!(

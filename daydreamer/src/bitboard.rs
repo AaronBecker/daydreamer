@@ -1,8 +1,5 @@
 use board::*;
 
-pub fn initialize() {
-}
-
 // TODO: look into performance implications of unchecked indexing
 pub type Bitboard = u64;
 
