@@ -1,6 +1,3 @@
-extern crate rand;
-extern crate board;
-
 #[macro_use]
 pub mod macros;
 pub mod bitboard;
@@ -22,7 +19,7 @@ fn main() {
         include_str!(concat!(env!("OUT_DIR"), "/version.rs"))
     );
     position::initialize();
-    ::options::set_multi_pv(1);
+    crate::options::set_multi_pv(1);
     let mut search_data = search::SearchData::new();
 
     // Treat each argument as a file containing uci commands.

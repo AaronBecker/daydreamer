@@ -1,9 +1,9 @@
-use board::*;
-use movegen::MoveSelector;
-use options;
-use position::AttackData;
-use position::Position;
-use search;
+use crate::movegen::MoveSelector;
+use crate::options;
+use crate::position::AttackData;
+use crate::position::Position;
+use crate::search;
+use ::board::*;
 
 // Move is a 4-byte quantity that encodes source and destination square, the
 // moved piece, any captured piece, the promotion value (if any), and flags to

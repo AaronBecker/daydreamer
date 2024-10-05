@@ -1,8 +1,8 @@
 use std::sync::LazyLock;
 
+use crate::position::Position;
 use board;
 use board::{Color, Piece, PieceType};
-use position::Position;
 
 // Note: actual scores fit in an i16 and can be safely stored in 16 bits in
 // transposition tables etc, but we use i32 because intermediate calculations
@@ -32,7 +32,7 @@ pub fn mated_in(ply: usize) -> Score {
 
 /// Does `s` indicate that either side will be checkmated?
 pub fn is_mate_score(s: Score) -> bool {
-    use search::MAX_PLY;
+    use crate::search::MAX_PLY;
     s < mated_in(MAX_PLY) || s > mate_in(MAX_PLY)
 }
 
@@ -224,10 +224,7 @@ macro_rules! psqt {
     };
 }
 
-pub static PSQT: LazyLock<[[PhaseScore; 64]; 15]> = LazyLock::new(|| {
-    init_psqt()
-});
-
+pub static PSQT: LazyLock<[[PhaseScore; 64]; 15]> = LazyLock::new(|| init_psqt());
 
 fn init_psqt() -> [[PhaseScore; 64]; 15] {
     let psqt_base = [

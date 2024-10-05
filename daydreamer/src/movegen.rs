@@ -1,13 +1,12 @@
-use bitboard;
-use bitboard::Bitboard;
-use board;
-use board::*;
-use movement::{Move, NO_MOVE};
-use position;
-use position::{AttackData, Position};
-use score;
-use score::Score;
-use search;
+use crate::bitboard;
+use crate::bitboard::Bitboard;
+use crate::movement::{Move, NO_MOVE};
+use crate::position;
+use crate::position::{AttackData, Position};
+use crate::score;
+use crate::score::Score;
+use crate::search;
+use ::board::*;
 
 #[derive(Debug, PartialEq, Eq)]
 struct ScoredMove {
@@ -813,9 +812,9 @@ impl MoveSelector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use movement::Move;
-    use position::{AttackData, Position};
-    use search;
+    use crate::movement::Move;
+    use crate::position::{AttackData, Position};
+    use crate::search;
 
     chess_test!(test_move_is_pseudo_legal, {
         let test_case = |fen, m, want| {
@@ -823,8 +822,8 @@ mod tests {
             println!("{}", pos.debug_string());
             assert_eq!(want, move_is_pseudo_legal(&pos, m, false));
         };
-        use board::Piece::*;
-        use board::Square::*;
+        use ::board::Piece::*;
+        use ::board::Square::*;
         test_case(
             "8/2k5/8/8/8/8/2q1K3/8 w - -",
             Move::new(E2, E1, WK, NoPiece),

@@ -1,6 +1,6 @@
-use movegen::MoveSelector;
-use position::{AttackData, Position, UndoState};
-use search;
+use crate::movegen::MoveSelector;
+use crate::position::{AttackData, Position, UndoState};
+use crate::search;
 
 pub fn perft(pos: &mut Position, depth: u32) -> u64 {
     internal_perft(pos, depth, false)
@@ -42,14 +42,17 @@ fn internal_perft(pos: &mut Position, depth: u32, divide: bool) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use position::Position;
+    use crate::position::Position;
 
     fn test_case(name: &str, fen: &str, depth: u32, expect: u64) {
         let mut pos = Position::from_fen(fen);
         let count = perft(&mut pos, depth);
         assert!(
             count == expect,
-            "{}, expected {} got {}", name, expect, count
+            "{}, expected {} got {}",
+            name,
+            expect,
+            count
         );
     }
 

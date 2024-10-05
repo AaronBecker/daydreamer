@@ -1,6 +1,3 @@
-extern crate rand;
-extern crate board;
-
 #[macro_use]
 pub mod macros;
 pub mod bitboard;

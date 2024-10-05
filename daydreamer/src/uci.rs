@@ -4,12 +4,12 @@ use std::sync::mpsc;
 use std::thread;
 use std::time;
 
-use movement;
-use movement::Move;
-use perft;
-use position;
-use search;
-use search::SearchData;
+use crate::movement;
+use crate::movement::Move;
+use crate::perft;
+use crate::position;
+use crate::search;
+use crate::search::SearchData;
 
 // in_millis converts a duration to integer milliseconds. It's always at least
 // 1, to avoid divide-by-zero errors.
@@ -366,29 +366,29 @@ where
             if let Some(t) = tokens.next() {
                 let mb = t.parse::<usize>().map_err(|e| e.to_string())?;
                 if mb > 0 && mb <= 65536 {
-                    search_data.tt = ::transposition::Table::new(mb << 20);
+                    search_data.tt = crate::transposition::Table::new(mb << 20);
                 }
             }
         }
         "uci_chess960" => {
             if let Some(t) = tokens.next() {
                 let c960 = t.parse::<bool>().map_err(|e| e.to_string())?;
-                ::options::set_c960(c960);
+                crate::options::set_c960(c960);
             }
         }
         "arena960castling" => {
             if let Some(t) = tokens.next() {
                 let arena = t.parse::<bool>().map_err(|e| e.to_string())?;
-                ::options::set_arena_960_castling(arena);
+                crate::options::set_arena_960_castling(arena);
             }
         }
         "multipv" => {
             if let Some(t) = tokens.next() {
                 let mpv = t.parse::<usize>().map_err(|e| e.to_string())?;
                 if mpv > 0 && mpv < 256 {
-                    ::options::set_multi_pv(mpv);
+                    crate::options::set_multi_pv(mpv);
                 } else {
-                    ::options::set_multi_pv(1);
+                    crate::options::set_multi_pv(1);
                 }
             }
         }

@@ -1,15 +1,15 @@
 use std::mem::MaybeUninit;
 
-use bitboard;
-use bitboard::Bitboard;
-use board::*;
-use eval;
-use movegen::MoveSelector;
-use movement::{Move, NO_MOVE, NULL_MOVE};
-use options;
-use score;
-use score::{Phase, PhaseScore, Score};
-use search;
+use crate::bitboard;
+use crate::bitboard::Bitboard;
+use crate::eval;
+use crate::movegen::MoveSelector;
+use crate::movement::{Move, NO_MOVE, NULL_MOVE};
+use crate::options;
+use crate::score;
+use crate::score::{Phase, PhaseScore, Score};
+use crate::search;
+use ::board::*;
 
 pub const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -1245,8 +1245,8 @@ impl AttackData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use board::Square::*;
-    use movement::*;
+    use crate::movement::*;
+    use ::board::Square::*;
 
     chess_test!(test_fen, {
         let load_store = |fen| {
@@ -1477,7 +1477,7 @@ mod tests {
     });
 
     chess_test!(test_static_exchange_eval, {
-        use score::mg_material;
+        use crate::score::mg_material;
         let test_case = |fen, uci, want| {
             let pos = Position::from_fen(fen);
             let ad = AttackData::new(&pos);

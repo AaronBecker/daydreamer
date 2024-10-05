@@ -1,7 +1,7 @@
-use movement::{Move, NO_MOVE};
-use position::HashKey;
-use score::{score_is_valid, Score, ScoreType};
-use search::SearchDepth;
+use crate::movement::{Move, NO_MOVE};
+use crate::position::HashKey;
+use crate::score::{score_is_valid, Score, ScoreType};
+use crate::search::SearchDepth;
 
 // TODO: experiment with Entry/Bucket size for the purposes of cache tuning.
 // It may be beneficial to add padding so that buckets are cache-aligned.
@@ -135,9 +135,9 @@ impl<'a> Table {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::movement::Move;
+    use crate::score;
     use board::Piece;
-    use movement::Move;
-    use score;
 
     chess_test!(test_tt_replacement, {
         let table_size = 4 << 20;

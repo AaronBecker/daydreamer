@@ -37,7 +37,7 @@ macro_rules! clamp {
 macro_rules! bb {
     ( $( $x:expr ),* ) => {
         {
-            use bitboard::IntoBitboard;
+            use crate::bitboard::IntoBitboard;
             let mut ret = 0;
             $(
                 ret |= $x.into_bitboard();
@@ -50,7 +50,7 @@ macro_rules! bb {
 // Convenience macro for populating tables of phase scores.
 macro_rules! sc {
     ( $mg:expr, $eg:expr ) => {{
-        use score::PhaseScore;
+        use crate::score::PhaseScore;
         PhaseScore { mg: $mg, eg: $eg }
     }};
 }
@@ -60,7 +60,7 @@ macro_rules! chess_test {
     ($id:ident, $b:block) => {
         #[test]
         fn $id() {
-            use position;
+            use crate::position;
             position::initialize();
             $b
         }

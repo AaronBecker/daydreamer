@@ -1,4 +1,4 @@
-use board::*;
+use ::board::*;
 
 // TODO: look into performance implications of unchecked indexing
 pub type Bitboard = u64;

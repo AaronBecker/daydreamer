@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::Write;
 use std::time;
 
-use board::*;
+use ::board::*;
 
 pub fn in_millis(d: &time::Duration) -> u64 {
     1 + d.as_secs() * 1000 + d.subsec_nanos() as u64 / 1_000_000
@@ -226,10 +226,7 @@ impl fmt::Display for BB64x64 {
 
 impl fmt::Display for Tables {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut buf = format!(
-            "static RANK_BB: [Bitboard; 8] = {};\n",
-            BB8(self.rank_bb)
-        );
+        let mut buf = format!("static RANK_BB: [Bitboard; 8] = {};\n", BB8(self.rank_bb));
         buf.push_str(&format!(
             "static FILE_BB: [Bitboard; 8] = {};\n",
             BB8(self.file_bb)
@@ -252,49 +249,64 @@ impl fmt::Display for Tables {
         }
         buf.push_str(&format!(
             "static IN_FRONT_BB: [[Bitboard; 64]; 2] = {};\n",
-            BB64x2(self.in_front_bb)));
+            BB64x2(self.in_front_bb)
+        ));
         buf.push_str(&format!(
             "static PASSER_BB: [[Bitboard; 64]; 2] = {};\n",
-            BB64x2(self.passer_bb)));
+            BB64x2(self.passer_bb)
+        ));
         buf.push_str(&format!(
             "static OUTPOST_BB: [[Bitboard; 64]; 2] = {};\n",
-            BB64x2(self.outpost_bb)));
+            BB64x2(self.outpost_bb)
+        ));
         buf.push_str(&format!(
             "static SQUARES_OF_COLOR_BB: [Bitboard; 2] = [{}, {}];\n",
-            self.squares_of_color_bb[0], self.squares_of_color_bb[1]));
+            self.squares_of_color_bb[0], self.squares_of_color_bb[1]
+        ));
         buf.push_str(&format!(
             "static WHITE_PAWN_ATTACKS_BB: [Bitboard; 64] = {};\n",
-            BB64(self.white_pawn_attacks_bb)));
+            BB64(self.white_pawn_attacks_bb)
+        ));
         buf.push_str(&format!(
             "static BLACK_PAWN_ATTACKS_BB: [Bitboard; 64] = {};\n",
-            BB64(self.black_pawn_attacks_bb)));
+            BB64(self.black_pawn_attacks_bb)
+        ));
         buf.push_str(&format!(
             "static KNIGHT_ATTACKS_BB: [Bitboard; 64] = {};\n",
-            BB64(self.knight_attacks_bb)));
+            BB64(self.knight_attacks_bb)
+        ));
         buf.push_str(&format!(
             "static KING_ATTACKS_BB: [Bitboard; 64] = {};\n",
-            BB64(self.king_attacks_bb)));
+            BB64(self.king_attacks_bb)
+        ));
         buf.push_str(&format!(
             "static KING_NEAR_SHIELD_BB: [[Bitboard; 64]; 2] = {};\n",
-            BB64x2(self.king_near_shield_bb)));
+            BB64x2(self.king_near_shield_bb)
+        ));
         buf.push_str(&format!(
             "static KING_SHIELD_BB: [[Bitboard; 64]; 2] = {};\n",
-            BB64x2(self.king_shield_bb)));
+            BB64x2(self.king_shield_bb)
+        ));
         buf.push_str(&format!(
             "static KING_HALO_BB: [Bitboard; 64] = {};\n",
-            BB64(self.king_halo_bb)));
+            BB64(self.king_halo_bb)
+        ));
         buf.push_str(&format!(
             "static BISHOP_MASKS: [Bitboard; 64] = {};\n",
-            BB64(self.bishop_masks)));
+            BB64(self.bishop_masks)
+        ));
         buf.push_str(&format!(
             "static BISHOP_MAGIC: [Bitboard; 64] = {};\n",
-            BB64(self.bishop_magic)));
+            BB64(self.bishop_magic)
+        ));
         buf.push_str(&format!(
             "static ROOK_MASKS: [Bitboard; 64] = {};\n",
-            BB64(self.rook_masks)));
+            BB64(self.rook_masks)
+        ));
         buf.push_str(&format!(
             "static ROOK_MAGIC: [Bitboard; 64] = {};\n",
-            BB64(self.rook_magic)));
+            BB64(self.rook_magic)
+        ));
         // BISHOP_ATTACKS_BB
         {
             let mut atk = String::new();
@@ -305,7 +317,10 @@ impl fmt::Display for Tables {
                 }
                 atk.push_str("],");
             }
-            buf.push_str(&format!("static BISHOP_ATTACKS_BB: [[Bitboard; 512]; 64] = [{}];\n", atk));
+            buf.push_str(&format!(
+                "static BISHOP_ATTACKS_BB: [[Bitboard; 512]; 64] = [{}];\n",
+                atk
+            ));
         }
         // ROOK_ATTACKS_BB
         {
@@ -317,23 +332,31 @@ impl fmt::Display for Tables {
                 }
                 atk.push_str("],");
             }
-            buf.push_str(&format!("static ROOK_ATTACKS_BB: [[Bitboard; 4096]; 64] = [{}];\n", atk));
+            buf.push_str(&format!(
+                "static ROOK_ATTACKS_BB: [[Bitboard; 4096]; 64] = [{}];\n",
+                atk
+            ));
         }
         buf.push_str(&format!(
             "static BISHOP_PSEUDO_ATTACKS_BB: [Bitboard; 64] = {};\n",
-            BB64(self.bishop_pseudo_attacks_bb)));
+            BB64(self.bishop_pseudo_attacks_bb)
+        ));
         buf.push_str(&format!(
             "static ROOK_PSEUDO_ATTACKS_BB: [Bitboard; 64] = {};\n",
-            BB64(self.rook_pseudo_attacks_bb)));
+            BB64(self.rook_pseudo_attacks_bb)
+        ));
         buf.push_str(&format!(
             "static QUEEN_PSEUDO_ATTACKS_BB: [Bitboard; 64] = {};\n",
-            BB64(self.queen_pseudo_attacks_bb)));
+            BB64(self.queen_pseudo_attacks_bb)
+        ));
         buf.push_str(&format!(
             "static RAYS_BB: [[Bitboard; 64]; 64] = {};\n",
-            BB64x64(self.rays_bb)));
+            BB64x64(self.rays_bb)
+        ));
         buf.push_str(&format!(
             "static BETWEEN_BB: [[Bitboard; 64]; 64] = {};\n",
-            BB64x64(self.between_bb)));
+            BB64x64(self.between_bb)
+        ));
 
         write!(f, "{}", buf)
     }

@@ -1,13 +1,13 @@
 use std::sync::LazyLock;
 use std::sync::Mutex;
 
-use bitboard;
-use bitboard::Bitboard;
+use crate::bitboard;
+use crate::bitboard::Bitboard;
+use crate::position::{HashKey, Position};
+use crate::score;
+use crate::score::{PhaseScore, Score};
 use board;
 use board::{Color, File, Piece, PieceType, Rank, Square};
-use position::{HashKey, Position};
-use score;
-use score::{PhaseScore, Score};
 
 pub fn full(pos: &Position) -> Score {
     let mut ps = pos.psqt_score();
@@ -155,12 +155,11 @@ impl<'a> PawnCache {
     }
 }
 
-static GLOBAL_PAWN_CACHE: LazyLock<Mutex<PawnCache>> = LazyLock::new(|| {
-    Mutex::new(PawnCache::new(1 << 20))
-});
+static GLOBAL_PAWN_CACHE: LazyLock<Mutex<PawnCache>> =
+    LazyLock::new(|| Mutex::new(PawnCache::new(1 << 20)));
 
 fn analyze_pawns(pos: &Position) -> PawnData {
-    use bitboard::IntoBitboard;
+    use crate::bitboard::IntoBitboard;
     use board::PieceType::Pawn;
 
     if let Some(entry) = GLOBAL_PAWN_CACHE.lock().unwrap().get(pos.pawn_hash()) {
@@ -271,7 +270,7 @@ fn analyze_pawns(pos: &Position) -> PawnData {
 }
 
 fn eval_pawns(pos: &Position, ed: &mut EvalData) -> PhaseScore {
-    use bitboard::dist;
+    use crate::bitboard::dist;
     let pd = analyze_pawns(pos);
     let mut side_score = pd.score;
 
