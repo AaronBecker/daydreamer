@@ -1,6 +1,4 @@
 extern crate rand;
-#[macro_use]
-extern crate lazy_static;
 extern crate board;
 
 #[macro_use]

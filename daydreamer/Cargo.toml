@@ -8,9 +8,9 @@ license.workspace = true
 
 [build-dependencies]
 rand = "*"
+board = { path = "../board" }
 
 [dependencies]
-lazy_static = "0.1.*"
 rand = "*"
 board = { path = "../board" }
 

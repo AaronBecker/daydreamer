@@ -4,8 +4,3 @@ version.workspace = true
 authors.workspace = true
 readme.workspace = true
 license.workspace = true
-
-[profile.release]
-opt-level = 3
-debug-assertions = false
-lto = true

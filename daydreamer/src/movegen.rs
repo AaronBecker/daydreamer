@@ -17,7 +17,7 @@ struct ScoredMove {
 
 impl ScoredMove {
     pub fn new(m: Move) -> ScoredMove {
-        ScoredMove { m: m, s: 0 }
+        ScoredMove { m, s: 0 }
     }
 }
 
@@ -30,6 +30,7 @@ impl ScoredMove {
 // Quiet moves are everything else: non-capturing moves that aren't
 // promotion to queen, plus all underpromotions.
 //
+// TODO: Evaluate separate generation for quiet checks.
 // Quiet checks are the subset of quiet moves that give check. The current
 // implementation doesn't generate underpromotions that give check, but
 // this is a matter of expediency rather than principle.
@@ -38,7 +39,6 @@ enum GenerationType {
     Loud,
     Quiet,
     Both,
-    QuietChecks,
 }
 
 fn add_moves(pos: &Position, from: Square, mut bb: Bitboard, moves: &mut Vec<ScoredMove>) {

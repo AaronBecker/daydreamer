@@ -1237,7 +1237,7 @@ impl AttackData {
             ],
             check_discoverers: pos.check_discoverers(pos.us()),
             pinned: pos.pinned(pos.us()),
-            their_king: their_king,
+            their_king,
         }
     }
 }
@@ -1246,7 +1246,6 @@ impl AttackData {
 mod tests {
     use super::*;
     use board::Square::*;
-    use board::*;
     use movement::*;
 
     chess_test!(test_fen, {

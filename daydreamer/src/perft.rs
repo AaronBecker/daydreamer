@@ -51,7 +51,7 @@ mod tests {
         let count = perft(&mut pos, depth);
         assert!(
             count == expect,
-            format!("{}, expected {} got {}", name, expect, count)
+            "{}, expected {} got {}", name, expect, count
         );
     }
 

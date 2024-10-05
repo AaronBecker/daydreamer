@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use board;
 use board::{Color, Piece, PieceType};
 use position::Position;
@@ -222,9 +224,10 @@ macro_rules! psqt {
     };
 }
 
-lazy_static! {
-    pub static ref PSQT: [[PhaseScore; 64]; 15] = init_psqt();
-}
+pub static PSQT: LazyLock<[[PhaseScore; 64]; 15]> = LazyLock::new(|| {
+    init_psqt()
+});
+
 
 fn init_psqt() -> [[PhaseScore; 64]; 15] {
     let psqt_base = [

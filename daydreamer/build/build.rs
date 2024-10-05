@@ -1,3 +1,4 @@
+extern crate board;
 extern crate rand;
 
 use std::env;
@@ -7,11 +8,15 @@ use std::path::Path;
 use std::process::Command;
 
 mod gen_bitboards;
+use gen_bitboards::write_bitboards;
 
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
-    let out_path = Path::new(&out_dir).join("version.rs");
-    let mut f = File::create(&out_path).unwrap();
+    write_version(File::create(Path::new(&out_dir).join("version.rs")).unwrap());
+    write_bitboards(File::create(Path::new(&out_dir).join("generated_bitboards.rs")).unwrap());
+}
+
+fn write_version(mut f: File) {
     // Call git to get the best available version descriptor.
     let git_desc = Command::new("git")
         .arg("describe")

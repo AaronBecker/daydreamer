@@ -1,3 +1,4 @@
+use std::sync::LazyLock;
 use std::sync::Mutex;
 
 use bitboard;
@@ -154,9 +155,9 @@ impl<'a> PawnCache {
     }
 }
 
-lazy_static! {
-    static ref GLOBAL_PAWN_CACHE: Mutex<PawnCache> = Mutex::new(PawnCache::new(1 << 20));
-}
+static GLOBAL_PAWN_CACHE: LazyLock<Mutex<PawnCache>> = LazyLock::new(|| {
+    Mutex::new(PawnCache::new(1 << 20))
+});
 
 fn analyze_pawns(pos: &Position) -> PawnData {
     use bitboard::IntoBitboard;
