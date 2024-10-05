@@ -72,7 +72,7 @@ impl<'a> Table {
         }
         Table {
             table: vec![Bucket::new(); buckets],
-            buckets: buckets,
+            buckets,
             generation: 0,
         }
     }
