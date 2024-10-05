@@ -13,8 +13,3 @@ board = { path = "../board" }
 [dependencies]
 rand = "*"
 board = { path = "../board" }
-
-[profile.release]
-opt-level = 3
-debug-assertions = false
-lto = true
